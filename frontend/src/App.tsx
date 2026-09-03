@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ChevronRight, Lock, MessageCircle,
   RotateCcw, Volume2, X, LogOut,
 } from 'lucide-react';
-import heroImg from './assets/hero-valencia.png';
 import { SceneArt } from './components/SceneArt';
 import { VoiceInput } from './components/VoiceInput';
 import { HistoryModal, type Msg } from './components/HistoryModal';
@@ -21,17 +20,27 @@ const scenarios: { id: Scenario; name: string; icon: string; required: number; c
 ];
 
 /* ── Decorative oranges header ──────────────────────────────────── */
-function OrangeHeader({ children }: { children: React.ReactNode }) {
+function OrangeHeader({ children, showOranges = true }: { children: React.ReactNode; showOranges?: boolean }) {
   return (
-    <div className="azulejo-border relative overflow-hidden rounded-b-[40px] bg-gradient-to-br from-[#FFF9ED] to-[#FFE8BA] pb-4 pt-5 shadow-sm">
+    <div
+      className={`${
+        showOranges ? 'azulejo-border bg-gradient-to-br from-[#FFF9ED] to-[#FFE8BA]' : 'border-b border-[#E7E5E4] bg-gradient-to-br from-[#FAFAF9] to-[#FFFFFF]'
+      } relative overflow-hidden rounded-b-[40px] pb-4 pt-5 shadow-sm`}
+    >
       {/* Decorative oranges */}
-      <span className="orange-deco absolute left-3 top-1 text-2xl select-none">🍊</span>
-      <span className="orange-deco absolute left-14 top-0 text-xl select-none opacity-70">🍊</span>
-      <span className="orange-deco absolute right-14 top-0 text-xl select-none opacity-70">🍊</span>
-      <span className="orange-deco absolute right-3 top-1 text-2xl select-none">🍊</span>
+      {showOranges && (
+        <>
+          <span className="orange-deco absolute left-3 top-1 text-2xl select-none">🍊</span>
+          <span className="orange-deco absolute left-14 top-0 text-xl select-none opacity-70">🍊</span>
+          <span className="orange-deco absolute right-14 top-0 text-xl select-none opacity-70">🍊</span>
+          <span className="orange-deco absolute right-3 top-1 text-2xl select-none">🍊</span>
+        </>
+      )}
       {/* Small sun rays */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none"
-           style={{ background: 'radial-gradient(ellipse at 50% -20%, #F9C74F 0%, transparent 70%)' }} />
+      {showOranges && (
+        <div className="absolute inset-0 opacity-20 pointer-events-none"
+             style={{ background: 'radial-gradient(ellipse at 50% -20%, #F9C74F 0%, transparent 70%)' }} />
+      )}
       {children}
     </div>
   );
@@ -42,8 +51,8 @@ function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const cls = size === 'lg' ? 'text-4xl' : size === 'sm' ? 'text-xl' : 'text-2xl';
   return (
     <b className={`${cls} font-black tracking-tight`}>
-      <span style={{ color: '#2CA99B' }}>Parla</span>
-      <span style={{ color: '#FF675D' }}>Val</span>
+      <span style={{ color: '#0D9488' }}>Parla</span>
+      <span style={{ color: '#F97316' }}>Val</span>
     </b>
   );
 }
@@ -59,8 +68,63 @@ function Stat({ icon, label, value }: { icon: string; label: string; value: stri
   );
 }
 
+/* ── Page transition wrapper ─────────────────────────────────────── */
+function PageTransition({ children }: { children: React.ReactNode }) {
+  return <div className="page-enter">{children}</div>;
+}
+
 /* ══════════════════ HOME PAGE ══════════════════════════════════════ */
+const homeImages = [
+  {
+    src: '/images/Ciudad de las Artes y las Ciencias: Complejo arquitectónico moderno con edificios blancos y formas futuristas rodeados de agua, símbolo de innovación..jpeg',
+    label: '🏛️ Ciutat de les Arts i les Ciències · València',
+    alt: 'Ciutat de les Arts i les Ciències de València',
+  },
+  {
+    src: '/images/Mercado Central: Espacio lleno de vida con puestos de comida fresca, colores y productos típicos valencianos.jpeg',
+    label: '🍊 Mercat Central · València',
+    alt: 'Mercat Central de València',
+  },
+  {
+    src: '/images/Plaza del Ayuntamiento: Centro neurálgico de la ciudad, rodeado de edificios históricos y escenario de eventos importantes.jpeg',
+    label: '🏙️ Plaça de l’Ajuntament · València',
+    alt: 'Plaça de l’Ajuntament de València',
+  },
+  {
+    src: '/images/Playa de la Malvarrosa: Amplia playa urbana con arena dorada y paseo marítimo muy animado.jpeg',
+    label: '🌊 Platja de la Malva-rosa · València',
+    alt: 'Platja de la Malva-rosa de València',
+  },
+  {
+    src: '/images/Playa de Gandía: Playa extensa, de aguas tranquilas y arena fina, ideal para familias.jpeg',
+    label: '🏖️ Platja de Gandia',
+    alt: 'Platja de Gandia',
+  },
+  {
+    src: '/images/Calas de Jávea: Pequeñas calas de aguas cristalinas y rocas, perfectas para bucear.jpeg',
+    label: '🐠 Caletes de Xàbia',
+    alt: 'Caletes de Xàbia',
+  },
+  {
+    src: '/images/Castillo del Papa Luna: Fortaleza situada sobre una roca junto al mar, imponente y bien conservada..jpeg',
+    label: '🏰 Castell del Papa Luna · Peníscola',
+    alt: 'Castell del Papa Luna de Peníscola',
+  },
+];
+
 function HomePage({ setPage }: { setPage: (p: Page) => void }) {
+  const [activeImage, setActiveImage] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveImage(current => (current + 1) % homeImages.length);
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const image = homeImages[activeImage];
+
   return (
     <main className="fade-up min-h-screen flex flex-col">
       {/* Nav */}
@@ -68,7 +132,7 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
         <Logo />
         <button
           onClick={() => setPage('auth')}
-          className="rounded-full border-2 border-[#2CA99B] px-4 py-1.5 text-sm font-extrabold text-[#2CA99B] hover:bg-[#2CA99B] hover:text-white transition-colors"
+          className="btn-press rounded-full border-2 border-[#0D9488] px-4 py-1.5 text-sm font-extrabold text-[#0D9488] hover:bg-[#0D9488] hover:text-white transition-colors"
         >
           Entra
         </button>
@@ -76,7 +140,7 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
 
       {/* Hero */}
       <section className="mx-auto grid max-w-6xl flex-1 items-center gap-10 px-6 pb-16 pt-6 md:grid-cols-2 md:pt-16">
-        <div>
+        <div className="hero-stagger">
           <span
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-extrabold"
             style={{ background: 'rgba(249,199,79,0.28)', color: '#9A6B00' }}
@@ -85,7 +149,7 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
           </span>
           <h1 className="mt-5 text-5xl font-black leading-[1.08] sm:text-6xl">
             Parla valencià.<br />
-            <em className="not-italic" style={{ color: '#FF675D' }}>Viu-lo.</em>
+            <em className="not-italic" style={{ color: '#F97316' }}>Viu-lo.</em>
           </h1>
           <p className="mt-4 max-w-md text-lg leading-relaxed opacity-65">
             Practica converses reals, al teu ritme, amb personatges que t'acompanyen cada dia pels carrers de València.
@@ -93,21 +157,26 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
           <button
             onClick={() => setPage('auth')}
             id="hero-cta"
-            className="mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-4 text-lg font-extrabold text-white shadow-lg transition hover:scale-[1.03] hover:shadow-xl active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, #FF675D, #FF8A4C)' }}
+            className="btn-press mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-4 text-lg font-extrabold text-white shadow-lg transition hover:scale-[1.03] hover:shadow-xl active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, #F97316, #FB923C)' }}
           >
             Comença ara <ChevronRight size={20} />
           </button>
           <p className="mt-4 text-sm opacity-50">🍊 Mercat · Bar · Oficina · Ajuntament</p>
         </div>
 
-        {/* Hero illustration — Valencia */}
+        {/* Hero image carousel — Comunitat Valenciana */}
         <div className="relative h-[400px] overflow-hidden rounded-[44px] shadow-2xl">
-          <img
-            src={heroImg}
-            alt="La Ciutat de les Arts i les Ciències de València"
-            className="h-full w-full object-cover object-center"
-          />
+          {homeImages.map((item, index) => (
+            <img
+              key={item.src}
+              src={item.src}
+              alt={index === activeImage ? item.alt : ''}
+              aria-hidden={index !== activeImage}
+              className="hero-carousel-image"
+              style={{ opacity: index === activeImage ? 1 : 0 }}
+            />
+          ))}
           {/* Bottom gradient overlay for legibility */}
           <div
             className="absolute inset-0 rounded-[44px]"
@@ -116,12 +185,28 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
           {/* Caption */}
           <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
             <span className="rounded-2xl bg-white/90 px-4 py-2 text-sm font-extrabold shadow backdrop-blur-sm">
-              🏛️ Ciutat de les Arts i les Ciències · València
+              {image.label}
             </span>
           </div>
           {/* Floating chat preview */}
           <div className="absolute left-5 top-6 max-w-[58%] rounded-2xl bg-white/95 p-3 text-sm font-bold shadow-xl backdrop-blur-sm leading-snug">
             Bon dia! Què voldries practicar hui? 🍊
+          </div>
+          <div className="absolute bottom-6 right-6 flex gap-1.5" aria-label="Imatges de la Comunitat Valenciana">
+            {homeImages.map((item, index) => (
+              <button
+                key={item.src}
+                type="button"
+                aria-label={`Veure ${item.alt}`}
+                aria-current={index === activeImage ? 'true' : undefined}
+                onClick={() => setActiveImage(index)}
+                className="h-2.5 rounded-full transition-all"
+                style={{
+                  width: index === activeImage ? '24px' : '10px',
+                  background: index === activeImage ? '#fff' : 'rgba(255,255,255,0.55)',
+                }}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -129,7 +214,7 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
       {/* Footer strip */}
       <div
         className="py-6 text-center text-white font-black text-lg"
-        style={{ background: 'linear-gradient(90deg, #2CA99B, #23877C)' }}
+        style={{ background: 'linear-gradient(90deg, #0D9488, #0F766E)' }}
       >
         Aprén parlant, no memoritzant.
       </div>
@@ -164,7 +249,7 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   };
 
   return (
-    <main className="fade-up grid min-h-screen place-items-center p-6" style={{ background: '#FFF9ED' }}>
+    <main className="fade-up grid min-h-screen place-items-center p-6" style={{ background: '#FAFAF9' }}>
       <section className="w-full max-w-md rounded-[36px] bg-white p-8 shadow-xl">
         {/* Decorative top */}
         <div className="mb-6 flex items-center gap-3">
@@ -174,7 +259,7 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         </div>
         <div className="text-center mb-6">
           <span className="text-4xl">🍊</span>
-          <h1 className="mt-2 text-3xl font-black"><span style={{ color: '#2CA99B' }}>Parla</span><span style={{ color: '#FF675D' }}>Val</span></h1>
+          <h1 className="mt-2 text-3xl font-black"><span style={{ color: '#0D9488' }}>Parla</span><span style={{ color: '#F97316' }}>Val</span></h1>
           <p className="mt-1 opacity-60">Comença la teua aventura lingüística.</p>
         </div>
 
@@ -185,7 +270,7 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           type="email"
           placeholder="tu@exemple.com"
           id="auth-email"
-          className="w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#2CA99B] transition-colors"
+          className="w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0D9488] transition-colors"
         />
 
         <label className="mt-4 block text-sm font-extrabold mb-1">El teu nivell</label>
@@ -193,7 +278,7 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           value={level}
           onChange={e => setLevel(e.target.value)}
           id="auth-level"
-          className="w-full rounded-2xl border-2 border-gray-100 bg-white p-3 outline-none focus:border-[#2CA99B] transition-colors"
+          className="w-full rounded-2xl border-2 border-gray-100 bg-white p-3 outline-none focus:border-[#0D9488] transition-colors"
         >
           <option value="principiant">Principiant</option>
           <option value="intermedi">Intermedi</option>
@@ -203,8 +288,8 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         <button
           onClick={start}
           id="auth-submit"
-          className="mt-6 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90 active:scale-[0.98]"
-          style={{ background: 'linear-gradient(135deg, #2CA99B, #23877C)' }}
+          className="btn-press mt-6 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90 active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
         >
           Crear el compte
         </button>
@@ -221,7 +306,7 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
 
         <button
           onClick={() => supabase?.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin } })}
-          className="mt-3 w-full rounded-2xl border-2 border-gray-100 py-3 font-bold transition hover:border-gray-200 hover:bg-gray-50"
+          className="btn-press mt-3 w-full rounded-2xl border-2 border-gray-100 py-3 font-bold transition hover:border-gray-200 hover:bg-gray-50"
         >
           Continua amb Google
         </button>
@@ -235,17 +320,39 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
 function Dashboard({
   name, xp, setPage, onScenario,
 }: { name: string; xp: number; setPage: (p: Page) => void; onScenario: (s: Scenario) => void }) {
+  const cardRefs = useRef<(HTMLButtonElement | null)[][]>([]);
+  const xpBarRef = useRef<HTMLDivElement>(null);
+
+  // Staggered card entrance
+  useEffect(() => {
+    cardRefs.current.flat().forEach((card, i) => {
+      if (card) {
+        card.style.animationDelay = `${i * 0.1}s`;
+        card.classList.add('animate-in');
+      }
+    });
+  }, []);
+
+  // XP bar pulse when xp changes
+  useEffect(() => {
+    if (xpBarRef.current) {
+      xpBarRef.current.classList.add('xp-pulse');
+      const t = setTimeout(() => xpBarRef.current?.classList.remove('xp-pulse'), 550);
+      return () => clearTimeout(t);
+    }
+  }, [xp]);
+
   return (
-    <main className="fade-up min-h-screen" style={{ background: '#FFF9ED' }}>
+    <main className="fade-up min-h-screen" style={{ background: '#FAFAF9' }}>
       {/* Illustrated header */}
-      <OrangeHeader>
+      <OrangeHeader showOranges={false}>
         <div className="flex items-center justify-between px-5 pb-2 pt-1">
           <Logo />
           <button
             id="dashboard-profile-btn"
             onClick={() => setPage('profile')}
-            className="avatar-ring grid h-11 w-11 place-items-center rounded-full font-black text-lg"
-            style={{ background: '#F9C74F', color: '#263747' }}
+            className="avatar-ring grid h-11 w-11 place-items-center rounded-full font-black text-lg text-white"
+            style={{ background: '#F97316' }}
           >
             {name[0]}
           </button>
@@ -258,12 +365,12 @@ function Dashboard({
 
         {/* XP progress */}
         <div className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
-          <div className="flex justify-between text-sm font-extrabold mb-1">
-            <span>Nivell 1 · Exploradora</span>
-            <span style={{ color: '#FF675D' }}>⚡ {xp} / 100 XP</span>
+          <div className="grid grid-cols-3 text-sm font-extrabold mb-1">
+            <span className="whitespace-nowrap">Nivell 1 · Exploradora</span>
+            <span className="justify-self-center whitespace-nowrap" style={{ color: '#F97316' }}>⚡ {xp} / 100 XP</span>
           </div>
-          <div className="h-3 overflow-hidden rounded-full" style={{ background: '#FFDFDB' }}>
-            <div className="xp-bar-fill h-full rounded-full transition-all duration-700" style={{ width: `${xp}%` }} />
+          <div className="h-3 overflow-hidden rounded-full" style={{ background: '#FFEDD5' }}>
+            <div ref={xpBarRef} className="xp-bar-fill h-full rounded-full transition-all duration-700" style={{ width: `${xp}%` }} />
           </div>
         </div>
 
@@ -279,7 +386,7 @@ function Dashboard({
         <p className="text-sm opacity-50 mt-1">On vols practicar hui?</p>
 
         <div className="mt-4 grid grid-cols-2 gap-4">
-          {scenarios.map(s => {
+          {scenarios.map((s, i) => {
             const locked = xp < s.required;
             return (
               <button
@@ -289,6 +396,7 @@ function Dashboard({
                 onClick={() => onScenario(s.id)}
                 className="scene-card text-left"
                 style={{ background: locked ? '#F5F5F5' : '#fff' }}
+                ref={el => { if (cardRefs.current[i]) cardRefs.current[i][0] = el; else cardRefs.current[i] = [el]; }}
               >
                 {/* Illustration area */}
                 <div
@@ -307,7 +415,7 @@ function Dashboard({
                   <b className="block text-base font-black" style={{ color: locked ? '#aaa' : '#263747' }}>
                     {s.name}
                   </b>
-                  <span className="text-xs font-bold" style={{ color: locked ? '#bbb' : '#2CA99B' }}>
+                  <span className="text-xs font-bold" style={{ color: locked ? '#bbb' : '#0D9488' }}>
                     {locked ? `🔒 ${s.required} XP necessaris` : '✓ Disponible'}
                   </span>
                 </div>
@@ -327,30 +435,101 @@ function Chat({
   const [mood, setMood] = useState<Mood>('neutral');
   const [character, setCharacter] = useState('Bon dia! Com et puc ajudar hui?');
   const [user, setUser] = useState('');
+  const [userTranscription, setUserTranscription] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<Msg[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [session, setSession] = useState<string>();
+  const [bubbleKey, setBubbleKey] = useState(0);
+  const [audioSource, setAudioSource] = useState<string>();
+  const replyAudio = useRef<HTMLAudioElement | null>(null);
+  const hasSubmitted = useRef(false);
+
+  const loadTextAudio = async (text: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!response.ok) return;
+      const payload = await response.json() as { audio_base64: string; mime_type: string };
+      const source = `data:${payload.mime_type};base64,${payload.audio_base64}`;
+      replyAudio.current = new Audio(source);
+      setAudioSource(source);
+    } catch {
+      // Browser speech remains available from the replay button as a fallback.
+    }
+  };
+
+  const replayCharacter = () => {
+    const audio = replyAudio.current;
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {
+        speechSynthesis.speak(new SpeechSynthesisUtterance(character));
+      });
+      return;
+    }
+    speechSynthesis.speak(new SpeechSynthesisUtterance(character));
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadGreetingAudio = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/greeting-audio`);
+        if (!response.ok) return;
+        const payload = await response.json() as { audio_base64: string; mime_type: string };
+        if (!cancelled && !hasSubmitted.current) {
+          const source = `data:${payload.mime_type};base64,${payload.audio_base64}`;
+          replyAudio.current = new Audio(source);
+          setAudioSource(source);
+        }
+      } catch {
+        // The replay button falls back to the browser voice if TTS is unavailable.
+      }
+    };
+
+    void loadGreetingAudio();
+    return () => { cancelled = true; };
+  }, []);
 
   const submit = async (text: string, audio?: string) => {
     if ((!text && !audio) || loading) return;
+    hasSubmitted.current = true;
+    replyAudio.current = null;
+    setAudioSource(undefined);
     setUser(text || '🎙️ Missatge de veu');
+    setUserTranscription(undefined);
+    setBubbleKey(k => k + 1);
     setLoading(true);
     try {
       const activeSession = session || await createSession(scenario, level);
       if (!session) setSession(activeSession);
       const r = await sendTurn({ session_id: activeSession, scenario, level, input_mode: audio ? 'voice' : 'text', text, audio_base64: audio || null });
       setCharacter(r.reply_text);
+      setUserTranscription(r.transcription || undefined);
       setMood(r.mood);
       setXp(xp + r.xp_delta);
-      setHistory(h => [...h, { role: 'user', text: text || '🎙️ Missatge de veu' }, { role: 'character', text: r.reply_text }]);
+      setHistory(h => [...h, { role: 'user', text: text || '🎙️ Missatge de veu', transcription: r.transcription || undefined }, { role: 'character', text: r.reply_text }]);
       if (r.reply_audio_base64) {
-        const a = new Audio(`data:audio/mpeg;base64,${r.reply_audio_base64}`);
+        const mimeType = r.reply_audio_mime_type || 'audio/mpeg';
+        const source = `data:${mimeType};base64,${r.reply_audio_base64}`;
+        const a = new Audio(source);
+        replyAudio.current = a;
+        setAudioSource(source);
         a.play().catch(() => {});
+      } else {
+        replyAudio.current = null;
+        setAudioSource(undefined);
       }
     } catch {
-      setCharacter("No t'he sentit bé, pots repetir-ho?");
+      const errorMessage = "No t'he sentit bé, pots repetir-ho?";
+      setCharacter(errorMessage);
       setMood('confus');
+      void loadTextAudio(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -362,15 +541,23 @@ function Chat({
 
       {/* Top bar */}
       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
-        <button
-          onClick={onBack}
-          id="chat-back-btn"
-          className="rounded-full bg-white/90 px-4 py-2 font-bold shadow backdrop-blur-sm hover:bg-white transition-colors"
-        >
-          ← Eixir
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            id="chat-back-btn"
+            className="btn-press rounded-full bg-white/90 px-4 py-2 font-bold shadow backdrop-blur-sm hover:bg-white transition-colors"
+          >
+            ← Eixir
+          </button>
+          <span
+            className="rounded-full px-3.5 py-1.5 text-xs font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm"
+            style={{ background: 'rgba(255,255,255,0.92)' }}
+          >
+            {scenario === 'mercat' ? 'El Mercat' : scenario === 'bar' ? 'El Bar' : scenario === 'oficina' ? "L'Oficina" : "L'Ajuntament"}
+          </span>
+        </div>
         <div
-          className="rounded-full px-4 py-2 text-sm font-black shadow backdrop-blur-sm"
+          className="absolute left-1/2 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-black shadow backdrop-blur-sm"
           style={{ background: 'rgba(255,255,255,0.9)' }}
         >
           ⚡ {xp} XP
@@ -378,38 +565,49 @@ function Chat({
         <button
           onClick={() => setShowHistory(true)}
           id="chat-history-btn"
-          className="grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors"
+          className="btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors"
         >
           <MessageCircle size={19} />
         </button>
       </header>
 
-      {/* Character bubble */}
-      <section className="bubble absolute left-5 top-[13%] z-10 max-w-[min(76%,440px)] rounded-3xl bg-white p-5 font-bold shadow-xl text-base">
+      {/* Character bubble with entrance animation */}
+      <section key={`char-${bubbleKey}`} className="bubble-enter bubble absolute left-5 top-[13%] z-10 max-w-[min(76%,440px)] rounded-3xl bg-white p-5 font-bold shadow-xl text-base">
         <p className="leading-relaxed">
           {loading
             ? <span className="opacity-50">El personatge està escrivint…</span>
             : character
           }
         </p>
-        {!loading && (
+        {!loading && <>
           <button
-            onClick={() => speechSynthesis.speak(new SpeechSynthesisUtterance(character))}
-            className="mt-3 flex items-center gap-1 text-sm font-extrabold"
-            style={{ color: '#2CA99B' }}
+            onClick={replayCharacter}
+            className="btn-press mt-3 flex items-center gap-1 text-sm font-extrabold"
+            style={{ color: '#0D9488' }}
           >
             <Volume2 size={15} /> Escolta de nou
           </button>
-        )}
+          {audioSource && (
+            <audio
+              controls
+              preload="auto"
+              src={audioSource}
+              className="mt-2 h-9 w-full max-w-xs"
+              aria-label="Àudio de la resposta"
+            />
+          )}
+        </>}
       </section>
 
-      {/* User bubble */}
+      {/* User bubble with entrance animation */}
       {user && (
         <div
-          className="user-bubble absolute bottom-28 right-5 z-10 max-w-[70%] rounded-3xl p-4 font-bold text-white shadow-lg"
-          style={{ background: '#2CA99B' }}
+          key={`user-${bubbleKey}`}
+          className="user-bubble-enter user-bubble absolute bottom-28 right-5 z-10 max-w-[70%] rounded-3xl p-4 font-bold text-white shadow-lg"
+          style={{ background: '#0D9488' }}
         >
-          {user}
+          <p>{user}</p>
+          {userTranscription && <p className="mt-2 border-t border-white/30 pt-2 text-sm font-normal">Transcripció: {userTranscription}</p>}
         </div>
       )}
 
@@ -419,7 +617,7 @@ function Chat({
         <button
           onClick={onEnd}
           id="chat-end-btn"
-          className="mx-auto mt-3 block rounded-full bg-white/80 px-4 py-2 text-xs font-extrabold backdrop-blur-sm hover:bg-white transition-colors"
+          className="btn-press mx-auto mt-3 block rounded-full bg-white/80 px-4 py-2 text-xs font-extrabold backdrop-blur-sm hover:bg-white transition-colors"
         >
           Acabar conversa
         </button>
@@ -433,11 +631,11 @@ function Chat({
 /* ══════════════════ SUMMARY PAGE ═══════════════════════════════════ */
 function Summary({ xp, onMap, onContinue }: { xp: number; onMap: () => void; onContinue: () => void }) {
   return (
-    <main className="fade-up grid min-h-screen place-items-center p-5" style={{ background: '#FFF9ED' }}>
+    <main className="fade-up grid min-h-screen place-items-center p-5" style={{ background: '#FAFAF9' }}>
       <section className="w-full max-w-lg rounded-[40px] bg-white p-8 text-center shadow-xl">
         <div
           className="mx-auto grid h-20 w-20 place-items-center rounded-full text-4xl"
-          style={{ background: '#FFD98A' }}
+          style={{ background: '#FFE5B4' }}
         >
           🎉
         </div>
@@ -447,9 +645,9 @@ function Summary({ xp, onMap, onContinue }: { xp: number; onMap: () => void; onC
         {/* XP gained */}
         <div
           className="mt-7 rounded-3xl p-5"
-          style={{ background: 'linear-gradient(135deg, #FFF3E0, #FFE8BA)' }}
+          style={{ background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)' }}
         >
-          <b className="text-4xl font-black" style={{ color: '#FF675D' }}>+10 XP</b>
+          <b className="text-4xl font-black" style={{ color: '#F97316' }}>+10 XP</b>
           <p className="mt-1 text-sm font-bold opacity-60">Total: {xp} XP</p>
         </div>
 
@@ -469,16 +667,16 @@ function Summary({ xp, onMap, onContinue }: { xp: number; onMap: () => void; onC
         <button
           onClick={onContinue}
           id="summary-continue-btn"
-          className="mt-7 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #2CA99B, #23877C)' }}
+          className="btn-press mt-7 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90"
+          style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
         >
           Continuar
         </button>
         <button
           onClick={onMap}
           id="summary-map-btn"
-          className="mt-3 font-bold"
-          style={{ color: '#2CA99B' }}
+          className="btn-press mt-3 font-bold"
+          style={{ color: '#0D9488' }}
         >
           Tornar al mapa
         </button>
@@ -501,13 +699,13 @@ function Profile({
   isDemo: boolean;
 }) {
   return (
-    <main className="fade-up" style={{ background: '#FFF9ED', minHeight: '100vh' }}>
-      <OrangeHeader>
+    <main className="fade-up" style={{ background: '#FAFAF9', minHeight: '100vh' }}>
+      <OrangeHeader showOranges={false}>
         <div className="px-5 pb-2">
           <button
             onClick={back}
-            className="font-bold text-sm"
-            style={{ color: '#2CA99B' }}
+            className="btn-press font-bold text-sm"
+            style={{ color: '#0D9488' }}
           >
             ← Tornar al mapa
           </button>
@@ -524,7 +722,7 @@ function Profile({
               value={name}
               onChange={e => setName(e.target.value)}
               id="profile-name"
-              className="mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 font-normal outline-none focus:border-[#2CA99B] transition-colors"
+              className="mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 font-normal outline-none focus:border-[#0D9488] transition-colors"
             />
           </label>
           <label className="block font-extrabold text-sm">
@@ -533,7 +731,7 @@ function Profile({
               value={level}
               onChange={e => setLevel(e.target.value)}
               id="profile-level"
-              className="mt-1 w-full rounded-2xl border-2 border-gray-100 bg-white p-3 font-normal outline-none focus:border-[#2CA99B] transition-colors"
+              className="mt-1 w-full rounded-2xl border-2 border-gray-100 bg-white p-3 font-normal outline-none focus:border-[#0D9488] transition-colors"
             >
               <option value="principiant">Principiant</option>
               <option value="intermedi">Intermedi</option>
@@ -553,7 +751,7 @@ function Profile({
           <button
             onClick={() => confirm('Vols reiniciar el teu progrés?') && location.reload()}
             id="profile-reset-btn"
-            className="flex items-center justify-center gap-2 rounded-2xl border-2 border-coral/20 bg-coral/5 py-3 text-sm font-extrabold text-coral hover:bg-coral/10 transition-colors"
+            className="btn-press flex items-center justify-center gap-2 rounded-2xl border-2 border-coral/20 bg-coral/5 py-3 text-sm font-extrabold text-coral hover:bg-coral/10 transition-colors"
           >
             <RotateCcw size={16} /> Reinicia el progrés
           </button>
@@ -562,7 +760,7 @@ function Profile({
             <button
               onClick={() => confirm('Segur que vols tancar la sessió?') && onLogOut()}
               id="profile-logout-btn"
-              className="flex items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white py-3 text-sm font-extrabold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+              className="btn-press flex items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white py-3 text-sm font-extrabold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
             >
               <LogOut size={16} /> Tanca la sessió
             </button>
@@ -661,32 +859,36 @@ export function App() {
     }
   };
 
-  if (page === 'home')      return <HomePage setPage={setPage} />;
-  if (page === 'auth')      return <AuthPage setPage={setPage} />;
-  if (page === 'dashboard') return <Dashboard name={name} xp={xp} setPage={setPage} onScenario={s => { setScenario(s); setPage('chat'); }} />;
+  if (page === 'home')      return <PageTransition><HomePage setPage={setPage} /></PageTransition>;
+  if (page === 'auth')      return <PageTransition><AuthPage setPage={setPage} /></PageTransition>;
+  if (page === 'dashboard') return <PageTransition><Dashboard name={name} xp={xp} setPage={setPage} onScenario={s => { setScenario(s); setPage('chat'); }} /></PageTransition>;
   if (page === 'profile') {
     return (
-      <Profile
-        name={name}
-        setName={updateProfileName}
-        level={level}
-        setLevel={updateProfileLevel}
-        xp={xp}
-        back={() => setPage('dashboard')}
-        onLogOut={handleLogOut}
-        isDemo={!user}
-      />
+      <PageTransition>
+        <Profile
+          name={name}
+          setName={updateProfileName}
+          level={level}
+          setLevel={updateProfileLevel}
+          xp={xp}
+          back={() => setPage('dashboard')}
+          onLogOut={handleLogOut}
+          isDemo={!user}
+        />
+      </PageTransition>
     );
   }
-  if (page === 'summary')   return <Summary xp={xp} onMap={() => setPage('dashboard')} onContinue={() => setPage('chat')} />;
+  if (page === 'summary')   return <PageTransition><Summary xp={xp} onMap={() => setPage('dashboard')} onContinue={() => setPage('chat')} /></PageTransition>;
   return (
-    <Chat
-      scenario={scenario}
-      level={level}
-      xp={xp}
-      setXp={setXp}
-      onEnd={() => setPage('summary')}
-      onBack={() => setPage('dashboard')}
-    />
+    <PageTransition>
+      <Chat
+        scenario={scenario}
+        level={level}
+        xp={xp}
+        setXp={setXp}
+        onEnd={() => setPage('summary')}
+        onBack={() => setPage('dashboard')}
+      />
+    </PageTransition>
   );
 }

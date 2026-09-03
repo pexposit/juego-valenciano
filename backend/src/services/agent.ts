@@ -1,4 +1,131 @@
-import { z } from 'zod'; import { scenarios } from '../scenarios/index.js'; import type { ScenarioKey } from '../scenarios/types.js';
-const outputSchema=z.object({reply_text:z.string().min(1),mood:z.enum(['neutral','content','confus']),detected_level_signal:z.enum(['below','on','above']),error_flags:z.array(z.string()).max(4)}); export type AgentReply=z.infer<typeof outputSchema>;
-const jsonSchema={name:'parlaval_reply',strict:true,schema:{type:'object',properties:{reply_text:{type:'string'},mood:{type:'string',enum:['neutral','content','confus']},detected_level_signal:{type:'string',enum:['below','on','above']},error_flags:{type:'array',items:{type:'string'}}},required:['reply_text','mood','detected_level_signal','error_flags'],additionalProperties:false}};
-export async function replyFromAgent(args:{scenario:ScenarioKey;level:string;message:string;history:{role:string;content_text:string}[]}):Promise<AgentReply>{const key=process.env.MISTRAL_API_KEY;if(!key)throw new Error('MISTRAL_API_KEY no està configurada');const def=scenarios[args.scenario];const context=args.history.map(m=>`${m.role==='character'?def.character:'Aprenent'}: ${m.content_text}`).join('\n');const response=await fetch('https://api.mistral.ai/v1/chat/completions',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({model:process.env.MISTRAL_MODEL||'mistral-small-latest',max_tokens:450,temperature:0.35,response_format:{type:'json_schema',json_schema:jsonSchema},messages:[{role:'system',content:`${def.systemPrompt}\nNivell actual: ${args.level}. Respon sempre amb l'esquema JSON indicat.`},{role:'user',content:`Context recent:\n${context||'(inici)'}\n\nAprenent: ${args.message}`} ]})});if(!response.ok)throw new Error(`Mistral API error: ${response.status}`);const payload=await response.json() as {choices?:{message?:{content?:string}}[]};const content=payload.choices?.[0]?.message?.content;if(!content)throw new Error('Mistral no ha retornat contingut');return outputSchema.parse(JSON.parse(content))}
+import { z } from 'zod';
+import { scenarios } from '../scenarios/index.js';
+import type { ScenarioKey } from '../scenarios/types.js';
+
+const outputSchema = z.object({
+  reply_text: z.string().min(1),
+  mood: z.enum(['neutral', 'content', 'confus']),
+  detected_level_signal: z.enum(['below', 'on', 'above']),
+  error_flags: z.array(z.string()).max(4),
+});
+
+export type AgentReply = z.infer<typeof outputSchema>;
+
+const jsonSchema = {
+  name: 'parlaval_reply',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      reply_text: { type: 'string' },
+      mood: { type: 'string', enum: ['neutral', 'content', 'confus'] },
+      detected_level_signal: { type: 'string', enum: ['below', 'on', 'above'] },
+      error_flags: { type: 'array', items: { type: 'string' } },
+    },
+    required: ['reply_text', 'mood', 'detected_level_signal', 'error_flags'],
+    additionalProperties: false,
+  },
+};
+
+const OPENROUTER_MODELS = [
+  process.env.OPENROUTER_MODEL || 'minimax/minimax-m3:free',
+  'minimax/minimax-m3:free',
+  'minimax/minimax-m2.7:free',
+  'google/gemma-4-31b-it:free',
+].filter((model, index, models) => models.indexOf(model) === index);
+
+export async function replyFromAgent(args: {
+  scenario: ScenarioKey;
+  level: string;
+  message: string;
+  history: { role: string; content_text: string }[];
+}): Promise<AgentReply> {
+  const key = process.env.OR_API_KEY;
+  if (!key) throw new Error('OR_API_KEY no està configurada');
+
+  const def = scenarios[args.scenario];
+  const context = args.history
+    .map((m) => `${m.role === 'character' ? def.character : 'Aprenent'}: ${m.content_text}`)
+    .join('\n');
+
+  let lastError = 'OpenRouter no ha retornat una resposta vàlida';
+  for (const model of OPENROUTER_MODELS) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.OPENROUTER_SITE_URL || 'http://localhost:5173',
+          'X-OpenRouter-Title': process.env.OPENROUTER_APP_NAME || 'ParlaVal',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 450,
+          temperature: 0.35,
+          response_format: { type: 'json_object' },
+          messages: [
+            {
+              role: 'system',
+              content: `${def.systemPrompt}\nNivell actual: ${args.level}. Respon únicament amb JSON vàlid i usa exactament les claus reply_text, mood, detected_level_signal i error_flags.`,
+            },
+            {
+              role: 'user',
+              content: `Context recent:\n${context || '(inici)'}\n\nAprenent: ${args.message}`,
+            },
+          ],
+        }),
+        });
+        if (!response.ok) {
+          lastError = `OpenRouter API error (${model}): ${response.status}`;
+          continue;
+        }
+        const payload = (await response.json()) as { choices?: { message?: { content?: string } }[] };
+        const content = payload.choices?.[0]?.message?.content;
+        if (!content) {
+          lastError = `OpenRouter (${model}) no ha retornat contingut`;
+          continue;
+        }
+        return outputSchema.parse(parseJsonResponse(content));
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : lastError;
+      }
+    }
+  }
+  throw new Error(lastError);
+}
+
+function parseJsonResponse(content: string): unknown {
+  const normalized = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const value = JSON.parse(normalized) as Record<string, unknown>;
+  if (typeof value.mood === 'string') {
+    const mood = value.mood.toLowerCase();
+    value.mood = {
+      friendly: 'content',
+      happy: 'content',
+      amable: 'content',
+      alegre: 'content',
+      confused: 'confus',
+      confós: 'confus',
+    }[mood] || mood;
+  }
+  if (typeof value.detected_level_signal === 'string') {
+    const levelSignal = value.detected_level_signal.toLowerCase();
+    value.detected_level_signal = {
+      beginner: 'below',
+      principiant: 'below',
+      intermediate: 'on',
+      intermedi: 'on',
+      'al nivell': 'on',
+      'at level': 'on',
+      advanced: 'above',
+      avancat: 'above',
+      'per damunt': 'above',
+      'por encima': 'above',
+      'per davall': 'below',
+      'por debajo': 'below',
+    }[levelSignal] || levelSignal;
+  }
+  return value;
+}

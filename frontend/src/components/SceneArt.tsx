@@ -5,15 +5,15 @@ const moodFace = (mood: Mood, part: 'eyes' | 'eyebrows' | 'mouth') => {
     if (mood === 'confus') {
       return (
         <>
-          <path d="M 175 202 Q 185 197 195 204" fill="none" stroke="#263747" strokeWidth="3" strokeLinecap="round" />
-          <path d="M 205 204 Q 215 206 225 198" fill="none" stroke="#263747" strokeWidth="3" strokeLinecap="round" />
+          <path d="M 175 202 Q 185 197 195 204" fill="none" stroke="#263747" strokeWidth="3" strokeLinecap="round" className="eyebrow-subtle" />
+          <path d="M 205 204 Q 215 206 225 198" fill="none" stroke="#263747" strokeWidth="3" strokeLinecap="round" className="eyebrow-subtle" />
         </>
       );
     }
     return (
       <>
-        <path d="M 175 198 Q 185 194 195 199" fill="none" stroke="#263747" strokeWidth="3" strokeLinecap="round" />
-        <path d="M 205 199 Q 215 194 225 198" fill="none" stroke="#263747" strokeWidth="3" strokeLinecap="round" />
+        <path d="M 175 198 Q 185 194 195 199" fill="none" stroke="#263747" strokeWidth="3" strokeLinecap="round" className="eyebrow-subtle" />
+        <path d="M 205 199 Q 215 194 225 198" fill="none" stroke="#263747" strokeWidth="3" strokeLinecap="round" className="eyebrow-subtle" />
       </>
     );
   }
@@ -96,27 +96,29 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
             {/* Awning frills */}
             <path d="M 30 115 Q 50 130 70 115 Q 90 130 110 115 Q 130 130 150 115 Q 170 130 190 115 Q 210 130 230 115 Q 250 130 270 115 Q 290 130 310 115 Q 330 130 350 115 Q 370 130 390 115" fill="none" stroke="#77B255" strokeWidth="14" strokeLinecap="round" />
 
-            {/* CHARACTER: Vicent (The Orange Vendor) */}
-            <g className="float" style={{ animationDuration: '3.6s' }}>
+              {/* CHARACTER: Vicent (The Orange Vendor) */}
+              <g className="float mood-transition" style={{ animationDuration: '3.6s' }} key={`mercat-${mood}`}>
               {/* Body */}
-              <path d="M 135 390 Q 200 235 265 390 Z" fill="#F0ECE1" />
+              <path d="M 135 390 Q 200 120 265 390 Z" fill="#F0ECE1" />
               {/* Green Apron */}
-              <path d="M 160 305 L 240 305 L 252 390 L 148 390 Z" fill="#3D7A34" />
-              <path d="M 175 260 L 175 305 M 225 260 L 225 305" stroke="#263747" strokeWidth="4" />
+              <path d="M 160 320 L 240 320 L 252 405 L 148 405 Z" fill="#3D7A34" />
+              <path d="M 175 275 L 175 320 M 225 275 L 225 320" stroke="#263747" strokeWidth="4" />
               {/* Neck */}
               <rect x="187" y="244" width="26" height="20" fill="#F8C9A1" rx="4" />
               {/* Head */}
               <circle cx="200" cy="215" r="38" fill="#F8C9A1" />
               {/* Hair */}
-              <path d="M 162 215 C 162 170, 238 170, 238 215 C 232 200, 168 200, 162 215" fill="#423124" />
+              <path d="M 162 215 C 162 158, 238 158, 238 215 C 230 193, 170 193, 162 215" fill="#423124" />
               {/* Valencian headband (mocador) */}
               <path d="M 160 192 Q 200 178 240 192 L 242 201 Q 200 187 158 201 Z" fill="#E63946" />
               <path d="M 160 192 L 152 205 L 163 208 Z" fill="#E63946" /> {/* knot */}
 
               {/* Eyes */}
-              <g className="blink-eyes">
-                <circle cx="186" cy="208" r="4.5" fill="#263747" />
-                <circle cx="214" cy="208" r="4.5" fill="#263747" />
+              <g className="gaze">
+                <g className="blink-eyes">
+                  <circle cx="186" cy="208" r="4.5" fill="#263747" />
+                  <circle cx="214" cy="208" r="4.5" fill="#263747" />
+                </g>
               </g>
 
               {/* Eyebrows & Mouth */}
@@ -186,24 +188,26 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
             </g>
 
             {/* CHARACTER: Maria (The Barista) */}
-            <g className="float" style={{ animationDuration: '3.8s' }}>
-              <path d="M 135 390 Q 200 235 265 390 Z" fill="#3D3D3D" />
+            <g className="float mood-transition" style={{ animationDuration: '3.8s' }} key={`bar-${mood}`}>
+              <path d="M 135 390 Q 200 120 265 390 Z" fill="#3D3D3D" />
               {/* Red Apron */}
-              <path d="M 160 305 L 240 305 L 252 390 L 148 390 Z" fill="#B23A22" />
-              <path d="M 180 260 L 180 305 M 220 260 L 220 305" stroke="#FFF" strokeWidth="3.5" />
+              <path d="M 160 320 L 240 320 L 252 405 L 148 405 Z" fill="#B23A22" />
+              <path d="M 180 270 L 180 320 M 220 270 L 220 320" stroke="#FFF" strokeWidth="3.5" />
               {/* Neck */}
               <rect x="187" y="244" width="26" height="20" fill="#F4D3B5" rx="4" />
               {/* Head */}
               <circle cx="200" cy="215" r="38" fill="#F4D3B5" />
               {/* Hair (Black bun with flower) */}
-              <path d="M 162 215 C 162 170, 238 170, 238 215 C 230 195, 170 195, 162 215" fill="#1A1510" />
+              <path d="M 162 215 C 162 158, 238 158, 238 215 C 230 195, 170 195, 162 215" fill="#1A1510" />
               <circle cx="230" cy="180" r="12" fill="#1A1510" /> {/* Bun */}
               <path d="M 235 178 L 241 173 M 238 184 L 245 186" stroke="#FFF" strokeWidth="4" strokeLinecap="round" /> {/* flower decoration */}
 
               {/* Eyes */}
-              <g className="blink-eyes">
-                <circle cx="186" cy="210" r="4" fill="#263747" />
-                <circle cx="214" cy="210" r="4" fill="#263747" />
+              <g className="gaze">
+                <g className="blink-eyes">
+                  <circle cx="186" cy="210" r="4" fill="#263747" />
+                  <circle cx="214" cy="210" r="4" fill="#263747" />
+                </g>
               </g>
 
               {/* Eyebrows & Mouth */}
@@ -275,8 +279,8 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
             </g>
 
             {/* CHARACTER: Joan (The Coworker) */}
-            <g className="float" style={{ animationDuration: '3.4s' }}>
-              <path d="M 135 390 Q 200 235 265 390 Z" fill="#457B9D" />
+            <g className="float mood-transition" style={{ animationDuration: '3.4s' }} key={`oficina-${mood}`}>
+              <path d="M 135 390 Q 200 120 265 390 Z" fill="#457B9D" />
               <rect x="195" y="295" width="10" height="25" fill="#FFF" /> {/* Tie */}
               <path d="M 190 320 L 200 345 L 210 320 Z" fill="#E63946" />
               {/* Neck */}
@@ -284,12 +288,14 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
               {/* Head */}
               <circle cx="200" cy="215" r="38" fill="#F5D3B5" />
               {/* Hair */}
-              <path d="M 162 212 C 162 170, 238 170, 238 212 C 238 185, 162 185, 162 212" fill="#5C3D2E" />
+              <path d="M 162 212 C 162 158, 238 158, 238 212 C 238 185, 162 185, 162 212" fill="#5C3D2E" />
 
               {/* Eyes */}
-              <g className="blink-eyes">
-                <circle cx="186" cy="210" r="4.5" fill="#263747" />
-                <circle cx="214" cy="210" r="4.5" fill="#263747" />
+              <g className="gaze">
+                <g className="blink-eyes">
+                  <circle cx="186" cy="210" r="4.5" fill="#263747" />
+                  <circle cx="214" cy="210" r="4.5" fill="#263747" />
+                </g>
               </g>
 
               {/* Stylish glasses */}
@@ -366,8 +372,8 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
             </g>
 
             {/* CHARACTER: Amparo (The Tour Guide) */}
-            <g className="float" style={{ animationDuration: '3.7s' }}>
-              <path d="M 135 390 Q 200 235 265 390 Z" fill="#1D3557" />
+            <g className="float mood-transition" style={{ animationDuration: '3.7s' }} key={`ajuntament-${mood}`}>
+              <path d="M 135 390 Q 200 120 265 390 Z" fill="#1D3557" />
               {/* Yellow/Red Scarf */}
               <path d="M 175 295 Q 200 325 225 295 Z" fill="#FFC857" />
               <path d="M 182 308 L 175 345 M 218 308 L 225 345" stroke="#E63946" strokeWidth="3" />
@@ -376,15 +382,17 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
               {/* Head */}
               <circle cx="200" cy="215" r="38" fill="#F8C9A1" />
               {/* Short blonde hair */}
-              <path d="M 160 215 C 160 170, 240 170, 240 215 C 235 185, 165 185, 160 215" fill="#F1C40F" />
+              <path d="M 160 215 C 160 158, 240 158, 240 215 C 235 185, 165 185, 160 215" fill="#F1C40F" />
               {/* Headset microphone */}
               <path d="M 230 205 Q 235 225 212 228" fill="none" stroke="#3D3D3D" strokeWidth="2.5" />
               <circle cx="210" cy="228" r="3" fill="#3D3D3D" />
 
               {/* Eyes */}
-              <g className="blink-eyes">
-                <circle cx="186" cy="210" r="4" fill="#263747" />
-                <circle cx="214" cy="210" r="4" fill="#263747" />
+              <g className="gaze">
+                <g className="blink-eyes">
+                  <circle cx="186" cy="210" r="4" fill="#263747" />
+                  <circle cx="214" cy="210" r="4" fill="#263747" />
+                </g>
               </g>
 
               {/* Eyebrows & Mouth */}
@@ -411,13 +419,6 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
         )}
       </svg>
 
-      {/* Top Left Localization Label Overlay */}
-      <span
-        className="absolute left-4 top-4 rounded-full px-3.5 py-1.5 text-xs font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm"
-        style={{ background: 'rgba(255,255,255,0.92)' }}
-      >
-        📍 {scenario === 'mercat' ? 'El Mercat' : scenario === 'bar' ? 'El Bar' : scenario === 'oficina' ? "L'Oficina" : "L'Ajuntament"}
-      </span>
     </div>
   );
 }
