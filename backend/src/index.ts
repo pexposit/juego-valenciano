@@ -36,6 +36,13 @@ const turnSchema = z.object({
   })).max(50).optional().default([]),
 });
 const SCENARIO_XP = 100;
+// Cada escenari té el seu personatge amb una veu TTS pròpia.
+const VOICE_BY_SCENARIO: Record<'mercat' | 'bar' | 'oficina' | 'ajuntament', string> = {
+  mercat: 'lluc',
+  bar: 'gina',
+  oficina: 'lluc',
+  ajuntament: 'gina',
+};
 
 /** Helper to get the Supabase client cast to `any` so it works without generated types */
 function db(userId?: string) {
@@ -49,8 +56,12 @@ function db(userId?: string) {
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // The first greeting must be audible even when the conversation provider is unavailable.
-app.get('/api/greeting-audio', async (_req, res) => {
-  const audio = await tts.synthesize('Bon dia! Com et puc ajudar hui?');
+app.get('/api/greeting-audio', async (req, res) => {
+  const scenario = typeof req.query.scenario === 'string' ? req.query.scenario : undefined;
+  const voice = scenario && scenario in VOICE_BY_SCENARIO
+    ? VOICE_BY_SCENARIO[scenario as keyof typeof VOICE_BY_SCENARIO]
+    : undefined;
+  const audio = await tts.synthesize('Bon dia! Com et puc ajudar hui?', voice);
   if (!audio) return res.status(503).json({ error: 'No hem pogut generar l’àudio' });
   res.json({
     audio_base64: audio.audio.toString('base64'),
@@ -59,8 +70,15 @@ app.get('/api/greeting-audio', async (_req, res) => {
 });
 
 app.post('/api/tts', async (req, res) => {
-  const { text } = z.object({ text: z.string().min(1).max(500) }).parse(req.body);
-  const audio = await tts.synthesize(text);
+  const { text, scenario, voice } = z.object({
+    text: z.string().min(1).max(500),
+    scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament']).optional(),
+    voice: z.string().min(1).max(50).optional(),
+  }).parse(req.body);
+  const audio = await tts.synthesize(
+    text,
+    voice ?? (scenario ? VOICE_BY_SCENARIO[scenario] : undefined),
+  );
   if (!audio) return res.status(503).json({ error: 'No hem pogut generar l’àudio' });
   res.json({
     audio_base64: audio.audio.toString('base64'),
@@ -142,7 +160,7 @@ app.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
       history,
     });
 
-    const audio = await tts.synthesize(reply.reply_text);
+    const audio = await tts.synthesize(reply.reply_text, VOICE_BY_SCENARIO[data.scenario]);
     const xpDelta = 10;
 
     // Persist to database (skip in demo mode)
