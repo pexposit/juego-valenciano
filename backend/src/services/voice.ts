@@ -6,7 +6,7 @@ export interface SpeechToText {
 export type SpeechAudio = { audio: Buffer; mimeType: string };
 
 export interface TextToSpeech {
-  synthesize(text: string): Promise<SpeechAudio | null>
+  synthesize(text: string, voice?: string): Promise<SpeechAudio | null>
 }
 
 export class UnconfiguredStt implements SpeechToText {
@@ -16,129 +16,102 @@ export class UnconfiguredStt implements SpeechToText {
 }
 
 /**
- * Speech-to-text using the Hugging Face Inference API.
- * The default model is BSC-LT's Spanish/Catalan code-switching Whisper model.
+ * Speech-to-text via an OpenAI-compatible /v1/audio/transcriptions endpoint.
+ * El servidor DeepLab de la UJI executa el model matxa (whisper-1) i retorna el JSON { text }.
+ * Exemple: curl -X POST http://deeplab.lsi.uji.es:11000/v1/audio/transcriptions \
+ *   -F model=whisper-1 -F language=ca -F file=audio.wav
  */
-export class HuggingFaceWhisperStt implements SpeechToText {
-  private readonly model = process.env.HF_STT_MODEL || 'BSC-LT/whisper-timestamped-cs';
-  private readonly endpoint = (process.env.HF_STT_ENDPOINT
-    || 'https://bsc-lt-asr-inference.hf.space').replace(/\/$/, '');
+export class MatxaStt implements SpeechToText {
+  private readonly baseUrl = (process.env.MATXA_STT_URL
+    || process.env.MATXA_TTS_URL
+    || 'http://deeplab.lsi.uji.es:11000').replace(/\/$/, '');
+  private readonly model = process.env.MATXA_STT_MODEL || 'whisper-1';
+  private readonly language = process.env.MATXA_STT_LANGUAGE || 'ca';
 
   async transcribe(audio: Buffer, mimeType = 'audio/webm'): Promise<string> {
-    const token = process.env.HF_TOKEN || process.env.HUGGINGFACE_TOKEN;
-    if (!token) throw new Error('Falta HF_TOKEN per al transcriptor de veu');
-
     const form = new FormData();
-    form.append('files', new Blob([new Uint8Array(audio)], { type: mimeType }), 'input.webm');
-    const upload = await fetch(`${this.endpoint}/gradio_api/upload`, {
-      method: 'POST', headers: { authorization: `Bearer ${token}` }, body: form,
-      signal: AbortSignal.timeout(120_000),
-    });
-    if (!upload.ok) throw new Error(`Hugging Face ASR no ha pogut pujar l'àudio (${upload.status})`);
-    const [path] = await upload.json() as string[];
-    const response = await fetch(`${this.endpoint}/gradio_api/call/predict`, {
+    form.append('model', this.model);
+    form.append('language', this.language);
+    form.append(
+      'file',
+      new Blob([new Uint8Array(audio)], { type: mimeType }),
+      filenameFromMimeType(mimeType),
+    );
+
+    const response = await fetch(`${this.baseUrl}/v1/audio/transcriptions`, {
       method: 'POST',
-      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ data: [{ path, orig_name: 'input.webm' }] }),
+      body: form,
       signal: AbortSignal.timeout(120_000),
     });
-    const { event_id: eventId } = await response.json() as { event_id?: string };
-    if (!response.ok || !eventId) throw new Error(`Hugging Face ASR ha respost ${response.status}`);
-    const resultResponse = await fetch(`${this.endpoint}/gradio_api/call/predict/${eventId}`, {
-      headers: { authorization: `Bearer ${token}`, accept: 'text/event-stream' },
-      signal: AbortSignal.timeout(120_000),
-    });
-    const stream = await resultResponse.text();
-    const complete = stream.match(/event: complete\s*\ndata: (.+)/);
-    if (!complete) throw new Error('Hugging Face ASR no ha finalitzat la transcripció');
-    const output = JSON.parse(complete[1]) as [string];
-    const text = output[0];
-    if (!text?.trim()) throw new Error('Hugging Face STT no ha retornat text');
-    return text.trim();
+    if (!response.ok) throw new Error(`Matxa STT ha respost ${response.status}`);
+
+    const body = await response.json() as { text?: string };
+    const text = body.text?.trim();
+    if (!text) throw new Error('Matxa STT no ha retornat text');
+    return text;
   }
 }
 
-type GradioFile = { path?: string; url?: string | null };
+/** Deriva un nom de fitxer adequat a partir del MIME type enviat pel navegador. */
+function filenameFromMimeType(mimeType: string): string {
+  const extensionByMime: Record<string, string> = {
+    'audio/webm': 'webm',
+    'audio/wav': 'wav',
+    'audio/x-wav': 'wav',
+    'audio/wave': 'wav',
+    'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
+    'audio/ogg': 'ogg',
+    'audio/opus': 'ogg',
+    'audio/mp4': 'm4a',
+    'audio/x-m4a': 'm4a',
+  };
+  return `audio.${extensionByMime[mimeType.toLowerCase()] || 'webm'}`;
+}
 
 /**
- * Catalan TTS served by Projecte Aina's Matxa + alVoCat Gradio Space.
- * The Space queues generations and returns an SSE stream containing the output file.
+ * Catalan TTS via an OpenAI-compatible /v1/audio/speech endpoint.
+ * El servidor DeepLab de la UJI executa el model matxa-tts i retorna el WAV directament.
  */
-export class MatxaAlvocatTts implements TextToSpeech {
-  private readonly baseUrl = (process.env.MATXA_ALVOCAT_TTS_URL
-    || 'https://projecte-aina-matxa-alvocat-tts-ca.hf.space').replace(/\/$/, '');
+export class MatxaTts implements TextToSpeech {
+  private readonly baseUrl = (process.env.MATXA_TTS_URL
+    || 'http://deeplab.lsi.uji.es:11000').replace(/\/$/, '');
+  private readonly model = process.env.MATXA_TTS_MODEL || 'matxa-tts';
+  private readonly voice = process.env.MATXA_TTS_VOICE || 'gina';
 
-  async synthesize(text: string): Promise<SpeechAudio | null> {
+  async synthesize(text: string, voice?: string): Promise<SpeechAudio | null> {
     try {
-      return await this.generate(text, 'valencia', 'gina');
-    } catch (valenciaError) {
-      // The public Space sometimes advertises Valencian voices that its running
-      // replica cannot serve. Its default Balearic voice is a reliable fallback.
-      console.warn('Veu valenciana de Matxa Alvocat no disponible; s’usa la veu alternativa:', valenciaError instanceof Error ? valenciaError.message : valenciaError);
-      try {
-        return await this.generate(text, 'balear', 'quim');
-      } catch (error) {
-        // TTS must not prevent the learner from receiving the text response.
-        console.warn('Matxa Alvocat TTS no disponible:', error instanceof Error ? error.message : error);
-        return null;
-      }
-    }
-  }
-
-  private async generate(text: string, accent: string, speaker: string): Promise<SpeechAudio> {
-    const start = await fetch(`${this.baseUrl}/gradio_api/call/predict`, {
+      const response = await fetch(`${this.baseUrl}/v1/audio/speech`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          data: [text, accent, speaker, 0.2, 0.89],
+          model: this.model,
+          input: text,
+          voice: voice ?? this.voice,
+          response_format: 'wav',
+          language: 'ca-es',
         }),
-        signal: AbortSignal.timeout(30_000),
+        signal: AbortSignal.timeout(60_000),
       });
-    if (!start.ok) throw new Error(`Matxa Alvocat ha respost ${start.status}`);
+      if (!response.ok) throw new Error(`Matxa TTS ha respost ${response.status}`);
 
-    const { event_id: eventId } = await start.json() as { event_id?: string };
-    if (!eventId) throw new Error('Matxa Alvocat no ha retornat cap identificador de feina');
+      const speechAudio = Buffer.from(await response.arrayBuffer());
+      if (speechAudio.length === 0) throw new Error('Matxa TTS ha retornat un àudio buit');
 
-    const result = await fetch(`${this.baseUrl}/gradio_api/call/predict/${eventId}`, {
-      headers: { accept: 'text/event-stream' },
-      signal: AbortSignal.timeout(90_000),
-    });
-    if (!result.ok) throw new Error(`No s'ha pogut recollir l'àudio (${result.status})`);
-
-    const audioFile = extractGradioAudio(await result.text(), this.baseUrl);
-    if (!audioFile) throw new Error('Matxa Alvocat no ha generat cap fitxer d’àudio');
-
-    const audioResponse = await fetch(audioFile, { signal: AbortSignal.timeout(30_000) });
-    if (!audioResponse.ok) throw new Error(`No s'ha pogut descarregar l'àudio (${audioResponse.status})`);
-
-    const audio = Buffer.from(await audioResponse.arrayBuffer());
-    const responseMimeType = audioResponse.headers.get('content-type')?.split(';')[0];
-    return {
-      audio,
-      // Gradio serves the generated WAV as application/octet-stream. Infer its
-      // actual media type so browsers can decode the base64 response.
-      mimeType: responseMimeType && responseMimeType !== 'application/octet-stream'
-        ? responseMimeType
-        : isWav(audio) ? 'audio/wav' : 'audio/mpeg',
-    };
+      const responseMimeType = response.headers.get('content-type')?.split(';')[0];
+      return {
+        audio: speechAudio,
+        mimeType: responseMimeType && responseMimeType !== 'application/octet-stream'
+          ? responseMimeType
+          : 'audio/wav',
+      };
+    } catch (error) {
+      // TTS must not prevent the learner from receiving the text response.
+      console.warn('Matxa TTS no disponible:', error instanceof Error ? error.message : error);
+      return null;
+    }
   }
 }
 
-function isWav(audio: Buffer): boolean {
-  return audio.subarray(0, 4).toString('ascii') === 'RIFF'
-    && audio.subarray(8, 12).toString('ascii') === 'WAVE';
-}
-
-function extractGradioAudio(stream: string, baseUrl: string): string | null {
-  const complete = stream.match(/event: complete\s*\ndata: (.+)/);
-  if (!complete) return null;
-
-  const files = JSON.parse(complete[1]) as GradioFile[];
-  const file = files[0];
-  if (!file) return null;
-  if (file.url) return file.url;
-  return file.path ? new URL(file.path, baseUrl).toString() : null;
-}
-
-export const stt: SpeechToText = new HuggingFaceWhisperStt();
-export const tts: TextToSpeech = new MatxaAlvocatTts();
+export const stt: SpeechToText = new MatxaStt();
+export const tts: TextToSpeech = new MatxaTts();

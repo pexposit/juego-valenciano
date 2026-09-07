@@ -450,7 +450,7 @@ function Chat({
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, scenario }),
       });
       if (!response.ok) return;
       const payload = await response.json() as { audio_base64: string; mime_type: string };
@@ -479,7 +479,7 @@ function Chat({
 
     const loadGreetingAudio = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/greeting-audio`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/greeting-audio?scenario=${scenario}`);
         if (!response.ok) return;
         const payload = await response.json() as { audio_base64: string; mime_type: string };
         if (!cancelled && !hasSubmitted.current) {
