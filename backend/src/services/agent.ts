@@ -28,7 +28,7 @@ const jsonSchema = {
 };
 
 const OPENAI_MODELS = [
-  process.env.OPENAI_MODEL || 'luna',
+  process.env.OPENAI_MODEL || 'gpt-5.6-luna',
   'gpt-4o-mini',
   'gpt-4o',
 ].filter((model, index, models) => models.indexOf(model) === index);
