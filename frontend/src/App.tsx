@@ -608,7 +608,7 @@ function Chat({
       {user && (
         <div
           key={`user-${bubbleKey}`}
-          className="user-bubble-enter user-bubble absolute bottom-28 right-5 z-10 max-w-[70%] rounded-3xl p-4 font-bold text-white shadow-lg"
+          className="user-bubble-enter user-bubble absolute bottom-36 right-5 z-10 max-w-[70%] rounded-3xl p-4 font-bold text-white shadow-lg"
           style={{ background: '#0D9488' }}
         >
           <p>{user}</p>
