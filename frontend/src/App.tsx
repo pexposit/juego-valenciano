@@ -6,7 +6,7 @@ import {
 import { SceneArt } from './components/SceneArt';
 import { VoiceInput } from './components/VoiceInput';
 import { HistoryModal, type Msg } from './components/HistoryModal';
-import { createSession, sendTurn } from './lib/api';
+import { createSession, sendTurn, type HistoryItem } from './lib/api';
 import { supabase } from './lib/supabase';
 import type { Mood, Scenario } from './lib/types';
 
@@ -508,7 +508,12 @@ function Chat({
     try {
       const activeSession = session || await createSession(scenario, level);
       if (!session) setSession(activeSession);
-      const r = await sendTurn({ session_id: activeSession, scenario, level, input_mode: audio ? 'voice' : 'text', text, audio_base64: audio || null });
+      // El personatge ha de recordar el que s'ha dit: li enviem el context de la
+      // conversa actual (el primer missatge inclou el salut inicial del personatge).
+      const context: HistoryItem[] = history.length > 0
+        ? history.map((m) => ({ role: m.role, content_text: m.text }))
+        : [{ role: 'character', content_text: character }];
+      const r = await sendTurn({ session_id: activeSession, scenario, level, input_mode: audio ? 'voice' : 'text', text, audio_base64: audio || null, history: context });
       setCharacter(r.reply_text);
       setUserTranscription(r.transcription || undefined);
       setMood(r.mood);

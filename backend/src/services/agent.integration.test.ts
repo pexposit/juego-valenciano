@@ -1,5 +1,7 @@
 /**
- * Pruebas de INTEGRACIÓN reales contra la API de OpenAI (18 llamadas).
+ * Pruebas de INTEGRACIÓN reales contra la API de OpenAI (unes 32 llamadas
+ * pagades en total). Tres suites: casos d'un sol torn, converses multi-torn
+ * amb `history` i prompts hostils (tot amb crides reals a la API).
  *
  * NO simulan nada: cada test ejecuta `replyFromAgent`, que hace una
  * llamada HTTP real a `https://api.openai.com/v1/chat/completions` con
@@ -10,13 +12,14 @@
  * comiat) i comprova que el mood i el detected_level_signal resultants
  * siguin coherents amb l'estat induït.
  *
- * Advertencia: consume créditos reales (una llamada por caso, 18 en total).
+ * Advertencia: consume créditos reales (una llamada por caso).
  * Si no hi ha OPENAI_API_KEY, tota la suite se salta automàticament.
  */
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { replyFromAgent } from './agent.js';
+import type { ScenarioKey } from '../scenarios/types.js';
 
 // Carga las variables del fichero .env del backend (ruta absoluta robusta).
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
@@ -37,6 +40,24 @@ type Case = {
   signal?: 'below' | 'on' | 'above';
   /** si és un cas d'error, valida que el model assenyale algun problema */
   error?: boolean;
+};
+/** Caso de conversa con historial real (contexto de varios turnos). */
+type HistoryCase = {
+  name: string;
+  scenario: ScenarioKey;
+  level: string;
+  history: { role: 'user' | 'character'; content_text: string }[];
+  message: string;
+  mood?: 'neutral' | 'content' | 'confus';
+  signal?: 'below' | 'on' | 'above';
+  error?: boolean;
+  /**
+   * Si está definido, al menos una de estas palabras debe aparecer en
+   * reply_text; sirve para comprobar que el modelo mantiene el tema
+   * a lo largo de la conversación (listas amplias para evitar falsos
+   * negativos).
+   */
+  keywords?: string[];
 };
 
 const CASES: Case[] = [
@@ -191,9 +212,47 @@ const CASES: Case[] = [
     message: 'Ara me\'n vaig, fins demà!',
     mood: 'content',
   },
+// ── EXTENSIÓ: més combinacions escenari×nivell ──
+  {
+    name: 'mercat · principiant · demanar fruita senzilla',
+    scenario: 'mercat',
+    level: 'principiant',
+    message: 'Bon dia, hui la fruita està bona? Voldria comprar taronges.',
+    mood: 'content',
+    signal: 'on',
+  },
+  {
+    name: 'mercat · principiant · dubte davant el mostrador',
+    scenario: 'mercat',
+    level: 'principiant',
+    message: 'Perdona, no sé quina fruita triar, què em recomanes?',
+    mood: 'confus',
+  },
+  {
+    name: 'bar · intermedi · triar entre els vins de la casa',
+    scenario: 'bar',
+    level: 'intermedi',
+    message: "M'agradaria un vi de la casa, quin teniu obert?",
+    mood: 'neutral',
+  },
+  {
+    name: 'ajuntament · intermedi · preguntar per un formulari',
+    scenario: 'ajuntament',
+    level: 'intermedi',
+    message: 'On puc recollir el formulari per a la llicència?',
+    mood: 'content',
+  },
+  {
+    name: 'bar · avancat · orxata amb localisme valencià',
+    scenario: 'bar',
+    level: 'avancat',
+    message: 'Me posa una orxata amb xufes i fartons, si us plau?',
+    mood: 'content',
+    signal: 'above',
+  },
 ];
 
-describe.skipIf(!hasCredentials)('Integración real con la API de OpenAI (18 casos)', () => {
+describe.skipIf(!hasCredentials)(`Integración real con la API de OpenAI (${CASES.length} casos d'un sol torn)`, () => {
   it.each(CASES)(
     '$name (nivell $level)',
     async (c: Case) => {
@@ -231,3 +290,117 @@ describe.skipIf(!hasCredentials)('Integración real con la API de OpenAI (18 cas
     60_000,
   );
 });
+// ─────────────────────────────────────────────────────────────
+// SUITE 2: converses MULTI-TORN reals amb `history` (context).
+// Comprova que el model manté el fil de la conversa: a més del
+// contracte JSON, almenys una paraula del tema ha d'aparéixer
+// a la resposta (llistes àmplies per evitar falsos negatius).
+// ─────────────────────────────────────────────────────────────
+const HISTORY_CASES: HistoryCase[] = [
+  {
+    name: 'mercat · negociar el preu de les taronges a través de la conversa',
+    scenario: 'mercat',
+    level: 'intermedi',
+    history: [
+      { role: 'user', content_text: 'Bon dia! Quant valen les taronges?' },
+      { role: 'character', content_text: 'A dos euros el quilo, són de la terra.' },
+      { role: 'user', content_text: 'Més que al poble... en duré tres quilos si em fas un descompte.' },
+    ],
+    message: "D'acord, tres quilos a preu de dos, o si no em quede amb la meitat.",
+    mood: 'content',
+    signal: 'on',
+    keywords: ['tarong', 'quilo', 'preu', 'descompt', 'euro', '€', 'quilogram'],
+  },
+  {
+    name: 'bar · recordar la comanda anterior i ampliar-la',
+    scenario: 'bar',
+    level: 'intermedi',
+    history: [
+      { role: 'user', content_text: 'Em poseu una aigua amb gas?' },
+      { role: 'character', content_text: 'Tot seguit, una aigua amb gas. Voleu res més?' },
+    ],
+    message: 'Sí, també voldria una copa de vi blanc de la casa.',
+    keywords: ['aigua', 'vi blanc', 'cop', 'casa', 'penedès', 'terra'],
+  },
+  {
+    name: "oficina · tancar la cita acordada en el torn anterior",
+    scenario: 'oficina',
+    level: 'principiant',
+    history: [
+      { role: 'user', content_text: "Bon dia, volia demanar hora per al certificat d'empadronament." },
+      { role: 'character', content_text: "Bon dia! Doncs demà a les deu. Us va bé?" },
+    ],
+    message: 'Val, d\'acord, moltes gràcies.',
+    mood: 'content',
+    keywords: ['certificat', 'empadronament', 'cita', 'hora', 'deu', '10'],
+  },
+  {
+    name: "ajuntament · seguiment de la llicència d'obres",
+    scenario: 'ajuntament',
+    level: 'avancat',
+    history: [
+      { role: 'user', content_text: "Voldria presentar una instància per a la llicència d'obres." },
+      { role: 'character', content_text: "Comentem-ho: la llicència d'obres menors es resol en uns vint dies hàbils." },
+    ],
+    message: "Llavors, quins documents he d'aportar per avançat?",
+    keywords: ['llicènci', 'obres', 'document', 'instància', 'tràmit', 'aport'],
+  },
+  {
+    name: 'mercat · principiant · continuar un fil amb un terme desconegut',
+    scenario: 'mercat',
+    level: 'principiant',
+    history: [
+      { role: 'character', content_text: 'Ara mateix les taronges estan cares pel mal temps que ha fet.' },
+    ],
+    message: 'Perdona, "mal temps" què vol dir?',
+    mood: 'confus',
+    error: true,
+    keywords: ['mal temps', 'tempor', 'tarong', 'clima'],
+  },
+];
+
+describe.skipIf(!hasCredentials)(`Integración real · conversa multi-torn amb historial (${HISTORY_CASES.length} casos)`, () => {
+  it.each(HISTORY_CASES)(
+    '$name',
+    async (c: HistoryCase) => {
+      const reply = await replyFromAgent({
+        scenario: c.scenario,
+        level: c.level,
+        message: c.message,
+        history: c.history,
+      });
+
+      console.log(`[crudo LLM][historial] ${c.name} =>`, JSON.stringify(reply));
+
+      // Contrato válido y respuesta no vacía.
+      expect(typeof reply.reply_text).toBe('string');
+      expect(reply.reply_text.trim().length).toBeGreaterThan(3);
+      expect(MOODS).toContain(reply.mood);
+      expect(SIGNALS).toContain(reply.detected_level_signal);
+      expect(Array.isArray(reply.error_flags)).toBe(true);
+
+      // Coherencia con el estado inducido.
+      if (c.mood) expect(reply.mood).toBe(c.mood);
+      if (c.signal) expect(reply.detected_level_signal).toBe(c.signal);
+      if (c.error) {
+        const flagged =
+          reply.mood === 'confus' ||
+          reply.detected_level_signal === 'below' ||
+          reply.error_flags.length > 0;
+        expect(flagged, `No es va detectar cap senyal d'error a: ${JSON.stringify(reply)}`).toBe(true);
+      }
+
+      // El modelo debe mantener el tema de la conversación.
+      if (c.keywords) {
+        const lower = reply.reply_text.toLowerCase();
+        const hits = c.keywords.filter((k) => lower.includes(k));
+        expect(
+          hits.length > 0,
+          `La resposta no manté el tema (cap de: ${c.keywords.join(', ')}): ${reply.reply_text}`,
+        ).toBe(true);
+      }
+    },
+    45_000,
+  );
+});
+

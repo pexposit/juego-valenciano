@@ -28,6 +28,12 @@ const turnSchema = z.object({
   input_mode: z.enum(['text', 'voice']),
   text: z.string().max(2000).optional().default(''),
   audio_base64: z.string().nullable().optional(),
+  // Historial de la conversación enviado por el cliente en tiempo real; permite
+  // mantener el contexto del personaje también en modo demo (sin base de datos).
+  history: z.array(z.object({
+    role: z.enum(['user', 'character']),
+    content_text: z.string().max(2000),
+  })).max(50).optional().default([]),
 });
 const SCENARIO_XP = 100;
 
@@ -113,9 +119,13 @@ app.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
       }
     }
 
-    // Get conversation history (optional in demo mode)
-    let history: { role: string; content_text: string }[] = [];
-    if (client) {
+    // Conversation context: prefer the history sent by the client (fresh and works
+    // even in demo mode without database); fall back to the stored one otherwise.
+    let history: { role: string; content_text: string }[] = data.history.map((m) => ({
+      role: m.role,
+      content_text: m.content_text,
+    }));
+    if (history.length === 0 && client) {
       const { data: historyData } = await client
         .from('conversation_messages')
         .select('role,content_text')
