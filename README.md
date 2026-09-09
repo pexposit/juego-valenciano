@@ -4,9 +4,24 @@ Aplicación para practicar valencià mediante conversaciones situadas. Incluye u
 
 ## Puesta en marcha
 
-1. Copia `frontend/.env.example` y `backend/.env.example` a sus respectivos `.env` y completa las credenciales.
-2. Ejecuta, en orden, las migraciones de `supabase/migrations/` en el SQL Editor de Supabase.
-3. Instala y arranca: `npm install && npm run dev`.
+### Base de datos local (Docker)
+
+1. Instala la CLI de Supabase (`npm install -g supabase`) y arranca el stack: `supabase start` (primera vez descarga las imágenes; luego basta `docker start` para encender los contenedores).
+2. El stack local expone:
+   - API + REST: `http://127.0.0.1:54321`
+   - Postgres directo: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+   - Studio (panel web): `http://127.0.0.1:54323`
+   - Mailpit (correos de verificación): `http://127.0.0.1:54324`
+3. Las migraciones de `supabase/migrations/` **se aplican automáticamente** al arrancar; no hace falta el SQL Editor.
+4. Completa los `.env` con los valores que muestra `supabase status`:
+   - `backend/.env`: `SUPABASE_URL` (Project URL) y `SUPABASE_SERVICE_ROLE_KEY` (Secret).
+   - `frontend/.env`: `VITE_SUPABASE_URL` (Project URL) y `VITE_SUPABASE_ANON_KEY` (Publishable).
+   Las claves locales son de desarrollo; nunca uses la "Secret" en el frontend.
+
+### Aplicación
+
+1. Copia `frontend/.env.example` y `backend/.env.example` a sus respectivos `.env` y completa las credenciales (para desarrollo local, consulta la sección anterior).
+2. Instala y arranca: `npm install && npm run dev`.
 
 El frontend queda en `http://localhost:5173` y la API en `http://localhost:3001`. Sin variables de Supabase, la interfaz permite recorrer el modo demostración; las conversaciones reales requieren configuración.
 
