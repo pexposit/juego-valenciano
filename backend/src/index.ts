@@ -23,7 +23,7 @@ app.use(express.json({ limit: '12mb' }));
 
 const turnSchema = z.object({
   session_id: z.string().uuid(),
-  scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament']),
+  scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament', 'colegi']),
   level: z.enum(['principiant', 'intermedi', 'avancat']),
   input_mode: z.enum(['text', 'voice']),
   text: z.string().max(2000).optional().default(''),
@@ -37,11 +37,12 @@ const turnSchema = z.object({
 });
 const SCENARIO_XP = 100;
 // Cada escenari té el seu personatge amb una veu TTS pròpia.
-const VOICE_BY_SCENARIO: Record<'mercat' | 'bar' | 'oficina' | 'ajuntament', string> = {
+const VOICE_BY_SCENARIO: Record<'mercat' | 'bar' | 'oficina' | 'ajuntament' | 'colegi', string> = {
   mercat: 'lluc',
   bar: 'gina',
   oficina: 'lluc',
   ajuntament: 'gina',
+  colegi: 'gina',
 };
 
 /** Helper to get the Supabase client cast to `any` so it works without generated types */
@@ -72,7 +73,7 @@ app.get('/api/greeting-audio', async (req, res) => {
 app.post('/api/tts', async (req, res) => {
   const { text, scenario, voice } = z.object({
     text: z.string().min(1).max(500),
-    scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament']).optional(),
+    scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament', 'colegi']).optional(),
     voice: z.string().min(1).max(50).optional(),
   }).parse(req.body);
   const audio = await tts.synthesize(
@@ -89,7 +90,7 @@ app.post('/api/tts', async (req, res) => {
 app.post('/api/sessions', requireAuth, async (req: AuthRequest, res) => {
   try {
     const body = z.object({
-      scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament']),
+      scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament', 'colegi']),
       level: z.enum(['principiant', 'intermedi', 'avancat']),
     }).parse(req.body);
 

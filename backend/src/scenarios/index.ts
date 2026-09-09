@@ -1,1 +1,1 @@
-import { mercat } from './mercat.js'; import { bar } from './bar.js'; import { oficina } from './oficina.js'; import { ajuntament } from './ajuntament.js'; export const scenarios={mercat,bar,oficina,ajuntament};
+import { mercat } from './mercat.js'; import { bar } from './bar.js'; import { oficina } from './oficina.js'; import { ajuntament } from './ajuntament.js'; import { colegi } from './colegi.js'; export const scenarios={mercat,bar,oficina,ajuntament,colegi};

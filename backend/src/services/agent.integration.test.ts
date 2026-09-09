@@ -31,7 +31,7 @@ const SIGNALS = ['below', 'on', 'above'];
 
 type Case = {
   name: string;
-  scenario: 'mercat' | 'bar' | 'oficina' | 'ajuntament';
+  scenario: 'mercat' | 'bar' | 'oficina' | 'ajuntament' | 'colegi';
   level: 'principiant' | 'intermedi' | 'avancat';
   message: string;
   /** mood esperat aproximadament (es comprova si està definit) */
@@ -249,6 +249,21 @@ const CASES: Case[] = [
     message: 'Me posa una orxata amb xufes i fartons, si us plau?',
     mood: 'content',
     signal: 'above',
+  },
+  {
+    name: 'colegi · principiant · saludar la mestra a l’aula',
+    scenario: 'colegi',
+    level: 'principiant',
+    message: "Bon dia, mestra! Hui tenim classe de valencià?",
+    mood: 'content',
+  },
+  {
+    name: 'colegi · intermedi · demanar permís per eixir al pati',
+    scenario: 'colegi',
+    level: 'intermedi',
+    message: 'Puc eixir al pati un moment, si us plau?',
+    mood: 'neutral',
+    signal: 'on',
   },
 ];
 
