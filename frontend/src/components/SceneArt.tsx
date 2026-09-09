@@ -502,6 +502,118 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
             </g>
           </>
         )}
+{/* --- L'OFICINA DE TURISME --- */}
+        {scenario === 'turisme' && (
+          <>
+            {/* Office wall */}
+            <rect width="400" height="550" fill="#F5EAD8" />
+            {/* Wainscot panelling */}
+            <rect x="0" y="300" width="400" height="80" fill="#EAD3AE" />
+            <line x1="0" y1="300" x2="400" y2="300" stroke="#D4B98F" strokeWidth="4" />
+            <line x1="0" y1="340" x2="400" y2="340" stroke="#D4B98F" strokeWidth="2" />
+            <line x1="57" y1="300" x2="57" y2="378" stroke="#D4B98F" strokeWidth="2.5" />
+            <line x1="171" y1="300" x2="171" y2="378" stroke="#D4B98F" strokeWidth="2.5" />
+            <line x1="285" y1="300" x2="285" y2="378" stroke="#D4B98F" strokeWidth="2.5" />
+
+            {/* Window with blue sky */}
+            <rect x="254" y="42" width="112" height="150" fill="#CBE6F8" stroke="#A88B63" strokeWidth="6" rx="2" />
+            <rect x="260" y="50" width="100" height="134" fill="#DDEEFB" />
+            <line x1="310" y1="50" x2="310" y2="184" stroke="#A88B63" strokeWidth="3" />
+            <line x1="260" y1="117" x2="360" y2="117" stroke="#A88B63" strokeWidth="2" />
+
+            {/* Window sill with a small potted plant */}
+            <rect x="254" y="192" width="112" height="10" fill="#B98E5F" />
+            <g transform="translate(312, 168)">
+              <path d="M 0 24 Q -8 10 -4 0 Q 4 -2 8 8 0 24" fill="#4C8C4A" />
+              <path d="M 0 24 Q 12 12 8 0 Q 4 -2 0 24" fill="#5B933E" />
+              <path d="M -6 24 L -6 14 L -2 12 L 8 14 L 8 24 Z" fill="#C96F4B" />
+            </g>
+
+            {/* Hanging office sign */}
+            <g>
+              <line x1="140" y1="4" x2="140" y2="22" stroke="#3D3D3D" strokeWidth="2.5" />
+              <line x1="260" y1="4" x2="260" y2="22" stroke="#3D3D3D" strokeWidth="2.5" />
+              <rect x="74" y="22" width="252" height="34" fill="#0D9488" rx="17" />
+              <rect x="79" y="27" width="242" height="24" fill="none" stroke="#FFF" strokeWidth="1.5" rx="12" opacity="0.6" />
+              <text x="200" y="45" fill="#FFF" fontSize="14" fontWeight="900" textAnchor="middle">OFICINA DE TURISME</text>
+            </g>
+
+            {/* Wall map of València pinned up */}
+            <g transform="translate(26, 52)">
+              <rect width="112" height="96" fill="#EFE3C8" rx="3" stroke="#A88B63" strokeWidth="4" />
+              <rect x="6" y="5" width="100" height="86" fill="#FBF3DC" />
+              <text x="56" y="84" fill="#263747" fontSize="8" fontWeight="900" textAnchor="middle">VALÈNCIA</text>
+              {/* Push pins */}
+              <circle cx="6" cy="6" r="3" fill="#E63946" />
+              <circle cx="106" cy="6" r="3" fill="#E63946" />
+              <circle cx="6" cy="90" r="3" fill="#E63946" />
+              <circle cx="106" cy="90" r="3" fill="#E63946" />
+            </g>
+
+            {/* Brochure rack on the wall (right, under the window) */}
+            <g transform="translate(258, 222)">
+              <rect x="0" y="0" width="134" height="72" fill="#B98E5F" rx="4" />
+              <rect x="8" y="8" width="34" height="58" fill="#0D9488" rx="2" />
+              <rect x="50" y="12" width="34" height="58" fill="#F97316" rx="2" />
+              <rect x="92" y="16" width="34" height="58" fill="#FFC857" rx="2" />
+              <rect x="13" y="12" width="24" height="8" fill="#FFF" opacity="0.9" rx="1" />
+              <rect x="55" y="16" width="24" height="8" fill="#FFF" opacity="0.9" rx="1" />
+              <rect x="97" y="20" width="24" height="8" fill="#FFF" opacity="0.9" rx="1" />
+            </g>
+
+            {/* CHARACTER: Laura (The Tourist Guide) */}
+            <g className="float mood-transition" style={{ animationDuration: '3.7s' }} key={`turisme-${mood}`}>
+              {/* Body / polo */}
+              <path d="M 135 390 Q 200 120 265 390 Z" fill="#0D9488" />
+              {/* Info badge */}
+              <circle cx="200" cy="288" r="10" fill="#FFF" />
+              <text x="200" y="292" fill="#0D9488" fontSize="12" fontWeight="900" textAnchor="middle">i</text>
+              {/* Neck */}
+              <rect x="187" y="244" width="26" height="20" fill="#F8C9A1" rx="4" />
+              {/* Head */}
+              <circle cx="200" cy="215" r="38" fill="#F8C9A1" />
+              {/* Blonde ponytail */}
+              <path d="M 162 215 C 162 158, 238 158, 238 215 C 230 190, 170 190, 162 215" fill="#F1C40F" />
+              <path d="M 224 182 Q 250 194 228 210 Z" fill="#F1C40F" />
+              {/* Visor cap */}
+              <path d="M 164 196 C 164 172, 236 172, 236 196 C 232 188, 168 188, 164 196" fill="#0D9488" />
+              {/* Cap logo */}
+              <circle cx="200" cy="180" r="7" fill="#FFF" />
+              <text x="200" y="184" fill="#0D9488" fontSize="10" fontWeight="900" textAnchor="middle">i</text>
+
+              {/* Eyes */}
+              <g className="gaze">
+                <g className="blink-eyes">
+                  <circle cx="186" cy="214" r="4" fill="#263747" />
+                  <circle cx="214" cy="214" r="4" fill="#263747" />
+                </g>
+              </g>
+
+              {/* Eyebrows & Mouth */}
+              {moodFace(mood, 'eyebrows')}
+              {moodFace(mood, 'mouth')}
+
+              {/* Blush */}
+              <circle cx="172" cy="224" r="4" fill="#FF8A8A" opacity="0.45" />
+              <circle cx="228" cy="224" r="4" fill="#FF8A8A" opacity="0.45" />
+
+              {/* Arm pointing at the map on the counter */}
+              <path d="M 255 330 Q 282 296 260 262 Q 246 248 252 244" fill="none" stroke="#F8C9A1" strokeWidth="15" strokeLinecap="round" className="sway" style={{ transformOrigin: '255px 330px' }} />
+            </g>
+
+            {/* Wooden info counter */}
+            <rect x="0" y="380" width="400" height="170" fill="url(#woodGrad)" />
+            <rect x="0" y="380" width="400" height="15" fill="#8D5B2E" />
+
+            {/* Stack of brochures on the counter */}
+            <g transform="translate(120, 350)">
+              <rect x="0" y="14" width="34" height="24" fill="#0D9488" rx="2" />
+              <rect x="4" y="7" width="34" height="24" fill="#F97316" rx="2" />
+              <rect x="8" y="0" width="34" height="24" fill="#FFC857" rx="2" />
+              <rect x="14" y="8" width="20" height="5" fill="#FFF" opacity="0.9" />
+            </g>
+          </>
+        )}
       </svg>
 
     </div>
