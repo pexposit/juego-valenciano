@@ -227,26 +227,55 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
 /* ══════════════════ AUTH PAGE ══════════════════════════════════════ */
 function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [level, setLevel] = useState('principiant');
   const [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const start = async () => {
-    if (supabase && email) {
-      try {
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: { emailRedirectTo: location.origin, data: { level } },
-        });
-        setNotice(
-          error
-            ? `No hem pogut enviar el correu: ${error.message}`
-            : `T'hem enviat un missatge a ${email}. Revisa la safata d'entrada.`
-        );
-      } catch {
-        setNotice("No hem pogut connectar. Revisa la connexió i torna-ho a provar.");
+  // Registre directe amb email + contrasenya. Amb Supabase local
+  // (enable_confirmations = false) no cal verificar cap correu: la sessió
+  // es crea a l'instant i l'usuari entra directament al tauler.
+  const signUp = async () => {
+    if (!supabase) return setPage('dashboard');
+    if (password.length < 6) {
+      return setNotice('La contrasenya ha de tindre almenys 6 caràcters.');
+    }
+    try {
+      setBusy(true);
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { level, display_name: email.split('@')[0] } },
+      });
+      if (error) {
+        if (error.message?.toLowerCase().includes('already registered')) {
+          setNotice('Ja hi ha un compte amb aquest correu. Utilitza «Inicia sessió» amb la teua contrasenya.');
+        } else {
+          setNotice(`No hem pogut crear el compte: ${error.message}`);
+        }
+        return;
       }
-    } else {
+      setNotice('Compte creat! Entrant...');
       setPage('dashboard');
+    } catch {
+      setNotice('No hem pogut connectar. Revisa la connexió i torna-ho a provar.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Inici de sessió per a comptes ja creats (mateixa contrasenya).
+  const logIn = async () => {
+    if (!supabase) return setPage('dashboard');
+    try {
+      setBusy(true);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return setNotice(`No hem pogut iniciar sessió: ${error.message}`);
+      setPage('dashboard');
+    } catch {
+      setNotice('No hem pogut connectar. Revisa la connexió i torna-ho a provar.');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -262,7 +291,7 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         <div className="text-center mb-6">
           <span className="text-4xl">🍊</span>
           <h1 className="mt-2 text-3xl font-black"><span style={{ color: '#0D9488' }}>Parla</span><span style={{ color: '#F97316' }}>Val</span></h1>
-          <p className="mt-1 opacity-60">Comença la teua aventura lingüística.</p>
+          <p className="mt-1 opacity-60">Crea el teu compte i comença, sense necessitat de correu de verificació.</p>
         </div>
 
         <label className="block text-sm font-extrabold mb-1">Correu electrònic</label>
@@ -272,6 +301,19 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           type="email"
           placeholder="tu@exemple.com"
           id="auth-email"
+          autoComplete="email"
+          className="w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0D9488] transition-colors"
+        />
+
+        <label className="mt-4 block text-sm font-extrabold mb-1">Contrasenya</label>
+        <input
+          value={password}
+          onChange={e => { setPassword(e.target.value); setNotice(''); }}
+          type="password"
+          placeholder="Mínim 6 caràcters"
+          id="auth-password"
+          autoComplete="new-password"
+          onKeyDown={e => { if (e.key === 'Enter') void signUp(); }}
           className="w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0D9488] transition-colors"
         />
 
@@ -288,12 +330,22 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         </select>
 
         <button
-          onClick={start}
+          onClick={() => void signUp()}
+          disabled={busy}
           id="auth-submit"
-          className="btn-press mt-6 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90 active:scale-[0.98]"
+          className="btn-press mt-6 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
           style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
         >
-          Crear el compte
+          {busy ? 'Espera...' : 'Crear el compte'}
+        </button>
+
+        <button
+          onClick={() => void logIn()}
+          disabled={busy}
+          id="auth-login"
+          className="btn-press mt-3 w-full rounded-2xl border-2 border-gray-200 py-3 font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:opacity-60"
+        >
+          Ja tinc compte · Inicia sessió
         </button>
 
         {notice && (
@@ -306,12 +358,6 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           </div>
         )}
 
-        <button
-          onClick={() => supabase?.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin } })}
-          className="btn-press mt-3 w-full rounded-2xl border-2 border-gray-100 py-3 font-bold transition hover:border-gray-200 hover:bg-gray-50"
-        >
-          Continua amb Google
-        </button>
         <p className="mt-5 text-center text-xs opacity-40">Mode demo disponible sense Supabase.</p>
       </section>
     </main>
