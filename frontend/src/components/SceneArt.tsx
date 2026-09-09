@@ -333,6 +333,91 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
           </>
         )}
 
+        {/* --- L'ESCOLA --- */}
+        {scenario === 'colegi' && (
+          <>
+            {/* Classroom wall */}
+            <rect width="400" height="550" fill="#FFF3DE" />
+
+            {/* Sun */}
+            <circle cx="45" cy="55" r="18" fill="#FFC857" opacity="0.9" />
+            <circle cx="45" cy="55" r="32" fill="#FFC857" opacity="0.2" className="animate-ping" style={{ animationDuration: '3s' }} />
+
+            {/* Alphabet poster */}
+            <g transform="translate(325, 55)">
+              <rect width="42" height="60" fill="#FFE082" rx="3" stroke="#E0B84E" strokeWidth="2" />
+              <rect x="7" y="2" width="28" height="26" fill="#FFF" rx="2" />
+              <text x="21" y="20" textAnchor="middle" fill="#E63946" fontSize="16" fontWeight="900">A</text>
+              <circle cx="21" cy="44" r="9" fill="#7FB069" opacity="0.35" />
+              <path d="M 13 52 L 19 44 M 21 52 L 15 45" stroke="#5C3D2E" strokeWidth="2" strokeLinecap="round" />
+            </g>
+
+            {/* Blackboard */}
+            <g>
+              <rect x="90" y="38" width="225" height="125" fill="#8C6B4A" rx="6" />
+              <rect x="99" y="47" width="207" height="107" fill="#2F5D50" rx="3" />
+              {/* Chalk writing */}
+              <text x="112" y="86" fill="#FFF7E0" fontSize="23" fontWeight="900">Bon dia!</text>
+              <text x="112" y="116" fill="#FFD166" fontSize="13" fontWeight="700">a b c · valencià</text>
+              <rect x="284" y="128" width="18" height="6" fill="#FFF7E0" rx="2" /> {/* chalk */}
+            </g>
+
+            {/* Chalk tray */}
+            <rect x="90" y="163" width="225" height="8" fill="#4A2F1D" />
+
+            {/* CHARACTER: Marta (The Teacher) */}
+            <g className="float mood-transition" style={{ animationDuration: '3.5s' }} key={`colegi-${mood}`}>
+              {/* Dress */}
+              <path d="M 135 390 Q 200 120 265 390 Z" fill="#E76F51" />
+              {/* Apron */}
+              <path d="M 160 315 L 240 315 L 246 390 L 154 390 Z" fill="#F4A261" opacity="0.85" />
+              {/* Neck */}
+              <rect x="187" y="244" width="26" height="20" fill="#F8C9A1" rx="4" />
+              {/* Head */}
+              <circle cx="200" cy="215" r="38" fill="#F8C9A1" />
+              {/* Hair bun */}
+              <path d="M 162 215 C 162 158, 238 158, 238 215 C 230 190, 170 190, 162 215" fill="#5C3D2E" />
+              <circle cx="225" cy="180" r="12" fill="#5C3D2E" />
+              <path d="M 228 175 L 234 169 M 232 183 L 239 185" stroke="#FFC857" strokeWidth="4" strokeLinecap="round" /> {/* flower decoration */}
+
+              {/* Round glasses */}
+              <circle cx="186" cy="210" r="11" fill="none" stroke="#264653" strokeWidth="2.5" />
+              <circle cx="214" cy="210" r="11" fill="none" stroke="#264653" strokeWidth="2.5" />
+              <line x1="197" y1="210" x2="203" y2="210" stroke="#264653" strokeWidth="2.5" />
+
+              {/* Eyes */}
+              <g className="gaze">
+                <g className="blink-eyes">
+                  <circle cx="186" cy="210" r="4" fill="#263747" />
+                  <circle cx="214" cy="210" r="4" fill="#263747" />
+                </g>
+              </g>
+
+              {/* Eyebrows & Mouth */}
+              {moodFace(mood, 'eyebrows')}
+              {moodFace(mood, 'mouth')}
+
+              {/* Blush */}
+              <circle cx="172" cy="222" r="4" fill="#FF9E9E" opacity="0.45" />
+              <circle cx="228" cy="222" r="4" fill="#FF9E9E" opacity="0.45" />
+            </g>
+
+            {/* Teacher's desk */}
+            <rect x="0" y="380" width="400" height="170" fill="url(#darkWoodGrad)" />
+            <rect x="0" y="380" width="400" height="15" fill="#362013" />
+
+            {/* Books, notebook and pencil */}
+            <g transform="translate(120, 355)">
+              <rect x="0" y="13" width="58" height="20" fill="#E63946" rx="2" /> {/* book */}
+              <rect x="4" y="5" width="50" height="14" fill="#2A9D8F" rx="2" /> {/* book */}
+              <rect x="75" y="10" width="24" height="28" fill="#FFF" stroke="#263747" strokeWidth="1.5" /> {/* notebook */}
+              <path d="M 80 17 L 94 17 M 80 23 L 94 23 M 80 29 L 91 29" stroke="#7FB069" strokeWidth="1.5" />
+              <rect x="112" y="26" width="54" height="7" fill="#FFC857" rx="2" /> {/* pencil */}
+              <polygon points="166,22 174,29 166,36" fill="#264653" />
+            </g>
+          </>
+        )}
+
         {/* --- L'AJUNTAMENT --- */}
         {scenario === 'ajuntament' && (
           <>

@@ -17,6 +17,7 @@ const scenarios: { id: Scenario; name: string; icon: string; required: number; c
   { id: 'bar',        name: 'El Bar',        icon: '☕', required: 0, color: '#F2B47C', bgIllustration: '#FDE8D0' },
   { id: 'oficina',    name: "L'Oficina",     icon: '💻', required: 0, color: '#BDE9E8', bgIllustration: '#E2F5F4' },
   { id: 'ajuntament', name: "L'Ajuntament",  icon: '🏛️', required: 0, color: '#C8D7EE', bgIllustration: '#E8EFF8' },
+  { id: 'colegi',     name: "L'Escola",      icon: '🎒', required: 0, color: '#C4E3A3', bgIllustration: '#EFF8E2' },
 ];
 
 /* ── Decorative oranges header ──────────────────────────────────── */
@@ -162,7 +163,7 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
           >
             Comença ara <ChevronRight size={20} />
           </button>
-          <p className="mt-4 text-sm opacity-50">🍊 Mercat · Bar · Oficina · Ajuntament</p>
+          <p className="mt-4 text-sm opacity-50">🍊 Mercat · Bar · Oficina · Ajuntament · Escola</p>
         </div>
 
         {/* Hero image carousel — Comunitat Valenciana */}
@@ -558,7 +559,7 @@ function Chat({
             className="rounded-full px-3.5 py-1.5 text-xs font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm"
             style={{ background: 'rgba(255,255,255,0.92)' }}
           >
-            {scenario === 'mercat' ? 'El Mercat' : scenario === 'bar' ? 'El Bar' : scenario === 'oficina' ? "L'Oficina" : "L'Ajuntament"}
+            {scenario === 'mercat' ? 'El Mercat' : scenario === 'bar' ? 'El Bar' : scenario === 'oficina' ? "L'Oficina" : scenario === 'ajuntament' ? "L'Ajuntament" : "L'Escola"}
           </span>
         </div>
         <div
@@ -747,7 +748,7 @@ function Profile({
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <Stat icon="⚡" label="XP total" value={String(xp)} />
-          <Stat icon="🗺️" label="Escenaris" value="1 / 4" />
+          <Stat icon="🗺️" label="Escenaris" value="1 / 5" />
           <Stat icon="💬" label="Paraules" value="24" />
           <Stat icon="🏆" label="Insígnies" value="1" />
         </div>
