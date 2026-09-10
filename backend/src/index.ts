@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { requireAuth, getAdmin, type AuthRequest } from './middleware/auth.js';
 import { replyFromAgent } from './services/agent.js';
 import { stt, tts } from './services/voice.js';
+import { SCENARIO_XP, VOICE_BY_SCENARIO } from './services/voices.js';
+import { attachVoiceSocket } from './ws/voiceSocket.js';
 
 const app = express();
 app.use(cors({
@@ -35,17 +37,6 @@ const turnSchema = z.object({
     content_text: z.string().max(2000),
   })).max(50).optional().default([]),
 });
-const SCENARIO_XP = 100;
-// Cada escenari té el seu personatge amb una veu TTS pròpia.
-const VOICE_BY_SCENARIO: Record<'mercat' | 'bar' | 'oficina' | 'ajuntament' | 'colegi' | 'turisme', string> = {
-  mercat: 'lluc',
-  bar: 'gina',
-  oficina: 'lluc',
-  ajuntament: 'gina',
-  colegi: 'gina',
-  turisme: 'gina',
-};
-
 /** Helper to get the Supabase client cast to `any` so it works without generated types */
 function db(userId?: string) {
   // Demo user: skip database operations
@@ -205,4 +196,5 @@ app.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-app.listen(Number(process.env.PORT) || 3001, () => console.log('ParlaVal agent listening'));
+const server = app.listen(Number(process.env.PORT) || 3001, () => console.log('ParlaVal agent listening'));
+attachVoiceSocket(server);
