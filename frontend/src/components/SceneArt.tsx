@@ -456,7 +456,7 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
               <line x1="80" y1="50" x2="80" y2="120" stroke="#3D3D3D" strokeWidth="4.5" strokeLinecap="round" />
             </g>
 
-            {/* CHARACTER: Amparo (The Tour Guide) */}
+            {/* CHARACTER: Amparo (Town Hall Clerk) */}
             <g className="float mood-transition" style={{ animationDuration: '3.7s' }} key={`ajuntament-${mood}`}>
               <path d="M 135 390 Q 200 120 265 390 Z" fill="#1D3557" />
               {/* Yellow/Red Scarf */}

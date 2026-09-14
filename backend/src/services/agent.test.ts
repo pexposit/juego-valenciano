@@ -202,7 +202,7 @@ describe('estado de la petición enviada a OpenAI', () => {
       expect(system.role).toBe('system');
       expect(system.content).toContain('Nivell actual: intermedi');
       expect(user.role).toBe('user');
-      expect(user.content).toContain('Pau, cambrer: Hola! Què et poses?');
+      expect(user.content).toContain('Maria, cambrera: Hola! Què et poses?');
       expect(user.content).toContain('Aprenent: Hola!');
       expect(user.content).toContain('Aprenent: Hola, em poses una cervesa?');
     });
