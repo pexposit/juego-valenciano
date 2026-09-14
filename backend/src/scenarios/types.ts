@@ -1,1 +1,1 @@
-export type ScenarioKey='mercat'|'bar'|'oficina'|'ajuntament'|'colegi'|'turisme'; export interface ScenarioDefinition { key:ScenarioKey; character:string; systemPrompt:string }
+export type ScenarioKey='mercat'|'bar'|'oficina'|'ajuntament'|'colegi'|'turisme'; export interface ScenarioDefinition { key:ScenarioKey; character:string; systemPrompt:string; objectius:string[] }

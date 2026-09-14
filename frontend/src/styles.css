@@ -388,3 +388,105 @@ button { cursor: pointer; }
 .sun-pulse {
   animation: sunPulse 3.5s ease-in-out infinite;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   OBJECTIVE BOARD — PISZARRA LATERAL DRETA (instruccions de la conversa)
+   ════════════════════════════════════════════════════════════════════════ */
+@keyframes boardPop {
+  0%   { opacity: 0; transform: translateX(32px) scale(0.94); }
+  55%  { opacity: 1; transform: translateX(-8px) scale(1.03); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+.goals-enter {
+  animation: boardPop 0.42s cubic-bezier(.22,.65,.4,1) both;
+}
+
+.goals-board {
+  position: absolute;
+  top: 5.25rem;
+  right: 1rem;
+  width: 17.5rem;
+  z-index: 30;
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(155deg, #8A6A3C, #5E4226 55%, #8A6A3C); /* marc de fusta */
+  box-shadow: 0 22px 48px rgba(38, 55, 71, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.28);
+}
+
+.goals-frame {
+  position: relative;
+  border-radius: 12px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 14px),
+    radial-gradient(ellipse at 35% 15%, rgba(255, 255, 255, 0.07), transparent 60%),
+    #1E4A35; /* verd de pissarra */
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.38);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.goals-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+}
+.goals-title {
+  flex: 1;
+  color: #FFE9A8;
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+.goals-close-btn {
+  color: #F6F1E6;
+}
+
+.goals-sub {
+  color: #C9DCD2;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 12px 6px;
+  line-height: 1.3;
+}
+
+.goals-list {
+  list-style: none;
+  margin: 6px 10px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.goals-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #F6F1E6;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.18);
+}
+.goals-num {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFC857;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.goals-footer {
+  margin-top: 8px;
+  padding: 4px 12px 8px;
+  color: #9EC2B4;
+  font-size: 0.68rem;
+  font-weight: 700;
+}

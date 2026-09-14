@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { requireAuth, getAdmin, type AuthRequest } from './middleware/auth.js';
 import { replyFromAgent } from './services/agent.js';
 import { stt, tts } from './services/voice.js';
+import { scenarios } from './scenarios/index.js';
 
 const app = express();
 app.use(cors({
@@ -56,6 +57,14 @@ function db(userId?: string) {
 }
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// Descripció pública de cada escenari (personatge + objectius de la conversa).
+app.get('/api/scenarios', (_req, res) => {
+  const overview = Object.fromEntries(
+    Object.entries(scenarios).map(([key, def]) => [key, { character: def.character, objectius: def.objectius }]),
+  );
+  res.json(overview);
+});
 
 // The first greeting must be audible even when the conversation provider is unavailable.
 app.get('/api/greeting-audio', async (req, res) => {
