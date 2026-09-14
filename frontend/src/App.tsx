@@ -23,12 +23,12 @@ const scenarios: { id: Scenario; name: string; icon: string; required: number; c
 
 /* Objectius per defecte de cada escenari; es mostren mentres el backend respon. */
 const scenarioGoals: Record<Scenario, { character: string; objectius: string[] }> = {
-  mercat: { character: 'Vicent, venedor del mercat', objectius: ['Saluda en Vicent i pregunta com va tot.', 'Demana un quilo de taronges o una altra fruita.', 'Pregunta el preu o demana el canvi.', "Paga, dona les gràcies i acomiada't."] },
-  bar: { character: 'Maria, cambrera', objectius: ['Saluda la Maria i busca una taula.', "Demana una beguda o l'esmorzar del dia.", 'Pregunta quant és o demana el compte.', "Paga, dona les gràcies i acomiada't."] },
-  oficina: { character: "Joan, company d'oficina", objectius: ['Saluda en Joan i pregunta com està.', "Pregunta per la reunió o les tasques d'avui.", 'Demana ajuda o un aclariment sobre un tema.', "Confirma el que has de fer i acomiada't."] },
-  ajuntament: { character: "Amparo, funcionària d'atenció", objectius: ["Saluda l'Amparo i digues què necessites.", 'Explica el tràmit que vols fer.', 'Pregunta els requisits o els horaris.', "Dona les gràcies i acomiada't."] },
-  colegi: { character: 'Marta, mestra', objectius: ['Saluda la Marta i pregunta com està.', "Pregunta pels deures o la tasca d'avui.", 'Demana permís o explica un dubte.', "Dona les gràcies i acomiada't."] },
-  turisme: { character: 'Laura, guia turística', objectius: ['Saluda la Laura i digues què busques.', 'Demana una recomanació de lloc per visitar.', 'Pregunta horaris, preus o com arribar-hi.', "Dona les gràcies i acomiada't."] },
+  mercat: { character: 'Vicent, venedor del mercat', objectius: ['Saluda a Vicent i pregunta com va tot.', 'Demana un quilo de taronges o una altra fruita.', 'Pregunta el preu o demana el canvi.', "Paga, dona les gràcies i acomiada't."] },
+  bar: { character: 'Maria, cambrera', objectius: ['Saluda a Maria i busca una taula.', 'Demana una beguda o el desdejuni del dia.', 'Pregunta quant és o demana el compte.', "Paga, dona les gràcies i acomiada't."] },
+  oficina: { character: "Joan, company d'oficina", objectius: ['Saluda a Joan i pregunta com està.', "Pregunta per la reunió o les tasques d'avui.", 'Demana ajuda o un aclariment sobre un tema.', "Confirma el que has de fer i acomiada't."] },
+  ajuntament: { character: "Amparo, funcionària d'atenció", objectius: ['Saluda a Amparo i digues què necessites.', 'Explica el tràmit que vols fer.', 'Pregunta els requisits o els horaris.', "Dona les gràcies i acomiada't."] },
+  colegi: { character: 'Marta, mestra', objectius: ['Saluda a Marta i pregunta com està.', "Pregunta pels deures o la tasca d'avui.", 'Demana permís o explica un dubte.', "Dona les gràcies i acomiada't."] },
+  turisme: { character: 'Laura, guia turística', objectius: ['Saluda a Laura i digues què busques.', 'Demana una recomanació de lloc per a visitar.', 'Pregunta horaris, preus o com arribar-hi.', "Dona les gràcies i acomiada't."] },
 };
 
 /* ── Decorative oranges header ──────────────────────────────────── */
