@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  ChevronRight, Lock, MessageCircle,
+  ChevronRight, ListTodo, Lock, MessageCircle,
   RotateCcw, Volume2, X, LogOut,
 } from 'lucide-react';
 import { SceneArt } from './components/SceneArt';
 import { VoiceInput } from './components/VoiceInput';
 import { HistoryModal, type Msg } from './components/HistoryModal';
-import { createSession, sendTurn, type HistoryItem } from './lib/api';
+import { createSession, fetchScenarios, sendTurn, type HistoryItem } from './lib/api';
 import { supabase } from './lib/supabase';
 import type { Mood, Scenario } from './lib/types';
 
@@ -20,6 +20,16 @@ const scenarios: { id: Scenario; name: string; icon: string; required: number; c
   { id: 'colegi',     name: "L'Escola",      icon: '🎒', required: 0, color: '#C4E3A3', bgIllustration: '#EFF8E2' },
   { id: 'turisme',    name: 'Oficina de Turisme', icon: '🗺️', required: 0, color: '#9AD0EC', bgIllustration: '#E4F3FB' },
 ];
+
+/* Objectius per defecte de cada escenari; es mostren mentres el backend respon. */
+const scenarioGoals: Record<Scenario, { character: string; objectius: string[] }> = {
+  mercat: { character: 'Neus, venedora del mercat', objectius: ['Saluda la Neus i pregunta com va tot.', 'Demana un quilo de taronges o una altra fruita.', 'Pregunta el preu o demana el canvi.', "Paga, dona les gràcies i acomiada't."] },
+  bar: { character: 'Pau, cambrer', objectius: ['Saluda el Pau i busca una taula.', "Demana una beguda o l'esmorzar del dia.", 'Pregunta quant és o demana el compte.', "Paga, dona les gràcies i acomiada't."] },
+  oficina: { character: "Clara, companya d'oficina", objectius: ['Saluda la Clara i pregunta com està.', "Pregunta per la reunió o les tasques d'avui.", 'Demana ajuda o un aclariment sobre un tema.', "Confirma el que has de fer i acomiada't."] },
+  ajuntament: { character: "Vicent, funcionari d'atenció", objectius: ['Saluda el Vicent i digues què necessites.', 'Explica el tràmit que vols fer.', 'Pregunta els requisits o els horaris.', "Dona les gràcies i acomiada't."] },
+  colegi: { character: 'Marta, mestra', objectius: ['Saluda la Marta i pregunta com està.', "Pregunta pels deures o la tasca d'avui.", 'Demana permís o explica un dubte.', "Dona les gràcies i acomiada't."] },
+  turisme: { character: 'Laura, guia turística', objectius: ['Saluda la Laura i digues què busques.', 'Demana una recomanació de lloc per visitar.', 'Pregunta horaris, preus o com arribar-hi.', "Dona les gràcies i acomiada't."] },
+};
 
 /* ── Decorative oranges header ──────────────────────────────────── */
 function OrangeHeader({ children, showOranges = true }: { children: React.ReactNode; showOranges?: boolean }) {
@@ -493,6 +503,11 @@ function Chat({
   const replyAudio = useRef<HTMLAudioElement | null>(null);
   const hasSubmitted = useRef(false);
 
+  // Pissarra lateral amb els objectius: què ha de dir o demanar la persona.
+  // S'obri per defecte en pantalles amples; en mòbils es pot mostrar amb el botó.
+  const [showGoals, setShowGoals] = useState(() => typeof window === 'undefined' || window.innerWidth >= 900);
+  const [goalsInfo, setGoalsInfo] = useState<{ character: string; objectius: string[] }>(() => scenarioGoals[scenario]);
+
   const loadTextAudio = async (text: string) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
@@ -543,6 +558,20 @@ function Chat({
     void loadGreetingAudio();
     return () => { cancelled = true; };
   }, []);
+
+  // Carrega els objectius des del backend; si falla, es mostren els per defecte.
+  useEffect(() => {
+    let cancelled = false;
+    void fetchScenarios()
+      .then((data) => {
+        if (!cancelled) {
+          const found = data[scenario];
+          if (found && Array.isArray(found.objectius) && found.objectius.length > 0) setGoalsInfo(found);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [scenario]);
 
   const submit = async (text: string, audio?: string) => {
     if ((!text && !audio) || loading) return;
@@ -615,13 +644,24 @@ function Chat({
         >
           ⚡ {xp} XP
         </div>
-        <button
-          onClick={() => setShowHistory(true)}
-          id="chat-history-btn"
-          className="btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors"
-        >
-          <MessageCircle size={19} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowGoals(!showGoals)}
+            id="chat-goals-btn"
+            aria-label={showGoals ? 'Amagar objectius' : 'Mostrar objectius'}
+            title="Objectius"
+            className={`btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors ${showGoals ? 'text-teal' : 'text-slate-800'}`}
+          >
+            <ListTodo size={19} />
+          </button>
+          <button
+            onClick={() => setShowHistory(true)}
+            id="chat-history-btn"
+            className="btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors"
+          >
+            <MessageCircle size={19} />
+          </button>
+        </div>
       </header>
 
       {/* Character bubble with entrance animation */}
@@ -662,6 +702,41 @@ function Chat({
           <p>{user}</p>
           {userTranscription && <p className="mt-2 border-t border-white/30 pt-2 text-sm font-normal">Transcripció: {userTranscription}</p>}
         </div>
+      )}
+
+      {/* Pissarra d'objectius (lateral dret) */}
+      {showGoals && (
+        <aside
+          id="goals-board"
+          className="goals-board goals-enter"
+          aria-label="Objectius de la conversa"
+        >
+          <div className="goals-frame">
+            <div className="goals-head">
+              <b className="goals-title">📌 Objectius</b>
+              <button
+                onClick={() => setShowGoals(false)}
+                id="goals-close-btn"
+                aria-label="Amagar objectius"
+                className="btn-press grid h-7 w-7 place-items-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <p className="goals-sub">
+              Això és el que pots dir o demanar a {goalsInfo.character.split(',')[0]}:
+            </p>
+            <ul className="goals-list">
+              {goalsInfo.objectius.map((goal, i) => (
+                <li key={`${scenario}-${i}`} className="goals-item">
+                  <span className="goals-num">{i + 1}</span>
+                  <span>{goal}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="goals-footer">✨ Practica en veu alta i diverteix-te!</p>
+          </div>
+        </aside>
       )}
 
       {/* Input */}
