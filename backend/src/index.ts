@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { type Response } from 'express';
 import cors from 'cors';
 import { z } from 'zod';
 import { requireAuth, getAdmin, type AuthRequest } from './middleware/auth.js';
@@ -59,6 +59,14 @@ function db(userId?: string) {
   return client as any;
 }
 
+// Resposta comuna per als errors de validació (Zod): 400 amb el detall de cada camp.
+function validationError(res: Response, error: z.ZodError) {
+  return res.status(400).json({
+    error: 'Petició invàlida',
+    issues: error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+  });
+}
+
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // Descripció pública de cada escenari (personatge + objectius de la conversa).
@@ -84,20 +92,26 @@ app.get('/api/greeting-audio', async (req, res) => {
 });
 
 app.post('/api/tts', async (req, res) => {
-  const { text, scenario, voice } = z.object({
-    text: z.string().min(1).max(2000),
-    scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament', 'colegi', 'turisme']).optional(),
-    voice: z.string().min(1).max(50).optional(),
-  }).parse(req.body);
-  const audio = await tts.synthesize(
-    text,
-    voice ?? (scenario ? VOICE_BY_SCENARIO[scenario] : undefined),
-  );
-  if (!audio) return res.status(503).json({ error: 'No hem pogut generar l’àudio' });
-  res.json({
-    audio_base64: audio.audio.toString('base64'),
-    mime_type: audio.mimeType,
-  });
+  try {
+    const { text, scenario, voice } = z.object({
+      text: z.string().min(1).max(2000),
+      scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament', 'colegi', 'turisme']).optional(),
+      voice: z.string().min(1).max(50).optional(),
+    }).parse(req.body);
+    const audio = await tts.synthesize(
+      text,
+      voice ?? (scenario ? VOICE_BY_SCENARIO[scenario] : undefined),
+    );
+    if (!audio) return res.status(503).json({ error: 'No hem pogut generar l’àudio' });
+    res.json({
+      audio_base64: audio.audio.toString('base64'),
+      mime_type: audio.mimeType,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) return validationError(res, error);
+    console.error(error);
+    res.status(503).json({ error: 'No hem pogut generar l’àudio' });
+  }
 });
 
 app.post('/api/sessions', requireAuth, async (req: AuthRequest, res) => {
@@ -121,8 +135,9 @@ app.post('/api/sessions', requireAuth, async (req: AuthRequest, res) => {
     if (error) throw error;
     res.status(201).json({ session_id: data.id });
   } catch (error) {
+    if (error instanceof z.ZodError) return validationError(res, error);
     console.error(error);
-    res.status(400).json({ error: 'No hem pogut iniciar la sessió' });
+    res.status(500).json({ error: 'No hem pogut iniciar la sessió' });
   }
 });
 
@@ -232,6 +247,7 @@ app.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
       xp_delta: xpDelta,
     });
   } catch (error) {
+    if (error instanceof z.ZodError) return validationError(res, error);
     console.error(error);
     res.status(500).json({ error: 'No hem pogut processar el torn' });
   }
