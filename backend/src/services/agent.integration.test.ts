@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { replyFromAgent } from './agent.js';
 import type { ScenarioKey } from '../scenarios/types.js';
+import type { LevelKey } from '@parlaval/shared';
 
 // Carga las variables del fichero .env del backend (ruta absoluta robusta).
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
@@ -31,8 +32,8 @@ const SIGNALS = ['below', 'on', 'above'];
 
 type Case = {
   name: string;
-  scenario: 'mercat' | 'bar' | 'oficina' | 'ajuntament' | 'colegi';
-  level: 'principiant' | 'intermedi' | 'avancat';
+  scenario: ScenarioKey;
+  level: LevelKey;
   message: string;
   /** mood esperat aproximadament (es comprova si està definit) */
   mood?: 'neutral' | 'content' | 'confus';
