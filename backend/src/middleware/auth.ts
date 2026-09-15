@@ -38,9 +38,8 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
 
   const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) {
-    // Token inválido: permitir como demo en lugar de bloquear
-    req.userId = 'demo-user';
-    return next();
+    // Token presente pero inválido/caducado: rechazar (no degradar a demo)
+    return res.status(401).json({ error: 'Token inválido o caducado' });
   }
   req.userId = user.id;
   next();
