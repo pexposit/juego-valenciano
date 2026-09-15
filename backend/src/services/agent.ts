@@ -33,6 +33,10 @@ const OPENAI_MODELS = [
   'gpt-4o',
 ].filter((model, index, models) => models.indexOf(model) === index);
 
+// Límite por petición: si un modelo cuelga, se corta y se prueba el siguiente
+// en lugar de esperar indefinidamente. Ajustable con OPENAI_TIMEOUT_MS.
+const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS) || 30_000;
+
 export async function replyFromAgent(args: {
   scenario: ScenarioKey;
   level: string;
@@ -57,6 +61,7 @@ export async function replyFromAgent(args: {
             Authorization: `Bearer ${key}`,
             'Content-Type': 'application/json',
           },
+          signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
           body: JSON.stringify({
             model,
             max_completion_tokens: 450,

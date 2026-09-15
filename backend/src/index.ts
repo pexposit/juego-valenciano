@@ -29,6 +29,9 @@ const turnSchema = z.object({
   input_mode: z.enum(['text', 'voice']),
   text: z.string().max(2000).optional().default(''),
   audio_base64: z.string().nullable().optional(),
+  // Si el cliente pide omitir el audio (p. ej. lo pedirá después a /api/tts),
+  // el turno responde solo con texto y gana el tiempo del TTS.
+  include_audio: z.boolean().optional().default(true),
   // Historial de la conversación enviado por el cliente en tiempo real; permite
   // mantener el contexto del personaje también en modo demo (sin base de datos).
   history: z.array(z.object({
@@ -82,7 +85,7 @@ app.get('/api/greeting-audio', async (req, res) => {
 
 app.post('/api/tts', async (req, res) => {
   const { text, scenario, voice } = z.object({
-    text: z.string().min(1).max(500),
+    text: z.string().min(1).max(2000),
     scenario: z.enum(['mercat', 'bar', 'oficina', 'ajuntament', 'colegi', 'turisme']).optional(),
     voice: z.string().min(1).max(50).optional(),
   }).parse(req.body);
@@ -127,10 +130,13 @@ app.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
   try {
     const data = turnSchema.parse(req.body);
     let text = data.text.trim();
+    const startedAt = Date.now();
 
     if (data.input_mode === 'voice') {
       if (!data.audio_base64) return res.status(400).json({ error: 'Falta l\'àudio' });
+      const sttStart = Date.now();
       text = await stt.transcribe(Buffer.from(data.audio_base64, 'base64'), 'audio/webm');
+      console.log(`[turn] stt=${Date.now() - sttStart}ms`);
     }
     if (!text) return res.status(400).json({ error: 'No hi ha cap missatge' });
 
@@ -164,42 +170,59 @@ app.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
       history = (historyData || []).reverse();
     }
 
+    const agentStart = Date.now();
     const reply = await replyFromAgent({
       scenario: data.scenario,
       level: data.level,
       message: text,
       history,
     });
+    console.log(`[turn] agente=${Date.now() - agentStart}ms`);
 
-    const audio = await tts.synthesize(reply.reply_text, VOICE_BY_SCENARIO[data.scenario]);
     const xpDelta = 10;
 
-    // Persist to database (skip in demo mode)
-    if (client) {
-      await client.from('conversation_messages').insert([
-        {
-          session_id: data.session_id,
-          role: 'user',
-          content_text: text,
-          input_mode: data.input_mode,
-          detected_level_signal: reply.detected_level_signal,
-          error_flags: reply.error_flags,
-        },
-        {
-          session_id: data.session_id,
-          role: 'character',
-          content_text: reply.reply_text,
-          input_mode: 'text',
-        },
-      ]);
-      await client.rpc('apply_turn_xp', {
-        p_user_id: req.userId,
-        p_session_id: data.session_id,
-        p_scenario: data.scenario,
-        p_xp_delta: xpDelta,
-        p_threshold: SCENARIO_XP,
-      });
-    }
+    // La persistencia y el TTS corren en paralelo: el audio no depende de la BD.
+    const persistPromise = client
+      ? (async () => {
+          const dbStart = Date.now();
+          await client.from('conversation_messages').insert([
+            {
+              session_id: data.session_id,
+              role: 'user',
+              content_text: text,
+              input_mode: data.input_mode,
+              detected_level_signal: reply.detected_level_signal,
+              error_flags: reply.error_flags,
+            },
+            {
+              session_id: data.session_id,
+              role: 'character',
+              content_text: reply.reply_text,
+              input_mode: 'text',
+            },
+          ]);
+          await client.rpc('apply_turn_xp', {
+            p_user_id: req.userId,
+            p_session_id: data.session_id,
+            p_scenario: data.scenario,
+            p_xp_delta: xpDelta,
+            p_threshold: SCENARIO_XP,
+          });
+          console.log(`[turn] db=${Date.now() - dbStart}ms`);
+        })()
+      : Promise.resolve();
+
+    const wantsAudio = data.include_audio;
+    const ttsStart = Date.now();
+    const [audio] = await Promise.all([
+      wantsAudio
+        ? tts.synthesize(reply.reply_text, VOICE_BY_SCENARIO[data.scenario])
+        : Promise.resolve(null),
+      persistPromise,
+    ]);
+    console.log(
+      `[turn] tts=${wantsAudio ? Date.now() - ttsStart : 0}ms total=${Date.now() - startedAt}ms`,
+    );
 
     res.json({
       ...reply,
