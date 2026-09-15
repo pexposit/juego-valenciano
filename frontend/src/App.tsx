@@ -86,6 +86,18 @@ function PageTransition({ children }: { children: React.ReactNode }) {
 }
 
 /* ══════════════════ HOME PAGE ══════════════════════════════════════ */
+// Salutacions d'inici pregenerades com a fitxers estàtics (veu segons el sexe del
+// personatge: lluc = masculina, gina = femenina). En obrir l'escenari es reprodueixen
+// al moment, sense cap crida al TTS del backend.
+const GREETING_BY_SCENARIO: Record<Scenario, string> = {
+  mercat: '/audio/salutacio-lluc.wav',
+  bar: '/audio/salutacio-gina.wav',
+  oficina: '/audio/salutacio-lluc.wav',
+  ajuntament: '/audio/salutacio-gina.wav',
+  colegi: '/audio/salutacio-gina.wav',
+  turisme: '/audio/salutacio-gina.wav',
+};
+
 const homeImages = [
   {
     src: '/images/Ciudad de las Artes y las Ciencias: Complejo arquitectónico moderno con edificios blancos y formas futuristas rodeados de agua, símbolo de innovación..jpeg',
@@ -508,56 +520,52 @@ function Chat({
   const [showGoals, setShowGoals] = useState(() => typeof window === 'undefined' || window.innerWidth >= 900);
   const [goalsInfo, setGoalsInfo] = useState<{ character: string; objectius: string[] }>(() => scenarioGoals[scenario]);
 
-  const loadTextAudio = async (text: string) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, scenario }),
-      });
-      if (!response.ok) return;
-      const payload = await response.json() as { audio_base64: string; mime_type: string };
-      const source = `data:${payload.mime_type};base64,${payload.audio_base64}`;
-      replyAudio.current = new Audio(source);
-      setAudioSource(source);
-    } catch {
-      // Browser speech remains available from the replay button as a fallback.
+  const loadTextAudio = async (text: string, autoplay = false) => {
+    // Solo TTS real (matxa). Si falla tras un reintento, NO se usa la voz del
+    // navegador (speechSynthesis): se queda sin audio y el usuario puede reintentar.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, scenario }),
+        });
+        if (!response.ok) throw new Error(`tts ${response.status}`);
+        const payload = await response.json() as { audio_base64: string; mime_type: string };
+        const source = `data:${payload.mime_type};base64,${payload.audio_base64}`;
+        const audio = new Audio(source);
+        replyAudio.current = audio;
+        setAudioSource(source);
+        if (autoplay) void audio.play().catch(() => {});
+        return;
+      } catch {
+        if (attempt === 1) {
+          replyAudio.current = null;
+          setAudioSource(undefined);
+        }
+      }
     }
   };
 
   const replayCharacter = () => {
+    // Nunca se usa la voz del navegador: solo el audio TTS generado por el backend.
     const audio = replyAudio.current;
-    if (audio) {
-      audio.currentTime = 0;
-      audio.play().catch(() => {
-        speechSynthesis.speak(new SpeechSynthesisUtterance(character));
-      });
-      return;
-    }
-    speechSynthesis.speak(new SpeechSynthesisUtterance(character));
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => {});
   };
 
+  // Salutació pregenerada: fitxer estàtic servit per Vite, es reprodueix en obrir
+  // l'escenari sense processar res (autoplay si el navegador ho permet; sinó,
+  // el botó de repetir la llança amb un gest de l'usuari).
   useEffect(() => {
-    let cancelled = false;
-
-    const loadGreetingAudio = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/greeting-audio?scenario=${scenario}`);
-        if (!response.ok) return;
-        const payload = await response.json() as { audio_base64: string; mime_type: string };
-        if (!cancelled && !hasSubmitted.current) {
-          const source = `data:${payload.mime_type};base64,${payload.audio_base64}`;
-          replyAudio.current = new Audio(source);
-          setAudioSource(source);
-        }
-      } catch {
-        // The replay button falls back to the browser voice if TTS is unavailable.
-      }
-    };
-
-    void loadGreetingAudio();
-    return () => { cancelled = true; };
-  }, []);
+    if (hasSubmitted.current) return;
+    const source = GREETING_BY_SCENARIO[scenario];
+    const audio = new Audio(source);
+    replyAudio.current = audio;
+    setAudioSource(source);
+    void audio.play().catch(() => {});
+  }, [scenario]);
 
   // Carrega els objectius des del backend; si falla, es mostren els per defecte.
   useEffect(() => {
@@ -590,7 +598,9 @@ function Chat({
       const context: HistoryItem[] = history.length > 0
         ? history.map((m) => ({ role: m.role, content_text: m.text }))
         : [{ role: 'character', content_text: character }];
-      const r = await sendTurn({ session_id: activeSession, scenario, level, input_mode: audio ? 'voice' : 'text', text, audio_base64: audio || null, history: context });
+      // include_audio:false → el turno responde solo con texto (el usuario ve la
+      // respuesta al instante) y el audio se pide en paralelo a /api/tts.
+      const r = await sendTurn({ session_id: activeSession, scenario, level, input_mode: audio ? 'voice' : 'text', text, audio_base64: audio || null, history: context, include_audio: false });
       setCharacter(r.reply_text);
       setUserTranscription(r.transcription || undefined);
       setMood(r.mood);
@@ -604,8 +614,7 @@ function Chat({
         setAudioSource(source);
         a.play().catch(() => {});
       } else {
-        replyAudio.current = null;
-        setAudioSource(undefined);
+        void loadTextAudio(r.reply_text, true);
       }
     } catch {
       const errorMessage = "No t'he sentit bé, pots repetir-ho?";
