@@ -1,0 +1,7 @@
+# Entorn virtual de Python (Vosk) i models descarregats: pesen i no es trackegen.
+.venv/
+models/
+*.zip
+# Àudios de prova convertits a 16 kHz (es regeneren amb scripts/convert-samples.sh).
+bench/samples/*.wav
+__pycache__/

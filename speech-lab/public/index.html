@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Laboratori de veu en temps real · ParlaVal</title>
+<style>
+  :root {
+    --teal: #0f766e; --cream: #fdf6e3; --coral: #e76f51; --ink: #1f2933; --line: #d8dee6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px; font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink); background: var(--cream);
+  }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  h1 { font-size: 18px; margin: 0; }
+  .badge { padding: 2px 10px; border-radius: 999px; font-size: 13px; background: #e2e8f0; }
+  .badge[data-kind="ok"] { background: #ccfbf1; color: #115e59; }
+  .badge[data-kind="live"] { background: #fee2e2; color: #991b1b; }
+  .badge[data-kind="error"] { background: #fee2e2; color: #991b1b; }
+  main {
+    display: grid; gap: 12px; grid-template-columns: 1fr;
+  }
+  section { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-height: 0; }
+  section h2 { font-size: 14px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; color: #52606d; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button {
+    font: inherit; padding: 10px 14px; border-radius: 999px; border: 0; cursor: pointer;
+    background: var(--teal); color: #fff;
+  }
+  button.ghost { background: #fff; color: var(--teal); border: 1px solid var(--teal); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.rec { background: var(--coral); }
+  textarea, input { width: 100%; font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+  textarea { min-height: 76px; resize: vertical; }
+  .live { font-size: 22px; min-height: 34px; }
+  .live .pending { color: #94a3b8; }
+  .finals { list-style: none; margin: 0; padding: 0; font-size: 15px; }
+  .finals li { border-top: 1px dashed var(--line); padding: 6px 0; }
+  .finals time { color: #64748b; font-size: 12px; margin-left: 6px; }
+  dl { margin: 0; font-size: 14px; }
+  dt { color: #52606d; }
+  dd { margin: 0; font-variant-numeric: tabular-nums; }
+  /* Mètriques en fiches horitzontals: etiqueta a dalt, valor a baix,
+     totes en una fila que salta de línia si no hi cap. */
+  dl.stats {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  dl.stats .stat {
+    flex: 1 1 110px; min-width: 100px;
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 8px;
+    padding: 6px 10px;
+  }
+  dl.stats dt {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  dl.stats dd { font-size: 17px; font-weight: 600; }
+  #log {
+    font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap;
+    overflow: auto; margin: 0; color: #334155; flex: 1; min-height: 0;
+  }
+  .hint { color: #64748b; font-size: 13px; margin: 6px 0 0; }
+  .warn { color: #b45309; font-size: 13px; font-weight: 600; margin: 6px 0 0; }
+  .bad { color: #991b1b; font-size: 13px; font-weight: 600; margin: 6px 0 0; }
+  .ok { color: #115e59; font-size: 13px; font-weight: 600; margin: 6px 0 0; }
+  /* Mesurador de nivell: barra amb zones verda i roja als extrems */
+  .meter {
+    position: relative; height: 22px; border-radius: 6px; overflow: hidden;
+    background: linear-gradient(90deg, #e2e8f0 0 70%, #fde68a 70% 90%, #fecaca 90% 100%);
+    border: 1px solid var(--line);
+  }
+  .meter span {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+    background: rgba(15, 118, 110, .8); transition: width .05s linear;
+  }
+  .meter .peak { background: var(--ink); width: 2px; transition: none; }
+  fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin: 8px 0 0; }
+  legend { font-size: 13px; color: #52606d; padding: 0 4px; }
+  label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; margin-right: 12px; }
+  /* ── Panell d'una pantalla: tot visible sense baixar ────────────────────── */
+  @media (min-width: 960px) {
+    html, body { height: 100%; }
+    body {
+      height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column; padding: 12px;
+    }
+    header { flex: none; margin-bottom: 10px; }
+    main {
+      flex: 1; min-height: 0;
+      grid-template-columns: minmax(280px, 1.1fr) minmax(320px, 1.5fr) minmax(240px, 0.9fr);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    section.mic { grid-column: 1; grid-row: 1 / 3; overflow-y: auto; }
+    section.level { grid-column: 2; grid-row: 1; }
+    section.trans {
+      grid-column: 2; grid-row: 2;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    section.trans .finals { flex: 1; min-height: 0; overflow-y: auto; }
+    section.metrics { grid-column: 3; grid-row: 1; }
+    section.log {
+      grid-column: 3; grid-row: 2;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+  }
+  select { font: inherit; padding: 6px; border: 1px solid var(--line); border-radius: 8px; max-width: 100%; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Laboratori de veu en temps real</h1>
+  <span class="badge" id="status">desconnectat</span>
+  <span class="badge" id="engine">motor: —</span>
+</header>
+
+<main>
+  <section class="mic">
+    <h2>Micròfon</h2>
+    <div class="row">
+      <button id="toggle" disabled>Escoltar</button>
+      <button id="endTurn" class="ghost" disabled>Fi del torn</button>
+      <button id="clear" class="ghost">Neteja</button>
+    </div>
+    <p id="micState" class="hint">Micròfon tancat: prem «Escoltar».</p>
+    <p class="hint" id="audioHint">Àudio a 16 kHz mono PCM16 (el format que espera Vosk).</p>
+
+    <fieldset>
+      <legend>Dispositiu i filtres del navegador</legend>
+      <select id="device"></select>
+      <div style="margin-top:6px">
+        <label class="check"><input type="checkbox" id="agc"> Ganància automàtica</label>
+        <label class="check"><input type="checkbox" id="ns"> Supressió de soroll</label>
+        <label class="check"><input type="checkbox" id="ec"> Cancel·lació d'eco</label>
+      </div>
+      <p class="hint">Els filtres van desactivats per defecte perquè estan pensats per a
+        telefonades i deformen el senyal. Si el nivell és molt fluix, prova la ganància
+        automàtica. Els canvis s'apliquen de seguida, sense tancar el torn.</p>
+    </fieldset>
+
+    <div class="row" style="margin-top:8px">
+      <label class="check"><input type="checkbox" id="continuous"> Mode continu (no cal prémer «Escoltar» a cada torn)</label>
+    </div>
+
+    <fieldset>
+      <legend>Mode trucada · parla amb l'agent del joc</legend>
+      <div class="row" style="margin-top:6px">
+        <select id="callScenario" aria-label="Escenari">
+          <option value="mercat">El Mercat · Lluc</option>
+          <option value="bar">El Bar · Gina</option>
+          <option value="oficina">L'Oficina · Lluc</option>
+          <option value="ajuntament">L'Ajuntament · Gina</option>
+          <option value="colegi">L'Escola · Gina</option>
+          <option value="turisme">Oficina de Turisme · Gina</option>
+        </select>
+        <select id="callLevel" aria-label="Nivell">
+          <option value="principiant">Principiant</option>
+          <option value="intermedi">Intermedi</option>
+          <option value="avancat">Avançat</option>
+        </select>
+        <button id="callBtn" class="ghost">📞 Trucar</button>
+      </div>
+      <p id="callState" class="hint">Sense trucada. En trucar, cada frase que digues es passa
+        a l'agent del joc i et contesta amb veu, sense tocar cap botó.</p>
+      <p class="hint">L'API de l'agent és la del joc (<span id="callApi">http://localhost:3001</span>)
+        i es consumeix tal com és, sense modificar-la. Es pot canviar amb <code>?agent=…</code> a l'URL.
+        Mentre el personatge parla, el micròfon es pausa per no enviar el seu propi àudio.</p>
+    </fieldset>
+
+    <p class="hint">Vocabulari restringit (una frase per línia; buit = vocabulari lliure).
+      El proveïdor descarta tot el que no estiga a la llista, així que cal escriure les
+      frases sense puntuació. S'aplica en obrir el torn.</p>
+    <textarea id="phrases" spellcheck="false" placeholder="bon dia&#10;quant costa&#10;vull dos quilos de taronges"></textarea>
+  </section>
+
+  <section class="level">
+    <h2>Nivell d'entrada</h2>
+    <div class="meter" id="meter"><span id="meterBar"></span><span class="peak" id="meterPeak"></span></div>
+    <dl class="stats" style="margin-top:8px">
+      <div class="stat"><dt>Nivell ara</dt><dd id="levelNow">— dBFS</dd></div>
+      <div class="stat"><dt>Pic</dt><dd id="levelPeak">— dBFS</dd></div>
+      <div class="stat"><dt>Veu detectada</dt><dd id="voicePct">—</dd></div>
+    </dl>
+    <p id="levelVerdict" class="hint">El mesurador s'activa en obrir el micròfon.</p>
+    <p class="hint">Referència: per davall de −45 dBFS el motor de veu rep sobre tot
+      soroll i inventa paraules. Una parla normal ronda −30 a −18 dBFS.</p>
+  </section>
+
+  <section class="trans">
+    <h2>Transcripció</h2>
+    <p class="live" id="live"><span class="pending">—</span></p>
+    <ul class="finals" id="finals"></ul>
+  </section>
+
+  <section class="metrics">
+    <h2>Mètriques</h2>
+    <dl class="stats">
+      <div class="stat"><dt>Estat</dt><dd id="mState">parat</dd></div>
+      <div class="stat"><dt>Àudio enviat</dt><dd id="mAudio">0 ms</dd></div>
+      <div class="stat"><dt>Primer parcial</dt><dd id="mFirst">—</dd></div>
+      <div class="stat"><dt>Final del torn</dt><dd id="mFinal">—</dd></div>
+      <div class="stat"><dt>Còmput del motor</dt><dd id="mCompute">—</dd></div>
+      <div class="stat"><dt>RTF</dt><dd id="mRtf">—</dd></div>
+      <div class="stat"><dt>Context</dt><dd id="mRate">—</dd></div>
+      <div class="stat"><dt>Mostres/s</dt><dd id="mSps">—</dd></div>
+      <div class="stat"><dt>Veu mitjana</dt><dd id="mVoiceDb">—</dd></div>
+    </dl>
+    <p class="hint">RTF = còmput / àudio. Per davall d'1 el motor va més ràpid que la parla.
+      «Mostres/s» ha de rondar 16.000: si se n'allunya, el resampling no quadra.</p>
+  </section>
+
+  <section class="log">
+    <h2>Registre</h2>
+    <pre id="log"></pre>
+  </section>
+</main>
+
+<script type="module" src="/lab.js"></script>
+</body>
+</html>
