@@ -161,11 +161,14 @@
         </select>
         <button id="callBtn" class="ghost">📞 Trucar</button>
       </div>
+      <label class="check" style="margin-top:6px"><input type="checkbox" id="bargeIn" checked>
+        Permetre interrompre l'agent mentre parla (barge-in)</label>
       <p id="callState" class="hint">Sense trucada. En trucar, cada frase que digues es passa
         a l'agent del joc i et contesta amb veu, sense tocar cap botó.</p>
       <p class="hint">L'API de l'agent és la del joc (<span id="callApi">http://localhost:3001</span>)
         i es consumeix tal com és, sense modificar-la. Es pot canviar amb <code>?agent=…</code> a l'URL.
-        Mentre el personatge parla, el micròfon es pausa per no enviar el seu propi àudio.</p>
+        Mentre el personatge parla, el micròfon es pausa per no enviar el seu propi àudio;
+        amb el barge-in actiu, si li parleu a sobre, talla la frase i escolta.</p>
     </fieldset>
 
     <p class="hint">Vocabulari restringit (una frase per línia; buit = vocabulari lliure).

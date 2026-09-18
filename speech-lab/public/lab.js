@@ -33,6 +33,7 @@ const ui = {
   levelVerdict: el('levelVerdict'),
   callBtn: el('callBtn'), callScenario: el('callScenario'), callLevel: el('callLevel'),
   callState: el('callState'), callApi: el('callApi'),
+  bargeIn: el('bargeIn'),
 };
 
 let socket = null;
@@ -204,6 +205,16 @@ function pushSamples(samples) {
 /** Un bloc del worklet: sempre mesurem el nivell; només enviem si hi ha torn. */
 function handleAudioBlock(block) {
   updateMeter(block.rms, block.peak);
+  // Barge-in: si l'agent està parlant i el micròfon rep veu (no altaveu, gràcies
+  // a la cancel·lació d'eco), 2 blocs seguits (~256 ms) tallen la reproducció.
+  // Només si el interruptor «barge-in» està actiu.
+  if (ui.bargeIn.checked && call.active && call.audio && call.abortAudio) {
+    call.barge.streak = block.rms > VOICE_RMS ? call.barge.streak + 1 : 0;
+    if (call.barge.streak >= 2 && call.abortAudio) {
+      call.barge.streak = 0;
+      call.abortAudio('has interromput l\'agent');
+    }
+  }
   // Durant la resposta de l'agent no enviem res: el seu àudio pels altaveus
   // no ha de tornar a entrar al reconeixedor.
   if (!turnActive || call.paused) return;
@@ -474,6 +485,10 @@ ui.callApi.textContent = agentBase;
 const call = {
   active: false, busy: false, paused: false,
   session: null, history: [], audio: null,
+  /** Cancel·la la reproducció en curs quan l'usuari interromp (barge-in). */
+  abortAudio: null,
+  /** Barge-in: blocs de veu consecutius mentre l'agent parla → talla l'àudio. */
+  barge: { streak: 0, interrupted: false },
   prevContinuous: true, prevPhrases: '',
 };
 
@@ -555,10 +570,19 @@ async function handleCallTurn(text) {
       await sleepMs(1200);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    log(`ERROR de l'agent: ${message}`);
-    setCallState(`No s'ha pogut parlar amb l'agent: ${message}`, 'bad');
-    await sleepMs(1200);
+    if (error?.name === 'InterruptedError') {
+      // Barge-in: parem l'àudio a mitja frase. El text queda a l'historial com a
+      // context, però l'usuari ja ha passat pàgina: escoltem de seguida.
+      if (call.active) {
+        log("barge-in: l'usuari ha interromput la resposta de l'agent");
+        setCallState("T'he escoltat: parla quan vulgues.", 'hint');
+      }
+    } else {
+      const message = error instanceof Error ? error.message : String(error);
+      log(`ERROR de l'agent: ${message}`);
+      setCallState(`No s'ha pogut parlar amb l'agent: ${message}`, 'bad');
+      await sleepMs(1200);
+    }
   } finally {
     call.busy = false;
     call.paused = false;
@@ -566,11 +590,27 @@ async function handleCallTurn(text) {
   }
 }
 
+/**
+ * Reproducció interrumpible: l'àudio del personatge es talla a mitja frase si
+ * l'usuari comença a parlar (barge-in) o si es penja la trucada.
+ */
 function playBase64(base64, mimeType) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const audio = new Audio(`data:${mimeType};base64,${base64}`);
     call.audio = audio;
+    const abort = (reason) => {
+      call.abortAudio = null;
+      if (call.audio === audio) call.audio = null;
+      audio.pause();
+      audio.src = '';
+      call.barge.interrupted = true;
+      const interruption = new Error(reason);
+      interruption.name = 'InterruptedError';
+      reject(interruption);
+    };
+    call.abortAudio = abort;
     const done = () => {
+      if (call.abortAudio === abort) call.abortAudio = null;
       if (call.audio === audio) call.audio = null;
       resolve();
     };
@@ -590,7 +630,14 @@ async function startCall() {
   call.active = true;
   call.prevContinuous = ui.continuous.checked;
   call.prevPhrases = ui.phrases.value;
+  // El barge-in necessita cancel·lació d'eco: si no, l'altaveu entraria al
+  // micròfon i l'agent s'interrompria a si mateix. Es restaura en penjar.
+  call.prevEc = ui.ec.checked;
   ui.continuous.checked = true; // la trucada viu del mode continu
+  if (ui.bargeIn.checked) {
+    ui.ec.checked = true;
+    if (micOpen) void reopenMic('cancel·lació d\'eco per al barge-in');
+  }
   if (ui.phrases.value.trim()) {
     ui.phrases.value = ''; // lliure dins la trucada: l'agent entén més enllà de la llista
     log('vocabulari restringit suspés durant la trucada');
@@ -614,6 +661,8 @@ async function startCall() {
 function hangUp() {
   call.active = false;
   call.paused = false;
+  // Barge-in: allibera la reproducció en curs (la promesa es resol, no es penja).
+  if (call.abortAudio) call.abortAudio('trucada penjada');
   if (call.audio) {
     call.audio.onended = null;
     call.audio.onerror = null;
@@ -621,6 +670,7 @@ function hangUp() {
     call.audio = null;
   }
   ui.continuous.checked = call.prevContinuous;
+  ui.ec.checked = call.prevEc ?? false;
   ui.phrases.value = call.prevPhrases;
   ui.callBtn.textContent = '📞 Trucar';
   ui.callBtn.classList.remove('rec');
