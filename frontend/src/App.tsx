@@ -525,9 +525,15 @@ function Chat({
     // navegador (speechSynthesis): se queda sin audio y el usuario puede reintentar.
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
+        // El token fa que la petició compte contra el límit de l'usuari amb
+        // sessió: el backend limita molt més les peticions anònimes.
+        const token = (await supabase?.auth.getSession())?.data.session?.access_token;
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({ text, scenario }),
         });
         if (!response.ok) throw new Error(`tts ${response.status}`);

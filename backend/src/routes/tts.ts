@@ -1,13 +1,24 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { VOICE_BY_SCENARIO } from '@parlaval/shared';
+import { requireAuth } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 import { tts } from '../services/voice.js';
 import { validationError } from '../validation.js';
 import { ttsSchema } from '../schemas.js';
 
 export const ttsRouter = Router();
 
-ttsRouter.post('/api/tts', async (req, res) => {
+// El TTS depén d'un servici extern (matxa, servidor DeepLab de la UJI): sense
+// límit, qualsevol que trobe l'URL el podria fer servir de sintetitzador
+// gratuït. Per això va darrere d'autenticació (o mode demostració) i d'un límit.
+const TTS_RATE_LIMIT = {
+  windowMs: 60_000,
+  max: Number(process.env.RATE_LIMIT_AUTHED_PER_MIN) || 30,
+  maxAnonymous: Number(process.env.RATE_LIMIT_ANON_PER_MIN) || 6,
+};
+
+ttsRouter.post('/api/tts', requireAuth, rateLimit(TTS_RATE_LIMIT), async (req, res) => {
   try {
     const { text, scenario, voice } = ttsSchema.parse(req.body);
     const audio = await tts.synthesize(

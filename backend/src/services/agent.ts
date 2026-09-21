@@ -11,24 +11,11 @@ const outputSchema = z.object({
 
 export type AgentReply = z.infer<typeof outputSchema>;
 
-const jsonSchema = {
-  name: 'parlaval_reply',
-  strict: true,
-  schema: {
-    type: 'object',
-    properties: {
-      reply_text: { type: 'string' },
-      mood: { type: 'string', enum: ['neutral', 'content', 'confus'] },
-      detected_level_signal: { type: 'string', enum: ['below', 'on', 'above'] },
-      error_flags: { type: 'array', items: { type: 'string' } },
-    },
-    required: ['reply_text', 'mood', 'detected_level_signal', 'error_flags'],
-    additionalProperties: false,
-  },
-};
-
+// Cadena de models: el principal (OPENAI_MODEL) i dos de reserva per si falla.
+// El nom ha d'existir a OpenAI: un valor inventat gasta dos intents (404) en
+// cada torn abans de passar al model de reserva.
 const OPENAI_MODELS = [
-  process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+  process.env.OPENAI_MODEL || 'gpt-4o-mini',
   'gpt-4o-mini',
   'gpt-4o',
 ].filter((model, index, models) => models.indexOf(model) === index);

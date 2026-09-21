@@ -8,6 +8,7 @@ import {
   type HistoryMessage,
 } from '@parlaval/shared';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
@@ -16,7 +17,16 @@ import { stt, tts } from '../services/voice.js';
 
 export const turnRouter = Router();
 
-turnRouter.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
+// Cada torn consumix OpenAI i el TTS del servidor de la UJI: el límit protegix
+// la factura. Els usuaris amb sessió poden conversar sense fricció; les
+// peticions anònimes (mode demostració) van molt més limitades.
+const TURN_RATE_LIMIT = {
+  windowMs: 60_000,
+  max: Number(process.env.RATE_LIMIT_AUTHED_PER_MIN) || 30,
+  maxAnonymous: Number(process.env.RATE_LIMIT_ANON_PER_MIN) || 6,
+};
+
+turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req: AuthRequest, res) => {
   try {
     const data = turnSchema.parse(req.body);
     let text = data.text.trim();
@@ -34,12 +44,15 @@ turnRouter.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
 
     // Validate session (skip in demo mode)
     if (client) {
-      const { data: session } = await client
+      const { data: session, error: sessionError } = await client
         .from('conversation_sessions')
         .select('id,user_id,scenario')
         .eq('id', data.session_id)
         .single();
       if (!session || session.user_id !== req.userId || session.scenario !== data.scenario) {
+        // Un error de consulta (BD caiguda, permisos) es veu als logs; el client
+        // rep el mateix 403 que si la sessió no existira.
+        if (sessionError) console.warn('[turn] error consultant la sessió:', sessionError.message);
         return res.status(403).json({ error: 'Sessió no vàlida' });
       }
     }
@@ -53,12 +66,15 @@ turnRouter.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
     //   caracteres definido en el paquete compartido.
     let history: HistoryMessage[];
     if (client) {
-      const { data: historyData } = await client
+      const { data: historyData, error: historyError } = await client
         .from('conversation_messages')
         .select('role,content_text')
         .eq('session_id', data.session_id)
         .order('created_at', { ascending: false })
         .limit(HISTORY_MAX_MESSAGES);
+      // Si la lectura falla, el torn continua sense context: pitjor resposta,
+      // però el client no es queda sense contestació.
+      if (historyError) console.error("[turn] no hem pogut llegir l'historial:", historyError.message);
       history = sanitizeHistory(((historyData || []).reverse()) as HistoryMessage[]);
     } else {
       history = sanitizeHistory(data.history);
@@ -79,7 +95,10 @@ turnRouter.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
     const persistPromise = client
       ? (async () => {
           const dbStart = Date.now();
-          await client.from('conversation_messages').insert([
+          // Supabase NO llança excepcions: torna l'error dins del resultat. Si no
+          // es comprova, l'usuari juga, veu pujar l'XP en pantalla i el progrés
+          // es perd en silenci (i l'operador no se n'assabenta mai).
+          const { error: insertError } = await client.from('conversation_messages').insert([
             {
               session_id: data.session_id,
               role: 'user',
@@ -95,13 +114,21 @@ turnRouter.post('/api/turn', requireAuth, async (req: AuthRequest, res) => {
               input_mode: 'text',
             },
           ]);
-          await client.rpc('apply_turn_xp', {
+          if (insertError) {
+            console.error('[turn] no hem pogut guardar els missatges:', insertError.message);
+            return;
+          }
+          const { error: xpError } = await client.rpc('apply_turn_xp', {
             p_user_id: req.userId,
             p_session_id: data.session_id,
             p_scenario: data.scenario,
             p_xp_delta: xpDelta,
             p_threshold: SCENARIO_XP,
           });
+          if (xpError) {
+            console.error('[turn] no hem pogut aplicar els XP:', xpError.message);
+            return;
+          }
           console.log(`[turn] db=${Date.now() - dbStart}ms`);
         })()
       : Promise.resolve();
