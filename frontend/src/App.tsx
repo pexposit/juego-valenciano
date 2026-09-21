@@ -100,37 +100,37 @@ const GREETING_BY_SCENARIO: Record<Scenario, string> = {
 
 const homeImages = [
   {
-    src: '/images/Ciudad de las Artes y las Ciencias: Complejo arquitectónico moderno con edificios blancos y formas futuristas rodeados de agua, símbolo de innovación..jpeg',
+    src: '/images/Ciudad de las Artes y las Ciencias Complejo arquitectónico moderno con edificios blancos y formas futuristas rodeados de agua, símbolo de innovación.jpeg',
     label: '🏛️ Ciutat de les Arts i les Ciències · València',
     alt: 'Ciutat de les Arts i les Ciències de València',
   },
   {
-    src: '/images/Mercado Central: Espacio lleno de vida con puestos de comida fresca, colores y productos típicos valencianos.jpeg',
+    src: '/images/Mercado Central Espacio lleno de vida con puestos de comida fresca, colores y productos típicos valencianos.jpeg',
     label: '🍊 Mercat Central · València',
     alt: 'Mercat Central de València',
   },
   {
-    src: '/images/Plaza del Ayuntamiento: Centro neurálgico de la ciudad, rodeado de edificios históricos y escenario de eventos importantes.jpeg',
+    src: '/images/Plaza del Ayuntamiento Centro neurálgico de la ciudad, rodeado de edificios históricos y escenario de eventos importantes.jpeg',
     label: '🏙️ Plaça de l’Ajuntament · València',
     alt: 'Plaça de l’Ajuntament de València',
   },
   {
-    src: '/images/Playa de la Malvarrosa: Amplia playa urbana con arena dorada y paseo marítimo muy animado.jpeg',
+    src: '/images/Playa de la Malvarrosa Amplia playa urbana con arena dorada y paseo marítimo muy animado.jpeg',
     label: '🌊 Platja de la Malva-rosa · València',
     alt: 'Platja de la Malva-rosa de València',
   },
   {
-    src: '/images/Playa de Gandía: Playa extensa, de aguas tranquilas y arena fina, ideal para familias.jpeg',
+    src: '/images/Playa de Gandía Playa extensa, de aguas tranquilas y arena fina, ideal para familias.jpeg',
     label: '🏖️ Platja de Gandia',
     alt: 'Platja de Gandia',
   },
   {
-    src: '/images/Calas de Jávea: Pequeñas calas de aguas cristalinas y rocas, perfectas para bucear.jpeg',
+    src: '/images/Calas de Jávea Pequeñas calas de aguas cristalinas y rocas, perfectas para bucear.jpeg',
     label: '🐠 Caletes de Xàbia',
     alt: 'Caletes de Xàbia',
   },
   {
-    src: '/images/Castillo del Papa Luna: Fortaleza situada sobre una roca junto al mar, imponente y bien conservada..jpeg',
+    src: '/images/Castillo del Papa Luna Fortaleza situada sobre una roca junto al mar, imponente y bien conservada.jpeg',
     label: '🏰 Castell del Papa Luna · Peníscola',
     alt: 'Castell del Papa Luna de Peníscola',
   },
