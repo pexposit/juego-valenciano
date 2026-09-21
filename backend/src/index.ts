@@ -7,6 +7,12 @@ import { sessionsRouter } from './routes/sessions.js';
 import { turnRouter } from './routes/turn.js';
 
 const app = express();
+
+// Darrere d'un proxy invers (Render, Railway, Fly.io) cal confiar en la primera
+// cabecera X-Forwarded-For: si no, `req.ip` seria sempre la IP del proxy i el
+// limitador de peticions agruparia tots els usuaris en el mateix compte.
+app.set('trust proxy', 1);
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (server-to-server, curl, etc.)

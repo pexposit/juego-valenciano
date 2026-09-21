@@ -44,4 +44,7 @@ El backend registra por turno los tiempos de cada etapa (`[turn] stt=…ms agent
 
 ## Despliegue
 
-Despliega `frontend` en Vercel con sus `VITE_*`. El backend incluye `Dockerfile` y puede desplegarse en Railway, Render o Fly.io; configura `FRONTEND_ORIGIN`, secretos de Supabase y `OPENAI_API_KEY`. Por defecto usa `gpt-5.6-luna` y dispone de `gpt-4o-mini`/`gpt-4o` como respaldo; puedes cambiarlo con `OPENAI_MODEL`. Nunca expongas `SUPABASE_SERVICE_ROLE_KEY` ni claves de proveedores en el frontend.
+Guía completa paso a paso en **[DEPLOY.md](DEPLOY.md)**: Supabase Cloud, API en Render/Railway/Fly.io y web en Vercel, con las variables de entorno, las comprobaciones posteriores y los problemas típicos.
+
+Resumen: despliega `frontend` en Vercel con sus `VITE_*` (ojo: se incrustan en el build) y el backend con `backend/Dockerfile` en un host de contenedores. Configura `FRONTEND_ORIGIN`, los secretos de Supabase y `OPENAI_API_KEY`; en producción conviene `ALLOW_DEMO=false` (o un límite anónimo bajo) y revisar `RATE_LIMIT_AUTHED_PER_MIN`/`RATE_LIMIT_ANON_PER_MIN`. El modelo principal es `OPENAI_MODEL` (por defecto `gpt-4o-mini`) y dispone de `gpt-4o` como respaldo. Nunca expongas `SUPABASE_SERVICE_ROLE_KEY` ni claves de proveedores en el frontend.
+

@@ -1,0 +1,29 @@
+# Context de build de Docker (arrel del monorepo).
+# Evita que secrets, dependències locals i models entren a la imatge.
+
+# Secrets: mai dins d'una imatge. Els .env.example sí que hi poden entrar.
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Dependències i artefactes: es generen dins del build.
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
+# Eines de desenvolupament que la imatge del backend no necessita.
+speech-lab/models
+speech-lab/.venv
+speech-lab/audios
+
+# Metadades del repo i de la CLI de Supabase.
+.git
+.github
+supabase/.temp
+supabase/.branches
+**/*.log
+.DS_Store
