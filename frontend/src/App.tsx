@@ -6,6 +6,7 @@ import {
 import { SceneArt } from './components/SceneArt';
 import { VoiceInput } from './components/VoiceInput';
 import { HistoryModal, type Msg } from './components/HistoryModal';
+import { InstitutionalLogos } from './components/InstitutionalLogos';
 import { createSession, fetchScenarios, sendTurn, type HistoryItem } from './lib/api';
 import { supabase } from './lib/supabase';
 import type { Mood, Scenario } from './lib/types';
@@ -234,6 +235,9 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
           </div>
         </div>
       </section>
+
+      {/* Entitats que donen suport al projecte */}
+      <InstitutionalLogos />
 
       {/* Footer strip */}
       <div
