@@ -11,12 +11,29 @@
  *
  * El mesurador de nivell llig el senyal cru del micròfon: si el motor rep
  * sobretot soroll, inventa paraules plausibles i açò és el que ho explica.
+ * L'ona del canvas també és local (ix del worklet), així que mostra si al motor
+ * li arriba veu encara que no responga: el seu color i la línia de davall ho
+ * resumixen (verd = parla, ambre = soroll, roig = senyal dolent).
  */
 const TARGET_RATE = 16000;
 /** 2048 mostres PCM16 = 4096 bytes = 128 ms a 16 kHz. */
 const CHUNK_BYTES = 4096;
 /** Per davall d'este RMS (~-46 dBFS) considerem que el bloc no té veu. */
 const VOICE_RMS = 0.005;
+/** Context per decidir parla/silenci: 12 blocs de 64 ms ≈ 768 ms. */
+const VOICE_HISTORY = 12;
+/** RMS mitjà mínim per dir que hi ha parla (una mica per damunt de VOICE_RMS). */
+const VOICE_THRESHOLD = 0.009;
+/** Sense veu durant este temps no tornem a «silenci»: evita el parpelleig. */
+const VOICE_HOLD_MS = 700;
+/** 4800 mostres a 16 kHz = 300 ms d'ona visible al canvas. */
+const WAVE_SAMPLES = 4800;
+/** Amplificació visual de l'ona: a ×1 una parla normal és quasi una línia plans. */
+const WAVE_GAIN = 3;
+/** Color de l'ona: els mateixos tons que l'indicador d'estat. */
+const WAVE_COLOR = {
+  parlant: '#0f766e', silenci: '#d4a373', problema: '#e76f51', tancat: '#94a3b8',
+};
 const QUIET_DB = -45;
 const LOUD_DB = -6;
 
@@ -30,6 +47,7 @@ const ui = {
   micState: el('micState'), device: el('device'), agc: el('agc'), ns: el('ns'), ec: el('ec'),
   continuous: el('continuous'), meterBar: el('meterBar'), meterPeak: el('meterPeak'),
   levelNow: el('levelNow'), levelPeak: el('levelPeak'), voicePct: el('voicePct'),
+  voiceLine: el('voiceLine'), waveCanvas: el('waveCanvas'),
   levelVerdict: el('levelVerdict'),
   callBtn: el('callBtn'), callScenario: el('callScenario'), callLevel: el('callLevel'),
   callState: el('callState'), callApi: el('callApi'),
@@ -61,6 +79,16 @@ let voiceDbCount = 0;
 // Mesurador de nivell
 let levelSmoothed = null;
 let peakHold = -100;
+
+// Indicador de parla/silenci: detecció local, no depén del servidor.
+let voiceHistory = [];     // RMS dels últims VOICE_HISTORY blocs
+let voiceState = 'tancat'; // 'tancat' | 'parlant' | 'silenci' | 'problema'
+let lastVoiceTime = 0;     // performance.now() del darrer bloc amb veu
+
+// Onda en temps real: ring buffer de WAVE_SAMPLES mostres a 16 kHz.
+let waveBuffer = new Float32Array(0);
+let waveWritePos = 0;
+let waveRAF = 0;
 
 const escapeHtml = (text) => String(text)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -120,6 +148,116 @@ function updateMeter(rms, peak) {
     ui.levelVerdict.className = 'ok';
     ui.levelVerdict.textContent = 'Nivell correcte per al reconeixement.';
   }
+}
+
+/* ── Detecció local de parla/silenci (coloreja l'ona) ──────────────────── */
+
+/**
+ * No hi ha panell d'indicador: l'estat es veu en el color de l'ona i en una
+ * línia de text davall del canvas. `state` és el que decidix eixe color.
+ */
+function setVoiceState(state, label, detail) {
+  voiceState = state;
+  ui.voiceLine.className = state === 'parlant' ? 'ok' : state === 'problema' ? 'bad' : 'hint';
+  ui.voiceLine.textContent = `${label} — ${detail}`;
+}
+
+function pushToVoiceHistory(rms) {
+  voiceHistory.push(rms);
+  if (voiceHistory.length > VOICE_HISTORY) voiceHistory.shift();
+}
+
+/**
+ * Decidix l'estat amb la mitjana dels últims blocs (768 ms) i no amb un de sol:
+ * una tos o un clic no han de fer parpellejar l'indicador. L'ordre importa: si
+ * el senyal satura això invalida qualsevol altra lectura, i si hi ha activitat
+ * que no arriba al llindar és parla fluixa (el cas que més invents explica).
+ */
+function evalVoiceState(now) {
+  if (voiceHistory.length === 0) return;
+  const recent = voiceHistory.slice(-VOICE_HISTORY);
+  const avgRms = recent.reduce((sum, value) => sum + value, 0) / recent.length;
+  const voiceRatio = recent.filter((value) => value > VOICE_RMS).length / recent.length;
+  const db = levelSmoothed === null ? toDb(avgRms) : levelSmoothed;
+  if (db > LOUD_DB) {
+    setVoiceState('problema', 'Senyal massa alt',
+      `${db.toFixed(1)} dBFS: pot saturar i distorsionar la parla.`);
+    return;
+  }
+  if (avgRms > VOICE_THRESHOLD && voiceRatio > 0.45) {
+    lastVoiceTime = now;
+    setVoiceState('parlant', 'Parlant',
+      `${toDb(avgRms).toFixed(1)} dBFS · ${Math.round(voiceRatio * 100)}% dels blocs amb veu`);
+    return;
+  }
+  // Marge de VOICE_HOLD_MS: entre síl·labes no volem vore «silenci».
+  if (voiceState === 'parlant' && now - lastVoiceTime < VOICE_HOLD_MS) return;
+  if (voiceRatio > 0.05) {
+    setVoiceState('problema', 'Parla massa fluixa',
+      `${Math.round(voiceRatio * 100)}% dels blocs amb veu a ${toDb(avgRms).toFixed(1)} dBFS:`
+      + ' acostat al micròfon o activa la ganància automàtica.');
+    return;
+  }
+  setVoiceState('silenci', 'Silenci', `${db.toFixed(1)} dBFS: el motor només rep soroll de fons.`);
+}
+
+/* ── Onda en temps real (canvas) ───────────────────────────────────────── */
+
+function pushToWaveBuffer(samples) {
+  if (waveBuffer.length === 0) return;
+  const count = Math.min(samples.length, WAVE_SAMPLES);
+  for (let index = 0; index < count; index += 1) {
+    waveBuffer[waveWritePos] = samples[index];
+    waveWritePos = (waveWritePos + 1) % WAVE_SAMPLES;
+  }
+}
+
+/** Finestra de 300 ms: el senyal més nou a l'esquerra i el més vell a la dreta. */
+function drawWave() {
+  const canvas = ui.waveCanvas;
+  const context = canvas.getContext('2d');
+  const middle = canvas.height / 2;
+  const span = middle - 6; // marge perquè els pics no toquen les vores
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  // Línia del zero: sense ella no se sap si el senyal està centrat o desviat.
+  context.strokeStyle = '#cbd5e1';
+  context.lineWidth = 1;
+  context.beginPath();
+  context.moveTo(0, middle + 0.5);
+  context.lineTo(canvas.width, middle + 0.5);
+  context.stroke();
+  if (waveBuffer.length === 0) return;
+  context.strokeStyle = WAVE_COLOR[voiceState] ?? '#94a3b8';
+  context.lineWidth = 2;
+  context.beginPath();
+  for (let x = 0; x < canvas.width; x += 1) {
+    const offset = Math.floor((x * WAVE_SAMPLES) / canvas.width);
+    const index = (((waveWritePos - 1 - offset) % WAVE_SAMPLES) + WAVE_SAMPLES) % WAVE_SAMPLES;
+    const value = Math.max(-1, Math.min(1, waveBuffer[index] * WAVE_GAIN));
+    const y = middle - value * span;
+    if (x === 0) context.moveTo(x, y);
+    else context.lineTo(x, y);
+  }
+  context.stroke();
+}
+
+/** El bucle de dibuix només viu mentre el micròfon està obert. */
+function startWaveLoop() {
+  waveBuffer = new Float32Array(WAVE_SAMPLES);
+  waveWritePos = 0;
+  if (waveRAF) return;
+  const loop = () => {
+    drawWave();
+    waveRAF = requestAnimationFrame(loop);
+  };
+  waveRAF = requestAnimationFrame(loop);
+}
+
+function stopWaveLoop() {
+  if (waveRAF) cancelAnimationFrame(waveRAF);
+  waveRAF = 0;
+  waveBuffer = new Float32Array(0);
+  drawWave(); // sense micròfon no hi ha senyal: el canvas queda net
 }
 
 /** Compta si el bloc duu veu: és l'avís més útil davant d'una transcripció dolenta. */
@@ -205,6 +343,11 @@ function pushSamples(samples) {
 /** Un bloc del worklet: sempre mesurem el nivell; només enviem si hi ha torn. */
 function handleAudioBlock(block) {
   updateMeter(block.rms, block.peak);
+  if (!audioContext) return; // el worklet ja està desconnectat: res a enviar ni a pintar
+  // Indicador i onda locals: sempre, també mentre parla l'agent (call.paused).
+  pushToVoiceHistory(block.rms);
+  evalVoiceState(performance.now());
+  pushToWaveBuffer(resample(block.samples, audioContext.sampleRate, TARGET_RATE));
   // Barge-in: si l'agent està parlant i el micròfon rep veu (no altaveu, gràcies
   // a la cancel·lació d'eco), 2 blocs seguits (~256 ms) tallen la reproducció.
   // Només si el interruptor «barge-in» està actiu.
@@ -278,6 +421,10 @@ async function openMic() {
   micOpen = true;
   levelSmoothed = null;
   resetPeakHold();
+  voiceHistory = [];
+  lastVoiceTime = 0;
+  setVoiceState('silenci', 'Escoltant…', 'encara no detectem veu al micròfon.');
+  startWaveLoop();
   await listDevices();
 
   const track = mediaStream.getAudioTracks()[0];
@@ -317,6 +464,9 @@ async function closeMic() {
   sampleBuffer = new Float32Array(0);
   levelSmoothed = null;
   resetPeakHold();
+  stopWaveLoop();
+  voiceHistory = [];
+  setVoiceState('tancat', 'Micròfon tancat', 'prem «Escoltar» per obrir-lo.');
   ui.meterBar.style.width = '0%';
   ui.levelNow.textContent = '— dBFS';
   ui.levelPeak.textContent = '— dBFS';
