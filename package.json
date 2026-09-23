@@ -1,7 +1,12 @@
 {
   "name": "parlaval",
   "private": true,
-  "workspaces": ["shared", "frontend", "backend", "speech-lab"],
+  "workspaces": [
+    "shared",
+    "frontend",
+    "backend",
+    "speech-lab"
+  ],
   "scripts": {
     "dev": "npm run build -w shared && concurrently \"npm run dev -w frontend\" \"npm run dev -w backend\"",
     "build": "npm run build -w shared && npm run build -w frontend && npm run build -w backend",
@@ -11,5 +16,10 @@
     "smoke:speech": "npm run smoke -w speech-lab",
     "test:speech": "npm run test -w speech-lab"
   },
-  "devDependencies": {"concurrently": "^9.1.0"}
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "dependencies": {
+    "openai": "^7.21.0"
+  }
 }

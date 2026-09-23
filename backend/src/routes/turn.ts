@@ -14,12 +14,18 @@ import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
 import { stt, tts } from '../services/voice.js';
+import {analyzeErrorsWithLocalLLM} from './subagent.js';
+
 
 export const turnRouter = Router();
 
 // Cada torn consumix OpenAI i el TTS del servidor de la UJI: el límit protegix
 // la factura. Els usuaris amb sessió poden conversar sense fricció; les
 // peticions anònimes (mode demostració) van molt més limitades.
+
+
+
+
 const TURN_RATE_LIMIT = {
   windowMs: 60_000,
   max: Number(process.env.RATE_LIMIT_AUTHED_PER_MIN) || 30,
@@ -87,6 +93,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       message: text,
       history,
     });
+
+    console.log(reply)
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
 
     const xpDelta = 10;
@@ -98,14 +106,12 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           // Supabase NO llança excepcions: torna l'error dins del resultat. Si no
           // es comprova, l'usuari juga, veu pujar l'XP en pantalla i el progrés
           // es perd en silenci (i l'operador no se n'assabenta mai).
-          const { error: insertError } = await client.from('conversation_messages').insert([
+          const { error: insertTurn } = await client.from('conversation_messages').insert([
             {
               session_id: data.session_id,
               role: 'user',
               content_text: text,
               input_mode: data.input_mode,
-              detected_level_signal: reply.detected_level_signal,
-              error_flags: reply.error_flags,
             },
             {
               session_id: data.session_id,
@@ -114,10 +120,19 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
               input_mode: 'text',
             },
           ]);
-          if (insertError) {
-            console.error('[turn] no hem pogut guardar els missatges:', insertError.message);
+          if (insertTurn) {
+            console.error('[turn] no hem pogut guardar els missatges:', insertTurn.message);
             return;
           }
+
+
+
+        
+
+
+
+
+
           const { error: xpError } = await client.rpc('apply_turn_xp', {
             p_user_id: req.userId,
             p_session_id: data.session_id,
@@ -144,6 +159,46 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     console.log(
       `[turn] tts=${wantsAudio ? Date.now() - ttsStart : 0}ms total=${Date.now() - startedAt}ms`,
     );
+
+    //Añadido (Modelo LLM)
+
+    if (client && req.userId) {
+      const currentUserId = req.userId;
+      const currentText = text;
+
+      // Execució asíncrona lliure: no bloqueja la resposta ni fa cua
+      void (async () => {
+        const start = Date.now();
+        try {
+          const detectedErrors = await analyzeErrorsWithLocalLLM(currentText);
+
+          if (!detectedErrors || detectedErrors.length === 0) return;
+
+          const records = detectedErrors.map((item) => ({
+            user_id: currentUserId,
+            error_text: item.error_text,
+            correction: item.correction,
+            category: item.category,
+            explanation: item.explanation,
+            resolved: false,
+          }));
+
+          const { error: insertErr } = await client.from('user_errors').insert(records);
+          if (insertErr) {
+            console.error('[bgAnalysis] Error guardant a user_errors:', insertErr.message);
+            return;
+          }
+
+          console.log(
+            `[bgAnalysis] Guardats ${records.length} errors a Supabase en ${Date.now() - start}ms`,
+          );
+        } catch (err: any) {
+          console.error('[bgAnalysis] Error analitzant el missatge:', err.message);
+        }
+      })();
+    }
+
+
 
     res.json({
       ...reply,
