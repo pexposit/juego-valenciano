@@ -54,7 +54,7 @@ export function ScenarioSelect({
         <p className="mb-4 text-center text-xs font-black uppercase tracking-wider opacity-55">
           Tria una situació
         </p>
-        <div className="desk-grid grid grid-cols-2 gap-4">
+                        <div className="desk-grid grid grid-cols-3 gap-4">
           {scenarios.map((s) => {
             const locked = xp < s.required;
             const g = goals[s.id];
