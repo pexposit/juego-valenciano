@@ -76,6 +76,16 @@
     background: rgba(15, 118, 110, .8); transition: width .05s linear;
   }
   .meter .peak { background: var(--ink); width: 2px; transition: none; }
+  .segments { list-style: none; margin: 8px 0 0; padding: 0; font-size: 14px; max-height: 180px; overflow-y: auto; }
+  .segments li { border-top: 1px dashed var(--line); padding: 4px 0; }
+  .segments button {
+    font: inherit; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--teal);
+    background: #fff; color: var(--teal); cursor: pointer; margin-right: 6px; font-size: 12px;
+  }
+  .segments time { color: #64748b; font-size: 12px; margin-right: 6px; }
+  .compare { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  .compare th, .compare td { text-align: left; padding: 4px 6px; border-top: 1px solid var(--line); }
+  .compare th { color: #52606d; font-weight: 600; }
   fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin: 8px 0 0; }
   legend { font-size: 13px; color: #52606d; padding: 0 4px; }
   label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; margin-right: 12px; }
@@ -216,6 +226,31 @@
   <section class="log">
     <h2>Registre</h2>
     <pre id="log"></pre>
+  </section>
+
+  <section class="files">
+    <h2>Transcripció de fitxers</h2>
+    <div class="row">
+      <input type="file" id="fileInput" accept="audio/*,.wav" aria-label="Fitxer d'àudio" />
+    </div>
+    <div class="row" style="margin-top:8px">
+      <select id="fileProvider" aria-label="Motor">
+        <option value="aina">Aina (faster-whisper, lots)</option>
+        <option value="vosk-batch">Vosk (small-ca, lots)</option>
+      </select>
+      <button id="transcribeBtn" class="ghost">Transcriure</button>
+    </div>
+    <p id="fileState" class="hint">Tria un àudio del teu dispositiu: es converteix a
+      16 kHz mono al navegador i s'envia a <code>/api/transcribe</code>. Res eix del
+      laboratori.</p>
+    <audio id="fileAudio" controls style="width:100%; margin-top:8px" hidden></audio>
+    <p class="live" id="fileText" style="font-size:17px"></p>
+    <ul class="segments" id="fileSegments"></ul>
+    <div id="fileMetrics" class="hint"></div>
+    <div class="row" style="margin-top:8px">
+      <button id="compareBtn" class="ghost">Comparar Aina vs Vosk</button>
+    </div>
+    <div id="compareOut"></div>
   </section>
 </main>
 

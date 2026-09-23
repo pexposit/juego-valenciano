@@ -137,6 +137,7 @@ su sidecar y su protocolo testeado sin arrancar Python.
 |---|---|---|---|
 | Streaming STT | `vosk` | Vosk small-ca + sidecar WS (`sidecar/vosk_stream.py`) | micrófono en vivo, parciales |
 | Batch STT | `aina` | faster-whisper `large-v3-ca-3catparla` + sidecar NDJSON (`sidecar/whisper_batch.py`) | transcripción automática, bench WER |
+| Batch STT | `vosk-batch` | mismo Vosk small-ca, por WebSocket interno (`src/batch/voskBatch.ts`) | comparador A/B de la página |
 | TTS | `matxa` | matxa-tts remoto (UJI, el mismo que el juego) | síntesis `POST /api/tts` |
 
 Endpoints nuevos (además de `/ws/transcribe` y `/health`, que ahora lista
@@ -148,6 +149,22 @@ también `batchProvider`, `batchModel` y `ttsProvider`):
   servidor. Parámetros: `?provider=aina`, `?language=ca`, `?words=1`.
 - `POST /api/tts` — cuerpo JSON `{text, voice?}` (máx. 2000 chars).
   Responde el WAV con cabeceras `x-tts-voice` y `x-tts-first-byte-ms`.
+
+### Página: transcripción de fitxers (fase B)
+
+La página (`http://localhost:3100`, sección «Transcripció de fitxers») usa
+esos endpoints sin nada nuevo en el servidor:
+
+- **Transcriure**: eliges un audio (mp3, ogg, webm, wav…), el navegador lo
+  convierte a 16 kHz mono con `OfflineAudioContext`, lo envía a
+  `POST /api/transcribe?provider=…&words=1` y muestra el texto + segmentos
+  clicables (▶ salta el reproductor a cada segmento) + métricas (cómput, RTF).
+- **Comparar Aina vs Vosk**: el mismo WAV por los dos motores en paralelo,
+  tabla lado a lado con texto y cómputo. Equivale a `npm run wer:speech`
+  pero con tu propio audio y sin terminal.
+- Verificado sin navegador con el smoke extendido:
+  `npm run smoke -- --api-transcribe [--provider aina|vosk-batch]` y
+  `npm run smoke -- --api-tts [--voice gina]`.
 
 ### Bench WER (fase 4, cerrada con voz sintética)
 
@@ -249,9 +266,8 @@ speech-lab/
 
 ## Siguientes pasos
 
-- **Fase B — transcripción en la página + WER con voz humana.** El endpoint
-  `POST /api/transcribe` ya funciona; falta la sección «Transcripció» en
-  `public/` (subir WAV, ver segmentos clicables, comparador A/B de modelos) y
+- **Fase B — WER con voz humana.** La sección «Transcripció» ya está en
+  `public/` (subir WAV, segmentos clicables, comparador Aina vs Vosk); falta
   repetir el bench con **voz humana valenciana** (Common Voice catalán como
   *ground truth*). Es la medida que de verdad decide el motor.
 - **Fase 3 — gramática desde los escenarios.** Derivar el `phrase_list` de

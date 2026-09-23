@@ -4,10 +4,13 @@
  */
 import { config } from '../config.js';
 import { createWhisperBatchStt } from './whisperSidecar.js';
+import { createVoskBatchStt } from './voskBatch.js';
 import type { BatchStt } from './types.js';
 
 const factories: Record<string, () => BatchStt> = {
   aina: createWhisperBatchStt,
+  /** El small-ca per lots: mateix motor que l'streaming, via WebSocket intern. */
+  'vosk-batch': createVoskBatchStt,
 };
 
 /** El model de lots és car (GB en GPU): una sola instància per proveïdor. */

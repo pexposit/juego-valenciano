@@ -721,6 +721,161 @@ ui.clear.addEventListener('click', () => {
   showMetrics({ audioMs: 0, firstPartialMs: null, finalMs: null, computeMs: 0, rtf: null });
 });
 
+/* ── Transcripció de fitxers: puja un àudio, tria motor, veu el text ──── */
+// Tot passa al navegador + /api/transcribe: cap altre endpoint nou.
+
+const fileUi = {
+  input: el('fileInput'), provider: el('fileProvider'), btn: el('transcribeBtn'),
+  state: el('fileState'), audio: el('fileAudio'), text: el('fileText'),
+  segments: el('fileSegments'), metrics: el('fileMetrics'),
+  compareBtn: el('compareBtn'), compareOut: el('compareOut'),
+};
+/** WAV 16 kHz mono ja llest per a enviar (es guarda per al comparador A/B). */
+let fileWavBytes = null;
+
+const setFileState = (text, kind = 'hint') => {
+  fileUi.state.textContent = text;
+  fileUi.state.className = kind;
+};
+
+/** Qualsevol àudio (mp3, ogg, webm, wav…) → WAV PCM16 mono 16 kHz. */
+async function fileToWav16k(file) {
+  const raw = await file.arrayBuffer();
+  const OfflineContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  // Primer el descodifiquem tal com és (el navegador sap obrir quasi tot).
+  const decoded = await new OfflineContext(1, 1, 44100).decodeAudioData(raw.slice(0));
+  const channel = decoded.getChannelData(0);
+  // A mono: si duu dos canals, mitjana (el segon només si hi és).
+  let mono = channel;
+  if (decoded.numberOfChannels > 1) {
+    const other = decoded.getChannelData(1);
+    mono = new Float32Array(channel.length);
+    for (let i = 0; i < mono.length; i += 1) mono[i] = (channel[i] + other[i]) / 2;
+  }
+  // Resample a 16 kHz amb la mateixa interpolació del micròfon en directe.
+  const resampled = resample(mono, decoded.sampleRate, TARGET_RATE);
+  // Capçalera WAV de 44 bytes + PCM16.
+  const buffer = new ArrayBuffer(44 + resampled.length * 2);
+  const view = new DataView(buffer);
+  const writeAscii = (offset, text) => {
+    for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
+  };
+  writeAscii(0, 'RIFF');
+  view.setUint32(4, 36 + resampled.length * 2, true);
+  writeAscii(8, 'WAVE');
+  writeAscii(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, TARGET_RATE, true);
+  view.setUint32(28, TARGET_RATE * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeAscii(36, 'data');
+  view.setUint32(40, resampled.length * 2, true);
+  for (let i = 0; i < resampled.length; i += 1) {
+    const value = Math.max(-1, Math.min(1, resampled[i]));
+    view.setInt16(44 + i * 2, value < 0 ? value * 0x8000 : value * 0x7fff, true);
+  }
+  return new Uint8Array(buffer);
+}
+
+async function transcribeWav(wavBytes, provider) {
+  const response = await fetch(`/api/transcribe?provider=${encodeURIComponent(provider)}&words=1`, {
+    method: 'POST',
+    headers: { 'content-type': 'audio/wav' },
+    body: wavBytes,
+    signal: AbortSignal.timeout(300_000),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || `el servidor ha respost ${response.status}`);
+  return body;
+}
+
+const formatTime = (ms) => `${(ms / 1000).toFixed(1)}s`;
+
+function showTranscription(result) {
+  fileUi.text.textContent = result.text || '(sense text)';
+  fileUi.segments.innerHTML = '';
+  for (const segment of result.segments ?? []) {
+    const item = document.createElement('li');
+    const jump = document.createElement('button');
+    jump.textContent = '▶';
+    jump.title = `Escolta des de ${formatTime(segment.startMs)}`;
+    jump.addEventListener('click', () => {
+      fileUi.audio.currentTime = segment.startMs / 1000;
+      void fileUi.audio.play().catch(() => {});
+    });
+    const time = document.createElement('time');
+    time.textContent = `${formatTime(segment.startMs)}–${formatTime(segment.endMs)}`;
+    item.append(jump, time, document.createTextNode(segment.text));
+    fileUi.segments.append(item);
+  }
+  const secs = result.audioSecs ?? 0;
+  const rtf = secs > 0 ? (result.computeMs / 1000 / secs).toFixed(3) : '—';
+  fileUi.metrics.textContent = `motor ${result.provider} (${result.model ?? '?'}) · `
+    + `còmput ${Math.round(result.computeMs)} ms · àudio ${secs}s · RTF ${rtf} · `
+    + `${(result.segments ?? []).length} segments · ${(result.words ?? []).length} paraules`;
+  log(`fitxer transcrit amb ${result.provider}: "${String(result.text).slice(0, 80)}"`);
+}
+
+fileUi.btn.addEventListener('click', async () => {
+  const file = fileUi.input.files?.[0];
+  if (!file) {
+    setFileState('Tria primer un fitxer d\u2019àudio.', 'warn');
+    return;
+  }
+  fileUi.btn.disabled = true;
+  setFileState(`Convertint «${file.name}» a 16 kHz…`, 'warn');
+  try {
+    fileWavBytes = await fileToWav16k(file);
+    fileUi.audio.src = URL.createObjectURL(new Blob([fileWavBytes], { type: 'audio/wav' }));
+    fileUi.audio.hidden = false;
+    const provider = fileUi.provider.value;
+    setFileState(`Transcrivint amb ${provider}… (el model gran triga uns segons)`, 'warn');
+    const result = await transcribeWav(fileWavBytes, provider);
+    showTranscription(result);
+    setFileState('Transcripció llesta. Prem ▶ per escoltar cada segment.', 'ok');
+  } catch (error) {
+    setFileState(`No hem pogut transcriure: ${error.message}`, 'bad');
+    log(`ERROR de fitxer: ${error.message}`);
+  } finally {
+    fileUi.btn.disabled = false;
+  }
+});
+
+/** Comparador A/B: el mateix WAV pels dos motors, taula costat a costat. */
+fileUi.compareBtn.addEventListener('click', async () => {
+  if (!fileWavBytes) {
+    setFileState('Transcriu primer un fitxer: el comparador reutilitza el seu WAV.', 'warn');
+    return;
+  }
+  fileUi.compareBtn.disabled = true;
+  fileUi.compareOut.innerHTML = '<p class="hint">Comparant… (Aina triga uns segons)</p>';
+  try {
+    const [aina, vosk] = await Promise.all([
+      transcribeWav(fileWavBytes, 'aina'),
+      transcribeWav(fileWavBytes, 'vosk-batch'),
+    ]);
+    const row = (label, result) => {
+      const secs = result.audioSecs ?? 0;
+      const rtf = secs > 0 ? (result.computeMs / 1000 / secs).toFixed(3) : '—';
+      return `<tr><td><strong>${label}</strong></td>`
+        + `<td>${escapeHtml(result.text || '—')}</td>`
+        + `<td>${Math.round(result.computeMs)} ms (RTF ${rtf})</td></tr>`;
+    };
+    fileUi.compareOut.innerHTML = `<table class="compare">
+      <tr><th>Motor</th><th>Text</th><th>Còmput</th></tr>
+      ${row('Aina', aina)}${row('Vosk', vosk)}
+    </table>`;
+    log(`comparador: aina="${String(aina.text).slice(0, 60)}" vosk="${String(vosk.text).slice(0, 60)}"`);
+  } catch (error) {
+    fileUi.compareOut.innerHTML = `<p class="bad">No hem pogut comparar: ${escapeHtml(error.message)}</p>`;
+  } finally {
+    fileUi.compareBtn.disabled = false;
+  }
+});
+
 showMetrics({ audioMs: 0, firstPartialMs: null, finalMs: null, computeMs: 0, rtf: null });
 listDevices().catch(() => log('no hem pogut llistar els dispositius d\'entrada'));
 connect();

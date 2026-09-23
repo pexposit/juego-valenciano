@@ -7,6 +7,10 @@
  *   npm run smoke -- --wav bench/samples/salutacio-gina-16k.wav
  *   npm run smoke -- --wav … --phrases "bon dia|com et puc ajudar hui"
  *   npm run smoke -- --wav … --pace        (envia a temps real, com el micròfon)
+ *
+ * També cobreix els endpoints nous de la fase A/B sense navegador:
+ *   npm run smoke -- --api-transcribe --wav … [--provider aina]
+ *   npm run smoke -- --api-tts --text "Bon dia" [--voice gina]
  */
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -35,6 +39,72 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main(): Promise<number> {
   const args = parseArgs(process.argv.slice(2));
+  if (args['api-transcribe'] === true) return smokeTranscribe(args);
+  if (args['api-tts'] === true) return smokeTts(args);
+  return smokeStreaming(args);
+}
+
+/** POST /api/transcribe amb el WAV tal qual (el que envia la pàgina). */
+async function smokeTranscribe(args: Record<string, string | boolean>): Promise<number> {
+  const wavPath = path.resolve(labRoot, (args.wav as string) ?? 'bench/samples/salutacio-gina-16k.wav');
+  const base = (args.url as string) ?? `http://localhost:${config.port}`;
+  const provider = typeof args.provider === 'string' ? args.provider : 'aina';
+  const body = await readFile(wavPath);
+
+  console.log(`[smoke] POST ${base}/api/transcribe?provider=${provider} (${body.length} bytes)`);
+  const response = await fetch(`${base}/api/transcribe?provider=${provider}&words=1`, {
+    method: 'POST',
+    headers: { 'content-type': 'audio/wav' },
+    body,
+    signal: AbortSignal.timeout(300_000),
+  });
+  const payload = await response.json() as Record<string, unknown>;
+  if (!response.ok) {
+    console.error(`[smoke] error ${response.status}: ${payload.error}`);
+    return 1;
+  }
+  const segments = payload.segments as Array<{ text?: string }>;
+  console.log(`[smoke] text: "${payload.text}"`);
+  console.log(
+    `[smoke] provider=${payload.provider} model=${payload.model}`
+    + ` compute=${payload.computeMs}ms audio=${payload.audioSecs}s`
+    + ` segments=${segments.length}`,
+  );
+  const okText = typeof payload.text === 'string' && payload.text.length > 0;
+  const okSegments = Array.isArray(segments) && segments.length > 0;
+  console.log(okText && okSegments ? '[smoke] OK: text + segments' : '[smoke] FALTA text o segments');
+  return okText && okSegments ? 0 : 1;
+}
+
+/** POST /api/tts: comprova que torna un WAV vàlid. */
+async function smokeTts(args: Record<string, string | boolean>): Promise<number> {
+  const base = (args.url as string) ?? `http://localhost:${config.port}`;
+  const text = (args.text as string) ?? 'Bon dia! Com et puc ajudar hui?';
+  const voice = (args.voice as string) ?? 'gina';
+
+  console.log(`[smoke] POST ${base}/api/tts voice=${voice} text="${text.slice(0, 40)}"`);
+  const response = await fetch(`${base}/api/tts`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ text, voice }),
+    signal: AbortSignal.timeout(120_000),
+  });
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    console.error(`[smoke] error ${response.status}: ${(detail as { error?: string }).error}`);
+    return 1;
+  }
+  const audio = Buffer.from(await response.arrayBuffer());
+  const isWav = audio.subarray(0, 4).toString('ascii') === 'RIFF';
+  console.log(
+    `[smoke] ${audio.length} bytes (${response.headers.get('content-type')})`
+    + ` voice=${response.headers.get('x-tts-voice')} primer_byte=${response.headers.get('x-tts-first-byte-ms')}ms`,
+  );
+  console.log(isWav ? '[smoke] OK: WAV vàlid' : '[smoke] FALTA capçalera RIFF');
+  return isWav ? 0 : 1;
+}
+
+async function smokeStreaming(args: Record<string, string | boolean>): Promise<number> {
   const wavPath = path.resolve(labRoot, (args.wav as string) ?? 'bench/samples/salutacio-gina-16k.wav');
   const url = (args.url as string) ?? `ws://localhost:${config.port}/ws/transcribe`;
   const chunkMs = Number(args['chunk-ms'] ?? 256);
