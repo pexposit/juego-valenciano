@@ -822,7 +822,7 @@ function showTranscription(result) {
 fileUi.btn.addEventListener('click', async () => {
   const file = fileUi.input.files?.[0];
   if (!file) {
-    setFileState('Tria primer un fitxer d\u2019àudio.', 'warn');
+    setFileState('Tria un exemple de dalt o puja un fitxer propi.', 'warn');
     return;
   }
   fileUi.btn.disabled = true;
@@ -874,6 +874,37 @@ fileUi.compareBtn.addEventListener('click', async () => {
   } finally {
     fileUi.compareBtn.disabled = false;
   }
+});
+
+/** Exemples del servidor: un clic els carrega i transcriu sense buscar res. */
+document.querySelectorAll('#sampleRow .sample').forEach((button) => {
+  button.addEventListener('click', async () => {
+    const url = button.dataset.sample;
+    const name = url.split('/').pop();
+    fileUi.btn.disabled = true;
+    fileUi.compareBtn.disabled = true;
+    setFileState(`Carregant l'exemple «${name}»…`, 'warn');
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!response.ok) throw new Error(`l'exemple ha respost ${response.status}`);
+      // Ja són WAV 16 kHz mono: s'envien tal qual, sense reconvertir.
+      fileWavBytes = new Uint8Array(await response.arrayBuffer());
+      fileUi.audio.src = url;
+      fileUi.audio.hidden = false;
+      fileUi.input.value = '';
+      const provider = fileUi.provider.value;
+      setFileState(`Transcrivint «${name}» amb ${provider}…`, 'warn');
+      const result = await transcribeWav(fileWavBytes, provider);
+      showTranscription(result);
+      setFileState(`«${name}» llesta. Canvia de motor o prem «Comparar Aina vs Vosk».`, 'ok');
+    } catch (error) {
+      setFileState(`No hem pogut carregar l'exemple: ${error.message}`, 'bad');
+      log(`ERROR d'exemple: ${error.message}`);
+    } finally {
+      fileUi.btn.disabled = false;
+      fileUi.compareBtn.disabled = false;
+    }
+  });
 });
 
 showMetrics({ audioMs: 0, firstPartialMs: null, finalMs: null, computeMs: 0, rtf: null });

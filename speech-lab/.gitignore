@@ -4,4 +4,6 @@ models/
 *.zip
 # Àudios de prova convertits a 16 kHz (es regeneren amb scripts/convert-samples.sh).
 bench/samples/*.wav
+# Els exemples de la pàgina SÍ es versionen (són els mateixos WAV, ~230 KB).
+!public/samples/*.wav
 __pycache__/

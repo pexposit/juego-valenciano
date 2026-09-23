@@ -234,8 +234,15 @@
 
   <section class="files">
     <h2>Transcripció de fitxers</h2>
-    <div class="row">
-      <input type="file" id="fileInput" accept="audio/*,.wav" aria-label="Fitxer d'àudio" />
+    <p class="hint" style="margin-top:0">Prova sense buscar res: els 3 exemples
+      ja són al servidor (<code>/samples/…</code>). O puja el teu propi àudio.</p>
+    <div class="row" id="sampleRow" aria-label="Àudios d'exemple">
+      <button class="ghost sample" data-sample="/samples/salutacio-gina-16k.wav">Gina: salutació</button>
+      <button class="ghost sample" data-sample="/samples/salutacio-lluc-16k.wav">Lluc: salutació</button>
+      <button class="ghost sample" data-sample="/samples/bon-dia-16k.wav">Bon dia</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <input type="file" id="fileInput" accept="audio/*,.wav" aria-label="Fitxer d'àudio propi" />
     </div>
     <div class="row" style="margin-top:8px">
       <select id="fileProvider" aria-label="Motor">
