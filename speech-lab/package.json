@@ -10,7 +10,8 @@
     "start": "node dist/index.js",
     "test": "vitest run src",
     "test:watch": "vitest src",
-    "smoke": "tsx src/bench/smoke.ts"
+    "smoke": "tsx src/bench/smoke.ts",
+    "wer": "tsx src/bench/werBench.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

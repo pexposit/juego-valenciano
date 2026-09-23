@@ -1,12 +1,17 @@
 import 'dotenv/config';
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { z } from 'zod';
 import { config } from './config.js';
+import { getBatchStt, availableBatchProviders, disposeBatchProviders } from './batch/registry.js';
+import { wordErrorRate } from './bench/wer.js';
+import { readPcm16Wav } from './bench/wav.js';
 import { logSummary, SessionMetrics } from './metrics.js';
 import { availableProviders, disposeProviders, getStreamingStt } from './streaming/registry.js';
+import { availableTtsProviders, disposeTtsProviders, getStreamingTts } from './tts/registry.js';
 import type { StreamingSttSession } from './streaming/types.js';
 
 /* ── Servidor HTTP: /health i la pàgina de proves ────────────────────────── */
@@ -34,8 +39,141 @@ const server = http.createServer(async (req, res) => {
       ok: true,
       provider: config.provider,
       providers: availableProviders,
+      batchProvider: config.batchProvider,
+      batchProviders: availableBatchProviders,
+      batchModel: process.env.AINA_MODEL_ID?.trim()
+        || 'projecte-aina/faster-whisper-large-v3-ca-3catparla',
+      ttsProvider: config.tts.provider,
+      ttsProviders: availableTtsProviders,
       sampleRate: config.sampleRate,
     }));
+    return;
+  }
+
+  // ── Transcripció automàtica: POST /api/transcribe ─────────────────────
+  // Cos: WAV sencer (PCM16 mono 16 kHz, el format que ja entén el bench).
+  // Resposta: text + segments + paraules + WER opcional (?reference=…).
+  if (url.pathname === '/api/transcribe' && req.method === 'POST') {
+    // Límit de 25 MB: prou per a minuts de veu a 16 kHz, prou curt per a no
+    // penjar el laboratori amb una pujada gegant.
+    const MAX_BYTES = 25 * 1024 * 1024;
+    const chunks: Buffer[] = [];
+    let received = 0;
+    let tooLarge = false;
+    req.on('data', (chunk: Buffer) => {
+      received += chunk.length;
+      if (received > MAX_BYTES) {
+        tooLarge = true;
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      void (async () => {
+        try {
+          if (tooLarge) {
+            res.writeHead(413, { 'content-type': 'application/json; charset=utf-8' })
+              .end(JSON.stringify({ error: 'L\u2019àudio passa de 25 MB' }));
+            return;
+          }
+          const body = Buffer.concat(chunks);
+          let wav;
+          try {
+            wav = readPcm16Wav(body);
+          } catch (error) {
+            res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' })
+              .end(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }));
+            return;
+          }
+
+          const reference = url.searchParams.get('reference') ?? undefined;
+          const providerId = url.searchParams.get('provider') ?? undefined;
+          const provider = getBatchStt(providerId || undefined);
+
+          const dir = await mkdtemp(path.join(tmpdir(), 'speech-lab-'));
+          const wavPath = path.join(dir, 'audio.wav');
+          try {
+            await writeFile(wavPath, body);
+            const started = Date.now();
+            const transcript = await provider.transcribe(wavPath, {
+              language: url.searchParams.get('language') ?? 'ca',
+              wordTimestamps: url.searchParams.get('words') === '1',
+            });
+            const wallMs = Date.now() - started;
+            const audioSecs = (wav.data.length / 2 / wav.sampleRate);
+            console.log(
+              `[transcribe] provider=${provider.id} model=${provider.modelId}`
+              + ` audio=${audioSecs.toFixed(2)}s compute=${Math.round(transcript.computeMs)}ms`
+              + ` paret=${wallMs}ms text="${transcript.text.slice(0, 80)}"`,
+            );
+            res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({
+              provider: provider.id,
+              model: provider.modelId,
+              ...transcript,
+              audioSecs: Number(audioSecs.toFixed(2)),
+              wallMs,
+              ...(reference !== undefined
+                ? { wer: wordErrorRate(transcript.text, reference) }
+                : {}),
+            }));
+          } finally {
+            await rm(dir, { recursive: true, force: true });
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error('[transcribe] error:', message);
+          res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' })
+            .end(JSON.stringify({ error: message }));
+        }
+      })();
+    });
+    return;
+  }
+
+  // ── Síntesi: POST /api/tts ───────────────────────────────────────────
+  // Cos JSON: {text, voice?}. Resposta: WAV del proveïdor TTS actiu.
+  if (url.pathname === '/api/tts' && req.method === 'POST') {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => {
+      void (async () => {
+        try {
+          let payload: unknown;
+          try {
+            payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          } catch {
+            res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' })
+              .end(JSON.stringify({ error: 'Cal un JSON amb {text}' }));
+            return;
+          }
+          const parsed = ttsRequestSchema.safeParse(payload);
+          if (!parsed.success) {
+            res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' })
+              .end(JSON.stringify({ error: 'Cal un JSON amb {text} (i voice opcional)' }));
+            return;
+          }
+          const provider = getStreamingTts();
+          const result = await provider.synthesize(parsed.data.text, { voice: parsed.data.voice });
+          console.log(
+            `[tts] provider=${provider.id} voice=${result.voice}`
+            + ` primer_byte=${result.firstByteMs}ms bytes=${result.audio.length}`,
+          );
+          res.writeHead(200, {
+            'content-type': result.mimeType,
+            'content-length': result.audio.length,
+            'x-tts-voice': result.voice,
+            'x-tts-first-byte-ms': String(result.firstByteMs),
+          });
+          res.end(result.audio);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error('[tts] error:', message);
+          res.writeHead(502, { 'content-type': 'application/json; charset=utf-8' })
+            .end(JSON.stringify({ error: message }));
+        }
+      })();
+    });
     return;
   }
 
@@ -71,6 +209,11 @@ const configMessageSchema = z.object({
 });
 
 const controlMessageSchema = z.union([configMessageSchema, z.object({ eof: z.literal(1) })]);
+
+const ttsRequestSchema = z.object({
+  text: z.string().min(1).max(2000),
+  voice: z.string().min(1).max(64).optional(),
+});
 
 function safeJson(raw: string): unknown {
   try {
@@ -240,7 +383,7 @@ server.listen(config.port, () => {
 async function shutdown(): Promise<void> {
   console.log('[speech] aturant el laboratori…');
   for (const client of wss.clients) client.terminate();
-  await disposeProviders();
+  await Promise.all([disposeProviders(), disposeBatchProviders(), disposeTtsProviders()]);
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 2000).unref();
 }

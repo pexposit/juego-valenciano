@@ -5,15 +5,19 @@ tiempo real para ParlaVal. No toca `frontend/` ni `backend/`: el juego sigue
 funcionando igual con su flujo *push-to-talk* mientras aquí se investiga.
 
 Estado: **fases 0–2 completadas** (andamiaje, sidecar de Vosk y página de pruebas
-en vivo) más el **modo llamada** (prototipo conversacional dentro del propio
-laboratorio, ver abajo). Las fases 3–5 están descritas al final.
+en vivo), el **modo llamada** (prototipo conversacional dentro del propio
+laboratorio, ver abajo) y la **fase A** (catálogo de modelos: transcripción
+por lotes con faster-whisper catalán d'Aina + TTS matxa + bench WER, ver
+«Modelos de voz»). Las fases B–D están descritas al final.
 
 ## Arranque
 
 ```bash
 npm run setup:speech   # venv de Python + vosk + websockets + modelo catalán (43 MB) + muestras a 16 kHz
+npm run setup:aina     # faster-whisper + model català d'Aina (~3 GB, GPU si hi és)
 npm run dev:speech     # laboratorio en http://localhost:3100
 npm run smoke:speech   # prueba de humo de la tubería completa, sin micrófono
+npm run wer:speech     # bench de WER: cada WAV de bench/samples/*.wav contra su .txt
 npm run test:speech    # tests del protocolo y de las métricas
 ```
 
@@ -123,6 +127,56 @@ debajo de 1 (el motor va ~15× más rápido que el habla).
   `npm run build -w speech-lab && node dist/index.js`. El laboratorio mata el
   sidecar con `SIGINT`/`SIGTERM` para no dejar Python suelto.
 
+## Modelos de voz (fase A)
+
+El laboratorio ya no es «solo Vosk»: el servidor expone tres familias detrás
+de tres registros (`src/streaming/`, `src/batch/`, `src/tts/`), cada una con
+su sidecar y su protocolo testeado sin arrancar Python.
+
+| Familia | Proveedor | Motor | Uso |
+|---|---|---|---|
+| Streaming STT | `vosk` | Vosk small-ca + sidecar WS (`sidecar/vosk_stream.py`) | micrófono en vivo, parciales |
+| Batch STT | `aina` | faster-whisper `large-v3-ca-3catparla` + sidecar NDJSON (`sidecar/whisper_batch.py`) | transcripción automática, bench WER |
+| TTS | `matxa` | matxa-tts remoto (UJI, el mismo que el juego) | síntesis `POST /api/tts` |
+
+Endpoints nuevos (además de `/ws/transcribe` y `/health`, que ahora lista
+también `batchProvider`, `batchModel` y `ttsProvider`):
+
+- `POST /api/transcribe` — cuerpo: WAV PCM16 mono 16 kHz (máx. 25 MB).
+  Responde `{provider, model, text, segments[], words[], computeMs,
+  audioSecs, wallMs}` y, con `?reference=…`, añade `{wer}` calculado en el
+  servidor. Parámetros: `?provider=aina`, `?language=ca`, `?words=1`.
+- `POST /api/tts` — cuerpo JSON `{text, voice?}` (máx. 2000 chars).
+  Responde el WAV con cabeceras `x-tts-voice` y `x-tts-first-byte-ms`.
+
+### Bench WER (fase 4, cerrada con voz sintética)
+
+Cada `bench/samples/*.wav` con su `.txt` de referencia se pasa por cada
+motor (`npm run wer:speech`). Resultado con las muestras TTS actuales
+(23/9/2026; CPU, faster-whisper int8; Vosk RTF 0,061):
+
+| Muestra | Vosk small-ca | Aina large-v3-ca |
+|---|---|---|
+| `salutacio-gina-16k.wav` («…ajudar hui?») | **WER 0%** (exacta, 18 ms) | WER 28,6% (`et→em`, `hui→avui`, 5,8 s) |
+| `salutacio-lluc-16k.wav` (igual) | **WER 0%** (exacta, 20 ms) | WER 14,3% (`hui→avui`, 5,9 s) |
+| `bon-dia-16k.wav` («Bon dia») | WER 250% (igual que Aina: alucina la salutación) | WER 250% (al·lucina la salutació sencera, 6,0 s) |
+
+Lectura honesta: con voz sintética limpia **Vosk small sigue ganando en
+catalán oriental estricto**, y el large-v3-ca tiende al oriental (`avui`,
+`em`). El bench queda montado para repetirlo con **voz humana valenciana**,
+que es la medida que de verdad decide el motor (ver «Siguientes pasos»).
+
+Notas de la puesta a punto:
+
+- `scripts/setup-aina.sh` instala `faster-whisper` en el mismo `.venv` y
+  descarga el snapshot de Hugging Face a `models/`. Si la GPU falla (ocupada
+  o sin permisos — visto en esta máquina: ctranslate2 cuenta 1 dispositivo
+  pero CUDA responde «busy or unavailable»), el sidecar **cae a CPU solo**.
+- El sidecar de lots habla NDJSON por stdio (sin puerto): una línea por
+  petición, una por respuesta, en orden; el servidor encúa las peticiones.
+- Sin secretos nuevos: el TTS `matxa` usa las mismas `MATXA_TTS_*` que el
+  backend (ver `speech-lab/.env.example`).
+
 ## Limitaciones conocidas
 
 - **Solo existe el modelo catalán «small»**: `vosk-model-small-ca-0.4` (42 MB,
@@ -185,23 +239,35 @@ speech-lab/
 │   │   └── voskSidecar.ts      # arranque del sidecar, FIFO de latencias, errores
 │   └── bench/
 │       ├── smoke.ts            # prueba de humo por WebSocket
-│       └── wav.ts              # lector WAV PCM16 (sin dependencias)
+│       ├── wav.ts              # lector WAV PCM16 (sin dependencias)
+│       ├── wer.ts              # WER (Levenshtein por palabra) + normalización
+│       └── werBench.ts         # bench: cada WAV contra su .txt, por proveedor
 ├── public/                     # página de pruebas (index.html, lab.js, worklet/)
-├── scripts/                    # setup-vosk.sh, convert-samples.sh
-└── bench/samples/              # WAV a 16 kHz (generados, ignorados por git)
+├── scripts/                    # setup-vosk.sh, setup-aina.sh, convert-samples.sh
+└── bench/samples/              # WAV a 16 kHz (generados, ignorados por git) + .txt
 ```
 
 ## Siguientes pasos
 
+- **Fase B — transcripción en la página + WER con voz humana.** El endpoint
+  `POST /api/transcribe` ya funciona; falta la sección «Transcripció» en
+  `public/` (subir WAV, ver segmentos clicables, comparador A/B de modelos) y
+  repetir el bench con **voz humana valenciana** (Common Voice catalán como
+  *ground truth*). Es la medida que de verdad decide el motor.
 - **Fase 3 — gramática desde los escenarios.** Derivar el `phrase_list` de
   `backend/src/scenarios/*.ts` (objetivos y vocabulario) con normalización
   (minúsculas, sin puntuación, sin duplicados) y medir A/B con y sin gramática.
   La evidencia actual (RTF 0,017 frente a 0,066) hace de esto la línea con más
-  recorrido.
-- **Fase 4 — bench de WER con voz humana.** Grabar frases de los escenarios,
-  guardar el *ground truth* en `src/bench/samples/*.txt` y calcular WER por
-  motor. Es la única forma de decidir con datos si el modelo «small» basta o si
-  hace falta comparar contra otro motor.
+  recorrido. Nota: los `.ts` viven en `backend/` (no tocable); la vía es leer
+  `/api/scenarios` por HTTP como ya hace el modo llamada.
+- **Fase C — live de verdad.** Proveedor streaming de calidad (`aina-chunked`
+  con el faster-whisper por trozos de 2–5 s, o NeMo Transducer nativo),
+  `POST /api/tts` troceado por frases en paralelo, y modo llamada v2 dúplex.
+  Criterio: primer parcial < 600 ms en la RTX 3060.
+- **Fase D — clonación vocal (experimental).** `VoiceStore` (`POST
+  /api/voices` con audios de referencia → `voices/`, gitignored) + sidecar
+  XTTS-v2 zero-shot; si el catalán no da calidad, plan B con RVC sobre el TTS
+  base. Se evalúa con el propio bench WER (inteligibilidad del clon).
 ## Modo llamada: conversación completa sin tocar el juego
 
 El laboratorio tiene, además del banco de pruebas, un prototipo de **llamada
@@ -239,7 +305,7 @@ del propietario (el módulo debe vivir aparte). El trabajo está guardado en
 `frontend/src/lib/voiceStream.ts` + cambios en `VoiceInput.tsx`) y fue
 verificado punta a punta (texto exacto vía el proxy, RTF ≈ 0,07). Si se quiere
 integrar más adelante, se puede restaurar desde ahí o reimplementarla usando el
-modo llamada como referencia del circuito; antes conviene cerrar la fase 4
+modo llamada como referencia del circuito; antes conviene cerrar la fase B
 (WER con voz humana) para decidir motor.
 
 - **Fase 6 — recerca de motors conversacionals.** Taula de projectes i models

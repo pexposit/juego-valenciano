@@ -7,8 +7,10 @@
     "build": "npm run build -w shared && npm run build -w frontend && npm run build -w backend",
     "test": "npm run build -w shared && npm run test -w backend",
     "setup:speech": "bash speech-lab/scripts/setup-vosk.sh",
+    "setup:aina": "bash speech-lab/scripts/setup-aina.sh",
     "dev:speech": "npm run dev -w speech-lab",
     "smoke:speech": "npm run smoke -w speech-lab",
+    "wer:speech": "npm run wer -w speech-lab",
     "test:speech": "npm run test -w speech-lab"
   },
   "devDependencies": {"concurrently": "^9.1.0"}
