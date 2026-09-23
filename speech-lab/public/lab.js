@@ -501,7 +501,7 @@ const characterName = () => CHARACTER_BY_SCENARIO[ui.callScenario.value] ?? 'l�
 
 const sleepMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** POST JSON contra l'API de l'agent amb temps límit generós (el TTS triga). */
+/** POST JSON contra l'API de l'agent amb temps límit generós (el TTS tarda). */
 async function agentFetch(path, body) {
   const response = await fetch(`${agentBase}${path}`, {
     method: 'POST',
@@ -832,7 +832,7 @@ fileUi.btn.addEventListener('click', async () => {
     fileUi.audio.src = URL.createObjectURL(new Blob([fileWavBytes], { type: 'audio/wav' }));
     fileUi.audio.hidden = false;
     const provider = fileUi.provider.value;
-    setFileState(`Transcrivint amb ${provider}… (el model gran triga uns segons)`, 'warn');
+    setFileState(`Transcrivint amb ${provider}… (el model gran tarda uns segons)`, 'warn');
     const result = await transcribeWav(fileWavBytes, provider);
     showTranscription(result);
     setFileState('Transcripció llesta. Prem ▶ per escoltar cada segment.', 'ok');
@@ -851,7 +851,7 @@ fileUi.compareBtn.addEventListener('click', async () => {
     return;
   }
   fileUi.compareBtn.disabled = true;
-  fileUi.compareOut.innerHTML = '<p class="hint">Comparant… (Aina triga uns segons)</p>';
+  fileUi.compareOut.innerHTML = '<p class="hint">Comparant… (Aina tarda uns segons)</p>';
   try {
     const [aina, vosk] = await Promise.all([
       transcribeWav(fileWavBytes, 'aina'),
