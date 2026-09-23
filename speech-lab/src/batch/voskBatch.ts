@@ -29,7 +29,10 @@ class VoskBatchStt implements BatchStt {
     const { text, computeMs } = await new Promise<{ text: string; computeMs: number }>(
       (resolve, reject) => {
         const socket = new WebSocket(url);
-        let finalText = '';
+        // Vosk talla els àudios llargs en diversos finals (endpointing): cal
+        // concatenar-los tots, no quedar-se amb l'últim. Vist amb 30 s: el
+        // primer final duu mitja frase i el segon la resta.
+        const finals: string[] = [];
         let compute = 0;
         socket.on('open', () => {
           socket.send(JSON.stringify({ config: { sample_rate: wav.sampleRate } }));
@@ -49,11 +52,12 @@ class VoskBatchStt implements BatchStt {
           }
           const data = payload as Record<string, unknown>;
           if (data.type === 'final') {
-            finalText = String(data.text ?? '');
-            compute = Number(data.latencyMs ?? 0);
+            const text = String(data.text ?? '').trim();
+            if (text) finals.push(text);
+            compute += Number(data.latencyMs ?? 0);
           } else if (data.type === 'metrics') {
             socket.close();
-            resolve({ text: finalText, computeMs: compute });
+            resolve({ text: finals.join(' '), computeMs: compute });
           } else if (data.type === 'error') {
             socket.close();
             reject(new Error(String(data.message ?? 'error del laboratori')));
