@@ -163,8 +163,6 @@ server.registerTool(
 
 
 
-
-
 // 3. Connexió via StdioTransport
 async function main() {
   const transport = new StdioServerTransport();

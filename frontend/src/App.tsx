@@ -520,6 +520,30 @@ function Chat({
   const [showGoals, setShowGoals] = useState(() => typeof window === 'undefined' || window.innerWidth >= 900);
   const [goalsInfo, setGoalsInfo] = useState<{ character: string; objectius: string[] }>(() => scenarioGoals[scenario]);
 
+  const handleExit = async () => {
+    // Si no ha arribat a iniciar cap sessió amb el personatge, eixim sense fer petició
+
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+
+      const response = await fetch(`${apiBase}/api/sessions/finish`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ session_id: session }),
+      });
+
+      if (!response.ok) {
+        console.warn(`[handleExit] El backend ha respost amb codi ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error notificant la fi de la sessió:', err);
+    }
+  };
+
   const loadTextAudio = async (text: string, autoplay = false) => {
     // Solo TTS real (matxa). Si falla tras un reintento, NO se usa la voz del
     // navegador (speechSynthesis): se queda sin audio y el usuario puede reintentar.
@@ -639,8 +663,11 @@ function Chat({
       {/* Top bar */}
       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
+         <button
+            onClick={() => {
+              onBack();
+              handleExit();
+            }}
             id="chat-back-btn"
             className="btn-press rounded-full bg-white/90 px-4 py-2 font-bold shadow backdrop-blur-sm hover:bg-white transition-colors"
           >

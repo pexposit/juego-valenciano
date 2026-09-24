@@ -15,9 +15,7 @@ export type AgentReply = z.infer<typeof outputSchema>;
 // El nom ha d'existir a OpenAI: un valor inventat gasta dos intents (404) en
 // cada torn abans de passar al model de reserva.
 const OPENAI_MODELS = [
-  process.env.OPENAI_MODEL || 'gpt-4o-mini',
-  'gpt-4o-mini',
-  'gpt-4o',
+  process.env.OPENAI_MODEL
 ].filter((model, index, models) => models.indexOf(model) === index);
 
 // Límite por petición: si un modelo cuelga, se corta y se prueba el siguiente
@@ -51,8 +49,6 @@ export async function replyFromAgent(args: {
           signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
           body: JSON.stringify({
             model,
-            temperature:0.1,
-            max_completion_tokens: 450,
             response_format: {
             type: 'json_schema',
             json_schema: {

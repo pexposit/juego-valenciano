@@ -14,7 +14,7 @@ import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
 import { stt, tts } from '../services/voice.js';
-import {analyzeErrorsWithLocalLLM} from './subagent.js';
+import {analyzeErrorsWithLocalLLM} from '../services/subagentErrorDetector.js';
 
 
 export const turnRouter = Router();

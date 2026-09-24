@@ -658,9 +658,12 @@ async function startCall() {
   }
 }
 
+
 function hangUp() {
   call.active = false;
   call.paused = false;
+
+
   // Barge-in: allibera la reproducció en curs (la promesa es resol, no es penja).
   if (call.abortAudio) call.abortAudio('trucada penjada');
   if (call.audio) {
