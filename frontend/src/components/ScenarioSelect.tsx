@@ -49,12 +49,12 @@ export function ScenarioSelect({
         </div>
       </header>
 
-      {/* Scenario desk grid */}
+      {/* Scenario desk grid: 2 rows x 3 columns */}
       <div className="relative z-10 mx-auto max-w-2xl px-5 pt-6 pb-20">
         <p className="mb-4 text-center text-xs font-black uppercase tracking-wider opacity-55">
           Tria una situació
         </p>
-                        <div className="desk-grid grid grid-cols-3 gap-4">
+        <div className="desk-grid grid grid-cols-3 gap-4">
           {scenarios.map((s) => {
             const locked = xp < s.required;
             const g = goals[s.id];

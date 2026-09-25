@@ -1,0 +1,152 @@
+# Desplegament complet en un servidor propi: web + API + Supabase (Postgres,
+# Auth i REST) darrere de Caddy, amb HTTPS automàtic.
+#   cp .env.deploy.example .env && node deploy/generate-secrets.mjs >> .env
+#   docker compose up -d --build
+# Secrets del backend que no són de Supabase (OpenAI...) a backend/.env.
+services:
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_SUPABASE_URL: https://${DOMAIN:?cal definir DOMAIN}
+        VITE_SUPABASE_ANON_KEY: ${ANON_KEY:?cal definir ANON_KEY (deploy/generate-secrets.mjs)}
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      # Certificats de Let's Encrypt: sense volum es tornarien a demanar a cada
+      # reinici i es podria topar amb el límit de peticions.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - auth
+      - rest
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: backend/.env
+    environment:
+      PORT: 3001
+      # El navegador envia Origin també en POST del mateix origen.
+      FRONTEND_ORIGIN: https://${DOMAIN}
+      # Per la xarxa interna, a través de l'entrada :8000 de Caddy.
+      SUPABASE_URL: http://web:8000
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:?cal definir SERVICE_ROLE_KEY}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # Sense `ports`: només és accessible des de Caddy, dins de la xarxa de compose.
+    restart: unless-stopped
+
+  # --- Supabase autoallotjat: només els serveis que usa l'app ---------------
+  # Versions fixades segons el docker-compose oficial de supabase/supabase.
+
+  db:
+    image: supabase/postgres:17.6.1.136
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PORT: 5432
+      PGPORT: 5432
+      POSTGRES_DB: postgres
+      PGDATABASE: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?cal definir POSTGRES_PASSWORD}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    volumes:
+      - ./deploy/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro
+      - db_data:/var/lib/postgresql/data
+      # Clau de pgsodium: ha de persistir amb les dades.
+      - db_config:/etc/postgresql-custom
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  auth:
+    image: supabase/gotrue:v2.196.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: https://${DOMAIN}/auth/v1
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: https://${DOMAIN}
+      GOTRUE_URI_ALLOW_LIST: https://${DOMAIN}/**
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:?cal definir JWT_SECRET}
+      GOTRUE_JWT_ISSUER: https://${DOMAIN}/auth/v1
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
+      # true = alta sense correu de confirmació (igual que en local). Per a
+      # confirmar per correu, posa-ho a false i ompli les SMTP_* del .env.
+      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM:-true}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-ParlaVal}
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Aplica supabase/migrations quan GoTrue ja ha creat l'esquema auth, i acaba.
+  migrate:
+    image: supabase/postgres:17.6.1.136
+    depends_on:
+      auth:
+        condition: service_healthy
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./supabase/migrations:/migrations:ro
+      - ./deploy/db/migrate.sh:/migrate.sh:ro
+    entrypoint: ["sh", "/migrate.sh"]
+    restart: "no"
+
+  rest:
+    image: postgrest/postgrest:v14.17
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_DB_MAX_ROWS: 1000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:
+  db_config:
