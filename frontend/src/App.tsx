@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  ChevronRight, ListTodo, Lock, MessageCircle,
+    ChevronRight, ListTodo, LayoutGrid, MessageCircle,
   RotateCcw, Volume2, X, LogOut,
 } from 'lucide-react';
 import { SceneArt } from './components/SceneArt';
+import { ClassroomScene } from './components/ClassroomScene';
+import { TeacherAvatar } from './components/TeacherAvatar';
+import { ScenarioSelect } from './components/ScenarioSelect';
 import { VoiceInput } from './components/VoiceInput';
 import { HistoryModal, type Msg } from './components/HistoryModal';
 import { InstitutionalLogos } from './components/InstitutionalLogos';
@@ -11,7 +14,7 @@ import { createSession, fetchScenarios, sendTurn, type HistoryItem } from './lib
 import { supabase } from './lib/supabase';
 import type { Mood, Scenario } from './lib/types';
 
-type Page = 'home' | 'auth' | 'dashboard' | 'chat' | 'summary' | 'profile';
+type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'summary' | 'profile';
 
 const scenarios: { id: Scenario; name: string; icon: string; required: number; color: string; bgIllustration: string }[] = [
   { id: 'mercat',     name: 'El Mercat',     icon: '🍊', required: 0, color: '#FFD98A', bgIllustration: '#FFF3CC' },
@@ -60,7 +63,7 @@ function OrangeHeader({ children, showOranges = true }: { children: React.ReactN
 }
 
 /* ── Logo ────────────────────────────────────────────────────────── */
-function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const cls = size === 'lg' ? 'text-4xl' : size === 'sm' ? 'text-xl' : 'text-2xl';
   return (
     <b className={`${cls} font-black tracking-tight`}>
@@ -392,110 +395,102 @@ function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
 
 /* ══════════════════ DASHBOARD PAGE ════════════════════════════════ */
 function Dashboard({
-  name, xp, setPage, onScenario,
-}: { name: string; xp: number; setPage: (p: Page) => void; onScenario: (s: Scenario) => void }) {
-  const cardRefs = useRef<(HTMLButtonElement | null)[][]>([]);
-  const xpBarRef = useRef<HTMLDivElement>(null);
+  name, setPage,
+}: { name: string; setPage: (p: Page) => void }) {
+  const [dashInput, setDashInput] = useState('');
+  const [dashLoading, setDashLoading] = useState(false);
 
-  // Staggered card entrance
-  useEffect(() => {
-    cardRefs.current.flat().forEach((card, i) => {
-      if (card) {
-        card.style.animationDelay = `${i * 0.1}s`;
-        card.classList.add('animate-in');
-      }
-    });
-  }, []);
-
-  // XP bar pulse when xp changes
-  useEffect(() => {
-    if (xpBarRef.current) {
-      xpBarRef.current.classList.add('xp-pulse');
-      const t = setTimeout(() => xpBarRef.current?.classList.remove('xp-pulse'), 550);
-      return () => clearTimeout(t);
-    }
-  }, [xp]);
+  const handleDashChat = () => {
+    if (!dashInput.trim() || dashLoading) return;
+    setDashLoading(true);
+    setTimeout(() => setDashLoading(false), 600);
+  };
 
   return (
-    <main className="fade-up min-h-screen" style={{ background: '#FAFAF9' }}>
-      {/* Illustrated header */}
-      <OrangeHeader showOranges={false}>
-        <div className="flex items-center justify-between px-5 pb-2 pt-1">
-          <Logo />
-          <button
-            id="dashboard-profile-btn"
-            onClick={() => setPage('profile')}
-            className="avatar-ring grid h-11 w-11 place-items-center rounded-full font-black text-lg text-white"
-            style={{ background: '#F97316' }}
-          >
-            {name[0]}
-          </button>
+    <main className="fade-up relative min-h-screen" style={{ background: '#FFF9ED' }}>
+      <ClassroomScene opacity={0.5} />
+      <div className="absolute left-3 top-2/3 -translate-y-1/2 z-20 flex items-center gap-3">
+          <TeacherAvatar className="drop-shadow-lg" size={400} />
+          {/* Speech bubble to the right of the teacher */}
+          <div className="relative max-w-[260px] rounded-2xl rounded-bl-none bg-white px-4 py-3 text-sm font-bold text-slate-800 shadow-lg">
+            Començem la classe
+            <button
+              id="dashboard-start-btn"
+              onClick={() => setPage('scenarioselect')}
+              className="btn-press mt-2 w-full rounded-xl bg-teal px-3 py-1.5 text-xs font-black text-white hover:bg-teal/90"
+            >
+              Començem
+            </button>
+            <svg
+              className="absolute -left-2 top-3 h-4 w-4 -rotate-45"
+              viewBox="0 0 16 16"
+              fill="white"
+              aria-hidden="true"
+            >
+              <path d="M0 0h16v16H0z" />
+            </svg>
+          </div>
         </div>
-      </OrangeHeader>
+      {/* Classroom header: top-right scenario selector + profile */}
+      <header className="classroom-header z-10">
+        <div className="relative isolate flex items-center justify-between px-5 pb-3 pt-4">
+          <Logo />
+          <div className="flex items-center gap-2">
+            <button
+              id="dashboard-scenario-btn"
+              aria-label="Tria l'escenari"
+              title="Tria l'escenari"
+              onClick={() => setPage('scenarioselect')}
+              className="scenario-fab btn-press flex h-10 items-center gap-1.5 rounded-full bg-teal px-3 py-2 text-sm font-black text-white hover:bg-teal/90"
+            >
+              <LayoutGrid size={18} />
+              Escenaris
+            </button>
+            <button
+              id="dashboard-profile-btn"
+              onClick={() => setPage('profile')}
+              className="avatar-ring grid h-11 w-11 place-items-center rounded-full font-black text-lg text-white"
+              style={{ background: '#F9731C' }}
+            >
+              {name[0]}
+            </button>
+          </div>
+        </div>
+        <div className="px-5 pb-4">
+          <span className="block text-xs font-black uppercase tracking-widest" style={{ color: '#FFD166' }}>Aula d'aprenentatge</span>
+          <p className="mt-1 text-sm opacity-65">Practica valencià en situacions reals</p>
+        </div>
+      </header>
 
-      <div className="mx-auto max-w-2xl px-5 pt-6 pb-10">
+      <div className="relative z-10 mx-auto max-w-2xl px-5 pt-6 pb-10">
         {/* Greeting */}
         <h1 className="text-3xl font-black">Bon dia, {name}! 👋</h1>
 
-        {/* XP progress */}
-        <div className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
-          <div className="grid grid-cols-3 text-sm font-extrabold mb-1">
-            <span className="whitespace-nowrap">Nivell 1 · Exploradora</span>
-            <span className="justify-self-center whitespace-nowrap" style={{ color: '#F97316' }}>⚡ {xp} / 100 XP</span>
-          </div>
-          <div className="h-3 overflow-hidden rounded-full" style={{ background: '#FFEDD5' }}>
-            <div ref={xpBarRef} className="xp-bar-fill h-full rounded-full transition-all duration-700" style={{ width: `${xp}%` }} />
-          </div>
+        {/* Escenaris accessibles des del botó de la cantina superior dreta. */}
+        <div className="mt-8 rounded-3xl border-2 border-dashed border-[#E7E5E4] p-6 text-center">
+          <p className="text-sm font-bold text-teal">Tria una situació fent clic al botó de la cantina, a la part superior dreta del mapa.</p>
+          <p className="mt-2 text-xs opacity-50">Mercat · Bar · Oficina · Ajuntament · Escola · Turisme</p>
         </div>
 
-        {/* Stats */}
-        <div className="mt-4 flex gap-3">
-          <Stat icon="🔥" label="Racha" value="3 dies" />
-          <Stat icon="🏅" label="Insígnies" value="1" />
-          <Stat icon="💬" label="Paraules" value="24" />
-        </div>
-
-        {/* Scenario grid */}
-        <h2 className="mt-8 text-2xl font-black">Tria una situació</h2>
-        <p className="text-sm opacity-50 mt-1">On vols practicar hui?</p>
-
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          {scenarios.map((s, i) => {
-            const locked = xp < s.required;
-            return (
-              <button
-                key={s.id}
-                id={`scenario-${s.id}`}
-                disabled={locked}
-                onClick={() => onScenario(s.id)}
-                className="scene-card text-left"
-                style={{ background: locked ? '#F5F5F5' : '#fff' }}
-                ref={el => { if (cardRefs.current[i]) cardRefs.current[i][0] = el; else cardRefs.current[i] = [el]; }}
-              >
-                {/* Illustration area */}
-                <div
-                  className="relative flex h-28 items-center justify-center overflow-hidden rounded-t-[20px]"
-                  style={{ background: locked ? '#E8E8E8' : s.color }}
-                >
-                  <span className="text-6xl select-none">{s.icon}</span>
-                  {locked && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-t-[20px]">
-                      <Lock size={24} className="text-white drop-shadow" />
-                    </div>
-                  )}
-                </div>
-                {/* Label */}
-                <div className="px-4 py-3">
-                  <b className="block text-base font-black" style={{ color: locked ? '#aaa' : '#263747' }}>
-                    {s.name}
-                  </b>
-                  <span className="text-xs font-bold" style={{ color: locked ? '#bbb' : '#0D9488' }}>
-                    {locked ? `🔒 ${s.required} XP necessaris` : '✓ Disponible'}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+        {/* Chat-style input at the bottom of the dashboard */}
+        <div className="fixed inset-x-4 bottom-4 z-30 mx-auto max-w-xl">
+          <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg">
+            <input
+              type="text"
+              value={dashInput}
+              onChange={e => setDashInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && dashInput.trim() && !dashLoading) handleDashChat(); }}
+              placeholder="Escriu aquí per a començar a practicar…"
+              className="flex-1 rounded-xl border-0 bg-transparent px-4 py-3 text-sm outline-none"
+            />
+            <button
+              onClick={handleDashChat}
+              disabled={dashLoading || !dashInput.trim()}
+              className="rounded-xl bg-teal px-4 py-2 text-sm font-black text-white disabled:opacity-60"
+            >
+              {dashLoading ? '…' : '→'}
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -1008,7 +1003,8 @@ export function App() {
 
   if (page === 'home')      return <PageTransition><HomePage setPage={setPage} /></PageTransition>;
   if (page === 'auth')      return <PageTransition><AuthPage setPage={setPage} /></PageTransition>;
-  if (page === 'dashboard') return <PageTransition><Dashboard name={name} xp={xp} setPage={setPage} onScenario={s => { setScenario(s); setPage('chat'); }} /></PageTransition>;
+  if (page === 'dashboard') return <PageTransition><Dashboard name={name} setPage={setPage} /></PageTransition>;
+  if (page === 'scenarioselect') return <PageTransition><ScenarioSelect scenarios={scenarios} goals={scenarioGoals} xp={xp} onSelectScenario={s => { setScenario(s); setPage('chat'); }} onBack={() => setPage('dashboard')} /></PageTransition>;
   if (page === 'profile') {
     return (
       <PageTransition>
@@ -1025,7 +1021,7 @@ export function App() {
       </PageTransition>
     );
   }
-  if (page === 'summary')   return <PageTransition><Summary xp={xp} onMap={() => setPage('dashboard')} onContinue={() => setPage('chat')} /></PageTransition>;
+  if (page === 'summary')   return <PageTransition><Summary xp={xp} onMap={() => setPage('dashboard')} onContinue={() => setPage('scenarioselect')} /></PageTransition>;
   return (
     <PageTransition>
       <Chat

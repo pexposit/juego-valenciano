@@ -1,0 +1,44 @@
+# Rutes de Supabase amb els mateixos prefixos que Supabase Cloud, així
+# supabase-js funciona sense canvis apuntant a https://{$DOMAIN}.
+(supabase) {
+	handle_path /auth/v1/* {
+		reverse_proxy auth:9999
+	}
+	handle_path /rest/v1/* {
+		reverse_proxy rest:3000
+	}
+}
+
+# {$DOMAIN} amb un domini real (p. ex. parlaval.example.com) → HTTPS automàtic
+# amb Let's Encrypt. Amb `localhost` usa un certificat local (avís al navegador),
+# útil per a provar-ho a la teua màquina.
+{$DOMAIN} {
+	encode zstd gzip
+
+	import supabase
+
+	# API: mateix origen, així no cal CORS ni VITE_API_BASE_URL.
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+	handle /health {
+		reverse_proxy api:3001
+	}
+
+	# Web estàtica amb fallback a index.html (SPA).
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+
+		# Els assets de Vite porten hash al nom: es poden guardar per sempre.
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+	}
+}
+
+# Entrada interna per al backend (SUPABASE_URL=http://web:8000). El port no es
+# publica: només és accessible des de la xarxa de compose.
+http://:8000 {
+	import supabase
+}

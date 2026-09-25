@@ -180,3 +180,49 @@ Mejoras ya identificadas y todavía no implementadas:
 
 
 
+
+## 9. Alternativa: todo en un servidor propio (Docker Compose)
+
+En lugar de Supabase Cloud + Render + Vercel, todo puede ir en un único servidor. `docker-compose.yml` levanta:
+
+| Servicio | Qué es |
+|---|---|
+| `web` | Caddy: sirve el build de Vite, hace de proxy de `/api`, `/auth/v1` y `/rest/v1` y **obtiene el certificado HTTPS de Let's Encrypt** |
+| `api` | El backend (`backend/Dockerfile`) |
+| `db` | Postgres con las extensiones y roles de Supabase (`supabase/postgres`) |
+| `auth` | GoTrue, el servicio de Auth de Supabase (altas e inicios de sesión) |
+| `rest` | PostgREST, lo que responde a `supabase.from(...)` |
+| `migrate` | Aplica `supabase/migrations/*.sql` que falten y termina |
+
+Es un **Supabase mínimo**: solo lo que usa el juego. No incluye Studio (el panel web), Storage, Realtime ni Edge Functions; si algún día hacen falta, parte del [docker-compose oficial](https://github.com/supabase/supabase/tree/master/docker). Así cabe en un VPS de **2 GB de RAM** (el oficial completo pide unos 4 GB).
+
+Web, API y Supabase comparten dominio: `VITE_SUPABASE_URL` es `https://$DOMAIN`, `VITE_API_BASE_URL` queda vacía y el compose fija `FRONTEND_ORIGIN` y `SUPABASE_URL` solo.
+
+### Primer despliegue
+
+```bash
+# En el servidor, con Docker instalado y los puertos 80 y 443 abiertos:
+git clone <repo> && cd juego-valenciano
+cp .env.deploy.example .env                  # pon DOMAIN
+docker run --rm -v "$PWD/deploy:/d" node:22-alpine node /d/generate-secrets.mjs >> .env
+cp backend/.env.example backend/.env         # OpenAI, matxa, ALLOW_DEMO... (SUPABASE_* no hace falta)
+docker compose up -d --build
+docker compose logs migrate                  # "Base de dades al dia"
+curl https://$DOMAIN/health                  # {"ok":true}
+```
+
+- El registro DNS debe apuntar a la IP del servidor **antes** del primer arranque, o Caddy no podrá emitir el certificado.
+- Para probarlo en tu máquina: `DOMAIN=localhost` (certificado local, el navegador avisa una vez).
+- **Guarda una copia del `.env`.** Si pierdes `JWT_SECRET`, todas las sesiones dejan de valer; si pierdes `POSTGRES_PASSWORD`, los servicios no conectan a la base de datos.
+- Las altas no piden confirmación por correo (`ENABLE_EMAIL_AUTOCONFIRM=true`). Para activarla, rellena las `SMTP_*` del `.env`.
+
+### Mantenimiento
+
+- **Actualizar:** `git pull && docker compose up -d --build`. Las migraciones nuevas de `supabase/migrations/` se aplican solas, cada una una sola vez (registro en `deploy.applied_migrations`).
+- **Copia de seguridad** (hazla con cron; ahora los datos solo existen en tu servidor):
+  ```bash
+  docker compose exec -T db pg_dump -U supabase_admin -d postgres -n public -n auth -Fc > parlaval-$(date +%F).dump
+  ```
+- **Consultar la base de datos:** `docker compose exec db psql -U supabase_admin -d postgres`.
+- **No borres los volúmenes** (`docker compose down -v`): `db_data` son los datos y `caddy_data` los certificados.
+- Postgres no se publica a Internet: solo se accede desde la red interna del compose.
