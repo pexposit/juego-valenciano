@@ -186,9 +186,24 @@ que es la medida que de verdad decide el motor (ver «Siguientes pasos»).
 Notas de la puesta a punto:
 
 - `scripts/setup-aina.sh` instala `faster-whisper` en el mismo `.venv` y
-  descarga el snapshot de Hugging Face a `models/`. Si la GPU falla (ocupada
-  o sin permisos — visto en esta máquina: ctranslate2 cuenta 1 dispositivo
-  pero CUDA responde «busy or unavailable»), el sidecar **cae a CPU solo**.
+  descarga el snapshot de Hugging Face a `models/`.
+- **GPU (opcional, pero muy recomendada):** ctranslate2 de PyPI **no trae las
+  librerías CUDA ni declara extra `cuda`** (comprobado en 4.8.2: no hay
+  `Provides-Extra`), así que el script instala `nvidia-cublas-cu12` +
+  `nvidia-cudnn-cu12` cuando ve `nvidia-smi`. El sidecar añade esos directorios
+  al `LD_LIBRARY_PATH` y **se re-ejecuta una vez** (el cargador dinámico solo
+  lee esa variable al arrancar). Sin ese paso CTranslate2 encuentra el driver,
+  reserva 3 GB de VRAM y falla en la primera transcripción con «Library
+  libcublas.so.12 is not found or cannot be loaded» — justo el error que veía
+  la página al cargar un ejemplo.
+- El sidecar prueba GPU `float16` → GPU `int8_float16` → CPU `int8` y **cae al
+  siguiente intento solo** si uno falla (VRAM escasa, GPU ocupada por otro
+  programa, permisos…). Si la GPU se rompe a mitad de una transcripción,
+  recarga el modelo en CPU y reintenta la petición. `AINA_DEVICE=cpu` fuerza
+  CPU y `AINA_COMPUTE_TYPE=…` fija el tipo en GPU.
+- Medido en esta máquina (RTX 3060 Laptop, large-v3-ca): 2,7 s de carga y
+  **0,7 s de cómputo** para 2,1 s de audio en GPU `float16`, frente a 7,4 s de
+  carga y 5,9 s de cómputo en CPU `int8` (≈8×).
 - El sidecar de lots habla NDJSON por stdio (sin puerto): una línea por
   petición, una por respuesta, en orden; el servidor encúa las peticiones.
 - Sin secretos nuevos: el TTS `matxa` usa las mismas `MATXA_TTS_*` que el
@@ -301,14 +316,26 @@ micrófono → Vosk en streaming (texto en vivo mientras hablas)
 
 - Se activa en la página del laboratorio (`http://localhost:3100`) con el botón
   **«Trucar»**, eligiendo escenario y nivel. Botón «Penjar» para colgar.
+- La API del juego tiene que ser **alcanzable desde el navegador**: el despliegue
+  no publica el puerto 3001 (solo llega Caddy por la red interna de compose). En
+  local hace falta el override de pruebas —que ya incluye el puerto—:
+  `docker compose -f docker-compose.yml -f docker-compose.local.yml up -d api`.
+  Sin eso el navegador falla con «Failed to fetch» y la llamada muestra «No s'ha
+  pogut parlar amb l'agent». El CORS no estorba: el backend acepta cualquier
+  origen `localhost` con cualquier puerto, así que `http://localhost:3100` pasa.
 - Es **solo lectura de la API del juego** (las mismas llamadas que hace el
   frontend: `createSession` + `sendTurn` + `/api/tts` en modo demo, sin token).
   No escribe en Supabase, no aplica XP real ni altera el flujo del juego.
 - El historial del agente se lleva en memoria dentro del laboratorio, igual que
   hace `App.tsx`, para que el personaje recuerde la conversación.
-- Limitaciones conscientes de un prototipo: el modo demo no persiste sesiones,
-  no hay *barge-in* (el micrófono se reabre cuando termina el audio de la
-  respuesta) y el endpointing es el de Vosk (pausa ≈ fin de frase).
+- Limitaciones conscientes de un prototipo: el modo demo no persiste sesiones y
+  el *endpointing* es el de Vosk (pausa ≈ fin de frase).
+- *Barge-in* (interruptor «Permetre interrompre l'agent mentre parla», activo
+  por defecto): mientras el personaje habla el micrófono se pausa para no
+  devolverle su propia voz, y si le hablas encima (2 bloques seguidos con voz,
+  ≈ 256 ms) se corta la frase y se vuelve a escuchar. Requiere cancelación de
+  eco: al trucar se activa sola (eco del altavoz + micrófono = el agente se
+  interrumpiría a sí mismo).
 - Verificado e2e: dos turnos seguidos sobre «El Mercat» — el agente contesta y
   recuerda «dos quilos de taronges» del turno anterior; audio WAV válido
   reproducido; página sin errores de JS.

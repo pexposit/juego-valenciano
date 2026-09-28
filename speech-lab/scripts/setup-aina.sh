@@ -24,10 +24,12 @@ fi
 echo "[setup:aina] instal·lant faster-whisper"
 "$VENV_DIR/bin/pip" install -q --disable-pip-version-check faster-whisper
 
-# ctranslate2 amb CUDA només cal si hi ha GPU; si falla, la versió CPU ja hi és.
+# ctranslate2 de PyPI no porta les llibreries CUDA ni té extra «cuda» (comprovat
+# en 4.8.2: no declara cap Provides-Extra): calen els wheels nvidia-* i el
+# sidecar els afegix a LD_LIBRARY_PATH. Si no hi ha GPU o falla, cau a CPU.
 if command -v nvidia-smi >/dev/null 2>&1; then
-  echo "[setup:aina] GPU detectada: provant ctranslate2 amb CUDA"
-  "$VENV_DIR/bin/pip" install -q --disable-pip-version-check "ctranslate2[cuda]" \
+  echo "[setup:aina] GPU detectada: instal·lant les llibreries CUDA 12 (cublas + cuDNN)"
+  "$VENV_DIR/bin/pip" install -q --disable-pip-version-check nvidia-cublas-cu12 nvidia-cudnn-cu12 \
     || echo "[setup:aina] AVÍS: sense CUDA; faster-whisper caurà a CPU (més lent)"
 fi
 
