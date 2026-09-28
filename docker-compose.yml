@@ -40,10 +40,29 @@ services:
       # Per la xarxa interna, a través de l'entrada :8000 de Caddy.
       SUPABASE_URL: http://web:8000
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:?cal definir SERVICE_ROLE_KEY}
+       # Per la xarxa interna de compose (nom del servici = host).
+      CLASSIFICADOR_URL: http://classificador:8000
     depends_on:
       migrate:
         condition: service_completed_successfully
+      classificador:
+        condition: service_started
     # Sense `ports`: només és accessible des de Caddy, dins de la xarxa de compose.
+    restart: unless-stopped
+
+  # Classificador de nivell de valencià (A1–C2), Mòdul 3. Només l'usa l'API:
+  # sense `ports` ni ruta a Caddy, perquè no té autenticació i gasta crèdit d'OpenAI.
+  classificador:
+    build: ./classificador_llm
+    env_file: classificador_llm/.env    # OPENAI_API_KEY (i OPENAI_MODEL, opcional)
+    environment:
+      PORT: 8000
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8000/salut').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # --- Supabase autoallotjat: només els serveis que usa l'app ---------------

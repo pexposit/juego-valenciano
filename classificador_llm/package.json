@@ -1,0 +1,25 @@
+{
+  "name": "classificador-nivell-valencia",
+  "version": "1.0.0",
+  "description": "Classificador de nivell de valencià (A1-C2) amb l'API d'OpenAI - Mòdul 3",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+  "build": "tsc",
+  "start": "tsc && node dist/servei.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "openai": "^7.23.0",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.3",
+    "@types/swagger-ui-express": "^4.1.8",
+    "typescript": "^7.0.2"
+  }
+}
