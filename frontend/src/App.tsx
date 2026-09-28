@@ -621,7 +621,10 @@ function Chat({
     setBubbleKey(k => k + 1);
     setLoading(true);
     try {
-      const activeSession = session || await createSession(scenario, level);
+    
+      //Se asume que si o si se va a seleccionar un escenario
+      //Falta añadir el tipo de mundo en el que nos encontramos
+      const activeSession = session || await createSession(scenario, level, "escenario");
       if (!session) setSession(activeSession);
       // El personatge ha de recordar el que s'ha dit: li enviem el context de la
       // conversa actual (el primer missatge inclou el salut inicial del personatge).

@@ -26,8 +26,6 @@ const TURN_RATE_LIMIT = {
 
 turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req: AuthRequest, res) => {
   try {
-    // 1. Asegúrate de que turnSchema acepte opcionalmente recurso_id
-    // Si viene en el body: data.recurso_id
     const data = turnSchema.parse(req.body);
     let text = data.text.trim();
     const startedAt = Date.now();
@@ -42,13 +40,13 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
 
     const client = db(req.userId);
 
-    // 2. Validar que la sesión pertenece al usuario
+    // 1. Validar la sessió amb conversation_sessions
     if (client) {
       const { data: session, error: sessionError } = await client
-        .from('conversation_sessions') // Asegura el nombre correcto de la tabla
+        .from('sessions')
         .select('id, user_id')
         .eq('id', data.session_id)
-        .eq('user_id', req.userId)
+        .eq('user_id', req.userId!)
         .maybeSingle();
 
       if (sessionError || !session) {
@@ -57,27 +55,23 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       }
     }
 
-    // 3. Obtener historial filtrado por sesión (y opcionalmente por recurso_id si cada actividad tiene su hilo aislado)
+    // 2. Historial aïllat per recurs
     let history: HistoryMessage[];
     if (client) {
-      let query = client
+      const { data: historyData, error: historyError } = await client
         .from('conversation_messages')
         .select('role, content_text')
-        .eq('session_id', data.session_id);
-
-      // Si quieres aislar el historial por actividad concreta dentro de la sesión:
-      if ((data as any).recurso_id) {
-        query = query.eq('recurso_id', (data as any).recurso_id);
-      }
-
-      const { data: historyData, error: historyError } = await query
+        .eq('session_id', data.session_id)
+        .eq('recurso_id', data.recurso_id)
         .order('created_at', { ascending: false })
         .limit(HISTORY_MAX_MESSAGES);
 
-      if (historyError) console.error("[turn] no hem pogut llegir l'historial:", historyError.message);
+      if (historyError) {
+        console.error("[turn] no hem pogut llegir l'historial:", historyError.message);
+      }
       history = sanitizeHistory(((historyData || []).reverse()) as HistoryMessage[]);
     } else {
-      history = sanitizeHistory(data.history);
+      history = sanitizeHistory(data.history as HistoryMessage[]);
     }
 
     const agentStart = Date.now();
@@ -91,21 +85,22 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
     const xpDelta = 10;
 
-    // Variable para guardar el ID del mensaje del usuario y enlazar los errores después
-    let userMessageId: string | null = null;
+    // Sincronitzador per assegurar que l'ID del missatge existix abans d'inserir errors
+    let resolveMessageId: (id: string | null) => void;
+    const messageIdPromise = new Promise<string | null>((resolve) => {
+      resolveMessageId = resolve;
+    });
 
-    // 4. Persistencia en conversation_messages incluyendo recurso_id
+    // 3. Persistència de missatges i XP
     const persistPromise = client
       ? (async () => {
           const dbStart = Date.now();
-          const recursoId = (data as any).recurso_id || null;
 
-          // A. Insertamos el mensaje del usuario y recuperamos su ID
           const { data: userMsgInsert, error: userMsgError } = await client
             .from('conversation_messages')
             .insert({
               session_id: data.session_id,
-              recurso_id: recursoId,
+              recurso_id: data.recurso_id,
               role: 'user',
               content_text: text,
               input_mode: data.input_mode,
@@ -113,29 +108,28 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
             .select('id')
             .single();
 
-          if (userMsgError) {
-            console.error('[turn] Error guardant missatge d\'usuari:', userMsgError.message);
+          if (userMsgError || !userMsgInsert) {
+            console.error('[turn] Error guardant missatge usuari:', userMsgError?.message);
+            resolveMessageId!(null);
             return;
           }
 
-          userMessageId = userMsgInsert.id;
+          resolveMessageId!(userMsgInsert.id);
 
-          // B. Insertamos la respuesta del agente/personaje
           const { error: characterMsgError } = await client
             .from('conversation_messages')
             .insert({
               session_id: data.session_id,
-              recurso_id: recursoId,
+              recurso_id: data.recurso_id,
               role: 'character',
               content_text: reply.reply_text,
               input_mode: 'text',
             });
 
           if (characterMsgError) {
-            console.error('[turn] Error guardant missatge de personatge:', characterMsgError.message);
+            console.error('[turn] Error guardant missatge personatge:', characterMsgError.message);
           }
 
-          // C. Aplicar XP
           const { error: xpError } = await client.rpc('apply_turn_xp', {
             p_user_id: req.userId,
             p_session_id: data.session_id,
@@ -165,20 +159,27 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       `[turn] tts=${wantsAudio ? Date.now() - ttsStart : 0}ms total=${Date.now() - startedAt}ms`,
     );
 
-    // 5. Análisis asíncrono de errores con LLM local vinculado a message_id
+    // 4. Anàlisi asíncrona segura
     if (client && req.userId) {
       const currentText = text;
 
       void (async () => {
         const start = Date.now();
         try {
-          const detectedErrors = await analyzeErrorsWithLocalLLM(currentText);
+          const [detectedErrors, targetMessageId] = await Promise.all([
+            analyzeErrorsWithLocalLLM(currentText),
+            messageIdPromise,
+          ]);
+
+          if (!targetMessageId) {
+            console.warn('[bgAnalysis] No es poden guardar errors: fallada en persistir el missatge pare.');
+            return;
+          }
 
           if (!detectedErrors || detectedErrors.length === 0) return;
 
-          // Insertamos en user_errors con message_id tal como pide tu esquema
           const records = detectedErrors.map((item) => ({
-            message_id: userMessageId, // Enlace con conversation_messages.id
+            message_id: targetMessageId,
             error_text: item.error_text,
             correction: item.correction,
             category: item.category,
@@ -193,7 +194,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           }
 
           console.log(
-            `[bgAnalysis] Guardats ${records.length} errors vinculats al missatge ${userMessageId} en ${Date.now() - start}ms`,
+            `[bgAnalysis] Guardats ${records.length} errors vinculats a ${targetMessageId} en ${Date.now() - start}ms`,
           );
         } catch (err: any) {
           console.error('[bgAnalysis] Error analitzant el missatge:', err.message);

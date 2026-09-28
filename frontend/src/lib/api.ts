@@ -15,9 +15,12 @@ export async function sendTurn(payload:{session_id:string;scenario:Scenario;leve
   const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/turn`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});
   if(!res.ok) throw new Error('No hem pogut connectar'); return res.json();
 }
+
+//Hasta tener categorias y tipo definidos, supongo que todo es escenario 
 export async function createSession(
   scenario: Scenario,
-  level: string
+  level: string,
+  categoria: string,
 ): Promise<string> {
   const sessionData = await supabase?.auth.getSession();
   const token = sessionData?.data.session?.access_token;
