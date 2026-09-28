@@ -1,5 +1,17 @@
 import type { Mood, Scenario } from '../lib/types';
 
+// Foto de fons de cada escenari (substituïx el dibuix de paret/cel de l'SVG).
+// `colegi` ja no és seleccionable des de la interfície, però es manté perquè
+// el tipus Scenario (font compartida) encara l'inclou.
+const SCENE_BACKGROUND: Record<Scenario, string> = {
+  mercat: '/images/market.jpg',
+  bar: '/images/bar.jpg',
+  oficina: '/images/office.jpg',
+  ajuntament: '/images/townhall.jpg',
+  colegi: '/images/classroom.jpg',
+  turisme: '/images/tourism.jpg',
+};
+
 const moodFace = (mood: Mood, part: 'eyes' | 'eyebrows' | 'mouth') => {
   if (part === 'eyebrows') {
     if (mood === 'confus') {
@@ -34,68 +46,22 @@ const moodFace = (mood: Mood, part: 'eyes' | 'eyebrows' | 'mouth') => {
 export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood }) {
   return (
     <div className="absolute inset-0 overflow-hidden bg-[#FFF9ED]">
+      {/* Foto real de l'escenari darrere del personatge i el taulell il·lustrats. */}
+      <img
+        src={SCENE_BACKGROUND[scenario]}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover opacity-40"
+      />
       <svg
         viewBox="0 0 400 550"
-        className="h-full w-full object-cover select-none"
+        className="relative h-full w-full object-cover select-none"
         xmlns="http://www.w3.org/2000/svg"
         preserveAspectRatio="xMidYMid slice"
       >
-        <defs>
-          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FFF2D4" />
-            <stop offset="100%" stopColor="#FFE09E" />
-          </linearGradient>
-          <linearGradient id="woodGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#A0633C" />
-            <stop offset="50%" stopColor="#BD8458" />
-            <stop offset="100%" stopColor="#A0633C" />
-          </linearGradient>
-          <linearGradient id="darkWoodGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#4A2F1D" />
-            <stop offset="50%" stopColor="#69442C" />
-            <stop offset="100%" stopColor="#4A2F1D" />
-          </linearGradient>
-          <linearGradient id="stoneGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#EAE4D8" />
-            <stop offset="100%" stopColor="#CEBFA8" />
-          </linearGradient>
-          <linearGradient id="flagGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#FFD166" />
-            <stop offset="100%" stopColor="#FFB03B" />
-          </linearGradient>
-        </defs>
-
-        {/* ══════════════════ 1. SCENARIO BACKGROUNDS ══════════════════ */}
-
         {/* --- EL MERCAT --- */}
         {scenario === 'mercat' && (
           <>
-            {/* Sky */}
-            <rect width="400" height="550" fill="url(#skyGrad)" />
-            {/* Sun */}
-            <circle cx="340" cy="80" r="28" fill="#FFC857" opacity="0.9" />
-            <circle cx="340" cy="80" r="45" fill="#FFC857" opacity="0.25" className="animate-ping" style={{ animationDuration: '3s' }} />
-
-            {/* Tree leaves hanging */}
-            <g className="sway" style={{ transformOrigin: '20px 20px', animationDuration: '7s' }}>
-              <path d="M 0 0 C 50 15, 100 45, 130 90 C 90 90, 50 60, 0 0" fill="#77B255" />
-              <path d="M 20 0 C 70 10, 110 30, 140 50 C 110 60, 60 40, 20 0" fill="#5B933E" />
-              <circle cx="75" cy="50" r="10" fill="#FF9F1C" />
-              <circle cx="110" cy="65" r="8" fill="#FF9F1C" />
-            </g>
-
-            {/* Market awning roof arches */}
-            <path d="M 0 110 Q 200 60 400 110" fill="none" stroke="#4A5862" strokeWidth="6" opacity="0.3" />
-
-            {/* Stripe Awning */}
-            <path d="M 10 50 L 390 50 L 370 115 L 30 115 Z" fill="#77B255" />
-            <path d="M 55 50 L 95 50 L 85 115 L 45 115 Z" fill="#FFF" opacity="0.85" />
-            <path d="M 135 50 L 175 50 L 165 115 L 125 115 Z" fill="#FFF" opacity="0.85" />
-            <path d="M 225 50 L 265 50 L 255 115 L 215 115 Z" fill="#FFF" opacity="0.85" />
-            <path d="M 305 50 L 345 50 L 335 115 L 295 115 Z" fill="#FFF" opacity="0.85" />
-            {/* Awning frills */}
-            <path d="M 30 115 Q 50 130 70 115 Q 90 130 110 115 Q 130 130 150 115 Q 170 130 190 115 Q 210 130 230 115 Q 250 130 270 115 Q 290 130 310 115 Q 330 130 350 115 Q 370 130 390 115" fill="none" stroke="#77B255" strokeWidth="14" strokeLinecap="round" />
-
               {/* CHARACTER: Vicent (The Orange Vendor) */}
               <g className="float mood-transition" style={{ animationDuration: '3.6s' }} key={`mercat-${mood}`}>
               {/* Body */}
@@ -135,58 +101,12 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
               <path d="M 135 340 Q 110 300 110 270" fill="none" stroke="#F8C9A1" strokeWidth="15" strokeLinecap="round" className="sway" style={{ transformOrigin: '135px 340px' }} />
               <circle cx="110" cy="262" r="10" fill="#FF9F1C" className="sway" style={{ transformOrigin: '135px 340px' }} />
             </g>
-
-            {/* Counter */}
-            <rect x="0" y="380" width="400" height="170" fill="url(#woodGrad)" />
-            <rect x="0" y="380" width="400" height="15" fill="#844E2E" />
-
-            {/* Crates of fruits */}
-            <g transform="translate(20, 362)">
-              <rect x="0" y="20" width="100" height="38" fill="#DDBB99" rx="2" stroke="#B08A68" strokeWidth="2" />
-              <circle cx="18" cy="18" r="11" fill="#FF9F1C" />
-              <circle cx="42" cy="14" r="11" fill="#FF9F1C" />
-              <circle cx="66" cy="16" r="11" fill="#FF9F1C" />
-              <circle cx="84" cy="18" r="11" fill="#FF9F1C" />
-              <circle cx="30" cy="6" r="11" fill="#FF9F1C" />
-              <circle cx="54" cy="4" r="11" fill="#FF9F1C" />
-              <circle cx="76" cy="6" r="11" fill="#FF9F1C" />
-              <line x1="0" y1="32" x2="100" y2="32" stroke="#B08A68" strokeWidth="2" />
-              <text x="50" y="44" fill="#5A3F2C" fontSize="8" fontWeight="900" textAnchor="middle">TARONGES</text>
-            </g>
-
-            <g transform="translate(280, 362)">
-              <rect x="0" y="20" width="100" height="38" fill="#DDBB99" rx="2" stroke="#B08A68" strokeWidth="2" />
-              <circle cx="18" cy="18" r="10" fill="#E63946" />
-              <circle cx="42" cy="14" r="10" fill="#E63946" />
-              <circle cx="66" cy="16" r="10" fill="#E63946" />
-              <circle cx="84" cy="18" r="10" fill="#E63946" />
-              <circle cx="30" cy="6" r="10" fill="#E63946" />
-              <circle cx="54" cy="4" r="10" fill="#E63946" />
-              <circle cx="76" cy="6" r="10" fill="#E63946" />
-              <line x1="0" y1="32" x2="100" y2="32" stroke="#B08A68" strokeWidth="2" />
-              <text x="50" y="44" fill="#5A3F2C" fontSize="8" fontWeight="900" textAnchor="middle">TOMATES</text>
-            </g>
           </>
         )}
 
         {/* --- EL BAR --- */}
         {scenario === 'bar' && (
           <>
-            {/* Background Arch */}
-            <rect width="400" height="550" fill="#9C4C38" />
-            <path d="M -40 550 L -40 220 Q 200 40 440 220 L 440 550 Z" fill="#823F2E" />
-
-            {/* Cozy Shelves */}
-            <rect x="30" y="110" width="120" height="8" fill="#6D3325" />
-            <rect x="50" y="80" width="20" height="30" fill="#E9D8A6" rx="2" opacity="0.7" />
-            <rect x="90" y="70" width="25" height="40" fill="#94D2BD" rx="2" opacity="0.6" />
-
-            {/* CAFÈ sign */}
-            <g transform="translate(240, 90) rotate(-2)">
-              <rect x="0" y="0" width="130" height="42" fill="#E9D8A6" rx="6" stroke="#263747" strokeWidth="3" />
-              <text x="65" y="27" fill="#263747" fontSize="13" fontWeight="900" textAnchor="middle">CAFÈ PARLAVAL</text>
-            </g>
-
             {/* CHARACTER: Maria (The Barista) */}
             <g className="float mood-transition" style={{ animationDuration: '3.8s' }} key={`bar-${mood}`}>
               <path d="M 135 390 Q 200 120 265 390 Z" fill="#3D3D3D" />
@@ -224,60 +144,12 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
               <rect x="268" y="248" width="14" height="15" fill="#3D7A34" rx="2" className="sway" style={{ transformOrigin: '255px 330px' }} /> {/* green cup */}
             </g>
 
-            {/* Counter */}
-            <rect x="0" y="380" width="400" height="170" fill="url(#darkWoodGrad)" />
-            <rect x="0" y="380" width="400" height="15" fill="#362013" />
-
-            {/* Espresso machine */}
-            <g transform="translate(15, 305)">
-              <rect x="0" y="10" width="90" height="65" fill="#D0D4D9" rx="3" stroke="#8C939D" strokeWidth="2.5" />
-              <rect x="15" y="45" width="22" height="30" fill="#EAEAEA" />
-              <rect x="52" y="45" width="22" height="30" fill="#EAEAEA" />
-              {/* steam particles */}
-              <circle cx="26" cy="-2" r="3" fill="#FFF" opacity="0" className="steam-particle" />
-              <circle cx="24" cy="-5" r="4.5" fill="#FFF" opacity="0" className="steam-particle" style={{ animationDelay: '0.6s' }} />
-              <circle cx="28" cy="-8" r="4" fill="#FFF" opacity="0" className="steam-particle" style={{ animationDelay: '1.2s' }} />
-              <circle cx="63" cy="-4" r="3.5" fill="#FFF" opacity="0" className="steam-particle" style={{ animationDelay: '0.3s' }} />
-              <circle cx="60" cy="-6" r="4" fill="#FFF" opacity="0" className="steam-particle" style={{ animationDelay: '0.9s' }} />
-            </g>
-
-            {/* Plate and coffee cup on counter */}
-            <g transform="translate(145, 360)">
-              <ellipse cx="25" cy="20" rx="25" ry="7" fill="#E9D8A6" stroke="#263747" strokeWidth="2" />
-              <path d="M 12 8 C 12 -2, 38 -2, 38 8 Z" fill="#94D2BD" stroke="#263747" strokeWidth="2" />
-              <path d="M 38 4 Q 45 4 43 10 Q 38 12 38 8" fill="none" stroke="#263747" strokeWidth="2" /> {/* Handle */}
-              {/* Steam */}
-              <path d="M 22 -6 Q 25 -14 21 -20" fill="none" stroke="#FFF" strokeWidth="2" strokeLinecap="round" className="steam-particle" />
-              <path d="M 27 -6 Q 29 -12 28 -18" fill="none" stroke="#FFF" strokeWidth="1.5" strokeLinecap="round" className="steam-particle" style={{ animationDelay: '0.8s' }} />
-            </g>
           </>
         )}
 
         {/* --- L'OFICINA --- */}
         {scenario === 'oficina' && (
           <>
-            {/* Office wall */}
-            <rect width="400" height="550" fill="#CEECEF" />
-
-            {/* Large Window */}
-            <rect x="75" y="45" width="250" height="260" fill="#E9F7F8" stroke="#A8DADE" strokeWidth="6" />
-            {/* Window panes grid */}
-            <line x1="200" y1="45" x2="200" y2="305" stroke="#A8DADE" strokeWidth="4" />
-            <line x1="75" y1="175" x2="325" y2="175" stroke="#A8DADE" strokeWidth="4" />
-            {/* Valencia distant roofs & Micalet tower silhouette outside window */}
-            <path d="M 175 305 L 175 250 Q 185 240 185 220 L 190 220 L 190 240 L 195 245 L 195 305 Z" fill="#D8B192" opacity="0.65" />
-            <path d="M 80 305 L 110 275 L 140 305 Z" fill="#E08E79" opacity="0.65" />
-            <path d="M 240 305 L 275 265 L 310 305 Z" fill="#E08E79" opacity="0.65" />
-
-            {/* Office plant */}
-            <g className="sway" style={{ transformOrigin: '40px 330px', animationDuration: '6.5s' }}>
-              {/* Plant pot */}
-              <rect x="25" y="310" width="30" height="35" fill="#E08E79" rx="3" />
-              <path d="M 40 310 Q 5 270 12 245 Q 25 240 40 310" fill="#2A9D8F" />
-              <path d="M 40 310 Q 75 265 65 240 Q 50 240 40 310" fill="#2A9D8F" />
-              <path d="M 40 310 Q 40 250 40 230 Q 30 245 40 310" fill="#264653" />
-            </g>
-
             {/* CHARACTER: Joan (The Coworker) */}
             <g className="float mood-transition" style={{ animationDuration: '3.4s' }} key={`oficina-${mood}`}>
               <path d="M 135 390 Q 200 120 265 390 Z" fill="#457B9D" />
@@ -311,151 +183,12 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
               <circle cx="172" cy="222" r="4" fill="#FF9E9E" opacity="0.4" />
               <circle cx="228" cy="222" r="4" fill="#FF9E9E" opacity="0.4" />
             </g>
-
-            {/* Desk */}
-            <rect x="0" y="380" width="400" height="170" fill="#D8B192" />
-            <rect x="0" y="380" width="400" height="15" fill="#BD9473" />
-
-            {/* Glowing Laptop */}
-            <g transform="translate(230, 320)">
-              <polygon points="10,48 100,48 115,62 -5,62" fill="#EAEAEA" stroke="#A8A8A8" strokeWidth="2" /> {/* base */}
-              <rect x="15" y="10" width="80" height="42" fill="#264653" rx="2" stroke="#A8A8A8" strokeWidth="2" /> {/* screen */}
-              <rect x="20" y="15" width="70" height="32" fill="#E9C46A" opacity="0.9" /> {/* webpage glow */}
-              <line x1="25" y1="22" x2="65" y2="22" stroke="#FFF" strokeWidth="3" />
-              <line x1="25" y1="30" x2="55" y2="30" stroke="#264653" strokeWidth="2" />
-            </g>
-
-            {/* Cup of tea */}
-            <g transform="translate(60, 360)">
-              <rect x="0" y="4" width="22" height="20" fill="#E63946" rx="2" />
-              <path d="M 22 8 Q 28 8 26 14 Q 22 16 22 14" fill="none" stroke="#E63946" strokeWidth="2" />
-            </g>
-          </>
-        )}
-
-        {/* --- L'ESCOLA --- */}
-        {scenario === 'colegi' && (
-          <>
-            {/* Classroom wall */}
-            <rect width="400" height="550" fill="#FFF3DE" />
-
-            {/* Sun */}
-            <circle cx="45" cy="55" r="18" fill="#FFC857" opacity="0.9" />
-            <circle cx="45" cy="55" r="32" fill="#FFC857" opacity="0.2" className="animate-ping" style={{ animationDuration: '3s' }} />
-
-            {/* Alphabet poster */}
-            <g transform="translate(325, 55)">
-              <rect width="42" height="60" fill="#FFE082" rx="3" stroke="#E0B84E" strokeWidth="2" />
-              <rect x="7" y="2" width="28" height="26" fill="#FFF" rx="2" />
-              <text x="21" y="20" textAnchor="middle" fill="#E63946" fontSize="16" fontWeight="900">A</text>
-              <circle cx="21" cy="44" r="9" fill="#7FB069" opacity="0.35" />
-              <path d="M 13 52 L 19 44 M 21 52 L 15 45" stroke="#5C3D2E" strokeWidth="2" strokeLinecap="round" />
-            </g>
-
-            {/* Blackboard */}
-            <g>
-              <rect x="90" y="38" width="225" height="125" fill="#8C6B4A" rx="6" />
-              <rect x="99" y="47" width="207" height="107" fill="#2F5D50" rx="3" />
-              {/* Chalk writing */}
-              <text x="112" y="86" fill="#FFF7E0" fontSize="23" fontWeight="900">Bon dia!</text>
-              <text x="112" y="116" fill="#FFD166" fontSize="13" fontWeight="700">a b c · valencià</text>
-              <rect x="284" y="128" width="18" height="6" fill="#FFF7E0" rx="2" /> {/* chalk */}
-            </g>
-
-            {/* Chalk tray */}
-            <rect x="90" y="163" width="225" height="8" fill="#4A2F1D" />
-
-            {/* CHARACTER: Marta (The Teacher) */}
-            <g className="float mood-transition" style={{ animationDuration: '3.5s' }} key={`colegi-${mood}`}>
-              {/* Dress */}
-              <path d="M 135 390 Q 200 120 265 390 Z" fill="#E76F51" />
-              {/* Apron */}
-              <path d="M 160 315 L 240 315 L 246 390 L 154 390 Z" fill="#F4A261" opacity="0.85" />
-              {/* Neck */}
-              <rect x="187" y="244" width="26" height="20" fill="#F8C9A1" rx="4" />
-              {/* Head */}
-              <circle cx="200" cy="215" r="38" fill="#F8C9A1" />
-              {/* Hair bun */}
-              <path d="M 162 215 C 162 158, 238 158, 238 215 C 230 190, 170 190, 162 215" fill="#5C3D2E" />
-              <circle cx="225" cy="180" r="12" fill="#5C3D2E" />
-              <path d="M 228 175 L 234 169 M 232 183 L 239 185" stroke="#FFC857" strokeWidth="4" strokeLinecap="round" /> {/* flower decoration */}
-
-              {/* Round glasses */}
-              <circle cx="186" cy="210" r="11" fill="none" stroke="#264653" strokeWidth="2.5" />
-              <circle cx="214" cy="210" r="11" fill="none" stroke="#264653" strokeWidth="2.5" />
-              <line x1="197" y1="210" x2="203" y2="210" stroke="#264653" strokeWidth="2.5" />
-
-              {/* Eyes */}
-              <g className="gaze">
-                <g className="blink-eyes">
-                  <circle cx="186" cy="210" r="4" fill="#263747" />
-                  <circle cx="214" cy="210" r="4" fill="#263747" />
-                </g>
-              </g>
-
-              {/* Eyebrows & Mouth */}
-              {moodFace(mood, 'eyebrows')}
-              {moodFace(mood, 'mouth')}
-
-              {/* Blush */}
-              <circle cx="172" cy="222" r="4" fill="#FF9E9E" opacity="0.45" />
-              <circle cx="228" cy="222" r="4" fill="#FF9E9E" opacity="0.45" />
-            </g>
-
-            {/* Teacher's desk */}
-            <rect x="0" y="380" width="400" height="170" fill="url(#darkWoodGrad)" />
-            <rect x="0" y="380" width="400" height="15" fill="#362013" />
-
-            {/* Books, notebook and pencil */}
-            <g transform="translate(120, 355)">
-              <rect x="0" y="13" width="58" height="20" fill="#E63946" rx="2" /> {/* book */}
-              <rect x="4" y="5" width="50" height="14" fill="#2A9D8F" rx="2" /> {/* book */}
-              <rect x="75" y="10" width="24" height="28" fill="#FFF" stroke="#263747" strokeWidth="1.5" /> {/* notebook */}
-              <path d="M 80 17 L 94 17 M 80 23 L 94 23 M 80 29 L 91 29" stroke="#7FB069" strokeWidth="1.5" />
-              <rect x="112" y="26" width="54" height="7" fill="#FFC857" rx="2" /> {/* pencil */}
-              <polygon points="166,22 174,29 166,36" fill="#264653" />
-            </g>
           </>
         )}
 
         {/* --- L'AJUNTAMENT --- */}
         {scenario === 'ajuntament' && (
           <>
-            {/* Sky */}
-            <rect width="400" height="550" fill="#D2E8FA" />
-
-            {/* Classical columns & arches of Town Hall */}
-            <rect x="0" y="130" width="400" height="300" fill="url(#stoneGrad)" />
-            {/* Archway silhouettes */}
-            <path d="M 40 430 L 40 230 Q 100 170 160 230 L 160 430 Z" fill="#A1927F" opacity="0.6" />
-            <path d="M 240 430 L 240 230 Q 300 170 360 230 L 360 430 Z" fill="#A1927F" opacity="0.6" />
-            {/* Columns */}
-            <rect x="28" y="130" width="16" height="280" fill="#EAE4D8" />
-            <rect x="176" y="130" width="16" height="280" fill="#EAE4D8" />
-            <rect x="208" y="130" width="16" height="280" fill="#EAE4D8" />
-            <rect x="356" y="130" width="16" height="280" fill="#EAE4D8" />
-            {/* Pediment top */}
-            <polygon points="-10,130 200,60 410,130" fill="url(#stoneGrad)" />
-            <polygon points="120,130 200,95 280,130" fill="#F4ECE1" />
-
-            {/* Waving Valencian Flag (Senyera) */}
-            <g className="wave-flag" style={{ transformOrigin: '80px 60px' }}>
-              <rect x="80" y="60" width="65" height="40" fill="url(#flagGrad)" />
-              {/* Red Stripes */}
-              <rect x="80" y="68" width="65" height="4" fill="#E63946" />
-              <rect x="80" y="76" width="65" height="4" fill="#E63946" />
-              <rect x="80" y="84" width="65" height="4" fill="#E63946" />
-              <rect x="80" y="92" width="65" height="4" fill="#E63946" />
-              {/* Blue strip at hoist */}
-              <rect x="80" y="60" width="14" height="40" fill="#1D3557" />
-              {/* Flag crown stars / gold motifs */}
-              <circle cx="87" cy="70" r="2" fill="#FFC857" />
-              <circle cx="87" cy="80" r="2" fill="#FFC857" />
-              <circle cx="87" cy="90" r="2" fill="#FFC857" />
-              {/* Flagpole */}
-              <line x1="80" y1="50" x2="80" y2="120" stroke="#3D3D3D" strokeWidth="4.5" strokeLinecap="round" />
-            </g>
-
             {/* CHARACTER: Amparo (Town Hall Clerk) */}
             <g className="float mood-transition" style={{ animationDuration: '3.7s' }} key={`ajuntament-${mood}`}>
               <path d="M 135 390 Q 200 120 265 390 Z" fill="#1D3557" />
@@ -488,79 +221,11 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
               <circle cx="172" cy="220" r="4" fill="#FF8A8A" opacity="0.45" />
               <circle cx="228" cy="220" r="4" fill="#FF8A8A" opacity="0.45" />
             </g>
-
-            {/* Info Counter */}
-            <rect x="0" y="380" width="400" height="170" fill="url(#stoneGrad)" />
-            <rect x="0" y="380" width="400" height="15" fill="#A89E8C" />
-
-            {/* Tourist map and brochures */}
-            <g transform="translate(130, 360)">
-              <polygon points="10,24 80,20 100,45 20,50" fill="#FFF" stroke="#263747" strokeWidth="2" /> {/* open map */}
-              <path d="M 28 26 L 38 42 M 52 24 L 62 40" stroke="#E63946" strokeWidth="1.5" /> {/* map routes */}
-              <rect x="110" y="24" width="22" height="30" fill="#E63946" rx="2" stroke="#263747" strokeWidth="1.5" />
-              <text x="121" y="44" fill="#FFF" fontSize="9" fontWeight="900" textAnchor="middle">i</text>
-            </g>
           </>
         )}
 {/* --- L'OFICINA DE TURISME --- */}
         {scenario === 'turisme' && (
           <>
-            {/* Office wall */}
-            <rect width="400" height="550" fill="#F5EAD8" />
-            {/* Wainscot panelling */}
-            <rect x="0" y="300" width="400" height="80" fill="#EAD3AE" />
-            <line x1="0" y1="300" x2="400" y2="300" stroke="#D4B98F" strokeWidth="4" />
-            <line x1="0" y1="340" x2="400" y2="340" stroke="#D4B98F" strokeWidth="2" />
-            <line x1="57" y1="300" x2="57" y2="378" stroke="#D4B98F" strokeWidth="2.5" />
-            <line x1="171" y1="300" x2="171" y2="378" stroke="#D4B98F" strokeWidth="2.5" />
-            <line x1="285" y1="300" x2="285" y2="378" stroke="#D4B98F" strokeWidth="2.5" />
-
-            {/* Window with blue sky */}
-            <rect x="254" y="42" width="112" height="150" fill="#CBE6F8" stroke="#A88B63" strokeWidth="6" rx="2" />
-            <rect x="260" y="50" width="100" height="134" fill="#DDEEFB" />
-            <line x1="310" y1="50" x2="310" y2="184" stroke="#A88B63" strokeWidth="3" />
-            <line x1="260" y1="117" x2="360" y2="117" stroke="#A88B63" strokeWidth="2" />
-
-            {/* Window sill with a small potted plant */}
-            <rect x="254" y="192" width="112" height="10" fill="#B98E5F" />
-            <g transform="translate(312, 168)">
-              <path d="M 0 24 Q -8 10 -4 0 Q 4 -2 8 8 0 24" fill="#4C8C4A" />
-              <path d="M 0 24 Q 12 12 8 0 Q 4 -2 0 24" fill="#5B933E" />
-              <path d="M -6 24 L -6 14 L -2 12 L 8 14 L 8 24 Z" fill="#C96F4B" />
-            </g>
-
-            {/* Hanging office sign */}
-            <g>
-              <line x1="140" y1="4" x2="140" y2="22" stroke="#3D3D3D" strokeWidth="2.5" />
-              <line x1="260" y1="4" x2="260" y2="22" stroke="#3D3D3D" strokeWidth="2.5" />
-              <rect x="74" y="22" width="252" height="34" fill="#0D9488" rx="17" />
-              <rect x="79" y="27" width="242" height="24" fill="none" stroke="#FFF" strokeWidth="1.5" rx="12" opacity="0.6" />
-              <text x="200" y="45" fill="#FFF" fontSize="14" fontWeight="900" textAnchor="middle">OFICINA DE TURISME</text>
-            </g>
-
-            {/* Wall map of València pinned up */}
-            <g transform="translate(26, 52)">
-              <rect width="112" height="96" fill="#EFE3C8" rx="3" stroke="#A88B63" strokeWidth="4" />
-              <rect x="6" y="5" width="100" height="86" fill="#FBF3DC" />
-              <text x="56" y="84" fill="#263747" fontSize="8" fontWeight="900" textAnchor="middle">VALÈNCIA</text>
-              {/* Push pins */}
-              <circle cx="6" cy="6" r="3" fill="#E63946" />
-              <circle cx="106" cy="6" r="3" fill="#E63946" />
-              <circle cx="6" cy="90" r="3" fill="#E63946" />
-              <circle cx="106" cy="90" r="3" fill="#E63946" />
-            </g>
-
-            {/* Brochure rack on the wall (right, under the window) */}
-            <g transform="translate(258, 222)">
-              <rect x="0" y="0" width="134" height="72" fill="#B98E5F" rx="4" />
-              <rect x="8" y="8" width="34" height="58" fill="#0D9488" rx="2" />
-              <rect x="50" y="12" width="34" height="58" fill="#F97316" rx="2" />
-              <rect x="92" y="16" width="34" height="58" fill="#FFC857" rx="2" />
-              <rect x="13" y="12" width="24" height="8" fill="#FFF" opacity="0.9" rx="1" />
-              <rect x="55" y="16" width="24" height="8" fill="#FFF" opacity="0.9" rx="1" />
-              <rect x="97" y="20" width="24" height="8" fill="#FFF" opacity="0.9" rx="1" />
-            </g>
-
             {/* CHARACTER: Laura (The Tourist Guide) */}
             <g className="float mood-transition" style={{ animationDuration: '3.7s' }} key={`turisme-${mood}`}>
               {/* Body / polo */}
@@ -599,18 +264,6 @@ export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood })
 
               {/* Arm pointing at the map on the counter */}
               <path d="M 255 330 Q 282 296 260 262 Q 246 248 252 244" fill="none" stroke="#F8C9A1" strokeWidth="15" strokeLinecap="round" className="sway" style={{ transformOrigin: '255px 330px' }} />
-            </g>
-
-            {/* Wooden info counter */}
-            <rect x="0" y="380" width="400" height="170" fill="url(#woodGrad)" />
-            <rect x="0" y="380" width="400" height="15" fill="#8D5B2E" />
-
-            {/* Stack of brochures on the counter */}
-            <g transform="translate(120, 350)">
-              <rect x="0" y="14" width="34" height="24" fill="#0D9488" rx="2" />
-              <rect x="4" y="7" width="34" height="24" fill="#F97316" rx="2" />
-              <rect x="8" y="0" width="34" height="24" fill="#FFC857" rx="2" />
-              <rect x="14" y="8" width="20" height="5" fill="#FFF" opacity="0.9" />
             </g>
           </>
         )}

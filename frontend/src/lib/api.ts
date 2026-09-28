@@ -16,3 +16,13 @@ export async function sendTurn(payload:{session_id:string;scenario:Scenario;leve
   if(!res.ok) throw new Error('No hem pogut connectar'); return res.json();
 }
 export async function createSession(scenario:Scenario,level:string):Promise<string>{const token=(await supabase?.auth.getSession())?.data.session?.access_token;const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/sessions`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({scenario,level})});if(!res.ok)throw new Error('No hem pogut iniciar la conversa');return (await res.json()).session_id}
+// Àudio TTS d'un text (veu del personatge de l'escenari). El token fa que la
+// petició compte contra el límit de l'usuari amb sessió: el backend limita molt
+// més les peticions anònimes. Retorna una URL `data:` reproduïble.
+export async function fetchTts(text:string,scenario:Scenario):Promise<string>{
+  const token=(await supabase?.auth.getSession())?.data.session?.access_token;
+  const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({text,scenario})});
+  if(!res.ok) throw new Error(`tts ${res.status}`);
+  const payload=await res.json() as {audio_base64:string;mime_type:string};
+  return `data:${payload.mime_type};base64,${payload.audio_base64}`;
+}
