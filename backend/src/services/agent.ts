@@ -56,11 +56,21 @@ export async function replyFromAgent(args: {
             messages: [
               {
                 role: 'system',
-                content: `${def.systemPrompt}\nNivell actual: ${args.level}. Respon únicament amb JSON vàlid i usa exactament les claus reply_text, mood, detected_level_signal i error_flags.`,
+                content: `${def.systemPrompt}
+Nivell actual: ${args.level}.
+
+INSTRUCCIONS DE CONVERSA:
+- Respon de manera natural i coherent al context de la situació com a personatge.
+- Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
+- Tria l'estat d'ànim ('mood') que millor represente la teua reacció com a personatge ('neutral', 'content', 'confus').
+- Indica en 'detected_level_signal' si l'aprenent parla per davall, al nivell o per damunt del nivell de referència.
+- Llista en 'error_flags' (màxim 4) etiquetes curtes dels errors lingüístics detectats, o un array buit si no n'hi ha.
+
+Respon únicament amb JSON vàlid i usa exactament les claus reply_text, mood, detected_level_signal i error_flags.`.trim(),
               },
               {
                 role: 'user',
-                content: `Context recent:\n${context || '(inici)'}\n\nAprenent: ${args.message}`,
+                content: `Context recent de la conversa:\n${context || '(inici)'}\n\nÚltim missatge de l'aprenent a analitzar i respondre:\n"${args.message}"`,
               },
             ],
           }),
@@ -88,6 +98,15 @@ export async function replyFromAgent(args: {
 function parseJsonResponse(content: string): unknown {
   const normalized = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   const value = JSON.parse(normalized) as Record<string, unknown>;
+
+  // Garantix que error_flags siga sempre un array (el model pot retornar una
+  // cadena solta o ometre-ho).
+  if (typeof value.error_flags === 'string') {
+    value.error_flags = value.error_flags.trim() ? [value.error_flags] : [];
+  } else if (!Array.isArray(value.error_flags)) {
+    value.error_flags = [];
+  }
+
   if (typeof value.mood === 'string') {
     const mood = value.mood.toLowerCase();
     value.mood = {

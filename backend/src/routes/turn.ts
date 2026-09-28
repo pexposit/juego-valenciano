@@ -14,6 +14,7 @@ import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
 import { stt, tts } from '../services/voice.js';
+import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
 
 export const turnRouter = Router();
 
@@ -144,6 +145,42 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     console.log(
       `[turn] tts=${wantsAudio ? Date.now() - ttsStart : 0}ms total=${Date.now() - startedAt}ms`,
     );
+
+    // Detecció d'errors en segon pla (subagent LLM local): no bloqueja la resposta.
+    if (client && req.userId) {
+      const currentUserId = req.userId;
+      const currentText = text;
+
+      void (async () => {
+        const start = Date.now();
+        try {
+          const detectedErrors = await analyzeErrorsWithLocalLLM(currentText);
+
+          if (!detectedErrors || detectedErrors.length === 0) return;
+
+          const records = detectedErrors.map((item) => ({
+            user_id: currentUserId,
+            error_text: item.error_text,
+            correction: item.correction,
+            category: item.category,
+            explanation: item.explanation,
+            resolved: false,
+          }));
+
+          const { error: insertErr } = await client.from('user_errors').insert(records);
+          if (insertErr) {
+            console.error('[bgAnalysis] Error guardant a user_errors:', insertErr.message);
+            return;
+          }
+
+          console.log(
+            `[bgAnalysis] Guardats ${records.length} errors a Supabase en ${Date.now() - start}ms`,
+          );
+        } catch (err: any) {
+          console.error('[bgAnalysis] Error analitzant el missatge:', err.message);
+        }
+      })();
+    }
 
     res.json({
       ...reply,
