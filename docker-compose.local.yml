@@ -1,0 +1,24 @@
+# Override NOMÉS per a provar el desplegament en esta màquina (no forma part
+# del desplegament real). S'usa damunt del docker-compose.yml sense tocar-lo:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#
+# Motiu: al PC el port 80 de l'amfitrió l'ocupa un Caddy del sistema, així que
+# l'HTTP es publica en 8080. L'HTTPS es queda en el 443 estàndard perquè la URL
+# siga la mateixa que espera Caddy i el bundle: https://localhost (sense port).
+# El certificat el genera Caddy internament per a "localhost", pel que el
+# navegador avisarà una vegada: cal acceptar l'excepció.
+services:
+  web:
+    # !override substitueix la llista del fitxer base (80:80 / 443:443).
+    ports: !override
+      - "8080:80"
+      - "443:443"
+      - "443:443/udp"
+
+  # El speech-lab (http://localhost:3100) crida l'API de l'agent directament des
+  # del navegador; sense publicar el port, el fetch del navegador donaria
+  # "Failed to fetch". En producció no es publica: només hi arriba Caddy.
+  api:
+    ports:
+      - "3001:3001"

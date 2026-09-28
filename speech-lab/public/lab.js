@@ -728,7 +728,12 @@ async function handleCallTurn(text) {
         setCallState("T'he escoltat: parla quan vulgues.", 'hint');
       }
     } else {
-      const message = error instanceof Error ? error.message : String(error);
+      // «Failed to fetch» no diu res de la causa; en la pràctica sempre és que
+      // l'API del joc no respon en eixa URL (en local el port 3001 no es
+      // publica: només hi arriba Caddy). Ho diem en la mateixa línia d'estat.
+      const message = error instanceof TypeError
+        ? `${error.message} — ${agentBase} no respon (en local, publica el port 3001: vegeu docker-compose.local.yml)`
+        : error instanceof Error ? error.message : String(error);
       log(`ERROR de l'agent: ${message}`);
       setCallState(`No s'ha pogut parlar amb l'agent: ${message}`, 'bad');
       await sleepMs(1200);
