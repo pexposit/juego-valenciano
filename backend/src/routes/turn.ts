@@ -14,17 +14,9 @@ import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
 import { stt, tts } from '../services/voice.js';
-import {analyzeErrorsWithLocalLLM} from '../services/subagentErrorDetector.js';
-
+import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
 
 export const turnRouter = Router();
-
-// Cada torn consumix OpenAI i el TTS del servidor de la UJI: el límit protegix
-// la factura. Els usuaris amb sessió poden conversar sense fricció; les
-// peticions anònimes (mode demostració) van molt més limitades.
-
-
-
 
 const TURN_RATE_LIMIT = {
   windowMs: 60_000,
@@ -34,12 +26,14 @@ const TURN_RATE_LIMIT = {
 
 turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req: AuthRequest, res) => {
   try {
+    // 1. Asegúrate de que turnSchema acepte opcionalmente recurso_id
+    // Si viene en el body: data.recurso_id
     const data = turnSchema.parse(req.body);
     let text = data.text.trim();
     const startedAt = Date.now();
 
     if (data.input_mode === 'voice') {
-      if (!data.audio_base64) return res.status(400).json({ error: 'Falta l\'àudio' });
+      if (!data.audio_base64) return res.status(400).json({ error: "Falta l'àudio" });
       const sttStart = Date.now();
       text = await stt.transcribe(Buffer.from(data.audio_base64, 'base64'), 'audio/webm');
       console.log(`[turn] stt=${Date.now() - sttStart}ms`);
@@ -48,38 +42,38 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
 
     const client = db(req.userId);
 
-    // Validate session (skip in demo mode)
+    // 2. Validar que la sesión pertenece al usuario
     if (client) {
       const { data: session, error: sessionError } = await client
-        .from('conversation_sessions')
-        .select('id,user_id,scenario')
+        .from('conversation_sessions') // Asegura el nombre correcto de la tabla
+        .select('id, user_id')
         .eq('id', data.session_id)
-        .single();
-      if (!session || session.user_id !== req.userId || session.scenario !== data.scenario) {
-        // Un error de consulta (BD caiguda, permisos) es veu als logs; el client
-        // rep el mateix 403 que si la sessió no existira.
+        .eq('user_id', req.userId)
+        .maybeSingle();
+
+      if (sessionError || !session) {
         if (sessionError) console.warn('[turn] error consultant la sessió:', sessionError.message);
-        return res.status(403).json({ error: 'Sessió no vàlida' });
+        return res.status(403).json({ error: 'Sessió no vàlida o no autoritzada' });
       }
     }
 
-    // El historial enviado por el cliente NO es de confianza (un cliente
-    // malicioso podría inventarlo para manipular al agente o inflar tokens):
-    // - Con usuario real (hay BD y la sesión ya se validó) se reconstruye
-    //   siempre desde `conversation_messages`, la fuente verificada.
-    // - En modo demo (sin BD) se acepta el del cliente, pero pasa por
-    //   `sanitizeHistory`, que recorta al presupuesto de mensajes y
-    //   caracteres definido en el paquete compartido.
+    // 3. Obtener historial filtrado por sesión (y opcionalmente por recurso_id si cada actividad tiene su hilo aislado)
     let history: HistoryMessage[];
     if (client) {
-      const { data: historyData, error: historyError } = await client
+      let query = client
         .from('conversation_messages')
-        .select('role,content_text')
-        .eq('session_id', data.session_id)
+        .select('role, content_text')
+        .eq('session_id', data.session_id);
+
+      // Si quieres aislar el historial por actividad concreta dentro de la sesión:
+      if ((data as any).recurso_id) {
+        query = query.eq('recurso_id', (data as any).recurso_id);
+      }
+
+      const { data: historyData, error: historyError } = await query
         .order('created_at', { ascending: false })
         .limit(HISTORY_MAX_MESSAGES);
-      // Si la lectura falla, el torn continua sense context: pitjor resposta,
-      // però el client no es queda sense contestació.
+
       if (historyError) console.error("[turn] no hem pogut llegir l'historial:", historyError.message);
       history = sanitizeHistory(((historyData || []).reverse()) as HistoryMessage[]);
     } else {
@@ -94,45 +88,54 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       history,
     });
 
-    console.log(reply)
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
-
     const xpDelta = 10;
 
-    // La persistencia y el TTS corren en paralelo: el audio no depende de la BD.
+    // Variable para guardar el ID del mensaje del usuario y enlazar los errores después
+    let userMessageId: string | null = null;
+
+    // 4. Persistencia en conversation_messages incluyendo recurso_id
     const persistPromise = client
       ? (async () => {
           const dbStart = Date.now();
-          // Supabase NO llança excepcions: torna l'error dins del resultat. Si no
-          // es comprova, l'usuari juga, veu pujar l'XP en pantalla i el progrés
-          // es perd en silenci (i l'operador no se n'assabenta mai).
-          const { error: insertTurn } = await client.from('conversation_messages').insert([
-            {
+          const recursoId = (data as any).recurso_id || null;
+
+          // A. Insertamos el mensaje del usuario y recuperamos su ID
+          const { data: userMsgInsert, error: userMsgError } = await client
+            .from('conversation_messages')
+            .insert({
               session_id: data.session_id,
+              recurso_id: recursoId,
               role: 'user',
               content_text: text,
               input_mode: data.input_mode,
-            },
-            {
-              session_id: data.session_id,
-              role: 'character',
-              content_text: reply.reply_text,
-              input_mode: 'text',
-            },
-          ]);
-          if (insertTurn) {
-            console.error('[turn] no hem pogut guardar els missatges:', insertTurn.message);
+            })
+            .select('id')
+            .single();
+
+          if (userMsgError) {
+            console.error('[turn] Error guardant missatge d\'usuari:', userMsgError.message);
             return;
           }
 
+          userMessageId = userMsgInsert.id;
 
+          // B. Insertamos la respuesta del agente/personaje
+          const { error: characterMsgError } = await client
+            .from('conversation_messages')
+            .insert({
+              session_id: data.session_id,
+              recurso_id: recursoId,
+              role: 'character',
+              content_text: reply.reply_text,
+              input_mode: 'text',
+            });
 
-        
+          if (characterMsgError) {
+            console.error('[turn] Error guardant missatge de personatge:', characterMsgError.message);
+          }
 
-
-
-
-
+          // C. Aplicar XP
           const { error: xpError } = await client.rpc('apply_turn_xp', {
             p_user_id: req.userId,
             p_session_id: data.session_id,
@@ -140,10 +143,11 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
             p_xp_delta: xpDelta,
             p_threshold: SCENARIO_XP,
           });
+
           if (xpError) {
             console.error('[turn] no hem pogut aplicar els XP:', xpError.message);
-            return;
           }
+
           console.log(`[turn] db=${Date.now() - dbStart}ms`);
         })()
       : Promise.resolve();
@@ -156,17 +160,15 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
         : Promise.resolve(null),
       persistPromise,
     ]);
+
     console.log(
       `[turn] tts=${wantsAudio ? Date.now() - ttsStart : 0}ms total=${Date.now() - startedAt}ms`,
     );
 
-    //Añadido (Modelo LLM)
-
+    // 5. Análisis asíncrono de errores con LLM local vinculado a message_id
     if (client && req.userId) {
-      const currentUserId = req.userId;
       const currentText = text;
 
-      // Execució asíncrona lliure: no bloqueja la resposta ni fa cua
       void (async () => {
         const start = Date.now();
         try {
@@ -174,8 +176,9 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
 
           if (!detectedErrors || detectedErrors.length === 0) return;
 
+          // Insertamos en user_errors con message_id tal como pide tu esquema
           const records = detectedErrors.map((item) => ({
-            user_id: currentUserId,
+            message_id: userMessageId, // Enlace con conversation_messages.id
             error_text: item.error_text,
             correction: item.correction,
             category: item.category,
@@ -190,15 +193,13 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           }
 
           console.log(
-            `[bgAnalysis] Guardats ${records.length} errors a Supabase en ${Date.now() - start}ms`,
+            `[bgAnalysis] Guardats ${records.length} errors vinculats al missatge ${userMessageId} en ${Date.now() - start}ms`,
           );
         } catch (err: any) {
           console.error('[bgAnalysis] Error analitzant el missatge:', err.message);
         }
       })();
     }
-
-
 
     res.json({
       ...reply,

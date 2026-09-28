@@ -21,7 +21,7 @@ sessionsRouter.post('/api/sessions', requireAuth, async (req: AuthRequest, res) 
 
     const { data, error } = await client
       .from('conversation_sessions')
-      .insert({ user_id: req.userId!, scenario: body.scenario, level_at_start: body.level })
+      .insert({ user_id: req.userId!, level_at_start: body.level, world_type:false })
       .select('id')
       .single();
     if (error) throw error;

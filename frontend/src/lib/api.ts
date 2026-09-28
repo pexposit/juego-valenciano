@@ -15,4 +15,26 @@ export async function sendTurn(payload:{session_id:string;scenario:Scenario;leve
   const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/turn`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});
   if(!res.ok) throw new Error('No hem pogut connectar'); return res.json();
 }
-export async function createSession(scenario:Scenario,level:string):Promise<string>{const token=(await supabase?.auth.getSession())?.data.session?.access_token;const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/sessions`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({scenario,level})});if(!res.ok)throw new Error('No hem pogut iniciar la conversa');return (await res.json()).session_id}
+export async function createSession(
+  scenario: Scenario,
+  level: string
+): Promise<string> {
+  const sessionData = await supabase?.auth.getSession();
+  const token = sessionData?.data.session?.access_token;
+
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/sessions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ scenario, level }),
+  });
+
+  if (!res.ok) {
+    throw new Error('No hem pogut iniciar la conversa');
+  }
+
+  const data = await res.json();
+  return data.session_id;
+}
