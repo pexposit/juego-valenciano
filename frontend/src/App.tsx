@@ -4,34 +4,59 @@ import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-do
 import { ScenarioSelect } from './components/ScenarioSelect';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
-import { endSession } from './lib/api';
-import type { Scenario } from './lib/types';
-import { SCENARIO_KEYS } from '@parlaval/shared';
-import { chatRoute, DEFAULT_PROFILE, ROUTES, type Page } from './data/content';
+import { endSession, fetchExam, fetchResources } from './lib/api';
+import type { Exam as ExamResource, Resource } from './lib/types';
+import { activityRoute, DEFAULT_PROFILE, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
 import { Chat } from './pages/Chat';
+import { Exam } from './pages/Exam';
 import { Summary } from './pages/Summary';
 import { Profile } from './pages/Profile';
 
 type ProfileFields = { display_name?: string; level?: string };
 
-const SCENARIO_IDS = new Set<string>(SCENARIO_KEYS);
-const isScenario = (value: string | undefined): value is Scenario => !!value && SCENARIO_IDS.has(value);
+// Busca al catàleg de la BDD el recurs que obri una ruta.
+// undefined = carregant; null = no existix o no és jugable.
+function useCatalogResource(match: (resource: Resource) => boolean, key: string | undefined) {
+  const [resource, setResource] = useState<Resource | null>();
 
-// Llig l'escenari de la URL (/xat/:scenario) i el valida; si no és un
-// escenari conegut (enllaç trencat, escrit a mà...), torna a la selecció.
+  useEffect(() => {
+    let cancelled = false;
+    fetchResources()
+      .then(resources => {
+        if (!cancelled) setResource(resources.find(r => r.playable && match(r)) ?? null);
+      })
+      .catch(error => {
+        console.error("Error carregant l'activitat:", error);
+        if (!cancelled) setResource(null);
+      });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  return resource;
+}
+
+// Llig l'escenari de la URL (/xat/:scenario) i el busca al catàleg de la BDD;
+// si no existix o no és jugable (enllaç trencat, escrit a mà...), torna a la selecció.
 function ChatRoute({
   level, xp, onXpGained, onBack,
 }: { level: string; xp: number; onXpGained: (delta: number) => void; onBack: () => void }) {
   const { scenario } = useParams<{ scenario: string }>();
   const navigate = useNavigate();
-  if (!isScenario(scenario)) return <Navigate to={ROUTES.scenarioselect} replace />;
+  const section = useCatalogResource(r => r.category === 'escenari' && r.type === scenario, scenario);
+
+  if (section === undefined) return null;
+  if (!section || !scenario) return <Navigate to={ROUTES.scenarioselect} replace />;
   return (
     <PageTransition>
       <Chat
         scenario={scenario}
+        title={section.section_name ?? section.name}
+        voice={section.voice}
+        background={section.background}
         level={level}
         xp={xp}
         onXpGained={onXpGained}
@@ -40,6 +65,29 @@ function ChatRoute({
       />
     </PageTransition>
   );
+}
+
+// Examen interactiu (/examen/:id): el contingut ve de resources.metadata.exam.
+function ExamRoute({ onBack }: { onBack: () => void }) {
+  const { id } = useParams<{ id: string }>();
+  // undefined = carregant; null = no existix.
+  const [exam, setExam] = useState<ExamResource | null>();
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!id) return setExam(null);
+    fetchExam(id)
+      .then(data => { if (!cancelled) setExam(data); })
+      .catch(error => {
+        console.error("Error carregant l'examen:", error);
+        if (!cancelled) setExam(null);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (exam === undefined) return null;
+  if (!exam) return <Navigate to={ROUTES.scenarioselect} replace />;
+  return <PageTransition><Exam exam={exam} onBack={onBack} /></PageTransition>;
 }
 
 export function App() {
@@ -147,7 +195,10 @@ export function App() {
           <PageTransition>
             <ScenarioSelect
               name={name}
-              onSelectScenario={s => navigate(chatRoute(s))}
+              onSelect={resource => {
+                const route = activityRoute(resource);
+                if (route) navigate(route);
+              }}
               onBack={goDashboard}
               onProfile={() => navigate(ROUTES.profile)}
             />
@@ -178,6 +229,7 @@ export function App() {
         path={`${ROUTES.chat}/:scenario`}
         element={<ChatRoute level={level} xp={xp} onXpGained={delta => setXp(x => x + delta)} onBack={() => navigate(-1)} />}
       />
+      <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );

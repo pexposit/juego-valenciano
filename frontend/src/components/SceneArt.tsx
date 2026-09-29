@@ -1,17 +1,5 @@
 import type { Mood, Scenario } from '../lib/types';
 
-// Foto de fons de cada escenari (substituïx el dibuix de paret/cel de l'SVG).
-// `colegi` ja no és seleccionable des de la interfície, però es manté perquè
-// el tipus Scenario (font compartida) encara l'inclou.
-const SCENE_BACKGROUND: Record<Scenario, string> = {
-  mercat: '/images/market.jpg',
-  bar: '/images/bar.jpg',
-  oficina: '/images/office.jpg',
-  ajuntament: '/images/townhall.jpg',
-  colegi: '/images/classroom.jpg',
-  turisme: '/images/tourism.jpg',
-};
-
 const moodFace = (mood: Mood, part: 'eyes' | 'eyebrows' | 'mouth') => {
   if (part === 'eyebrows') {
     if (mood === 'confus') {
@@ -43,16 +31,20 @@ const moodFace = (mood: Mood, part: 'eyes' | 'eyebrows' | 'mouth') => {
   return null;
 };
 
-export function SceneArt({ scenario, mood }: { scenario: Scenario; mood: Mood }) {
+// La foto de fons ve de resources.metadata.background; els personatges dibuixats
+// només existixen per a alguns escenaris (la resta es mostren sense il·lustració).
+export function SceneArt({ scenario, background, mood }: { scenario: Scenario; background: string | null; mood: Mood }) {
   return (
     <div className="absolute inset-0 overflow-hidden bg-[#FFF9ED]">
       {/* Foto real de l'escenari darrere del personatge i el taulell il·lustrats. */}
-      <img
-        src={SCENE_BACKGROUND[scenario]}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover opacity-40"
-      />
+      {background && (
+        <img
+          src={background}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover opacity-40"
+        />
+      )}
       <svg
         viewBox="0 0 400 550"
         className="relative h-full w-full object-cover select-none"

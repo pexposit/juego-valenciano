@@ -1,34 +1,28 @@
-import type { Scenario, ScenarioInfo, TurnResponse } from './types';
-import { sanitizeHistory, SCENARIO_KEYS } from '@parlaval/shared';
+import type { Exam, Resource, Scenario, TurnResponse } from './types';
+import { sanitizeHistory } from '@parlaval/shared';
 import { supabase } from './supabase';
-import { sortByDisplayOrder, type ScenarioResource } from './scenarioResources';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
-export async function fetchScenarios(): Promise<Record<Scenario, ScenarioInfo>> {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenarios`);
-  if (!res.ok) throw new Error('No hem pogut carregar els escenaris');
-  return res.json();
-}
-const isScenarioKey = (value: unknown): value is Scenario =>
-  typeof value === 'string' && (SCENARIO_KEYS as readonly string[]).includes(value);
-
-// Catàleg d'escenaris: dades de domini compartides (no d'un usuari concret),
-// per això es llig directament de Supabase en lloc de passar pel backend.
-// `resources.type` és directament la clau de l'escenari (veure
-// supabase/migrations/20260929081233_reset_and_seed_resources.sql).
-export async function fetchScenarioResources(): Promise<ScenarioResource[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('resources')
-    .select('id,name,content,xp_earned,type')
-    .eq('category', 'escenari');
-  if (error) throw error;
-  const resources = (data ?? [])
-    .map((row): ScenarioResource | null => {
-      if (!isScenarioKey(row.type)) return null;
-      return { id: row.id, name: row.name, content: row.content, xp_earned: row.xp_earned, scenario: row.type };
+// Catàleg d'activitats de la BDD (taula resources). Es demana una sola vegada
+// per càrrega de la pàgina: el comparteixen la selecció d'activitats i el xat.
+let resourcesRequest: Promise<Resource[]> | undefined;
+export function fetchResources(): Promise<Resource[]> {
+  resourcesRequest ??= fetch(`${import.meta.env.VITE_API_BASE_URL}/api/resources`)
+    .then(res => {
+      if (!res.ok) throw new Error('No hem pogut carregar les activitats');
+      return res.json() as Promise<Resource[]>;
     })
-    .filter((r): r is ScenarioResource => r !== null);
-  return sortByDisplayOrder(resources);
+    .catch(error => {
+      resourcesRequest = undefined; // permet tornar-ho a provar
+      throw error;
+    });
+  return resourcesRequest;
+}
+// Contingut complet d'un examen (preguntes, opcions i solucions). null si no existix.
+export async function fetchExam(id: string): Promise<Exam | null> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/exams/${encodeURIComponent(id)}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("No hem pogut carregar l'examen");
+  return res.json();
 }
 export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];include_audio?:boolean}):Promise<TurnResponse>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;
@@ -157,19 +151,4 @@ export async function startSessionResource(sessionId: string, scenario: Scenario
   });
   if (!res.ok) throw new Error("No s'ha pogut vincular l'escenari a la sessió");
   return res.json();
-}
-
-// Salutació inicial del personatge, definida a `resources.metadata.initial_prompt`
-// (veure supabase/migrations/20260929081233_reset_and_seed_resources.sql).
-export async function fetchInitialPrompt(scenario: Scenario): Promise<string | undefined> {
-  if (!supabase) return undefined;
-  const { data, error } = await supabase
-    .from('resources')
-    .select('metadata')
-    .eq('category', 'escenari')
-    .eq('type', scenario)
-    .single();
-  if (error) throw error;
-  const prompt = (data?.metadata as { initial_prompt?: unknown } | null)?.initial_prompt;
-  return typeof prompt === 'string' && prompt.trim() ? prompt : undefined;
 }

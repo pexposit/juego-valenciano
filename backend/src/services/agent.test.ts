@@ -13,7 +13,6 @@
  * llamada real de red.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ScenarioKey } from '../scenarios/types.js';
 
 /**
  * Devuelve el módulo agent reimportado con estado determinista:
@@ -53,7 +52,7 @@ function jsonReply(partial: Record<string, unknown> = {}) {
 }
 
 const defaultArgs = {
-  scenario: 'bar' as ScenarioKey,
+  scenario: { character: 'Maria, cambrera', systemPrompt: "Ets Maria, una cambrera propera d'un bar valencià." },
   level: 'intermedi',
   message: 'Hola, em poses una cervesa?',
   history: [] as { role: string; content_text: string }[],

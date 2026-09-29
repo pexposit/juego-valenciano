@@ -19,7 +19,16 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { replyFromAgent } from './agent.js';
-import type { ScenarioKey } from '../scenarios/types.js';
+import { getScenario } from './scenarios.js';
+
+// Els escenaris es lligen de la taula resources (type).
+type ScenarioKey = string;
+
+async function loadScenario(type: ScenarioKey) {
+  const scenario = await getScenario(type);
+  if (!scenario) throw new Error(`L'escenari ${type} no existix a la BDD o no té system_prompt`);
+  return scenario;
+}
 import type { LevelKey } from '@parlaval/shared';
 
 // Carga las variables del fichero .env del backend (ruta absoluta robusta).
@@ -273,7 +282,7 @@ describe.skipIf(!hasCredentials)(`Integración real con la API de OpenAI (${CASE
     '$name (nivell $level)',
     async (c: Case) => {
       const reply = await replyFromAgent({
-        scenario: c.scenario,
+        scenario: await loadScenario(c.scenario),
         level: c.level,
         message: c.message,
         history: [],
@@ -372,7 +381,7 @@ describe.skipIf(!hasCredentials)(`Integración real · conversa multi-torn amb h
     '$name',
     async (c: HistoryCase) => {
       const reply = await replyFromAgent({
-        scenario: c.scenario,
+        scenario: await loadScenario(c.scenario),
         level: c.level,
         message: c.message,
         history: c.history,
