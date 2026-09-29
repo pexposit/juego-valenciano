@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { scenariosRouter } from './routes/scenarios.js';
 import { ttsRouter } from './routes/tts.js';
 import { sessionsRouter } from './routes/sessions.js';
 import { turnRouter } from './routes/turn.js';
@@ -29,6 +28,6 @@ app.use(cors({
 app.use(express.json({ limit: '12mb' }));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
-app.use(scenariosRouter, resourcesRouter, ttsRouter, sessionsRouter, turnRouter);
+app.use(resourcesRouter, ttsRouter, sessionsRouter, turnRouter);
 
 app.listen(Number(process.env.PORT) || 3001, () => console.log('ParlaVal agent listening'));

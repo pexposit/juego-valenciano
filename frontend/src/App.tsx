@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { SCENARIO_KEYS } from '@parlaval/shared';
+import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
-import { endSession } from './lib/api';
-import type { Scenario } from './lib/types';
+import { endSession, fetchResources } from './lib/api';
+import type { Resource } from './lib/types';
 import { chatRoute, DEFAULT_PROFILE, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
@@ -17,25 +16,38 @@ import { Profile } from './pages/Profile';
 
 type ProfileFields = { display_name?: string; level?: string };
 
-// Escenaris amb xat implementat (prompt al backend); el catàleg visible ve de la BDD.
-const SCENARIO_IDS = new Set<string>(SCENARIO_KEYS);
-const isScenario = (value: string | undefined): value is Scenario => !!value && SCENARIO_IDS.has(value);
-
-// Llig l'escenari de la URL (/xat/:scenario) i el valida; si no és un
-// escenari conegut (enllaç trencat, escrit a mà...), torna a la selecció.
+// Llig l'escenari de la URL (/xat/:scenario) i el busca al catàleg de la BDD;
+// si no existix o no és jugable (enllaç trencat, escrit a mà...), torna a la selecció.
 function ChatRoute({
   level, xp, onXpGained, onBack,
 }: { level: string; xp: number; onXpGained: (delta: number) => void; onBack: () => void }) {
   const { scenario } = useParams<{ scenario: string }>();
   const navigate = useNavigate();
-  // Nom de la secció triada (resources.metadata); si s'obri l'enllaç directament no hi és.
-  const title = (useLocation().state as { title?: string } | null)?.title;
-  if (!isScenario(scenario)) return <Navigate to={ROUTES.scenarioselect} replace />;
+  // undefined = carregant; null = no trobat.
+  const [section, setSection] = useState<Resource | null>();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchResources()
+      .then(resources => {
+        if (!cancelled) setSection(resources.find(r => r.playable && r.type === scenario) ?? null);
+      })
+      .catch(error => {
+        console.error('Error carregant l\'escenari:', error);
+        if (!cancelled) setSection(null);
+      });
+    return () => { cancelled = true; };
+  }, [scenario]);
+
+  if (section === undefined) return null;
+  if (!section || !scenario) return <Navigate to={ROUTES.scenarioselect} replace />;
   return (
     <PageTransition>
       <Chat
         scenario={scenario}
-        title={title ?? scenario}
+        title={section.section_name ?? section.name}
+        voice={section.voice}
+        background={section.background}
         level={level}
         xp={xp}
         onXpGained={onXpGained}
@@ -156,8 +168,7 @@ export function App() {
           <PageTransition>
             <ScenarioSelect
               name={name}
-              playable={isScenario}
-              onSelectScenario={(s, title) => navigate(chatRoute(s), { state: { title } })}
+              onSelectScenario={s => navigate(chatRoute(s))}
               onBack={goDashboard}
               onProfile={() => navigate(ROUTES.profile)}
             />

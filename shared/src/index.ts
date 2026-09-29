@@ -1,37 +1,12 @@
 /**
- * Font única de veritat per a escenaris, nivells i límits compartits entre el
- * backend i el frontend. En afegir un escenari nou només cal tocar aquest
- * fitxer: `ScenarioKey` deriva de `SCENARIO_KEYS` i tots els `Record` tipats
- * obliguen a cobrir-lo (el compilador falla si se n'oblida alguno).
+ * Font única de veritat per a nivells i límits compartits entre el backend i
+ * el frontend. Els escenaris (clau, personatge, prompt, veu) ja no viuen ací:
+ * es defineixen a la taula resources de la BDD.
  */
-
-export const SCENARIO_KEYS = [
-  'mercat',
-  'bar',
-  'oficina',
-  'ajuntament',
-  'colegi',
-  'turisme',
-] as const;
-
-export type ScenarioKey = (typeof SCENARIO_KEYS)[number];
 
 export const LEVELS = ['principiant', 'intermedi', 'avancat'] as const;
 
 export type LevelKey = (typeof LEVELS)[number];
-
-// Cada escenari té el seu personatge amb una veu TTS pròpia.
-export const VOICE_BY_SCENARIO: Record<ScenarioKey, string> = {
-  mercat: 'lluc',
-  bar: 'gina',
-  oficina: 'lluc',
-  ajuntament: 'gina',
-  colegi: 'gina',
-  turisme: 'gina',
-};
-
-/** XP necessària per completar un escenari. */
-export const SCENARIO_XP = 100;
 
 /* ── Límits de l'historial de conversa ────────────────────────────────── */
 /** Longitud màxima d'un missatge individual. */

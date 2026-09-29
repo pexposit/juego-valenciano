@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { scenarios } from '../scenarios/index.js';
-import type { ScenarioKey } from '../scenarios/types.js';
+import type { ScenarioDefinition } from './scenarios.js';
 
 
 
@@ -23,7 +22,7 @@ const OPENAI_MODELS = [
 const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS) || 30_000;
 
 export async function replyFromAgent(args: {
-  scenario: ScenarioKey;
+  scenario: Pick<ScenarioDefinition, 'character' | 'systemPrompt'>;
   level: string;
   message: string;
   history: { role: string; content_text: string }[];
@@ -31,7 +30,7 @@ export async function replyFromAgent(args: {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY no està configurada');
 
-  const def = scenarios[args.scenario];
+  const def = args.scenario;
   const context = args.history
     .map((m) => `${m.role === 'character' ? def.character : 'Aprenent'}: ${m.content_text}`)
     .join('\n');

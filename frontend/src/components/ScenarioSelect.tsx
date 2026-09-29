@@ -8,9 +8,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   escenari: 'Escenaris',
 };
 
-// De moment només els escenaris tenen pantalla de joc (el xat).
-const PLAYABLE_CATEGORY = 'escenari';
-
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
 const categoryLabel = (c: string) => CATEGORY_LABELS[c] ?? capitalize(c);
 
@@ -34,15 +31,12 @@ function groupResources(resources: Resource[]): Category[] {
 
 export function ScenarioSelect({
   name,
-  playable: isPlayableType,
   onSelectScenario,
   onBack,
   onProfile,
 }: {
   name: string;
-  // Indica si un `type` té xat implementat (clau d'escenari coneguda).
-  playable: (type: string) => type is Scenario;
-  onSelectScenario: (s: Scenario, title: string) => void;
+  onSelectScenario: (s: Scenario) => void;
   onBack: () => void;
   onProfile: () => void;
 }) {
@@ -125,14 +119,15 @@ export function ScenarioSelect({
               const icon = list.find(r => r.icon)?.icon ?? '📘';
               const color = list.find(r => r.color)?.color ?? '#E7E5E4';
               const title = list.find(r => r.section_name)?.section_name ?? capitalize(type);
-              const playable = current.id === PLAYABLE_CATEGORY && isPlayableType(type);
+              // El backend decidix si té xat (escenari amb prompt del personatge).
+              const playable = list.some(r => r.playable);
               return (
                 <button
                   key={type}
                   id={`activity-${current.id}-${type}`}
                   disabled={!playable}
                   title={playable ? undefined : 'Pròximament disponible'}
-                  onClick={() => isPlayableType(type) && onSelectScenario(type, title)}
+                  onClick={() => playable && onSelectScenario(type)}
                   className="desk-card flex items-stretch text-left"
                   style={{ background: '#fff' }}
                 >

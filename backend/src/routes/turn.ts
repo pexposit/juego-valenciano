@@ -2,8 +2,6 @@ import { Router } from 'express';
 import { z } from 'zod';
 import {
   HISTORY_MAX_MESSAGES,
-  SCENARIO_XP,
-  VOICE_BY_SCENARIO,
   sanitizeHistory,
   type HistoryMessage,
 } from '@parlaval/shared';
@@ -13,6 +11,7 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
+import { getScenario } from '../services/scenarios.js';
 import { stt, tts } from '../services/voice.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
 import { beginErrorAnalysis } from '../services/pendingErrorAnalysis.js';
@@ -41,6 +40,10 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       console.log(`[turn] stt=${Date.now() - sttStart}ms`);
     }
     if (!text) return res.status(400).json({ error: 'No hi ha cap missatge' });
+
+    // L'escenari (prompt, personatge, veu) es llig de la taula resources.
+    const scenario = await getScenario(data.scenario);
+    if (!scenario) return res.status(404).json({ error: "L'escenari no existix o encara no està disponible" });
 
     const client = db(req.userId);
 
@@ -92,7 +95,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
 
     const agentStart = Date.now();
     const reply = await replyFromAgent({
-      scenario: data.scenario,
+      scenario,
       level: data.level,
       message: text,
       history,
@@ -147,9 +150,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           const { error: xpError } = await client.rpc('apply_turn_xp', {
             p_user_id: req.userId,
             p_session_id: data.session_id,
-            p_scenario: data.scenario,
             p_xp_delta: xpDelta,
-            p_threshold: SCENARIO_XP,
           });
 
           if (xpError) {
@@ -164,7 +165,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     const ttsStart = Date.now();
     const [audio] = await Promise.all([
       wantsAudio
-        ? tts.synthesize(reply.reply_text, VOICE_BY_SCENARIO[data.scenario])
+        ? tts.synthesize(reply.reply_text, scenario.voice)
         : Promise.resolve(null),
       persistPromise,
     ]);

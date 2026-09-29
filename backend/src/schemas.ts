@@ -3,12 +3,11 @@ import {
   HISTORY_MAX_MESSAGES,
   LEVELS,
   MESSAGE_MAX_CHARS,
-  SCENARIO_KEYS,
 } from '@parlaval/shared';
 
-// Una única definició per a l'enum d'escenaris i de nivells: deriven de la
-// font compartida, així que un escenari nou s'accepta automàticament.
-export const scenarioSchema = z.enum(SCENARIO_KEYS);
+// Els escenaris viuen a la BDD (resources.type): ací només es valida la forma
+// de la clau; si existix i és jugable es comprova en consultar-la.
+export const scenarioSchema = z.string().trim().min(1).max(50);
 export const levelSchema = z.enum(LEVELS);
 
 export const turnSchema = z.object({

@@ -1,4 +1,4 @@
-import type { Scenario, ScenarioInfo } from '../lib/types';
+import type { Scenario } from '../lib/types';
 
 export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'summary' | 'profile';
 
@@ -20,26 +20,12 @@ export const chatRoute = (scenario: Scenario) => `/xat/${scenario}`;
 
 
 
-/* Objectius per defecte de cada escenari; es mostren mentres el backend respon. */
-export const SCENARIO_GOALS: Record<Scenario, ScenarioInfo> = {
-  mercat: { character: 'Vicent, venedor del mercat', objectius: ['Saluda a Vicent i pregunta com va tot.', 'Demana un quilo de taronges o una altra fruita.', 'Pregunta el preu o demana el canvi.', "Paga, dona les gràcies i acomiada't."] },
-  bar: { character: 'Maria, cambrera', objectius: ['Saluda a Maria i busca una taula.', 'Demana una beguda o el desdejuni del dia.', 'Pregunta quant és o demana el compte.', "Paga, dona les gràcies i acomiada't."] },
-  oficina: { character: "Joan, company d'oficina", objectius: ['Saluda a Joan i pregunta com està.', "Pregunta per la reunió o les tasques d'avui.", 'Demana ajuda o un aclariment sobre un tema.', "Confirma el que has de fer i acomiada't."] },
-  ajuntament: { character: "Amparo, funcionària d'atenció", objectius: ['Saluda a Amparo i digues què necessites.', 'Explica el tràmit que vols fer.', 'Pregunta els requisits o els horaris.', "Dona les gràcies i acomiada't."] },
-  colegi: { character: 'Marta, mestra', objectius: ['Saluda a Marta i pregunta com està.', "Pregunta pels deures o la tasca d'avui.", 'Demana permís o explica un dubte.', "Dona les gràcies i acomiada't."] },
-  turisme: { character: 'Laura, guia turística', objectius: ['Saluda a Laura i digues què busques.', 'Demana una recomanació de lloc per a visitar.', 'Pregunta horaris, preus o com arribar-hi.', "Dona les gràcies i acomiada't."] },
-};
-
-// Salutacions d'inici pregenerades com a fitxers estàtics (veu segons el sexe del
-// personatge: lluc = masculina, gina = femenina). En obrir l'escenari es reprodueixen
-// al moment, sense cap crida al TTS del backend.
-export const GREETING_BY_SCENARIO: Record<Scenario, string> = {
-  mercat: '/audio/salutacio-lluc.wav',
-  bar: '/audio/salutacio-gina.wav',
-  oficina: '/audio/salutacio-lluc.wav',
-  ajuntament: '/audio/salutacio-gina.wav',
-  colegi: '/audio/salutacio-gina.wav',
-  turisme: '/audio/salutacio-gina.wav',
+// Salutacions d'inici pregenerades com a fitxers estàtics, una per veu TTS
+// (resources.metadata.voice). En obrir l'escenari es reprodueixen al moment;
+// si la veu no en té, el xat la genera amb el TTS del backend.
+export const GREETING_BY_VOICE: Record<string, string> = {
+  lluc: '/audio/salutacio-lluc.wav',
+  gina: '/audio/salutacio-gina.wav',
 };
 
 export const LEVEL_OPTIONS = [

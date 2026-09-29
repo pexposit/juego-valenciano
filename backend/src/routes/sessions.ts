@@ -50,16 +50,6 @@ const sessionResourceSchema = z.object({
   type: scenarioSchema,
 });
 
-// Nom del recurs (taula resources, type 'scene') per a cada escenari predefinit.
-const SCENE_RESOURCE_NAME: Record<z.infer<typeof scenarioSchema>, string> = {
-  mercat: 'Mercat',
-  bar: 'Bar',
-  oficina: 'Oficina',
-  ajuntament: 'Ayuntament',
-  colegi: 'Escola',
-  turisme: 'Oficina de Turisme',
-};
-
 sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (req: AuthRequest, res) => {
   try {
     
@@ -98,8 +88,8 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
       .from('resources')
       .select('id')
       .eq('category', body.category)
-      // A la BDD tots els escenaris tenen type 'scene'; l'escenari concret va en 'name'.
       .eq('type', body.type)
+      .limit(1)
       .maybeSingle();
 
     if (resourceError || !resourceData) {

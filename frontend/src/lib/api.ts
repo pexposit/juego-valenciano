@@ -1,17 +1,21 @@
-import type { Resource, Scenario, ScenarioInfo, TurnResponse } from './types';
+import type { Resource, Scenario, TurnResponse } from './types';
 import { sanitizeHistory } from '@parlaval/shared';
 import { supabase } from './supabase';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
-export async function fetchScenarios(): Promise<Record<Scenario, ScenarioInfo>> {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenarios`);
-  if (!res.ok) throw new Error('No hem pogut carregar els escenaris');
-  return res.json();
-}
-// Catàleg d'activitats de la BDD (taula resources).
-export async function fetchResources(): Promise<Resource[]> {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/resources`);
-  if (!res.ok) throw new Error('No hem pogut carregar les activitats');
-  return res.json();
+// Catàleg d'activitats de la BDD (taula resources). Es demana una sola vegada
+// per càrrega de la pàgina: el comparteixen la selecció d'activitats i el xat.
+let resourcesRequest: Promise<Resource[]> | undefined;
+export function fetchResources(): Promise<Resource[]> {
+  resourcesRequest ??= fetch(`${import.meta.env.VITE_API_BASE_URL}/api/resources`)
+    .then(res => {
+      if (!res.ok) throw new Error('No hem pogut carregar les activitats');
+      return res.json() as Promise<Resource[]>;
+    })
+    .catch(error => {
+      resourcesRequest = undefined; // permet tornar-ho a provar
+      throw error;
+    });
+  return resourcesRequest;
 }
 export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];include_audio?:boolean}):Promise<TurnResponse>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;
