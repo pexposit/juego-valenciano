@@ -34,9 +34,15 @@ const gradable = (e: ExamExercise): e is Extract<ExamExercise, { questions: Exam
 const listExercises = (ns: number[]) =>
   ns.length === 1 ? `de l'exercici ${ns[0]}` : `dels exercicis ${ns.slice(0, -1).join(', ')} i ${ns[ns.length - 1]}`;
 
+type ExerciseScore = { n: number; correct: number; total: number };
+
+// Valor d'un encert en un exercici: el propi de l'exercici o, si no en té, el comú de l'àrea.
+const pointsPerCorrect = (scoring: ExamScoring, n: number) =>
+  scoring.points_per_exercise?.[n] ?? scoring.points_per_correct ?? 0;
 // Punts oficials d'una àrea a partir dels encerts (arredonits, com en la correcció de la JQCV).
-const pointsOf = (scoring: ExamScoring, correct: number) => Math.round(correct * scoring.points_per_correct);
-const passes = (scoring: ExamScoring, correct: number) => pointsOf(scoring, correct) >= scoring.pass_points;
+const pointsOf = (scoring: ExamScoring, byExercise: ExerciseScore[]) =>
+  Math.round(byExercise.reduce((sum, e) => sum + e.correct * pointsPerCorrect(scoring, e.n), 0));
+const passes = (scoring: ExamScoring, points: number) => points >= scoring.pass_points;
 
 // De moment només el formulari de l'examen A1 té rúbrica d'avaluació amb IA.
 const evaluable = (level: string, e: ExamExercise): e is Extract<ExamExercise, { kind: 'form' }> =>
@@ -64,11 +70,14 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
   const areaQuestions = useMemo(() => questionsOf(area), [area]);
   const answered = (a: ExamArea) => questionsOf(a).filter(q => progress.answers[q.n]).length;
   const score = (questions: ExamQuestion[]) => questions.filter(q => progress.answers[q.n] === q.answer).length;
+  const exerciseScores = (a: ExamArea): ExerciseScore[] =>
+    a.exercises.filter(gradable).map(e => ({ n: e.n, correct: score(e.questions), total: e.questions.length }));
+  const areaPoints = (a: ExamArea) => pointsOf(a.scoring!, exerciseScores(a));
 
   // Estat global en la prova: amb una àrea puntuable per davall del mínim quedes fora.
   const scoredAreas = exam.areas.filter(a => a.scoring);
   const checkedScored = scoredAreas.filter(a => progress.checked.includes(a.n));
-  const failed = checkedScored.filter(a => !passes(a.scoring!, score(questionsOf(a)))).map(a => a.n);
+  const failed = checkedScored.filter(a => !passes(a.scoring!, areaPoints(a))).map(a => a.n);
   const examStatus = checkedScored.length > 0
     ? { out: failed.length > 0, failed, checked: checkedScored.length, total: scoredAreas.length }
     : undefined;
@@ -196,7 +205,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
                     {!done
                       ? `${answered(a)}/${total}`
                       : a.scoring
-                        ? `${passes(a.scoring, score(questionsOf(a))) ? '✓' : '✗'} ${pointsOf(a.scoring, score(questionsOf(a)))}/${a.scoring.max_points} punts`
+                        ? `${passes(a.scoring, areaPoints(a)) ? '✓' : '✗'} ${areaPoints(a)}/${a.scoring.max_points} punts`
                         : `✓ ${score(questionsOf(a))}/${total}`}
                   </span>
                 )}
@@ -211,7 +220,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
             area={area}
             correct={score(areaQuestions)}
             total={areaQuestions.length}
-            byExercise={area.exercises.filter(gradable).map(e => ({ n: e.n, correct: score(e.questions), total: e.questions.length }))}
+            byExercise={exerciseScores(area)}
             scoring={area.scoring}
             onReset={reset}
           />
@@ -361,12 +370,12 @@ function AreaResult({
   area: ExamArea;
   correct: number;
   total: number;
-  byExercise: { n: number; correct: number; total: number }[];
+  byExercise: ExerciseScore[];
   scoring?: ExamScoring;
   onReset: () => void;
 }) {
-  const points = scoring ? pointsOf(scoring, correct) : undefined;
-  const pass = scoring ? passes(scoring, correct) : undefined;
+  const points = scoring ? pointsOf(scoring, byExercise) : undefined;
+  const pass = scoring ? passes(scoring, points!) : undefined;
   const pct = Math.round(scoring ? (points! / scoring.max_points) * 100 : (correct / total) * 100);
   const message = pct >= 80 ? 'Excel·lent!' : pct >= 50 ? 'Molt bé, vas pel bon camí!' : 'Continua practicant!';
   const ring = pass === false ? '#FF675D' : '#2CA99B';
@@ -396,7 +405,9 @@ function AreaResult({
               {pass ? '✅ Apte · Continues en la prova' : '❌ No apte · Quedes fora de la prova'}
             </p>
             <p className="mt-1 text-sm opacity-70">
-              {correct} encerts × {scoring.points_per_correct.toLocaleString('ca')} = {points} punts (arredonit).
+              {scoring.points_per_exercise
+                ? `${byExercise.map(e => `${e.correct} × ${pointsPerCorrect(scoring, e.n).toLocaleString('ca')}`).join(' + ')} = ${points} punts.`
+                : `${correct} encerts × ${pointsPerCorrect(scoring, 0).toLocaleString('ca')} = ${points} punts (arredonit).`}
               Mínim per a continuar: {scoring.pass_points} de {scoring.max_points} punts.
             </p>
           </>
@@ -407,6 +418,7 @@ function AreaResult({
           {byExercise.map(e => (
             <span key={e.n} className="rounded-full bg-cream px-3 py-1 text-xs font-black">
               Exercici {e.n}: {e.correct}/{e.total}
+              {scoring?.points_per_exercise && ` · ${Math.round(e.correct * pointsPerCorrect(scoring, e.n))} punts`}
             </span>
           ))}
         </div>

@@ -42,8 +42,9 @@ export type ExamExercise =
     }
   | { n: number; kind: 'oral'; instructions: string; proposals: ExamProposal[] };
 // Puntuació oficial d'una àrea: cada encert val `points_per_correct` (resultat arredonit)
-// i cal arribar a `pass_points` per a continuar en la prova.
-export type ExamScoring = { points_per_correct: number; max_points: number; pass_points: number };
+// i cal arribar a `pass_points` per a continuar en la prova. Si els exercicis valen
+// diferent, `points_per_exercise` fixa el valor d'un encert per número d'exercici.
+export type ExamScoring = { points_per_correct?: number; points_per_exercise?: Record<string, number>; max_points: number; pass_points: number };
 export type ExamArea = { n: number; title: string; weight: number; duration: string; intro?: string; audio?: boolean; scoring?: ExamScoring; exercises: ExamExercise[] };
 export type ExamContent = { level: string; session: string; body: string; source_url?: string; audio_source_url?: string; pass_rule?: string; areas: ExamArea[] };
 export type Exam = Pick<Resource, 'id' | 'name' | 'type' | 'category' | 'difficulty' | 'xp_earned' | 'content' | 'url' | 'icon' | 'color'> & { exam: ExamContent };
