@@ -15,6 +15,7 @@ import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
 import { stt, tts } from '../services/voice.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
+import { beginErrorAnalysis } from '../services/pendingErrorAnalysis.js';
 
 export const turnRouter = Router();
 
@@ -25,8 +26,11 @@ const TURN_RATE_LIMIT = {
 };
 
 turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req: AuthRequest, res) => {
+  let finishPending: (() => void) | undefined;
+  let analysisStarted = false;
   try {
     const data = turnSchema.parse(req.body);
+    finishPending = beginErrorAnalysis(data.session_resource_id);
     let text = data.text.trim();
     const startedAt = Date.now();
 
@@ -173,6 +177,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     if (client && req.userId) {
       const currentText = text;
 
+      analysisStarted = true;
+      const done = finishPending;
       void (async () => {
         const start = Date.now();
         try {
@@ -209,6 +215,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           );
         } catch (err: any) {
           console.error('[bgAnalysis] Error analitzant el missatge:', err.message);
+        } finally {
+          done?.();
         }
       })();
     }
@@ -227,5 +235,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     }
     console.error(error);
     res.status(500).json({ error: 'No hem pogut processar el torn' });
+  } finally {
+    // Si el torn acaba sense llançar l'anàlisi (error, missatge buit...), alliberem l'espera.
+    if (!analysisStarted) finishPending?.();
   }
 });

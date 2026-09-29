@@ -5,6 +5,7 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { scenarioSchema, sessionSchema } from '../schemas.js';
 import { runPedagogicalEvaluation } from '../services/subagentRecommendation.js';
+import { waitForPendingErrorAnalysis } from '../services/pendingErrorAnalysis.js';
 
 
 export const sessionsRouter = Router();
@@ -225,6 +226,12 @@ sessionsRouter.post(
       const userId = req.userId;
       void (async () => {
         try {
+          // Esperem que acaben totes les anàlisis d'errors (LLM) encara en curs
+          // per a aquest recurs abans d'avaluar, si no, l'avaluació pot arribar
+          // abans que l'últim torn haja acabat de guardar els seus errors.
+          console.log(`[evaluator] Esperant que acabe l'anàlisi d'errors del recurs ${sessionResourceId}...`);
+          await waitForPendingErrorAnalysis(sessionResourceId);
+
           console.log(`[evaluator] Disparant avaluació per a recurs ${sessionResourceId} (usuari ${userId})...`);
           const evalStart = Date.now();
           const report = await runPedagogicalEvaluation(userId, sessionResourceId);
