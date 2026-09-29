@@ -3,7 +3,7 @@ import { MessageCircle, Volume2 } from 'lucide-react';
 import { SceneArt } from '../components/SceneArt';
 import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
-import { createSession, fetchTts, finishSession, sendTurn, type HistoryItem } from '../lib/api';
+import { ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
 import type { Mood, Scenario } from '../lib/types';
 import { GREETING_BY_SCENARIO, scenarioName } from '../data/content';
 
@@ -30,11 +30,29 @@ export function Chat({
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<Msg[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [session, setSession] = useState<string>();
   const [bubbleKey, setBubbleKey] = useState(0);
   const [audioSource, setAudioSource] = useState<string>();
   const replyAudio = useRef<HTMLAudioElement | null>(null);
   const hasSubmitted = useRef(false);
+  // Sessió del login + entrada de session_resource d'aquest escenari. Es guarda
+  // la promesa perquè el primer torn puga esperar-la i perquè StrictMode no
+  // en cree dues en muntar el component dues vegades.
+  const activity = useRef<Promise<{ sessionId: string; sessionResourceId: string }>>();
+  const openedActivity = useRef<{ sessionId: string; sessionResourceId: string }>();
+
+  const openActivity = () => {
+    activity.current ??= (async () => {
+      const sessionId = await ensureSession(level);
+      const { id } = await startSessionResource(sessionId, scenario);
+      openedActivity.current = { sessionId, sessionResourceId: id };
+      return openedActivity.current;
+    })().catch(error => {
+      // Permet tornar-ho a provar en el següent torn.
+      activity.current = undefined;
+      throw error;
+    });
+    return activity.current;
+  };
 
   // Nunca se usa la voz del navegador (speechSynthesis): solo audio generado
   // por el backend o los saludos pregenerados.
@@ -57,10 +75,11 @@ export function Chat({
     }
   };
 
-  // Si no ha arribat a iniciar cap sessió amb el personatge, eixim sense fer
-  // petició. Avisa el backend perquè llance l'avaluació pedagògica en segon pla.
+  // Tanca el recurs (no la sessió, que es tanca en fer logout) i el backend
+  // llança l'avaluació pedagògica d'aquest escenari en segon pla.
   const handleExit = () => {
-    if (session) void finishSession(session);
+    const opened = openedActivity.current;
+    if (opened) void finishSessionResource(opened.sessionId, opened.sessionResourceId);
     onBack();
   };
 
@@ -78,6 +97,12 @@ export function Chat({
     if (!hasSubmitted.current) setReplyAudio(GREETING_BY_SCENARIO[scenario], true);
   }, [scenario]);
 
+  // En entrar a l'escenari es crea la seua entrada a session_resource.
+  useEffect(() => {
+    openActivity().catch(error => console.error('Error obrint l\'escenari:', error));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = async (text: string, audio?: string) => {
     if ((!text && !audio) || loading) return;
     const userLabel = text || VOICE_MESSAGE_LABEL;
@@ -88,8 +113,7 @@ export function Chat({
     setBubbleKey(k => k + 1);
     setLoading(true);
     try {
-      const activeSession = session || await createSession(scenario, level);
-      if (!session) setSession(activeSession);
+      const { sessionId, sessionResourceId } = await openActivity();
       // El personatge ha de recordar el que s'ha dit: li enviem el context de la
       // conversa actual (el primer missatge inclou el salut inicial del personatge).
       const context: HistoryItem[] = history.length > 0
@@ -98,7 +122,8 @@ export function Chat({
       // include_audio:false → el turno responde solo con texto (el usuario ve la
       // respuesta al instante) y el audio se pide en paralelo a /api/tts.
       const r = await sendTurn({
-        session_id: activeSession,
+        session_id: sessionId,
+        session_resource_id: sessionResourceId,
         scenario,
         level,
         input_mode: audio ? 'voice' : 'text',

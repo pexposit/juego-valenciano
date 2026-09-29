@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-do
 import { ScenarioSelect } from './components/ScenarioSelect';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
+import { endSession } from './lib/api';
 import type { Scenario } from './lib/types';
 import { chatRoute, DEFAULT_PROFILE, ROUTES, SCENARIOS, SCENARIO_GOALS, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
@@ -129,6 +130,8 @@ export function App() {
   };
 
   const logOut = async () => {
+    // Tanca la sessió al backend abans d'invalidar el token de Supabase.
+    await endSession().catch(err => console.error('Error tancant la sessió:', err));
     await supabase?.auth.signOut();
   };
 

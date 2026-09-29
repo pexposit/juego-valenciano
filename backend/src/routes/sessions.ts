@@ -33,7 +33,7 @@ sessionsRouter.post('/api/sessions', requireAuth, async (req: AuthRequest, res) 
 
     if (sessionError) throw sessionError;
 
-
+    console.log(`[sessions] Nueva sesión creada: ${sessionData.id} para usuario ${req.userId}`);
     res.status(201).json({ 
       session_id: sessionData.id,
       // extra_id: extraData.id // opcional si necesitas devolverlo al frontend
