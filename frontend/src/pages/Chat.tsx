@@ -5,7 +5,7 @@ import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
 import { ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
 import type { Mood, Scenario } from '../lib/types';
-import { GREETING_BY_SCENARIO, scenarioName } from '../data/content';
+import { GREETING_BY_VOICE } from '../data/content';
 
 const INITIAL_GREETING = 'Bon dia! Com et puc ajudar hui?';
 const VOICE_MESSAGE_LABEL = '🎙️ Missatge de veu';
@@ -14,9 +14,13 @@ const TTS_ATTEMPTS = 2;
 const ROUND_BUTTON = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors';
 
 export function Chat({
-  scenario, level, xp, onXpGained, onEnd, onBack,
+  scenario, title, voice, background, level, xp, onXpGained, onEnd, onBack,
 }: {
   scenario: Scenario;
+  title: string;
+  // Veu TTS i foto de fons de l'escenari (resources.metadata).
+  voice: string | null;
+  background: string | null;
   level: string;
   xp: number;
   onXpGained: (delta: number) => void;
@@ -92,10 +96,15 @@ export function Chat({
 
   // Salutació pregenerada: fitxer estàtic servit per Vite, es reprodueix en obrir
   // l'escenari sense processar res (autoplay si el navegador ho permet; sinó,
-  // el botó de repetir la llança amb un gest de l'usuari).
+  // el botó de repetir la llança amb un gest de l'usuari). Si la veu de
+  // l'escenari no en té, es genera amb el TTS.
   useEffect(() => {
-    if (!hasSubmitted.current) setReplyAudio(GREETING_BY_SCENARIO[scenario], true);
-  }, [scenario]);
+    if (hasSubmitted.current) return;
+    const greeting = voice ? GREETING_BY_VOICE[voice] : undefined;
+    if (greeting) setReplyAudio(greeting, true);
+    else void loadTextAudio(INITIAL_GREETING, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenario, voice]);
 
   // En entrar a l'escenari es crea la seua entrada a session_resource.
   useEffect(() => {
@@ -154,7 +163,7 @@ export function Chat({
 
   return (
     <main className="relative h-[100dvh] overflow-hidden">
-      <SceneArt scenario={scenario} mood={mood} />
+      <SceneArt scenario={scenario} background={background} mood={mood} />
 
       {/* Top bar */}
       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
@@ -170,7 +179,7 @@ export function Chat({
             className="rounded-full px-3.5 py-1.5 text-xs font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm"
             style={{ background: 'rgba(255,255,255,0.92)' }}
           >
-            {scenarioName(scenario)}
+            {title}
           </span>
         </div>
         <div

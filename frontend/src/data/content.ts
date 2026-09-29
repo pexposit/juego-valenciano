@@ -1,6 +1,6 @@
-import type { Scenario } from '../lib/types';
+import type { Resource, Scenario } from '../lib/types';
 
-export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'summary' | 'profile';
+export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'exam' | 'summary' | 'profile';
 
 /* Rutes URL de cada pàgina. La de xat porta l'escenari com a paràmetre de ruta
  * (/xat/:scenario): l'entrada `chat` és només un valor per defecte, no s'hi
@@ -11,40 +11,33 @@ export const ROUTES: Record<Page, string> = {
   dashboard: '/dashboard',
   scenarioselect: '/scenaris',
   chat: '/xat',
+  exam: '/examen',
   summary: '/resum',
   profile: '/perfil',
 };
 
 export const chatRoute = (scenario: Scenario) => `/xat/${scenario}`;
+export const examRoute = (resourceId: string) => `/examen/${resourceId}`;
 
-export type ScenarioDef = {
-  id: Scenario;
-  name: string;
-  icon: string;
-  color: string;
-  bgIllustration: string;
+// Pantalla de joc de cada categoria de resources: els escenaris s'obrin al xat
+// (per `type`) i els exàmens al visor de l'examen (per `id`).
+export const activityRoute = (resource: Resource): string | null => {
+  switch (resource.category) {
+    case 'escenari': return chatRoute(resource.type);
+    case 'examen': return examRoute(resource.id);
+    default: return null;
+  }
 };
 
-export const SCENARIOS: ScenarioDef[] = [
-  { id: 'mercat',     name: 'El Mercat',          icon: '🍊', color: '#FFD98A', bgIllustration: '#FFF3CC' },
-  { id: 'bar',        name: 'El Bar',             icon: '☕', color: '#F2B47C', bgIllustration: '#FDE8D0' },
-  { id: 'oficina',    name: "L'Oficina",          icon: '💻', color: '#BDE9E8', bgIllustration: '#E2F5F4' },
-  { id: 'ajuntament', name: "L'Ajuntament",       icon: '🏛️', color: '#C8D7EE', bgIllustration: '#E8EFF8' },
-  { id: 'turisme',    name: 'Oficina de Turisme', icon: '🗺️', color: '#9AD0EC', bgIllustration: '#E4F3FB' },
-];
 
-export const scenarioName = (id: Scenario) => SCENARIOS.find(s => s.id === id)?.name ?? id;
 
-// Salutacions d'inici pregenerades com a fitxers estàtics (veu segons el sexe del
-// personatge: lluc = masculina, gina = femenina). En obrir l'escenari es reprodueixen
-// al moment, sense cap crida al TTS del backend.
-export const GREETING_BY_SCENARIO: Record<Scenario, string> = {
-  mercat: '/audio/salutacio-lluc.wav',
-  bar: '/audio/salutacio-gina.wav',
-  oficina: '/audio/salutacio-lluc.wav',
-  ajuntament: '/audio/salutacio-gina.wav',
-  colegi: '/audio/salutacio-gina.wav',
-  turisme: '/audio/salutacio-gina.wav',
+
+// Salutacions d'inici pregenerades com a fitxers estàtics, una per veu TTS
+// (resources.metadata.voice). En obrir l'escenari es reprodueixen al moment;
+// si la veu no en té, el xat la genera amb el TTS del backend.
+export const GREETING_BY_VOICE: Record<string, string> = {
+  lluc: '/audio/salutacio-lluc.wav',
+  gina: '/audio/salutacio-gina.wav',
 };
 
 export const LEVEL_OPTIONS = [
