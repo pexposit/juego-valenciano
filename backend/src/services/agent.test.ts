@@ -204,7 +204,7 @@ describe('estado de la petición enviada a OpenAI', () => {
       expect(user.role).toBe('user');
       expect(user.content).toContain('Maria, cambrera: Hola! Què et poses?');
       expect(user.content).toContain('Aprenent: Hola!');
-      expect(user.content).toContain('Aprenent: Hola, em poses una cervesa?');
+      expect(user.content).toContain('"Hola, em poses una cervesa?"');
     });
   });
 

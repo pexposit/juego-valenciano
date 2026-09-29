@@ -3,7 +3,7 @@ import { MessageCircle, Volume2 } from 'lucide-react';
 import { SceneArt } from '../components/SceneArt';
 import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
-import { createSession, fetchTts, sendTurn, type HistoryItem } from '../lib/api';
+import { createSession, fetchTts, finishSession, sendTurn, type HistoryItem } from '../lib/api';
 import type { Mood, Scenario } from '../lib/types';
 import { GREETING_BY_SCENARIO, scenarioName } from '../data/content';
 
@@ -55,6 +55,13 @@ export function Chat({
         if (attempt === TTS_ATTEMPTS) setReplyAudio(undefined);
       }
     }
+  };
+
+  // Si no ha arribat a iniciar cap sessió amb el personatge, eixim sense fer
+  // petició. Avisa el backend perquè llance l'avaluació pedagògica en segon pla.
+  const handleExit = () => {
+    if (session) void finishSession(session);
+    onBack();
   };
 
   const replayCharacter = () => {
@@ -128,7 +135,7 @@ export function Chat({
       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={onBack}
+            onClick={handleExit}
             id="chat-back-btn"
             className="btn-press rounded-full bg-white/90 px-4 py-2 font-bold shadow backdrop-blur-sm hover:bg-white transition-colors"
           >

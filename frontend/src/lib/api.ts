@@ -16,6 +16,13 @@ export async function sendTurn(payload:{session_id:string;scenario:Scenario;leve
   if(!res.ok) throw new Error('No hem pogut connectar'); return res.json();
 }
 export async function createSession(scenario:Scenario,level:string):Promise<string>{const token=(await supabase?.auth.getSession())?.data.session?.access_token;const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/sessions`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({scenario,level})});if(!res.ok)throw new Error('No hem pogut iniciar la conversa');return (await res.json()).session_id}
+// Avisa el backend que l'usuari ha eixit de la conversa, perquè llance
+// l'avaluació pedagògica en segon pla. Si falla, no cal bloquejar l'eixida.
+export async function finishSession(sessionId:string):Promise<void>{
+  const token=(await supabase?.auth.getSession())?.data.session?.access_token;
+  const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/sessions/finish`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({session_id:sessionId})});
+  if(!res.ok) console.warn(`[finishSession] El backend ha respost amb codi ${res.status}`);
+}
 // Àudio TTS d'un text (veu del personatge de l'escenari). El token fa que la
 // petició compte contra el límit de l'usuari amb sessió: el backend limita molt
 // més les peticions anònimes. Retorna una URL `data:` reproduïble.
