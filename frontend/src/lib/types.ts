@@ -15,7 +15,9 @@ export type Resource={ id:string; name:string; type:string; category:string; dif
 // `binary` i `match` es corregixen sols amb `answer`; `form`, `writing` i
 // `oral` són de pràctica lliure.
 export type ExamOption = { key: string; text?: string; image?: string; sign?: { title: string; lines: string[] } };
-export type ExamQuestion = { n: number; prompt?: string; image?: string; options?: ExamOption[]; answer: string };
+// `scored: false`: la pregunta es corregix en pantalla però no suma punts (p. ex. els
+// enunciats «No surt» de l'exercici d'ordenar del B1, on només puntuen els 5 que apareixen).
+export type ExamQuestion = { n: number; prompt?: string; image?: string; options?: ExamOption[]; answer: string; scored?: boolean };
 export type ExamCriterion = { title: string; items: { name: string; description: string }[] };
 // Consigna alternativa d'una redacció (opció A o B), amb els punts que cal incloure.
 export type ExamWritingChoice = { key: string; text: string; points?: string[] };

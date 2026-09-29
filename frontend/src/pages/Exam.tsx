@@ -57,6 +57,8 @@ const evaluationBody = (e: EvaluableExercise, form: Record<string, string>) =>
 const hasContent = (e: EvaluableExercise, form: Record<string, string>) =>
   e.kind === 'form' ? e.fields.some(f => form[f]?.trim()) : Boolean(form[writingKey(e.n)]?.trim());
 
+const scoredOnly = (questions: ExamQuestion[]) => questions.filter(q => q.scored !== false);
+
 const questionsOf = (area: ExamArea) => area.exercises.filter(gradable).flatMap(e => e.questions);
 
 export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: () => void }) {
@@ -80,7 +82,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
   const answered = (a: ExamArea) => questionsOf(a).filter(q => progress.answers[q.n]).length;
   const score = (questions: ExamQuestion[]) => questions.filter(q => progress.answers[q.n] === q.answer).length;
   const exerciseScores = (a: ExamArea): ExerciseScore[] =>
-    a.exercises.filter(gradable).map(e => ({ n: e.n, correct: score(e.questions), total: e.questions.length }));
+    a.exercises.filter(gradable).map(e => ({ n: e.n, correct: score(scoredOnly(e.questions)), total: scoredOnly(e.questions).length }));
   const areaPoints = (a: ExamArea) => pointsOf(a.scoring!, exerciseScores(a));
 
   // Estat global en la prova: amb una àrea puntuable per davall del mínim quedes fora.
@@ -214,7 +216,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
                       ? `${answered(a)}/${total}`
                       : a.scoring
                         ? `${passes(a.scoring, areaPoints(a)) ? '✓' : '✗'} ${areaPoints(a)}/${a.scoring.max_points} punts`
-                        : `✓ ${score(questionsOf(a))}/${total}`}
+                        : `✓ ${score(scoredOnly(questionsOf(a)))}/${scoredOnly(questionsOf(a)).length}`}
                   </span>
                 )}
               </button>
@@ -226,8 +228,8 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
         {checked && areaQuestions.length > 0 && (
           <AreaResult
             area={area}
-            correct={score(areaQuestions)}
-            total={areaQuestions.length}
+            correct={score(scoredOnly(areaQuestions))}
+            total={scoredOnly(areaQuestions).length}
             byExercise={exerciseScores(area)}
             scoring={area.scoring}
             onReset={reset}
