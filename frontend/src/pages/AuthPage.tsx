@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { LEVEL_OPTIONS, type Page } from '../data/content';
+import { startSession } from '../lib/api';
 
 const NETWORK_ERROR = 'No hem pogut connectar. Revisa la connexió i torna-ho a provar.';
 const INPUT_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0D9488] transition-colors';
 
-// Un error en desar el registre no ha d'impedir l'accés.
-async function recordLogin(client: NonNullable<typeof supabase>, userId: string, level: string) {
-  const { error } = await client.from('sessions').insert({ user_id: userId, level_at_start: level });
-  if (error) console.error('Error registrant l\'inici de sessió:', error.message);
+// Crea la sessió al backend en entrar. Si falla, no impedix l'accés:
+// el xat en crearà una en obrir l'escenari.
+async function recordLogin(level: string) {
+  try {
+    await startSession(level);
+  } catch (error) {
+    console.error('Error creant la sessió:', error);
+  }
 }
 
 export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
@@ -52,6 +57,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         return;
       }
       setNotice('Compte creat! Entrant...');
+      await recordLogin(level);
       setPage('dashboard');
     });
   };
@@ -69,7 +75,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
       return setNotice('Este compte no té cap perfil associat. Contacta amb l\'administrador.');
     }
 
-    await recordLogin(client, data.user.id, profile.level);
+    await recordLogin(profile.level);
     setPage('dashboard');
   });
 

@@ -1,7 +1,7 @@
-INSERT INTO "public"."resources" ("name", "type", "category", "difficulty", "xp_earned")
+INSERT INTO "public"."resources" ("type", "name", "category", "difficulty", "xp_earned")
 VALUES
-  ('Mercat', 'scene', 'escenari', 'principiant', 10),
-  ('Bar', 'scene', 'escenari', 'principiant', 10),
-  ('Oficina', 'scene', 'escenari', 'principiant', 10),
-  ('Ayuntament', 'scene', 'escenari', 'principiant', 10),
-  ('Oficina de Turisme', 'scene', 'escenari', 'principiant', 10);
+  ('mercat', 'scene', 'escenari', 'principiant', 10),
+  ('bar', 'scene', 'escenari', 'principiant', 10),
+  ('oficina', 'scene', 'escenari', 'principiant', 10),
+  ('ajuntament', 'scene', 'escenari', 'principiant', 10),
+  ('oficina de turisme', 'scene', 'escenari', 'principiant', 10);

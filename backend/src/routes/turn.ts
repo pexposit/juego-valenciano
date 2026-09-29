@@ -15,19 +15,10 @@ import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
 import { stt, tts } from '../services/voice.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
-import { RESOURCE_NAME_BY_SCENARIO } from '../scenarios/resourceNames.js';
-
-// A la BD, el rol del personatge es desa com "system" (conveni user/system
-// dels LLM); a la resta del codi (agent, frontend, wire format) es continua
-// dient "character" perquè no depenga de com es diu la columna a la BD.
-const roleToDb = (role: 'user' | 'character') => (role === 'character' ? 'system' : 'user');
-const roleFromDb = (role: string): 'user' | 'character' => (role === 'system' ? 'character' : 'user');
+import { beginErrorAnalysis } from '../services/pendingErrorAnalysis.js';
 
 export const turnRouter = Router();
 
-// Cada torn consumix OpenAI i el TTS del servidor de la UJI: el límit protegix
-// la factura. Els usuaris amb sessió poden conversar sense fricció; les
-// peticions anònimes (mode demostració) van molt més limitades.
 const TURN_RATE_LIMIT = {
   windowMs: 60_000,
   max: Number(process.env.RATE_LIMIT_AUTHED_PER_MIN) || 30,
@@ -35,13 +26,16 @@ const TURN_RATE_LIMIT = {
 };
 
 turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req: AuthRequest, res) => {
+  let finishPending: (() => void) | undefined;
+  let analysisStarted = false;
   try {
     const data = turnSchema.parse(req.body);
+    finishPending = beginErrorAnalysis(data.session_resource_id);
     let text = data.text.trim();
     const startedAt = Date.now();
 
     if (data.input_mode === 'voice') {
-      if (!data.audio_base64) return res.status(400).json({ error: 'Falta l\'àudio' });
+      if (!data.audio_base64) return res.status(400).json({ error: "Falta l'àudio" });
       const sttStart = Date.now();
       text = await stt.transcribe(Buffer.from(data.audio_base64, 'base64'), 'audio/webm');
       console.log(`[turn] stt=${Date.now() - sttStart}ms`);
@@ -50,60 +44,50 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
 
     const client = db(req.userId);
 
-    // Validate session (skip in demo mode). Una sessió ja no porta l'escenari
-    // directament (columna eliminada): es comprova a través de la fila de
-    // `session_resource` que l'enllaça amb el recurs de l'escenari demanat.
-    let sessionResourceId: string | undefined;
+    // 1. Validar la sessió amb conversation_sessions
     if (client) {
-      const resourceName = RESOURCE_NAME_BY_SCENARIO[data.scenario];
-      const { data: resource } = resourceName
-        ? await client.from('resources').select('id').eq('name', resourceName).single()
-        : { data: null };
+      const { data: session, error: sessionError } = await client
+        .from('sessions')
+        .select('id, user_id')
+        .eq('id', data.session_id)
+        .eq('user_id', req.userId!)
+        .maybeSingle();
 
-      const { data: link, error: linkError } = resource
-        ? await client
-            .from('session_resource')
-            .select('id, sessions!inner(user_id)')
-            .eq('sesion_id', data.session_id)
-            .eq('recurso_id', resource.id)
-            .single()
-        : { data: null, error: null };
-
-      if (!link || (link.sessions as unknown as { user_id: string }).user_id !== req.userId) {
-        // Un error de consulta (BD caiguda, permisos) es veu als logs; el client
-        // rep el mateix 403 que si la sessió no existira.
-        if (linkError) console.warn('[turn] error consultant la sessió:', linkError.message);
-        return res.status(403).json({ error: 'Sessió no vàlida' });
+      if (sessionError || !session) {
+        if (sessionError) console.warn('[turn] error consultant la sessió:', sessionError.message);
+        return res.status(403).json({ error: 'Sessió no vàlida o no autoritzada' });
       }
-      sessionResourceId = link.id;
+
+      // El session_resource ha de pertànyer a eixa sessió
+      const { data: sessionResource, error: sessionResourceError } = await client
+        .from('session_resource')
+        .select('id')
+        .eq('id', data.session_resource_id)
+        .eq('sesion_id', data.session_id)
+        .maybeSingle();
+
+      if (sessionResourceError || !sessionResource) {
+        if (sessionResourceError) console.warn('[turn] error consultant el session_resource:', sessionResourceError.message);
+        return res.status(403).json({ error: 'Recurs de sessió no vàlid o no autoritzat' });
+      }
     }
 
-    // El historial enviado por el cliente NO es de confianza (un cliente
-    // malicioso podría inventarlo para manipular al agente o inflar tokens):
-    // - Con usuario real (hay BD y la sesión ya se validó) se reconstruye
-    //   siempre desde `conversation_messages`, la fuente verificada.
-    // - En modo demo (sin BD) se acepta el del cliente, pero pasa por
-    //   `sanitizeHistory`, que recorta al presupuesto de mensajes y
-    //   caracteres definido en el paquete compartido.
+    // 2. Historial aïllat per recurs
     let history: HistoryMessage[];
     if (client) {
       const { data: historyData, error: historyError } = await client
         .from('conversation_messages')
-        .select('role,content_text')
-        .eq('session_resource_id', sessionResourceId)
+        .select('role, content_text')
+        .eq('session_resource_id', data.session_resource_id)
         .order('created_at', { ascending: false })
         .limit(HISTORY_MAX_MESSAGES);
-      // Si la lectura falla, el torn continua sense context: pitjor resposta,
-      // però el client no es queda sense contestació.
-      if (historyError) console.error("[turn] no hem pogut llegir l'historial:", historyError.message);
-      history = sanitizeHistory(
-        (historyData || []).reverse().map((m: { role: string; content_text: string }) => ({
-          role: roleFromDb(m.role),
-          content_text: m.content_text,
-        })),
-      );
+
+      if (historyError) {
+        console.error("[turn] no hem pogut llegir l'historial:", historyError.message);
+      }
+      history = sanitizeHistory(((historyData || []).reverse()) as HistoryMessage[]);
     } else {
-      history = sanitizeHistory(data.history);
+      history = sanitizeHistory(data.history as HistoryMessage[]);
     }
 
     const agentStart = Date.now();
@@ -113,36 +97,53 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       message: text,
       history,
     });
-    console.log(`[turn] agente=${Date.now() - agentStart}ms`);
 
+    console.log(`[turn] agente=${Date.now() - agentStart}ms`);
     const xpDelta = 10;
 
-    // La persistencia y el TTS corren en paralelo: el audio no depende de la BD.
+    // Sincronitzador per assegurar que l'ID del missatge existix abans d'inserir errors
+    let resolveMessageId: (id: string | null) => void;
+    const messageIdPromise = new Promise<string | null>((resolve) => {
+      resolveMessageId = resolve;
+    });
+
+    // 3. Persistència de missatges i XP
     const persistPromise = client
       ? (async () => {
           const dbStart = Date.now();
-          // Supabase NO llança excepcions: torna l'error dins del resultat. Si no
-          // es comprova, l'usuari juga, veu pujar l'XP en pantalla i el progrés
-          // es perd en silenci (i l'operador no se n'assabenta mai).
-          const { error: insertError } = await client.from('conversation_messages').insert([
-            {
-              session_resource_id: sessionResourceId,
-              role: roleToDb('user'),
+
+          const { data: userMsgInsert, error: userMsgError } = await client
+            .from('conversation_messages')
+            .insert({
+              session_resource_id: data.session_resource_id,
+              role: 'user',
               content_text: text,
               input_mode: data.input_mode,
-              detected_level_signal: reply.detected_level_signal,
-            },
-            {
-              session_resource_id: sessionResourceId,
-              role: roleToDb('character'),
-              content_text: reply.reply_text,
-              input_mode: 'text',
-            },
-          ]);
-          if (insertError) {
-            console.error('[turn] no hem pogut guardar els missatges:', insertError.message);
+            })
+            .select('id')
+            .single();
+
+          if (userMsgError || !userMsgInsert) {
+            console.error('[turn] Error guardant missatge usuari:', userMsgError?.message);
+            resolveMessageId!(null);
             return;
           }
+
+          resolveMessageId!(userMsgInsert.id);
+
+          const { error: characterMsgError } = await client
+            .from('conversation_messages')
+            .insert({
+              session_resource_id: data.session_resource_id,
+              role: 'character',
+              content_text: reply.reply_text,
+              input_mode: 'text',
+            });
+
+          if (characterMsgError) {
+            console.error('[turn] Error guardant missatge personatge:', characterMsgError.message);
+          }
+
           const { error: xpError } = await client.rpc('apply_turn_xp', {
             p_user_id: req.userId,
             p_session_id: data.session_id,
@@ -150,10 +151,11 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
             p_xp_delta: xpDelta,
             p_threshold: SCENARIO_XP,
           });
+
           if (xpError) {
             console.error('[turn] no hem pogut aplicar els XP:', xpError.message);
-            return;
           }
+
           console.log(`[turn] db=${Date.now() - dbStart}ms`);
         })()
       : Promise.resolve();
@@ -166,24 +168,35 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
         : Promise.resolve(null),
       persistPromise,
     ]);
+
     console.log(
       `[turn] tts=${wantsAudio ? Date.now() - ttsStart : 0}ms total=${Date.now() - startedAt}ms`,
     );
 
-    // Detecció d'errors en segon pla (subagent LLM local): no bloqueja la resposta.
+    // 4. Anàlisi asíncrona segura
     if (client && req.userId) {
-      const currentUserId = req.userId;
       const currentText = text;
 
+      analysisStarted = true;
+      const done = finishPending;
       void (async () => {
         const start = Date.now();
         try {
-          const detectedErrors = await analyzeErrorsWithLocalLLM(currentText);
+          const [detectedErrors, targetMessageId] = await Promise.all([
+            analyzeErrorsWithLocalLLM(currentText),
+            messageIdPromise,
+          ]);
+
+          if (!targetMessageId) {
+            console.warn('[bgAnalysis] No es poden guardar errors: fallada en persistir el missatge pare.');
+            return;
+          }
 
           if (!detectedErrors || detectedErrors.length === 0) return;
 
           const records = detectedErrors.map((item) => ({
-            user_id: currentUserId,
+            message_id: targetMessageId,
+            session_resource_id: data.session_resource_id,
             error_text: item.error_text,
             correction: item.correction,
             category: item.category,
@@ -198,10 +211,12 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           }
 
           console.log(
-            `[bgAnalysis] Guardats ${records.length} errors a Supabase en ${Date.now() - start}ms`,
+            `[bgAnalysis] Guardats ${records.length} errors vinculats a ${targetMessageId} en ${Date.now() - start}ms`,
           );
         } catch (err: any) {
           console.error('[bgAnalysis] Error analitzant el missatge:', err.message);
+        } finally {
+          done?.();
         }
       })();
     }
@@ -214,8 +229,14 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       xp_delta: xpDelta,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) return validationError(res, error);
+    if (error instanceof z.ZodError) {
+      console.warn('[turn] Petició invàlida:', error.issues);
+      return validationError(res, error);
+    }
     console.error(error);
     res.status(500).json({ error: 'No hem pogut processar el torn' });
+  } finally {
+    // Si el torn acaba sense llançar l'anàlisi (error, missatge buit...), alliberem l'espera.
+    if (!analysisStarted) finishPending?.();
   }
 });

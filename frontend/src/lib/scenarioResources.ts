@@ -10,18 +10,6 @@ export type ScenarioResource = {
   scenario: Scenario;
 };
 
-// Relaciona el `name` de la BD amb el tipus `Scenario` del codi (l'id és un
-// uuid aleatori i el nom no sempre coincideix, p. ex. "Ayuntament" davant
-// "ajuntament"). Explícit en lloc de derivar-ho automàticament del nom
-// perquè no depenga de com estiga escrit a la BD.
-export const SCENARIO_BY_RESOURCE_NAME: Record<string, Scenario> = {
-  Mercat: 'mercat',
-  Bar: 'bar',
-  Oficina: 'oficina',
-  Ayuntament: 'ajuntament',
-  'Oficina de Turisme': 'turisme',
-};
-
 // La BD no modela l'estil visual (icona/color): és presentació, no dades de
 // domini, així que es queda com a taula local per escenari conegut.
 export const SCENARIO_STYLE: Record<Scenario, { icon: string; color: string }> = {

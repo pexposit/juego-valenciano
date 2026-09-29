@@ -90,8 +90,6 @@ describe('replyFromAgent', () => {
       await expect(replyFromAgent(defaultArgs)).resolves.toEqual({
         reply_text: 'Hola, com et puc ajudar?',
         mood: 'content',
-        detected_level_signal: 'on',
-        error_flags: [],
       });
     });
 
@@ -132,38 +130,6 @@ describe('replyFromAgent', () => {
       expect(reply.mood).toBe(expected);
     });
 
-    it.each([
-      ['beginner', 'below'],
-      ['principiant', 'below'],
-      ['per davall', 'below'],
-      ['por debajo', 'below'],
-      ['intermediate', 'on'],
-      ['intermedi', 'on'],
-      ['al nivell', 'on'],
-      ['at level', 'on'],
-      ['neutral', 'on'],
-      ['correcte', 'on'],
-      ['correct', 'on'],
-      ['advanced', 'above'],
-      ['avancat', 'above'],
-      ['per damunt', 'above'],
-      ['por encima', 'above'],
-      ['completament-desconegut', 'on'],
-    ])('normaliza detected_level_signal "%s" a "%s"', async (rawSignal, expected) => {
-      const { replyFromAgent } = await loadAgent();
-      fetchMock.mockResolvedValue(openAiResponse(jsonReply({ detected_level_signal: rawSignal })));
-
-      const reply = await replyFromAgent(defaultArgs);
-      expect(reply.detected_level_signal).toBe(expected);
-    });
-
-    it('propaga los error_flags que devuelve el LLM', async () => {
-      const { replyFromAgent } = await loadAgent();
-      fetchMock.mockResolvedValue(openAiResponse(jsonReply({ error_flags: ['paraules-en-castella'] })));
-
-      const reply = await replyFromAgent(defaultArgs);
-      expect(reply.error_flags).toEqual(['paraules-en-castella']);
-    });
 });
 describe('estado de la petición enviada a OpenAI', () => {
     it('llama a POST https://api.openai.com/v1/chat/completions con la API key y el modelo por defecto', async () => {
@@ -181,8 +147,7 @@ describe('estado de la petición enviada a OpenAI', () => {
 
       const body = JSON.parse((init as { body: string }).body);
       expect(body.model).toBe('gpt-5.6-luna');
-      expect(body.max_completion_tokens).toBe(450);
-      expect(body.response_format).toEqual({ type: 'json_object' });
+      expect(body.response_format.type).toBe('json_schema');
     });
 
     it('incluye el prompt de sistema, nivel actual, contexto e historial en los mensajes', async () => {
@@ -200,7 +165,7 @@ describe('estado de la petición enviada a OpenAI', () => {
       const [system, user] = body.messages;
 
       expect(system.role).toBe('system');
-      expect(system.content).toContain('Nivell actual: intermedi');
+      expect(system.content).toContain("Nivell de referència de l'aprenent: intermedi");
       expect(user.role).toBe('user');
       expect(user.content).toContain('Maria, cambrera: Hola! Què et poses?');
       expect(user.content).toContain('Aprenent: Hola!');
@@ -219,31 +184,15 @@ describe('estado de la petición enviada a OpenAI', () => {
       },
     );
 
-    it('reintenta 2 veces con cada modelo de respaldo cuando OpenAI falla (6 llamadas: 3 modelos x 2 intentos)', async () => {
+    it('reintenta 2 veces amb el mateix model quan OpenAI falla (no hi ha model de reserva)', async () => {
       const { replyFromAgent } = await loadAgent();
       fetchMock.mockResolvedValue(openAiResponse('', { ok: false, status: 500 }));
 
       await expect(replyFromAgent(defaultArgs)).rejects.toThrow('OpenAI API error');
 
-      expect(fetchMock).toHaveBeenCalledTimes(6);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
       const models = requestedModels();
-      expect(models).toEqual(['gpt-5.6-luna', 'gpt-5.6-luna', 'gpt-4o-mini', 'gpt-4o-mini', 'gpt-4o', 'gpt-4o']);
-    });
-
-    it('cae al modelo de respaldo cuando el primero devuelve 500 y el segundo responde 200', async () => {
-      const { replyFromAgent } = await loadAgent();
-      fetchMock
-        // model 'gpt-5.6-luna': dos intentos fallidos
-        .mockResolvedValueOnce(openAiResponse('', { ok: false, status: 500 }))
-        .mockResolvedValueOnce(openAiResponse('', { ok: false, status: 500 }))
-        // modelo 'gpt-4o-mini': éxito
-        .mockResolvedValue(openAiResponse(jsonReply({ reply_text: 'Hola des del model de reserva' })));
-
-      const reply = await replyFromAgent(defaultArgs);
-
-      expect(reply.reply_text).toBe('Hola des del model de reserva');
-      const models = requestedModels();
-      expect(models.slice(0, 3)).toEqual(['gpt-5.6-luna', 'gpt-5.6-luna', 'gpt-4o-mini']);
+      expect(models).toEqual(['gpt-5.6-luna', 'gpt-5.6-luna']);
     });
 
     it('recupera tras una respuesta 200 con contenido vacío en el segundo intento', async () => {
@@ -280,17 +229,6 @@ describe('estado de la petición enviada a OpenAI', () => {
       expect((error as Error).message).toMatch(/reply_text/);
     });
 
-    it('lanza error de esquema cuando error_flags supera el máximo de 4 elementos', async () => {
-      const { replyFromAgent } = await loadAgent();
-      fetchMock.mockResolvedValue(
-        openAiResponse(jsonReply({ error_flags: ['a', 'b', 'c', 'd', 'e'] })),
-      );
-
-      const error = await replyFromAgent(defaultArgs).catch((e: unknown) => e);
-      expect(error).toBeInstanceOf(Error);
-      expect((error as Error).message).toMatch(/error_flags/);
-    });
-
     it('lanza error de esquema cuando el mood no es uno de los valores permitidos', async () => {
       const { replyFromAgent } = await loadAgent();
       fetchMock.mockResolvedValue(openAiResponse(jsonReply({ mood: 'trist' })));
@@ -310,15 +248,14 @@ describe('estado de la petición enviada a OpenAI', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it('usa el modelo configurado vía OPENAI_MODEL sin duplicados con los de respaldo', async () => {
+    it('usa el modelo configurat via OPENAI_MODEL', async () => {
       const { replyFromAgent } = await loadAgent({ model: 'gpt-4o-mini' });
       fetchMock.mockResolvedValue(openAiResponse('', { ok: false, status: 500 }));
 
       await expect(replyFromAgent(defaultArgs)).rejects.toThrow('OpenAI API error');
 
       const models = requestedModels();
-      expect(new Set(models).size).toBe(2); // gpt-4o-mini + gpt-4o (sin duplicados)
-      expect(models).toEqual(['gpt-4o-mini', 'gpt-4o-mini', 'gpt-4o', 'gpt-4o']);
+      expect(models).toEqual(['gpt-4o-mini', 'gpt-4o-mini']);
     });
   });
 });

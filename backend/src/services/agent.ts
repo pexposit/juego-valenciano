@@ -2,11 +2,11 @@ import { z } from 'zod';
 import { scenarios } from '../scenarios/index.js';
 import type { ScenarioKey } from '../scenarios/types.js';
 
+
+
 const outputSchema = z.object({
   reply_text: z.string().min(1),
   mood: z.enum(['neutral', 'content', 'confus']),
-  detected_level_signal: z.enum(['below', 'on', 'above']),
-  error_flags: z.array(z.string()).max(4),
 });
 
 export type AgentReply = z.infer<typeof outputSchema>;
@@ -15,9 +15,7 @@ export type AgentReply = z.infer<typeof outputSchema>;
 // El nom ha d'existir a OpenAI: un valor inventat gasta dos intents (404) en
 // cada torn abans de passar al model de reserva.
 const OPENAI_MODELS = [
-  process.env.OPENAI_MODEL || 'gpt-4o-mini',
-  'gpt-4o-mini',
-  'gpt-4o',
+  process.env.OPENAI_MODEL
 ].filter((model, index, models) => models.indexOf(model) === index);
 
 // Límite por petición: si un modelo cuelga, se corta y se prueba el siguiente
@@ -51,30 +49,52 @@ export async function replyFromAgent(args: {
           signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
           body: JSON.stringify({
             model,
-            max_completion_tokens: 450,
-            response_format: { type: 'json_object' },
+            response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'agent_reply',
+              strict: true,
+              schema: {
+                type: 'object',
+                properties: {
+                  mood: {
+                    type: 'string',
+                    enum: ['neutral', 'content', 'confus'],
+                    description: "L'estat d'ànim del personatge.",
+                  },
+                  reply_text: {
+                    type: 'string',
+                    description: 'La resposta directa del personatge a la conversa.',
+                  },
+                },
+                required: ['mood', 'reply_text'],
+                additionalProperties: false,
+              },
+            },
+          },
             messages: [
-              {
-                role: 'system',
-                content: `${def.systemPrompt}
-Nivell actual: ${args.level}.
+                        {
+                          role: 'system',
+                          content: `${def.systemPrompt}
+                            Nivell de referència de l'aprenent: ${args.level}.
 
-INSTRUCCIONS DE CONVERSA:
-- Respon de manera natural i coherent al context de la situació com a personatge.
-- Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
-- Tria l'estat d'ànim ('mood') que millor represente la teua reacció com a personatge ('neutral', 'content', 'confus').
-- Indica en 'detected_level_signal' si l'aprenent parla per davall, al nivell o per damunt del nivell de referència.
-- Llista en 'error_flags' (màxim 4) etiquetes curtes dels errors lingüístics detectats, o un array buit si no n'hi ha.
+                            INSTRUCCIONS DE CONVERSA:
+                            - Respon de manera natural i coherent al context de la situació com a personatge.
+                            - Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
+                            - Tria l'estat d'ànim ('mood') que millor represente la teua reacció com a personatge ('neutral', 'content', 'confus').
 
-Respon únicament amb JSON vàlid i usa exactament les claus reply_text, mood, detected_level_signal i error_flags.`.trim(),
-              },
-              {
-                role: 'user',
-                content: `Context recent de la conversa:\n${context || '(inici)'}\n\nÚltim missatge de l'aprenent a analitzar i respondre:\n"${args.message}"`,
-              },
-            ],
+                            Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood.`.trim(),
+                        },
+
+                        {
+                          role: 'user',
+                          content: `Context recent de la conversa:\n${context || '(inici)'}\n\nÚltim missatge de l'aprenent a analitzar i respondre:\n"${args.message}"`,
+                        },
+                       
+                      ]
           }),
         });
+
         if (!response.ok) {
           lastError = `OpenAI API error (${model}): ${response.status}`;
           continue;
@@ -86,8 +106,11 @@ Respon únicament amb JSON vàlid i usa exactament les claus reply_text, mood, d
           continue;
         }
         console.log(`[agent] resposta vàlida de ${model}`);
-        return outputSchema.parse(parseJsonResponse(content));
+
+        const parsed = outputSchema.parse(parseJsonResponse(content));
+        return parsed;
       } catch (error) {
+        //console.error('[agent DEBUG ERROR]:', error); // <--- AÑADE ESTO
         lastError = error instanceof Error ? error.message : lastError;
       }
     }
@@ -99,14 +122,14 @@ function parseJsonResponse(content: string): unknown {
   const normalized = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   const value = JSON.parse(normalized) as Record<string, unknown>;
 
-  // Garantix que error_flags siga sempre un array (el model pot retornar una
-  // cadena solta o ometre-ho).
+  // 1. Garantizar que error_flags sea siempre un array
   if (typeof value.error_flags === 'string') {
     value.error_flags = value.error_flags.trim() ? [value.error_flags] : [];
   } else if (!Array.isArray(value.error_flags)) {
     value.error_flags = [];
   }
 
+  // 2. Normalización de mood
   if (typeof value.mood === 'string') {
     const mood = value.mood.toLowerCase();
     value.mood = {
@@ -119,6 +142,8 @@ function parseJsonResponse(content: string): unknown {
       confós: 'confus',
     }[mood] || mood;
   }
+
+  // 3. Normalización de detected_level_signal
   if (typeof value.detected_level_signal === 'string') {
     const levelSignal = value.detected_level_signal.toLowerCase();
     value.detected_level_signal = {
@@ -140,5 +165,6 @@ function parseJsonResponse(content: string): unknown {
       'al seu nivell': 'on',
     }[levelSignal] || (['below', 'on', 'above'].includes(levelSignal) ? levelSignal : 'on');
   }
+
   return value;
 }
