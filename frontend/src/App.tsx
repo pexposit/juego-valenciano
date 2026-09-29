@@ -57,6 +57,7 @@ function ChatRoute({
         title={section.section_name ?? section.name}
         voice={section.voice}
         background={section.background}
+        initialPrompt={section.initial_prompt}
         level={level}
         xp={xp}
         onXpGained={onXpGained}

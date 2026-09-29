@@ -14,13 +14,15 @@ const TTS_ATTEMPTS = 2;
 const ROUND_BUTTON = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors';
 
 export function Chat({
-  scenario, title, voice, background, level, xp, onXpGained, onEnd, onBack,
+  scenario, title, voice, background, initialPrompt, level, xp, onXpGained, onEnd, onBack,
 }: {
   scenario: Scenario;
   title: string;
   // Veu TTS i foto de fons de l'escenari (resources.metadata).
   voice: string | null;
   background: string | null;
+  // Primer missatge del personatge (resources.metadata.initial_prompt); si no en té, es fa servir la salutació genèrica.
+  initialPrompt: string | null;
   level: string;
   xp: number;
   onXpGained: (delta: number) => void;
@@ -28,7 +30,7 @@ export function Chat({
   onBack: () => void;
 }) {
   const [mood, setMood] = useState<Mood>('neutral');
-  const [character, setCharacter] = useState(INITIAL_GREETING);
+  const [character, setCharacter] = useState(initialPrompt || INITIAL_GREETING);
   const [user, setUser] = useState('');
   const [userTranscription, setUserTranscription] = useState<string>();
   const [loading, setLoading] = useState(false);
@@ -96,13 +98,14 @@ export function Chat({
 
   // Salutació pregenerada: fitxer estàtic servit per Vite, es reprodueix en obrir
   // l'escenari sense processar res (autoplay si el navegador ho permet; sinó,
-  // el botó de repetir la llança amb un gest de l'usuari). Si la veu de
-  // l'escenari no en té, es genera amb el TTS.
+  // el botó de repetir la llança amb un gest de l'usuari). Només és vàlida quan
+  // l'escenari no té una salutació pròpia (initial_prompt), ja que el fitxer
+  // pregenerat només diu el text genèric; si no, es genera amb el TTS.
   useEffect(() => {
     if (hasSubmitted.current) return;
-    const greeting = voice ? GREETING_BY_VOICE[voice] : undefined;
+    const greeting = !initialPrompt && voice ? GREETING_BY_VOICE[voice] : undefined;
     if (greeting) setReplyAudio(greeting, true);
-    else void loadTextAudio(INITIAL_GREETING, true);
+    else void loadTextAudio(initialPrompt || INITIAL_GREETING, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenario, voice]);
 

@@ -55,6 +55,7 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
     section_name: text(metadata?.section_name),
     background: text(metadata?.background),
     voice: text(metadata?.voice),
+    initial_prompt: text(metadata?.initial_prompt),
     playable: isPlayable({ ...resource, metadata }),
   })));
 });

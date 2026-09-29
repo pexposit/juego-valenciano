@@ -110,6 +110,12 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       resolveMessageId = resolve;
     });
 
+    const wantsAudio = data.include_audio;
+    const ttsStart = Date.now();
+    const audioPromise = wantsAudio
+      ? tts.synthesize(reply.reply_text, scenario.voice)
+      : Promise.resolve(null);
+
     // 3. Persistència de missatges i XP
     const persistPromise = client
       ? (async () => {
@@ -134,13 +140,16 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
 
           resolveMessageId!(userMsgInsert.id);
 
+          // El missatge del personatge es guarda com a 'voice' només si finalment s'ha
+          // generat àudio (la síntesi pot fallar encara que s'haja demanat).
+          const audio = await audioPromise;
           const { error: characterMsgError } = await client
             .from('conversation_messages')
             .insert({
               session_resource_id: data.session_resource_id,
               role: 'character',
               content_text: reply.reply_text,
-              input_mode: 'text',
+              input_mode: audio ? 'voice' : 'text',
             });
 
           if (characterMsgError) {
@@ -161,14 +170,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
         })()
       : Promise.resolve();
 
-    const wantsAudio = data.include_audio;
-    const ttsStart = Date.now();
-    const [audio] = await Promise.all([
-      wantsAudio
-        ? tts.synthesize(reply.reply_text, scenario.voice)
-        : Promise.resolve(null),
-      persistPromise,
-    ]);
+    const [audio] = await Promise.all([audioPromise, persistPromise]);
 
     console.log(
       `[turn] tts=${wantsAudio ? Date.now() - ttsStart : 0}ms total=${Date.now() - startedAt}ms`,

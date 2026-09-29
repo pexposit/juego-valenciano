@@ -7,6 +7,8 @@ import { scenarioSchema, sessionSchema } from '../schemas.js';
 import { runPedagogicalEvaluation } from '../services/subagentRecommendation.js';
 import { waitForPendingErrorAnalysis } from '../services/pendingErrorAnalysis.js';
 
+const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : undefined);
+
 
 export const sessionsRouter = Router();
 
@@ -86,7 +88,7 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
     // B. Buscar el recurs de l'escenari per categoria, tipus i nom
     const { data: resourceData, error: resourceError } = await client
       .from('resources')
-      .select('id')
+      .select('id, metadata')
       .eq('category', body.category)
       .eq('type', body.type)
       .limit(1)
@@ -111,7 +113,24 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
 
     if (sessionResourceError) throw sessionResourceError;
 
-    
+    // D. El primer missatge de l'escenari és la salutació del personatge
+    // (resources.metadata.initial_prompt), guardada com a torn 'character' perquè
+    // forme part de l'historial que llig /api/turn.
+    const initialPrompt = text((resourceData.metadata as Record<string, unknown> | null)?.initial_prompt);
+    if (initialPrompt) {
+      const { error: greetingError } = await client
+        .from('conversation_messages')
+        .insert({
+          session_resource_id: sessionResourceData.id,
+          role: 'character',
+          content_text: initialPrompt,
+          input_mode: 'text',
+        });
+      if (greetingError) {
+        console.error('[session_resource] Error guardant la salutació inicial:', greetingError.message);
+      }
+    }
+
     res.status(201).json(sessionResourceData);
   } catch (error) {
     if (error instanceof z.ZodError) {

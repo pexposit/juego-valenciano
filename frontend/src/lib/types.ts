@@ -7,9 +7,9 @@ export type TurnResponse={reply_text:string;transcription?:string|null;reply_aud
 
 // Fila de la taula resources: `category` agrupa les activitats (p. ex. 'escenari')
 // i `type` n'és la secció dins de la categoria (p. ex. 'mercat').
-// `icon`, `color`, `section_name`, `background` i `voice` venen de resources.metadata; `playable` indica si la seua categoria té pantalla
+// `icon`, `color`, `section_name`, `background`, `voice` i `initial_prompt` venen de resources.metadata; `playable` indica si la seua categoria té pantalla
 // de joc i la fila en té les dades (el decidix el backend).
-export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; playable:boolean };
+export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; playable:boolean };
 
 // Contingut d'un examen (resources.metadata.exam). Els exercicis `choice`,
 // `binary` i `match` es corregixen sols amb `answer`; `form` i `oral` són de

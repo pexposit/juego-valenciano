@@ -75,7 +75,7 @@ export function ScenarioSelect({
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-5 pt-6 pb-20">
-        <h1 className="mb-4 text-3xl text-center font-black uppercase tracking-wider opacity-55">
+        <h1 className="mb-6 text-4xl text-center font-black uppercase tracking-wider opacity-55">
           ACTIVITATS
         </h1>
 
@@ -100,7 +100,7 @@ export function ScenarioSelect({
               <button
                 key={c.id}
                 onClick={() => setSelected(c.id)}
-                className={`btn-press rounded-full px-4 py-2 text-sm font-black transition-colors ${
+                className={`btn-press rounded-full px-4 py-2 text-xl font-black transition-colors ${
                   current?.id === c.id ? 'bg-teal text-white' : 'bg-white text-teal hover:bg-teal/10'
                 }`}
               >
@@ -112,7 +112,7 @@ export function ScenarioSelect({
 
         {/* Seccions de la categoria triada (resources.type). */}
         {current && (
-          <div key={current.id} className="desk-grid grid grid-cols-2 gap-4">
+          <div key={current.id} className="desk-grid grid gap-4">
             {current.sections.map(({ type, resources: list }) => {
               const [first] = list;
               // L'aparença de la secció ve de metadata; es pren del primer recurs que la tinga.
