@@ -134,7 +134,7 @@ export function ScenarioSelect({
                   style={{ background: '#fff' }}
                 >
                   <div
-                    className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-l-[20px]"
+                    className="relative flex min-h-28 w-28 shrink-0 self-stretch items-center justify-center overflow-hidden rounded-l-[20px]"
                     style={{ background: def?.color ?? '#E7E5E4' }}
                   >
                     <span className="text-6xl select-none">{def?.icon ?? '📘'}</span>
