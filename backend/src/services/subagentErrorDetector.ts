@@ -33,7 +33,7 @@ const ujiClient = new OpenAI({
 let mcpClient: Client | null = null;
 let cachedTools: ChatCompletionTool[] = [];
 
-async function getMcpTools(): Promise<{ client: Client; tools: ChatCompletionTool[] }> {
+export async function getMcpTools(): Promise<{ client: Client; tools: ChatCompletionTool[] }> {
   if (mcpClient && cachedTools.length > 0) {
     return { client: mcpClient, tools: cachedTools };
   }

@@ -41,6 +41,20 @@ export type ExamExercise =
       image?: string; choices?: ExamWritingChoice[];
     }
   | { n: number; kind: 'oral'; instructions: string; proposals: ExamProposal[] };
-export type ExamArea = { n: number; title: string; weight: number; duration: string; intro?: string; audio?: boolean; exercises: ExamExercise[] };
+// Puntuació oficial d'una àrea: cada encert val `points_per_correct` (resultat arredonit)
+// i cal arribar a `pass_points` per a continuar en la prova.
+export type ExamScoring = { points_per_correct: number; max_points: number; pass_points: number };
+export type ExamArea = { n: number; title: string; weight: number; duration: string; intro?: string; audio?: boolean; scoring?: ExamScoring; exercises: ExamExercise[] };
 export type ExamContent = { level: string; session: string; body: string; source_url?: string; audio_source_url?: string; pass_rule?: string; areas: ExamArea[] };
 export type Exam = Pick<Resource, 'id' | 'name' | 'type' | 'category' | 'difficulty' | 'xp_earned' | 'content' | 'url' | 'icon' | 'color'> & { exam: ExamContent };
+
+// Avaluació amb LLM del formulari de l'Àrea 3 d'un examen A1 (rúbrica de la JQCV, 15 punts).
+export type WritingBand = '15-12' | '11-9' | '8-6' | '5-1';
+export type WritingCriterionKey = 'lexic' | 'estructures' | 'ortografia' | 'comprensibilitat_coherencia' | 'adequacio';
+export type WritingEvaluation = {
+  criteris: Record<WritingCriterionKey, { franja: WritingBand; observacions: string }>;
+  puntuacio_global: number;
+  resultat: 'no eliminatòria' | 'eliminatòria';
+  errors_destacats: { element_original: string; correccio_suggerida: string; tipus: string; gravetat: 'lleu' | 'greu' }[];
+  retorn_pedagogic: string;
+};

@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { getAdmin } from '../middleware/auth.js';
+import { getAdmin, requireAuth } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
+import { validationError } from '../validation.js';
+import { evaluateA1Writing } from '../services/examWritingEvaluator.js';
 import { isScenarioPlayable, SCENARIO_CATEGORY } from '../services/scenarios.js';
 
 export const resourcesRouter = Router();
@@ -82,4 +85,58 @@ resourcesRouter.get('/api/exams/:id', async (req, res) => {
 
   const { metadata, ...resource } = data;
   res.json({ ...resource, icon: text(metadata.icon), color: text(metadata.color), exam: metadata.exam });
+});
+
+// L'avaluació crida el LLM (i les eines MCP): és cara, per això va darrere
+// d'autenticació (o mode demostració) i d'un límit més estret que el del xat.
+const EVALUATE_RATE_LIMIT = {
+  windowMs: 60_000,
+  max: Number(process.env.RATE_LIMIT_EVALUATE_PER_MIN) || 5,
+  maxAnonymous: Number(process.env.RATE_LIMIT_EVALUATE_ANON_PER_MIN) || 2,
+};
+
+const evaluateSchema = z.object({
+  answers: z.record(z.string().max(500)),
+});
+
+type FormExercise = { n: number; kind: string; instructions: string; fields: string[] };
+
+// Avaluació amb LLM del formulari de l'Àrea 3 (Expressió escrita) d'un examen A1.
+// La consigna i els camps es lligen de la BDD, no del client.
+resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLimit(EVALUATE_RATE_LIMIT), async (req, res) => {
+  const parsedBody = evaluateSchema.safeParse(req.body);
+  if (!parsedBody.success) return validationError(res, parsedBody.error);
+  if (!z.string().uuid().safeParse(req.params.id).success) return res.status(404).json({ error: "L'examen no existix" });
+
+  const client = getAdmin() as any;
+  if (!client) return res.status(503).json({ error: "El catàleg no està disponible" });
+
+  const { data, error } = await client
+    .from('resources')
+    .select('metadata')
+    .eq('id', req.params.id)
+    .eq('category', EXAM_CATEGORY)
+    .maybeSingle();
+  if (error) {
+    console.error("[exams] Error carregant l'examen:", error);
+    return res.status(500).json({ error: "No hem pogut carregar l'examen" });
+  }
+
+  const exam = data?.metadata?.exam as { level?: string; areas?: { exercises?: FormExercise[] }[] } | undefined;
+  const exercise = exam?.areas?.flatMap(a => a.exercises ?? []).find(e => String(e.n) === req.params.n);
+  if (exam?.level !== 'A1' || exercise?.kind !== 'form') {
+    return res.status(404).json({ error: "Este exercici no es pot avaluar" });
+  }
+
+  const answers = parsedBody.data.answers;
+  if (!exercise.fields.some(f => answers[f]?.trim())) {
+    return res.status(400).json({ error: 'Omple el formulari abans d’avaluar-lo' });
+  }
+
+  try {
+    res.json(await evaluateA1Writing({ instructions: exercise.instructions, fields: exercise.fields, answers }));
+  } catch (err) {
+    console.error('[exams] Error avaluant l’exercici:', err);
+    res.status(503).json({ error: 'No hem pogut avaluar l’exercici. Torna-ho a provar.' });
+  }
 });
