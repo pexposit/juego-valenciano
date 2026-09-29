@@ -489,12 +489,16 @@ Has d'avaluar 5 criteris independents. Cada criteri s'ha de puntuar exclusivamen
 
 # CONTEXT DE LA TASCA
 Rebràs la consigna exacta a la qual respon l'aspirant. L'objectiu de la tasca s'avalua SEMPRE respecte d'eixa consigna:
-- **Exercici 6 (redacció amb opcions):** l'aspirant tria una de les dos opcions (A o B). Rebràs només l'opció triada, amb la seua situació comunicativa i els punts que ha de desenvolupar. L'objectiu es complix si el text respon a eixa situació (gènere textual, destinatari i registre: correu, blog, entrada web...) i tracta TOTS els punts indicats. Si en falta algun o el text respon a l'altra opció, l'ítem «objectiu» de l'Adequació NO es complix.
+- **Exercici 6 (redacció amb opcions):** l'aspirant ha triat una de les dos opcions (A o B) i rebràs NOMÉS la consigna d'eixa opció: la situació comunicativa i els punts que ha de desenvolupar. Avalua l'Adequació exclusivament respecte d'eixa consigna; no n'hi ha cap altra i no has d'esperar que el text parle de res més.
+  - L'objectiu es complix si el text respon a eixa situació (gènere textual, destinatari i registre: correu, blog, entrada web...) i tracta tots els punts indicats.
+  - Un punt es considera tractat si el text en parla de manera identificable, encara que siga breument i amb paraules pròpies: no cal que en repetisca la formulació ni que el desenvolupe en profunditat.
+  - Només si falta del tot algun punt, o el text no respon a la situació, l'ítem «objectiu» NO es complix. Abans de decidir-ho, repassa el text punt per punt.
 - **Exercici 7 (text a partir d'un enunciat):** l'objectiu es complix si el text respon a la situació i a totes les demandes de l'enunciat (gènere textual, destinatari, registre i continguts que es demanen). Quan l'enunciat demana tindre en compte una imatge, rebràs la transcripció del seu contingut: el text ha d'aprofitar-ne la informació (per exemple, incorporant alguns dels consells o dades, amb paraules pròpies i integrats en el discurs, no copiats com una llista). Si no n'aprofita res, l'ítem «objectiu» de l'Adequació NO es complix; si només copia la infografia sense elaboració, no pot tindre 10 en Adequació.
 - Indica en la justificació de l'Adequació quins punts o demandes de la consigna s'han tractat i quins no.
 
 # EXTENSIÓ
-- Rebràs el recompte automàtic de paraules, el rang demanat i si el text entra en el marge del ±10 %. Pren-lo com a dada objectiva: l'ítem «extensio» de l'Adequació només es complix si el text està dins d'eixe marge.
+- Rebràs el recompte automàtic de paraules, el rang demanat i si el text entra en el marge del ±10 %. **Eixe recompte és exacte: NO tornes a comptar les paraules ni el contradigues** en cap justificació.
+- L'ítem «extensio» de l'Adequació es complix si el recompte diu que el text està dins del rang o dins del marge del ±10 %.
 - Per a la franja de 10 punts d'Adequació el text ha de respectar el rang exacte (sense marge).
 
 ---
@@ -572,29 +576,37 @@ export async function evaluateB1Writing(args: {
   const count = countWords(args.text);
   const inRange = count >= args.minWords && count <= args.maxWords;
   // Marge del ±10 % sobre el rang demanat (p. ex. 150-170 → 135-187).
-  const marginMin = Math.floor(args.minWords * 0.9);
-  const marginMax = Math.ceil(args.maxWords * 1.1);
+  // Math.round: 170 * 1.1 dona 187.00000000000003 i Math.ceil el pujaria a 188.
+  const marginMin = Math.round(args.minWords * 0.9);
+  const marginMax = Math.round(args.maxWords * 1.1);
   const inMargin = count >= marginMin && count <= marginMax;
 
+  // Amb opcions, la consigna que compta és només la de l'opció triada: la general
+  // («Tria una de les dos opcions...») no s'envia perquè el model no la prenga per objectiu.
   const task = args.choice
     ? [
-        `Exercici ${args.exerciseN}. Consigna general: ${args.instructions}`,
-        `Opció triada per l'aspirant: ${args.choice.key}\nSituació: ${args.choice.text}`,
-        ...(args.choice.points?.length ? [`Punts que ha de desenvolupar:\n${args.choice.points.map(p => `- ${p}`).join('\n')}`] : []),
+        `## CONSIGNA QUE HA DE COMPLIR L'ASPIRANT (exercici ${args.exerciseN}, opció ${args.choice.key} triada)`,
+        `Situació comunicativa:\n${args.choice.text}`,
+        ...(args.choice.points?.length ? [`Punts que ha de desenvolupar:\n${args.choice.points.map((p, i) => `${i + 1}. ${p}`).join('\n')}`] : []),
       ]
     : [
-        `Exercici ${args.exerciseN}. Enunciat: ${args.instructions}`,
+        `## CONSIGNA QUE HA DE COMPLIR L'ASPIRANT (exercici ${args.exerciseN})`,
+        `Enunciat:\n${args.instructions}`,
         ...(args.imageText ? [`Contingut de la imatge de suport:\n${args.imageText}`] : []),
       ];
 
+  const userContent = [
+    ...task,
+    `## EXTENSIÓ\nDemanada: entre ${args.minWords} i ${args.maxWords} paraules (marge del ±10 %: ${marginMin}-${marginMax}).\n` +
+      `Recompte automàtic: ${count} paraules (${inRange ? 'dins del rang' : inMargin ? 'fora del rang, però dins del marge del ±10 %' : 'fora del marge del ±10 %'}).`,
+    `## TEXT DE L'ASPIRANT (l'únic text que has d'avaluar)\n"""\n${args.text.trim()}\n"""`,
+  ].join('\n\n');
+  // EXAM_EVAL_DEBUG=1 mostra al log exactament què rep l'avaluador.
+  if (process.env.EXAM_EVAL_DEBUG) console.log(`[exam-eval] Entrada B1:\n${userContent}`);
+
   const parsed = await runEvaluation({
     systemPrompt: SYSTEM_PROMPT_B1_EIE,
-    userContent: [
-      ...task,
-      `Extensió demanada: entre ${args.minWords} i ${args.maxWords} paraules (marge del ±10 %: ${marginMin}-${marginMax}).`,
-      `Recompte automàtic: ${count} paraules (${inRange ? 'dins del rang' : inMargin ? 'fora del rang, però dins del marge del ±10 %' : 'fora del marge del ±10 %'}).`,
-      `Text de l'aspirant:\n"""\n${args.text.trim()}\n"""`,
-    ].join('\n\n'),
+    userContent,
     schema: B1WritingEvaluationSchema,
     name: 'avaluacio_eie_b1',
   });
@@ -606,6 +618,20 @@ export async function evaluateB1Writing(args: {
       return [k, { ...c, puntuacio, franja: String(puntuacio) }];
     }),
   ) as B1WritingEvaluation['criteris'];
+
+  // Coherència i cohesió: la nota la dona el nombre d'ítems assolits (3 → 10, 2 → 6, 1 → 4, 0 → 1).
+  const cohesionItems = [...new Set(criteris.coherencia_cohesio.items_assolits)];
+  const cohesion = ([1, 4, 6, 10] as const)[cohesionItems.length] ?? 10;
+  criteris.coherencia_cohesio = { ...criteris.coherencia_cohesio, items_assolits: cohesionItems, puntuacio: cohesion, franja: String(cohesion) };
+
+  // Adequació: l'extensió no la decidix el model (sovint compta malament), sinó el recompte.
+  // L'objectiu sí que és judici seu; el 10 exigix, a més, el rang exacte i que el model l'haja donat.
+  const objective = criteris.adequacio.items_assolits.includes('objectiu');
+  const adequacyItems = [...(objective ? ['objectiu' as const] : []), ...(inMargin ? ['extensio' as const] : [])];
+  const adequacy = objective && inMargin
+    ? (criteris.adequacio.puntuacio === 10 && inRange ? 10 : 6)
+    : objective || inMargin ? 4 : 1;
+  criteris.adequacio = { ...criteris.adequacio, items_assolits: adequacyItems, puntuacio: adequacy, franja: String(adequacy) };
   const total = Object.values(criteris).reduce((sum, c) => sum + c.puntuacio, 0);
   return {
     ...parsed,
