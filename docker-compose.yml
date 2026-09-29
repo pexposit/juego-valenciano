@@ -17,6 +17,10 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
+      # Entrada :8000 (auth+rest sota un mateix origen, com Kong) publicada
+      # només a 127.0.0.1: per a apuntar-hi el frontend/backend en dev sense
+      # passar pel domini/HTTPS. No cal en un desplegament real.
+      - "127.0.0.1:8000:8000"
     volumes:
       # Certificats de Let's Encrypt: sense volum es tornarien a demanar a cada
       # reinici i es podria topar amb el límit de peticions.

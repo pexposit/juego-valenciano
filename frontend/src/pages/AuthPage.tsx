@@ -5,6 +5,12 @@ import { LEVEL_OPTIONS, type Page } from '../data/content';
 const NETWORK_ERROR = 'No hem pogut connectar. Revisa la connexió i torna-ho a provar.';
 const INPUT_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0D9488] transition-colors';
 
+// Un error en desar el registre no ha d'impedir l'accés.
+async function recordLogin(client: NonNullable<typeof supabase>, userId: string, level: string) {
+  const { error } = await client.from('sessions').insert({ user_id: userId, level_at_start: level });
+  if (error) console.error('Error registrant l\'inici de sessió:', error.message);
+}
+
 export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,10 +56,20 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
     });
   };
 
-  // Inici de sessió per a comptes ja creats (mateixa contrasenya).
+  // Inici de sessió per a comptes ja creats (mateixa contrasenya). Cal tindre
+  // un perfil a la taula `profiles`: si no n'hi ha (p. ex. es va esborrar),
+  // es tanca la sessió acabada d'obrir i es rebutja l'accés.
   const logIn = () => withAuth(async client => {
-    const { error } = await client.auth.signInWithPassword({ email, password });
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error) return setNotice(`No hem pogut iniciar sessió: ${error.message}`);
+
+    const { data: profile } = await client.from('profiles').select('level').eq('id', data.user.id).single();
+    if (!profile) {
+      await client.auth.signOut();
+      return setNotice('Este compte no té cap perfil associat. Contacta amb l\'administrador.');
+    }
+
+    await recordLogin(client, data.user.id, profile.level);
     setPage('dashboard');
   });
 
