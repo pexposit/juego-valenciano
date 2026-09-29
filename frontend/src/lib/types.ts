@@ -75,4 +75,20 @@ export type A2WritingEvaluation = {
   errors_detectats: { segment_original: string; proposta_correccio: string; categoria: string; sistematic: boolean }[];
   comentari_global: string;
 };
-export type WritingEvaluation = A1WritingEvaluation | A2WritingEvaluation;
+// B1 (redaccions dels exercicis 6 i 7): mateixa escala que l'A2, amb comprovació d'extensió (±10 %).
+export type B1CriterionKey = A2CriterionKey;
+export type B1WritingEvaluation = {
+  rubrica: 'b1_redaccio';
+  opcio?: string; // opció triada (A/B) en l'exercici 6
+  comprovacio_extensio: { paraules_reals: number; objectiu_tasca: string; dins_marge_10_percent: boolean };
+  criteris: Record<B1CriterionKey, { puntuacio: number; franja: string; justificacio: string }> & {
+    morfosintaxi: { presencia_pronoms_febles: boolean };
+    coherencia_cohesio: { items_assolits: string[] };
+    adequacio: { items_assolits: string[] };
+  };
+  puntuacio_total_rubrica: number;
+  mitjana_base_10: number;
+  errors_detectats: { segment_original: string; proposta_correccio: string; categoria: string; sistematic: boolean }[];
+  retorn_pedagogic: string;
+};
+export type WritingEvaluation = A1WritingEvaluation | A2WritingEvaluation | B1WritingEvaluation;

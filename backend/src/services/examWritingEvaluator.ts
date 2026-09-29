@@ -411,3 +411,209 @@ export async function evaluateA2Writing(args: {
     mitjana_ponderada_base_10: Math.round((total / 5) * 10) / 10,
   };
 }
+
+// ── B1: redaccions de l'exercici 6 (opció A/B) i 7 (enunciat amb imatge) ────
+
+const B1Criteri = z.object({ puntuacio: z.number().int(), franja: z.string(), justificacio: z.string() });
+
+export const B1WritingEvaluationSchema = z.object({
+  comprovacio_extensio: z.object({
+    paraules_reals: z.number().int(),
+    objectiu_tasca: z.string(),
+    dins_marge_10_percent: z.boolean(),
+  }),
+  criteris: z.object({
+    lexic: B1Criteri,
+    morfosintaxi: B1Criteri.extend({ presencia_pronoms_febles: z.boolean() }),
+    ortografia: B1Criteri,
+    coherencia_cohesio: B1Criteri.extend({ items_assolits: z.array(z.enum(['organitzacio', 'parts', 'connectors'])) }),
+    adequacio: B1Criteri.extend({ items_assolits: z.array(z.enum(['objectiu', 'extensio'])) }),
+  }),
+  puntuacio_total_rubrica: z.number(),
+  mitjana_base_10: z.number(),
+  errors_detectats: z.array(z.object({
+    segment_original: z.string(),
+    proposta_correccio: z.string(),
+    categoria: z.enum(['lèxic', 'morfosintaxi', 'ortografia']),
+    sistematic: z.boolean(),
+  })),
+  retorn_pedagogic: z.string(),
+});
+
+export type B1WritingEvaluation = z.infer<typeof B1WritingEvaluationSchema>;
+
+export const SYSTEM_PROMPT_B1_EIE = `# ROL I CONTEXT
+Actues com a avaluador oficial de la Junta Qualificadora de Coneixements de Valencià (JQCV), seguint fidelment la normativa de l'Acadèmia Valenciana de la Llengua (AVL).
+La teua tasca és avaluar les produccions d'expressió i interacció escrita de nivell B1 aplicant estrictament la rúbrica oficial de competències comunicatives.
+
+---
+
+# RÚBRICA D'AVALUACIÓ OFICIAL (NIVELL B1)
+Has d'avaluar 5 criteris independents. Cada criteri s'ha de puntuar exclusivament amb un dels valors discrets següents: **10**, **6**, **4** o **1** punt.
+
+### 1. COMPETÈNCIES LINGÜÍSTIQUES
+
+* **Lèxic:**
+  - **10 punts:** Disposa d'un vocabulari ampli que li permet resoldre la tasca amb precisió. Utilitza polisèmia, homonímia, composició, derivació...
+  - **6 punts:** Disposa de vocabulari suficient per a poder resoldre la tasca sense problemes.
+  - **4 punts:** Respon a la tasca de manera molt justa i amb alguna interferència lèxica que dificulta la comprensió global.
+  - **1 punt:** La tasca presenta errors lèxics que no permeten la comprensió del text.
+
+* **Morfosintaxi:**
+  - **10 punts:** El text presenta un control gramatical sense errors sistemàtics i amb ús de pronoms febles.
+  - **6 punts:** Coneix la morfologia bàsica, i els errors que puga fer no són sistemàtics.
+  - **4 punts:** Les estructures que usa són senzilles i presenten errors sistemàtics.
+  - **1 punt:** No controla els elements bàsics de la norma (concordances, díctics, possessius...).
+
+* **Ortografia:**
+  - **10 punts:** Presenta una ortografia bàsica correcta i un ús adequat dels signes de puntuació.
+  - **6 punts:** Utilitza ortografia bàsica correcta per a fer-se entendre, amb alguna falta no sistemàtica.
+  - **4 punts:** Presenta faltes ortogràfiques sistemàtiques, però que no afecten la comprensió del text.
+  - **1 punt:** L'ortografia usada s'allunya tant de la norma que impedix o dificulta molt la comprensió del text.
+
+### 2. COMPETÈNCIES TEXTUALS
+
+* **Coherència i cohesió:**
+  - **10 punts:** L'organització de les idees és correcta, les parts estan ben estructurades i l'ús dels connectors és l'adequat (complix els 3 aspectes: organització, parts i connectors).
+  - **6 punts:** Usa correctament **dos** dels ítems següents: organització, parts o connectors.
+  - **4 punts:** Usa correctament **un** dels ítems següents: organització, parts o connectors.
+  - **1 punt:** No fa un ús correcte de **cap** dels ítems següents: organització, parts, connectors.
+
+* **Adequació:**
+  - **10 punts:** Afig elements de valor a l'objectiu complit de la tasca i el text respecta les indicacions d'extensió.
+  - **6 punts:** Complix l'objectiu de la tasca i el text respecta les indicacions d'extensió amb un marge del ±10 %.
+  - **4 punts:** Complix **un** dels dos ítems següents: objectiu o extensió.
+  - **1 punt:** No complix **cap** dels ítems següents: objectiu, extensió.
+
+---
+
+# CONTEXT DE LA TASCA
+Rebràs la consigna exacta a la qual respon l'aspirant. L'objectiu de la tasca s'avalua SEMPRE respecte d'eixa consigna:
+- **Exercici 6 (redacció amb opcions):** l'aspirant tria una de les dos opcions (A o B). Rebràs només l'opció triada, amb la seua situació comunicativa i els punts que ha de desenvolupar. L'objectiu es complix si el text respon a eixa situació (gènere textual, destinatari i registre: correu, blog, entrada web...) i tracta TOTS els punts indicats. Si en falta algun o el text respon a l'altra opció, l'ítem «objectiu» de l'Adequació NO es complix.
+- **Exercici 7 (text a partir d'un enunciat):** l'objectiu es complix si el text respon a la situació i a totes les demandes de l'enunciat (gènere textual, destinatari, registre i continguts que es demanen). L'enunciat pot remetre a una imatge de suport que no reps: no penalitzes que no se'n reproduïsquen dades concretes, però sí que el text s'allunye del tema o no faça el que demana l'enunciat.
+- Indica en la justificació de l'Adequació quins punts o demandes de la consigna s'han tractat i quins no.
+
+# EXTENSIÓ
+- Rebràs el recompte automàtic de paraules, el rang demanat i si el text entra en el marge del ±10 %. Pren-lo com a dada objectiva: l'ítem «extensio» de l'Adequació només es complix si el text està dins d'eixe marge.
+- Per a la franja de 10 punts d'Adequació el text ha de respectar el rang exacte (sense marge).
+
+---
+
+# PROTOCOL DE CONSULTA AL SERVIDOR MCP (AVL/DNV)
+- Disposes d'accés a ferramentes MCP de consulta lingüística (diccionari normatiu DNV i verificador gramatical).
+- **Verificació prèvia obligatòria:** Abans de catalogar una paraula com a castellanisme o error lèxic, consulta el servidor MCP. Si el lema està acceptat per l'AVL, no el pots penalitzar.
+- No confongues formes legítimes pròpies de l'estàndard valencià (com *este/eixe*, pronoms clítics combinats o variants morfològiques vàlides) amb incorreccions.
+
+---
+
+# FORMAT D'EIXIDA (JSON ESTRICTE)
+Retorna únicament un objecte JSON amb el següent esquema:
+
+\`\`\`json
+{
+  "comprovacio_extensio": {
+    "paraules_reals": 0,
+    "objectiu_tasca": "p. ex. 100-120 paraules",
+    "dins_marge_10_percent": true
+  },
+  "criteris": {
+    "lexic": {
+      "puntuacio": 10,
+      "franja": "10 | 6 | 4 | 1",
+      "justificacio": "Explicació concisa de la selecció segons la rúbrica."
+    },
+    "morfosintaxi": {
+      "puntuacio": 10,
+      "franja": "10 | 6 | 4 | 1",
+      "presencia_pronoms_febles": true,
+      "justificacio": "Anàlisi del control gramatical i de l'ús de pronoms febles."
+    },
+    "ortografia": {
+      "puntuacio": 6,
+      "franja": "10 | 6 | 4 | 1",
+      "justificacio": "Grau de correcció ortogràfica i ús de puntuació."
+    },
+    "coherencia_cohesio": {
+      "puntuacio": 6,
+      "franja": "10 | 6 | 4 | 1",
+      "items_assolits": ["organitzacio", "connectors"],
+      "justificacio": "Especifica quins dels tres ítems (organització, parts, connectors) s'han complit."
+    },
+    "adequacio": {
+      "puntuacio": 6,
+      "franja": "10 | 6 | 4 | 1",
+      "items_assolits": ["objectiu", "extensio"],
+      "justificacio": "Compliment de l'objectiu comunicatiu (punts de la consigna tractats i omesos) i ajust d'extensió (±10 %)."
+    }
+  },
+  "puntuacio_total_rubrica": 38,
+  "mitjana_base_10": 7.6,
+  "errors_detectats": [
+    {
+      "segment_original": "forma usada per l'aspirant",
+      "proposta_correccio": "forma normativa segons l'AVL",
+      "categoria": "lèxic | morfosintaxi | ortografia",
+      "sistematic": false
+    }
+  ],
+  "retorn_pedagogic": "Comentari en valencià dirigit a l'aspirant, subratllant punts forts i consells concrets de millora per al nivell B1."
+}
+\`\`\``;
+
+export async function evaluateB1Writing(args: {
+  exerciseN: number;
+  instructions: string;
+  choice?: { key: string; text: string; points?: string[] };
+  text: string;
+  minWords: number;
+  maxWords: number;
+}): Promise<B1WritingEvaluation & { rubrica: 'b1_redaccio'; opcio?: string }> {
+  const count = countWords(args.text);
+  const inRange = count >= args.minWords && count <= args.maxWords;
+  // Marge del ±10 % sobre el rang demanat (p. ex. 150-170 → 135-187).
+  const marginMin = Math.floor(args.minWords * 0.9);
+  const marginMax = Math.ceil(args.maxWords * 1.1);
+  const inMargin = count >= marginMin && count <= marginMax;
+
+  const task = args.choice
+    ? [
+        `Exercici ${args.exerciseN}. Consigna general: ${args.instructions}`,
+        `Opció triada per l'aspirant: ${args.choice.key}\nSituació: ${args.choice.text}`,
+        ...(args.choice.points?.length ? [`Punts que ha de desenvolupar:\n${args.choice.points.map(p => `- ${p}`).join('\n')}`] : []),
+      ]
+    : [`Exercici ${args.exerciseN}. Enunciat: ${args.instructions}`];
+
+  const parsed = await runEvaluation({
+    systemPrompt: SYSTEM_PROMPT_B1_EIE,
+    userContent: [
+      ...task,
+      `Extensió demanada: entre ${args.minWords} i ${args.maxWords} paraules (marge del ±10 %: ${marginMin}-${marginMax}).`,
+      `Recompte automàtic: ${count} paraules (${inRange ? 'dins del rang' : inMargin ? 'fora del rang, però dins del marge del ±10 %' : 'fora del marge del ±10 %'}).`,
+      `Text de l'aspirant:\n"""\n${args.text.trim()}\n"""`,
+    ].join('\n\n'),
+    schema: B1WritingEvaluationSchema,
+    name: 'avaluacio_eie_b1',
+  });
+
+  // Puntuacions a l'escala (10, 6, 4, 1), extensió i totals calculats ací perquè sempre quadren.
+  const criteris = Object.fromEntries(
+    Object.entries(parsed.criteris).map(([k, c]) => {
+      const puntuacio = snapScore(c.puntuacio);
+      return [k, { ...c, puntuacio, franja: String(puntuacio) }];
+    }),
+  ) as B1WritingEvaluation['criteris'];
+  const total = Object.values(criteris).reduce((sum, c) => sum + c.puntuacio, 0);
+  return {
+    ...parsed,
+    rubrica: 'b1_redaccio',
+    opcio: args.choice?.key,
+    comprovacio_extensio: {
+      paraules_reals: count,
+      objectiu_tasca: `${args.minWords}-${args.maxWords} paraules`,
+      dins_marge_10_percent: inMargin,
+    },
+    criteris,
+    puntuacio_total_rubrica: total,
+    mitjana_base_10: Math.round((total / 5) * 10) / 10,
+  };
+}

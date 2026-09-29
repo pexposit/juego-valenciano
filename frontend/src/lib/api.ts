@@ -25,11 +25,11 @@ export async function fetchExam(id: string): Promise<Exam | null> {
   return res.json();
 }
 // Avalua amb el LLM (rúbrica oficial de la JQCV) un exercici d'expressió escrita:
-// el formulari de l'A1 (`answers`) o la redacció de l'A2 (`text`).
+// el formulari de l'A1 (`answers`) o una redacció de l'A2/B1 (`text` i, si té opcions, `choice`).
 export async function evaluateExamWriting(
   examId: string,
   exerciseN: number,
-  body: { answers: Record<string, string> } | { text: string },
+  body: { answers: Record<string, string> } | { text: string; choice?: string },
 ): Promise<WritingEvaluation> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(

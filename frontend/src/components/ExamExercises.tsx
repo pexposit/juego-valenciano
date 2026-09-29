@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-react';
 import { countWords, usedRequiredWords } from '@parlaval/shared';
-import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice, A1WritingEvaluation, A2CriterionKey, A2WritingEvaluation, WritingCriterionKey, WritingEvaluation } from '../lib/types';
+import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice, A1WritingEvaluation, A2CriterionKey, A2WritingEvaluation, B1WritingEvaluation, WritingCriterionKey, WritingEvaluation } from '../lib/types';
 
 // Respostes de l'aspirant (número de pregunta -> clau de l'opció) i si l'àrea ja
 // s'ha corregit: en eixe cas es marquen les encertades i les errades.
@@ -572,6 +572,8 @@ const BAND_STYLE: Record<string, string> = {
 
 // En l'A2, l'Àrea 3 val un 20 % de la prova: cal el 40 % de l'àrea (4 de 10) per a continuar.
 const A2_PASS_MARK = 4;
+// En el B1 val un 25 %: cal el 50 % de l'àrea (5 de 10), comptant les dos redaccions.
+export const B1_PASS_MARK = 5;
 
 // Botó "Avaluar" i resultat de l'avaluació amb IA d'un exercici d'expressió escrita.
 export function WritingEvaluationPanel({
@@ -601,7 +603,9 @@ export function WritingEvaluationPanel({
       {error && <p className="rounded-2xl bg-coral/10 p-4 text-sm font-bold text-coral">{error}</p>}
 
       {evaluation && !loading && (
-        evaluation.rubrica === 'a2_redaccio' ? <A2Result evaluation={evaluation} /> : <A1Result evaluation={evaluation} />
+        evaluation.rubrica === 'b1_redaccio' ? <B1Result evaluation={evaluation} />
+          : evaluation.rubrica === 'a2_redaccio' ? <A2Result evaluation={evaluation} />
+          : <A1Result evaluation={evaluation} />
       )}
     </div>
   );
@@ -722,6 +726,64 @@ function A2Result({ evaluation }: { evaluation: A2WritingEvaluation }) {
             badge={`${evaluation.criteris[key].puntuacio}/10`}
             text={evaluation.criteris[key].justificacio}
           />
+        ))}
+      </div>
+      <ErrorList errors={evaluation.errors_detectats.map(e => ({
+        original: e.segment_original, correction: e.proposta_correccio, tag: `${e.categoria}${e.sistematic ? ' · sistemàtic' : ''}`,
+      }))} />
+    </section>
+  );
+}
+
+const COHESION_ITEMS: Record<string, string> = { organitzacio: 'Organització', parts: 'Parts', connectors: 'Connectors' };
+const ADEQUACY_ITEMS: Record<string, string> = { objectiu: 'Objectiu', extensio: 'Extensió' };
+
+// Ítems de la rúbrica assolits (✓) o no (✗), p. ex. organització/parts/connectors.
+function ItemChecks({ labels, achieved }: { labels: Record<string, string>; achieved: string[] }) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1">
+      {Object.entries(labels).map(([key, label]) => {
+        const ok = achieved.includes(key);
+        return (
+          <span key={key} className={`rounded-full px-2 py-0.5 text-[11px] font-black ${ok ? 'bg-teal/15 text-teal' : 'bg-coral/15 text-coral'}`}>
+            {ok ? '✓' : '✗'} {label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function B1Result({ evaluation }: { evaluation: B1WritingEvaluation }) {
+  const mark = evaluation.mitjana_base_10;
+  const { criteris: c, comprovacio_extensio: ext } = evaluation;
+  return (
+    <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${mark >= B1_PASS_MARK ? 'border-teal/30' : 'border-coral/40'}`}>
+      <ScoreHeader
+        score={mark}
+        max={10}
+        pass={mark >= B1_PASS_MARK}
+        label={`Avaluació de la redacció${evaluation.opcio ? ` · Opció ${evaluation.opcio}` : ''}`}
+        verdict={mark >= B1_PASS_MARK ? '✅ Per damunt del mínim' : '⚠️ Per davall del mínim'}
+        note={`${evaluation.puntuacio_total_rubrica} de 50 punts en la rúbrica. L'àrea es decidix amb la mitjana de les dos redaccions (mínim ${B1_PASS_MARK} de 10).`}
+      />
+      <p className="rounded-2xl bg-cream p-4 font-bold">{evaluation.retorn_pedagogic}</p>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${ext.dins_marge_10_percent ? 'bg-teal text-white' : 'bg-coral text-white'}`}>
+          {ext.dins_marge_10_percent ? '✓' : '✗'} {ext.paraules_reals} paraules
+        </span>
+        <span className="rounded-full bg-cream px-3 py-1 text-xs font-black">Demanades: {ext.objectiu_tasca} (±10 %)</span>
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${c.morfosintaxi.presencia_pronoms_febles ? 'bg-teal/15 text-teal' : 'bg-coral/15 text-coral'}`}>
+          {c.morfosintaxi.presencia_pronoms_febles ? '✓ Usa' : '✗ No usa'} pronoms febles
+        </span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(Object.keys(A2_CRITERION_LABELS) as A2CriterionKey[]).map(key => (
+          <div key={key}>
+            <CriterionCard label={A2_CRITERION_LABELS[key]} badge={`${c[key].puntuacio}/10`} text={c[key].justificacio} />
+            {key === 'coherencia_cohesio' && <ItemChecks labels={COHESION_ITEMS} achieved={c.coherencia_cohesio.items_assolits} />}
+            {key === 'adequacio' && <ItemChecks labels={ADEQUACY_ITEMS} achieved={c.adequacio.items_assolits} />}
+          </div>
         ))}
       </div>
       <ErrorList errors={evaluation.errors_detectats.map(e => ({

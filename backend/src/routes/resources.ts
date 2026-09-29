@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getAdmin, requireAuth } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
-import { evaluateA1Writing, evaluateA2Writing } from '../services/examWritingEvaluator.js';
+import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing } from '../services/examWritingEvaluator.js';
 import { isScenarioPlayable, SCENARIO_CATEGORY } from '../services/scenarios.js';
 
 export const resourcesRouter = Router();
@@ -95,20 +95,23 @@ const EVALUATE_RATE_LIMIT = {
   maxAnonymous: Number(process.env.RATE_LIMIT_EVALUATE_ANON_PER_MIN) || 2,
 };
 
-// Formulari de l'A1 (`answers`: camp -> resposta) o redacció de l'A2 (`text`).
+// Formulari de l'A1 (`answers`: camp -> resposta) o redacció de l'A2/B1 (`text`,
+// i `choice` si l'exercici té opcions A/B).
 const evaluateSchema = z.object({
   answers: z.record(z.string().max(500)).optional(),
   text: z.string().max(3000).optional(),
+  choice: z.string().max(5).optional(),
 });
 
 type EvaluableExercise = {
   n: number; kind: string; instructions: string;
   fields?: string[];
   min_words?: number; max_words?: number; words?: string[]; min_words_used?: number;
+  choices?: { key: string; text: string; points?: string[] }[];
 };
 
-// Avaluació amb LLM de l'Àrea 3 (Expressió escrita): el formulari de l'A1 i la
-// redacció de l'A2, cadascun amb la seua rúbrica. La consigna, els camps i les
+// Avaluació amb LLM de l'Àrea 3 (Expressió escrita): el formulari de l'A1 i les
+// redaccions de l'A2 i el B1, cadascun amb la seua rúbrica. La consigna, els camps i les
 // paraules obligatòries es lligen de la BDD, no del client.
 resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLimit(EVALUATE_RATE_LIMIT), async (req, res) => {
   const parsedBody = evaluateSchema.safeParse(req.body);
@@ -150,6 +153,20 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
       maxWords: exercise.max_words!,
       words: exercise.words ?? [],
       minWordsUsed: exercise.min_words_used ?? 0,
+    });
+  } else if (exam?.level === 'B1' && exercise?.kind === 'writing' && exercise.min_words && exercise.max_words) {
+    const text = parsedBody.data.text?.trim();
+    if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
+    // Amb opcions A/B, l'avaluador necessita la consigna de l'opció triada.
+    const choice = exercise.choices?.find(c => c.key === parsedBody.data.choice);
+    if (exercise.choices?.length && !choice) return res.status(400).json({ error: 'Tria una de les opcions abans d’avaluar' });
+    evaluate = () => evaluateB1Writing({
+      exerciseN: exercise.n,
+      instructions: exercise.instructions,
+      choice,
+      text,
+      minWords: exercise.min_words!,
+      maxWords: exercise.max_words!,
     });
   } else {
     return res.status(404).json({ error: "Este exercici no es pot avaluar" });

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Clock, ExternalLink, Headphones, Mic, PenLine, RotateCcw } from 'lucide-react';
 import { Logo } from '../components/ui';
-import { BinaryExercise, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
+import { B1_PASS_MARK, BinaryExercise, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
 import { evaluateExamWriting } from '../lib/api';
 import type { Exam as ExamResource, ExamArea, ExamExercise, ExamQuestion, ExamScoring, WritingEvaluation } from '../lib/types';
 
@@ -44,18 +44,21 @@ const pointsOf = (scoring: ExamScoring, byExercise: ExerciseScore[]) =>
   Math.round(byExercise.reduce((sum, e) => sum + e.correct * pointsPerCorrect(scoring, e.n), 0));
 const passes = (scoring: ExamScoring, points: number) => points >= scoring.pass_points;
 
-// Exercicis amb rúbrica d'avaluació amb IA: el formulari de l'A1 i la redacció de l'A2.
+// Exercicis amb rúbrica d'avaluació amb IA: el formulari de l'A1 i les redaccions de l'A2 i el B1.
 type EvaluableExercise = Extract<ExamExercise, { kind: 'form' | 'writing' }>;
 const evaluable = (level: string, e: ExamExercise): e is EvaluableExercise =>
-  (level === 'A1' && e.kind === 'form') || (level === 'A2' && e.kind === 'writing');
+  (level === 'A1' && e.kind === 'form') || ((level === 'A2' || level === 'B1') && e.kind === 'writing');
 // El text de cada redacció es guarda a `form` amb esta clau (vegeu ExerciseBody).
 const writingKey = (n: number) => `writing-${n}`;
 const evaluationBody = (e: EvaluableExercise, form: Record<string, string>) =>
   e.kind === 'form'
     ? { answers: Object.fromEntries(e.fields.map(f => [f, form[f] ?? ''])) }
-    : { text: form[writingKey(e.n)] ?? '' };
+    : { text: form[writingKey(e.n)] ?? '', choice: form[`${writingKey(e.n)}-choice`] };
+// Una redacció amb opcions A/B no es pot avaluar sense saber quina s'ha triat.
+const needsChoice = (e: EvaluableExercise, form: Record<string, string>) =>
+  e.kind === 'writing' && Boolean(e.choices?.length) && !form[`${writingKey(e.n)}-choice`];
 const hasContent = (e: EvaluableExercise, form: Record<string, string>) =>
-  e.kind === 'form' ? e.fields.some(f => form[f]?.trim()) : Boolean(form[writingKey(e.n)]?.trim());
+  e.kind === 'form' ? e.fields.some(f => form[f]?.trim()) : Boolean(form[writingKey(e.n)]?.trim()) && !needsChoice(e, form);
 
 const scoredOnly = (questions: ExamQuestion[]) => questions.filter(q => q.scored !== false);
 
@@ -236,6 +239,14 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
           />
         )}
 
+        {/* Resultat de l'Àrea 3 del B1: mitjana de les dos redaccions avaluades amb IA */}
+        {exam.level === 'B1' && (() => {
+          const writings = area.exercises.filter(e => evaluable(exam.level, e));
+          const marks = writings.map(e => progress.evaluations[e.n]).flatMap(ev => ev?.rubrica === 'b1_redaccio' ? [ev.mitjana_base_10] : []);
+          if (writings.length < 2 || marks.length < writings.length) return null;
+          return <WritingAreaResult area={area} marks={writings.map((e, i) => ({ n: e.n, mark: marks[i] }))} />;
+        })()}
+
         <section>
           <h2 className="text-2xl font-black">Àrea {area.n} · {area.title}</h2>
           {area.intro && <p className="mt-1 opacity-70">{area.intro}</p>}
@@ -285,7 +296,11 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
                 loading={evaluating === exercise.n}
                 error={evaluationError?.n === exercise.n ? evaluationError.message : undefined}
                 canEvaluate={hasContent(exercise, progress.form)}
-                emptyHint={exercise.kind === 'form' ? 'Omple el formulari per a poder avaluar-lo.' : 'Escriu el text per a poder avaluar-lo.'}
+                emptyHint={
+                  exercise.kind === 'form' ? 'Omple el formulari per a poder avaluar-lo.'
+                    : needsChoice(exercise, progress.form) ? 'Tria una opció i escriu el text per a poder avaluar-lo.'
+                    : 'Escriu el text per a poder avaluar-lo.'
+                }
                 onEvaluate={() => evaluate(exercise)}
               />
             )}
@@ -353,7 +368,7 @@ function ExerciseBody({
         />
       );
     case 'writing': {
-      const key = writingKey(exercise.n);
+      const key = writingKey(exercise.n); // l'opció triada es guarda a `${key}-choice`
       return (
         <WritingExercise
           title={exercise.title}
@@ -440,6 +455,40 @@ function AreaResult({
       >
         <RotateCcw size={16} /> Tornar a fer
       </button>
+    </section>
+  );
+}
+
+// Veredicte de l'Àrea 3 del B1: la mitjana de les dos redaccions ha d'arribar al 50 %.
+function WritingAreaResult({ area, marks }: { area: ExamArea; marks: { n: number; mark: number }[] }) {
+  const average = Math.round((marks.reduce((sum, m) => sum + m.mark, 0) / marks.length) * 10) / 10;
+  const pass = average >= B1_PASS_MARK;
+  return (
+    <section className={`fade-up flex flex-wrap items-center gap-6 rounded-[1.75rem] border-2 bg-white p-6 ${pass ? 'border-teal/30' : 'border-coral/40'}`}>
+      <div
+        className="grid h-24 w-24 shrink-0 place-items-center rounded-full"
+        style={{ background: `conic-gradient(${pass ? '#2CA99B' : '#FF675D'} ${average * 36}deg, #E7E5E4 0deg)` }}
+        aria-label={`${average} de 10`}
+      >
+        <div className="grid place-items-center rounded-full bg-white" style={{ height: '4.5rem', width: '4.5rem' }}>
+          <span className="text-center leading-none">
+            <span className="block text-xl font-black">{average.toLocaleString('ca')}/10</span>
+            <span className="text-[10px] font-black uppercase opacity-60">mitjana</span>
+          </span>
+        </div>
+      </div>
+      <div className="min-w-[12rem] flex-1">
+        <p className={`text-sm font-black uppercase tracking-wide ${pass ? 'text-teal' : 'text-coral'}`}>Àrea {area.n} avaluada</p>
+        <p className="text-2xl font-black">{pass ? '✅ Apte · Continues en la prova' : '❌ No apte · Quedes fora de la prova'}</p>
+        <p className="mt-1 text-sm opacity-70">Mitjana de les dos redaccions. Mínim per a continuar: {B1_PASS_MARK} de 10 (el 50 % de l'àrea).</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {marks.map(m => (
+            <span key={m.n} className="rounded-full bg-cream px-3 py-1 text-xs font-black">
+              Exercici {m.n}: {m.mark.toLocaleString('ca')}/10
+            </span>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
