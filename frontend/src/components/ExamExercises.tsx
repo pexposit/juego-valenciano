@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading } from '../lib/types';
+import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice } from '../lib/types';
 
 // Respostes de l'aspirant (número de pregunta -> clau de l'opció) i si l'àrea ja
 // s'ha corregit: en eixe cas es marquen les encertades i les errades.
@@ -321,19 +321,25 @@ export function FormExercise({
 const countWords = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 const normalize = (text: string) => text.toLocaleLowerCase('ca').normalize('NFD').replace(/\p{M}/gu, '');
 // Formes acceptades d'una paraula: singular i plural (estoig/estoigs, agenda/agendes).
+// Una paraula amb gènere com «malalt/a» accepta també el femení (malalta, malaltes).
 const wordForms = (word: string) => {
-  const w = normalize(word);
-  return new Set([w, `${w}s`, w.endsWith('a') ? `${w.slice(0, -1)}es` : w]);
+  const [base, feminine] = normalize(word).split('/');
+  const forms = (w: string) => [w, `${w}s`, w.endsWith('a') ? `${w.slice(0, -1)}es` : w];
+  return new Set([...forms(base), ...(feminine ? forms(base + feminine) : [])]);
 };
 
 export function WritingExercise({
-  title, minWords, maxWords, words = [], minWordsUsed = 0, value, onChange,
+  title, minWords, maxWords, words = [], minWordsUsed = 0, image, choices = [], choice, onChoose, value, onChange,
 }: {
   title?: string;
   minWords: number;
   maxWords: number;
   words?: string[];
   minWordsUsed?: number;
+  image?: string;
+  choices?: ExamWritingChoice[];
+  choice?: string;
+  onChoose?: (key: string) => void;
   value: string;
   onChange: (value: string) => void;
 }) {
@@ -344,7 +350,9 @@ export function WritingExercise({
   const used = new Set(words.filter(w => [...wordForms(w)].some(f => tokens.has(f))));
   const countColor = count === 0 ? 'bg-white/20' : inRange ? 'bg-white text-teal' : 'bg-coral';
 
-  return (
+  const picked = choices.find(c => c.key === choice);
+
+  const editor = (
     <div className="flex flex-col gap-4">
       {words.length > 0 && (
         <div className="rounded-2xl bg-cream p-4">
@@ -369,7 +377,7 @@ export function WritingExercise({
 
       <div className="overflow-hidden rounded-2xl border-2 border-teal/30 bg-white">
         <div className="flex items-center justify-between bg-teal px-5 py-3 text-white">
-          <p className="font-black">📌 {title ?? 'Redacció'}</p>
+          <p className="font-black">📌 {picked ? `Opció ${picked.key}` : title ?? 'Redacció'}</p>
           <span className={`rounded-full px-3 py-1 text-xs font-black ${countColor}`}>
             {count} paraules · {minWords}–{maxWords}
           </span>
@@ -378,10 +386,55 @@ export function WritingExercise({
           rows={9}
           value={value}
           onChange={e => onChange(e.target.value)}
-          placeholder="Escriu ací la teua nota..."
+          placeholder="Escriu ací el teu text..."
           className="w-full resize-y bg-[repeating-linear-gradient(transparent,transparent_31px,#E7E5E4_32px)] px-5 py-3 leading-8 outline-none"
         />
       </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      {choices.length > 0 && (
+        <div>
+          <p className="mb-2 text-sm font-black uppercase tracking-wide opacity-60">Tria una de les dos opcions</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {choices.map(c => (
+              <button
+                key={c.key}
+                onClick={() => onChoose?.(c.key)}
+                aria-pressed={c.key === choice}
+                className={`btn-press flex flex-col gap-2 rounded-3xl border-2 p-5 text-left transition-colors ${
+                  c.key === choice ? 'border-navy bg-navy text-white shadow-lg' : 'border-ink/10 bg-cream hover:border-navy/40'
+                }`}
+              >
+                <span className={`text-xs font-black uppercase tracking-widest ${c.key === choice ? 'text-mustard' : 'text-teal'}`}>
+                  Opció {c.key}{c.key === choice ? ' · triada' : ''}
+                </span>
+                <span className="leading-relaxed">{c.text}</span>
+                {c.points && c.points.length > 0 && (
+                  <ul className="mt-1 flex flex-col gap-1 text-sm">
+                    {c.points.map(pt => (
+                      <li key={pt} className="flex gap-2"><Check size={14} className="mt-1 shrink-0 opacity-70" /> {pt}</li>
+                    ))}
+                  </ul>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {choices.length > 0 && !picked ? (
+        <p className="rounded-2xl bg-cream p-4 text-center text-sm font-bold opacity-70">Tria una opció per a començar a escriure.</p>
+      ) : image ? (
+        <div className="grid gap-4 md:grid-cols-[minmax(0,16rem)_1fr]">
+          <img src={image} alt="Imatge de suport de l'exercici" className="w-full rounded-2xl shadow-sm" />
+          {editor}
+        </div>
+      ) : (
+        editor
+      )}
     </div>
   );
 }

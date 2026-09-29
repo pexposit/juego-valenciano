@@ -285,6 +285,10 @@ function ExerciseBody({
           maxWords={exercise.max_words}
           words={exercise.words}
           minWordsUsed={exercise.min_words_used}
+          image={exercise.image}
+          choices={exercise.choices}
+          choice={form[`${key}-choice`]}
+          onChoose={c => onFormChange(`${key}-choice`, c)}
           value={form[key] ?? ''}
           onChange={value => onFormChange(key, value)}
         />

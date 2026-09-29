@@ -17,6 +17,8 @@ export type Resource={ id:string; name:string; type:string; category:string; dif
 export type ExamOption = { key: string; text?: string; image?: string; sign?: { title: string; lines: string[] } };
 export type ExamQuestion = { n: number; prompt?: string; image?: string; options?: ExamOption[]; answer: string };
 export type ExamCriterion = { title: string; items: { name: string; description: string }[] };
+// Consigna alternativa d'una redacció (opció A o B), amb els punts que cal incloure.
+export type ExamWritingChoice = { key: string; text: string; points?: string[] };
 // Text de lectura que acompanya un exercici de comprensió escrita.
 export type ExamReading = { title?: string; paragraphs: string[] };
 export type ExamProposal = {
@@ -32,7 +34,12 @@ type GradableExercise = { n: number; kind: 'choice' | 'binary' | 'match'; instru
 export type ExamExercise =
   | GradableExercise
   | { n: number; kind: 'form'; title?: string; instructions: string; fields: string[]; max_points: number; criteria: ExamCriterion[] }
-  | { n: number; kind: 'writing'; title?: string; instructions: string; min_words: number; max_words: number; words?: string[]; min_words_used?: number }
+  | {
+      n: number; kind: 'writing'; title?: string; instructions: string; min_words: number; max_words: number;
+      words?: string[]; min_words_used?: number;
+      // Imatge de suport (p. ex. una infografia) i consignes alternatives entre les quals cal triar.
+      image?: string; choices?: ExamWritingChoice[];
+    }
   | { n: number; kind: 'oral'; instructions: string; proposals: ExamProposal[] };
 export type ExamArea = { n: number; title: string; weight: number; duration: string; intro?: string; audio?: boolean; exercises: ExamExercise[] };
 export type ExamContent = { level: string; session: string; body: string; source_url?: string; audio_source_url?: string; pass_rule?: string; areas: ExamArea[] };
