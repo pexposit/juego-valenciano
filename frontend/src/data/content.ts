@@ -1,6 +1,6 @@
-import type { Scenario } from '../lib/types';
+import type { Resource, Scenario } from '../lib/types';
 
-export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'summary' | 'profile';
+export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'exam' | 'summary' | 'profile';
 
 /* Rutes URL de cada pàgina. La de xat porta l'escenari com a paràmetre de ruta
  * (/xat/:scenario): l'entrada `chat` és només un valor per defecte, no s'hi
@@ -11,11 +11,23 @@ export const ROUTES: Record<Page, string> = {
   dashboard: '/dashboard',
   scenarioselect: '/scenaris',
   chat: '/xat',
+  exam: '/examen',
   summary: '/resum',
   profile: '/perfil',
 };
 
 export const chatRoute = (scenario: Scenario) => `/xat/${scenario}`;
+export const examRoute = (resourceId: string) => `/examen/${resourceId}`;
+
+// Pantalla de joc de cada categoria de resources: els escenaris s'obrin al xat
+// (per `type`) i els exàmens al visor de l'examen (per `id`).
+export const activityRoute = (resource: Resource): string | null => {
+  switch (resource.category) {
+    case 'escenari': return chatRoute(resource.type);
+    case 'examen': return examRoute(resource.id);
+    default: return null;
+  }
+};
 
 
 

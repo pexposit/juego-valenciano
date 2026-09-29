@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Logo, ProfileButton } from './ui';
 import { fetchResources } from '../lib/api';
-import type { Resource, Scenario } from '../lib/types';
+import type { Resource } from '../lib/types';
 
 // Noms visibles de les categories conegudes; la resta es mostren capitalitzades.
 const CATEGORY_LABELS: Record<string, string> = {
@@ -31,12 +31,12 @@ function groupResources(resources: Resource[]): Category[] {
 
 export function ScenarioSelect({
   name,
-  onSelectScenario,
+  onSelect,
   onBack,
   onProfile,
 }: {
   name: string;
-  onSelectScenario: (s: Scenario) => void;
+  onSelect: (resource: Resource) => void;
   onBack: () => void;
   onProfile: () => void;
 }) {
@@ -119,15 +119,15 @@ export function ScenarioSelect({
               const icon = list.find(r => r.icon)?.icon ?? '📘';
               const color = list.find(r => r.color)?.color ?? '#E7E5E4';
               const title = list.find(r => r.section_name)?.section_name ?? capitalize(type);
-              // El backend decidix si té xat (escenari amb prompt del personatge).
-              const playable = list.some(r => r.playable);
+              // El backend decidix si la categoria té pantalla i la fila en té les dades.
+              const playable = list.find(r => r.playable);
               return (
                 <button
                   key={type}
                   id={`activity-${current.id}-${type}`}
                   disabled={!playable}
                   title={playable ? undefined : 'Pròximament disponible'}
-                  onClick={() => playable && onSelectScenario(type)}
+                  onClick={() => playable && onSelect(playable)}
                   className="desk-card flex items-stretch text-left"
                   style={{ background: '#fff' }}
                 >

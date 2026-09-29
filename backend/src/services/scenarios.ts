@@ -22,9 +22,9 @@ const text = (value: unknown) => (typeof value === 'string' && value.trim() ? va
 const characterOf = (metadata: ResourceMetadata) =>
   text(metadata?.character) ?? text(metadata?.character_role);
 
-// Un recurs és jugable com a xat si és un escenari i se sap quin personatge fer.
-export function isPlayable(category: string, metadata: ResourceMetadata) {
-  return category === SCENARIO_CATEGORY && !!(text(metadata?.system_prompt) || characterOf(metadata));
+// Un escenari és jugable com a xat si se sap quin personatge fer.
+export function isScenarioPlayable(metadata: ResourceMetadata) {
+  return !!(text(metadata?.system_prompt) || characterOf(metadata));
 }
 
 // Prompt per defecte quan la fila no porta `system_prompt`: es construïx amb
@@ -42,7 +42,7 @@ function defaultSystemPrompt(character: string, row: ScenarioRow) {
 }
 
 export function toScenarioDefinition(row: ScenarioRow): ScenarioDefinition | null {
-  if (!isPlayable(row.category, row.metadata)) return null;
+  if (row.category !== SCENARIO_CATEGORY || !isScenarioPlayable(row.metadata)) return null;
   const character = characterOf(row.metadata) ?? 'Personatge';
   const objectius = row.metadata?.objectius;
   return {

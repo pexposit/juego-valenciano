@@ -1,4 +1,4 @@
-import type { Resource, Scenario, TurnResponse } from './types';
+import type { Exam, Resource, Scenario, TurnResponse } from './types';
 import { sanitizeHistory } from '@parlaval/shared';
 import { supabase } from './supabase';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
@@ -16,6 +16,13 @@ export function fetchResources(): Promise<Resource[]> {
       throw error;
     });
   return resourcesRequest;
+}
+// Contingut complet d'un examen (preguntes, opcions i solucions). null si no existix.
+export async function fetchExam(id: string): Promise<Exam | null> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/exams/${encodeURIComponent(id)}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("No hem pogut carregar l'examen");
+  return res.json();
 }
 export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];include_audio?:boolean}):Promise<TurnResponse>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;
