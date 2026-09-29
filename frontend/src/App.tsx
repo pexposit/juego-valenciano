@@ -6,7 +6,7 @@ import {
 import { SceneArt } from './components/SceneArt';
 import { VoiceInput } from './components/VoiceInput';
 import { HistoryModal, type Msg } from './components/HistoryModal';
-import { createSession, fetchScenarios, finishSession, sendTurn, startSessionResource, type HistoryItem, type SessionResource } from './lib/api';
+import { createSession, fetchScenarios, finishSession, finishSessionResource, sendTurn, startSessionResource, type HistoryItem, type SessionResource } from './lib/api';
 import { supabase } from './lib/supabase';
 import type { Mood, Scenario } from './lib/types';
 
@@ -650,6 +650,13 @@ function Chat({
         <div className="flex items-center gap-3">
          <button
             onClick={() => {
+              // En eixir de l'escenari es tanca el recurs i es dispara en el
+              // backend l'avaluació pedagògica d'eixe recurs concret.
+              if (sessionId && sessionResourceId) {
+                void finishSessionResource(sessionId, sessionResourceId).catch((err) =>
+                  console.error('Error tancant el recurs:', err),
+                );
+              }
               onBack();
             }}
             id="chat-back-btn"

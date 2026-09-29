@@ -54,6 +54,23 @@ export async function finishSession(sessionId: string, accessToken?: string): Pr
 
 export type SessionResource = { id: string; sesion_id: string; recurso_id: string; resolved: boolean | null };
 
+// Tanca el recurs (escenari) actual en pulsar "Eixir": marca session_resource com resolt
+// i dispara en el backend l'avaluació pedagògica diagnòstica d'eixe recurs concret.
+export async function finishSessionResource(sessionId: string, sessionResourceId: string): Promise<void> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/sessions/${sessionId}/resources/${sessionResourceId}/finish`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    },
+  );
+  if (!res.ok) console.warn(`[finishSessionResource] El backend ha respost amb codi ${res.status}`);
+}
+
 // Vincula l'escenari triat a la sessió actual: crea una entrada nova a session_resource.
 export async function startSessionResource(sessionId: string, scenario: Scenario): Promise<SessionResource> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;

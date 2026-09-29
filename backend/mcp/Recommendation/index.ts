@@ -19,21 +19,21 @@ const server = new McpServer({
   version: '1.0.0',
 });
 
-// Eina 1: Obtenir errors pendents de l'usuari
+// Eina 1: Obtenir errors pendents del recurs que s'acaba de tancar
 server.registerTool(
   'get_unresolved_errors',
   {
-    description: "Obté la llista d'errors pendents (resolved = false) de l'usuari.",
+    description: "Obté la llista d'errors pendents (resolved = false) del recurs de sessió (session_resource) que s'està avaluant.",
     inputSchema: z.object({
-      userId: z.string().uuid().describe("UUID de l'usuari."),
+      sessionResourceId: z.string().uuid().describe("UUID del session_resource (recurs concret) que s'acaba de tancar."),
       limit: z.number().int().default(30).describe('Límit màxim a consultar.'),
     }),
   },
-  async ({ userId, limit }) => {
+  async ({ sessionResourceId, limit }) => {
     const { data, error } = await supabase
       .from('user_errors')
       .select('id, error_text, correction, category, explanation')
-      .eq('user_id', userId)
+      .eq('session_resource_id', sessionResourceId)
       .eq('resolved', false)
       .order('id', { ascending: false })
       .limit(limit);
@@ -98,19 +98,21 @@ server.registerTool(
 server.registerTool(
   'save_user_evaluation',
   {
-    description: "Guarda un nou informe diagnòstic d'avaluació emés pel revisor.",
+    description: "Guarda un nou informe diagnòstic d'avaluació emés pel revisor per al recurs que s'acaba de tancar.",
     inputSchema: z.object({
       userId: z.string().uuid().describe("UUID de l'usuari."),
+      sessionResourceId: z.string().uuid().describe("UUID del session_resource (recurs concret) avaluat."),
       summary: z.string().describe("Resum qualitatiu de l'estat de l'alumne."),
       weaknesses: z.array(z.string()).describe('Llista de conceptes clau que cal reforçar.'),
       priorityFocus: z.string().describe('Concepte prioritari per a la següent ruta.'),
     }),
   },
-  async ({ userId, summary, weaknesses, priorityFocus }) => {
+  async ({ userId, sessionResourceId, summary, weaknesses, priorityFocus }) => {
     const { data, error } = await supabase
       .from('user_evaluations')
       .insert({
         user_id: userId,
+        session_resource_id: sessionResourceId,
         summary: summary,
         weaknesses: weaknesses,
         priority_focus: priorityFocus,

@@ -134,7 +134,8 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
 
 
 
-// Endpoint temporal només per a testejar el disparador de recomanació
+// Tanca la sessió sencera (p. ex. en fer logout). Ja NO dispara l'avaluació
+// pedagògica: ara es dispara per recurs individual, veure l'endpoint de baix.
 sessionsRouter.post('/api/sessions/finish', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { session_id } = req.body;
@@ -150,7 +151,7 @@ sessionsRouter.post('/api/sessions/finish', requireAuth, async (req: AuthRequest
       return res.json({ ok: true, demo: true });
     }
 
-    // 1. Tanquem la sessió assegurant que pertany a l'usuari autenticat
+    // Tanquem la sessió assegurant que pertany a l'usuari autenticat
     const { data: updatedSession, error: updateError } = await client
       .from('sessions')
       .update({ ended_at: new Date().toISOString() })
@@ -168,30 +169,80 @@ sessionsRouter.post('/api/sessions/finish', requireAuth, async (req: AuthRequest
       return res.status(404).json({ error: 'Sessió no trobada o no autoritzada' });
     }
 
-    // 2. Responem immediatament al frontend
     res.json({ ok: true });
-
-    // 3. Avaluació en segon pla (sense bloquejar la resposta HTTP)
-    const userId = req.userId;
-    void (async () => {
-      try {
-        console.log(`[testEvaluator] Disparant avaluació per a usuari ${userId}...`);
-        const evalStart = Date.now();
-        const report = await runPedagogicalEvaluation(userId);
-
-        if (report) {
-          console.log(
-            `[testEvaluator] Exit! Categoria: ${report.priority_focus} en ${Date.now() - evalStart}ms`
-          );
-        } else {
-          console.log('[testEvaluator] No hi ha errors pendents suficients per a avaluar.');
-        }
-      } catch (err: any) {
-        console.error('[testEvaluator] Error:', err.message);
-      }
-    })();
   } catch (error) {
     console.error('[sessions] Error finish:', error);
     res.status(500).json({ error: 'Error intern' });
   }
 });
+
+// Tanca un recurs individual (botó "Eixir" dins de l'escenari) i dispara
+// l'avaluació pedagògica diagnòstica per a eixe recurs concret.
+sessionsRouter.post(
+  '/api/sessions/:sessionId/resources/:sessionResourceId/finish',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const sessionId = req.params.sessionId as string;
+      const sessionResourceId = req.params.sessionResourceId as string;
+      const client = db(req.userId);
+
+      if (!client || !req.userId) {
+        return res.json({ ok: true, demo: true });
+      }
+
+      // Blindatge: el session_resource ha d'existir i pertànyer a una sessió de l'usuari autenticat.
+      const { data: sessionResource, error: sessionResourceError } = await client
+        .from('session_resource')
+        .select('id, sesion_id, sessions!inner(id, user_id)')
+        .eq('id', sessionResourceId)
+        .eq('sesion_id', sessionId)
+        .eq('sessions.user_id', req.userId)
+        .maybeSingle();
+
+      if (sessionResourceError) {
+        console.error('[session_resource finish] Error verificant recurs:', sessionResourceError);
+        return res.status(500).json({ error: 'Error verificant el recurs' });
+      }
+
+      if (!sessionResource) {
+        return res.status(404).json({ error: 'Recurs de sessió no trobat o no autoritzat' });
+      }
+
+      const { error: updateError } = await client
+        .from('session_resource')
+        .update({ resolved: true })
+        .eq('id', sessionResourceId);
+
+      if (updateError) {
+        console.error('[session_resource finish] Error tancant recurs:', updateError);
+        return res.status(500).json({ error: 'No s\'ha pogut tancar el recurs' });
+      }
+
+      // Responem immediatament: l'avaluació es fa en segon pla, sense bloquejar el "Eixir".
+      res.json({ ok: true });
+
+      const userId = req.userId;
+      void (async () => {
+        try {
+          console.log(`[evaluator] Disparant avaluació per a recurs ${sessionResourceId} (usuari ${userId})...`);
+          const evalStart = Date.now();
+          const report = await runPedagogicalEvaluation(userId, sessionResourceId);
+
+          if (report) {
+            console.log(
+              `[evaluator] Exit! Categoria: ${report.priority_focus} en ${Date.now() - evalStart}ms`
+            );
+          } else {
+            console.log('[evaluator] No hi ha errors pendents suficients per a avaluar.');
+          }
+        } catch (err: any) {
+          console.error('[evaluator] Error:', err.message);
+        }
+      })();
+    } catch (error) {
+      console.error('[session_resource finish] Error:', error);
+      res.status(500).json({ error: 'Error intern' });
+    }
+  }
+);

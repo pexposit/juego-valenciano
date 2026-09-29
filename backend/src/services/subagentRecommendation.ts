@@ -104,8 +104,8 @@ export const SYSTEM_PROMPT_RECOMMENDATION = `
 PROTOCOL D'AVALUACIÓ:
 
 PAS 1: OBTENCIÓ DE DADES (OBLIGATORI)
-- Invoca 'get_unresolved_errors' per a obtindre els errors actius.
-- Invoca 'get_recent_evaluations' amb limit=4 per a obtindre les avaluacions anteriors.
+- Invoca 'get_unresolved_errors' amb el sessionResourceId indicat per a obtindre els errors actius d'eixe recurs.
+- Invoca 'get_recent_evaluations' amb limit=4 per a obtindre les avaluacions anteriors de l'usuari.
 
 PAS 2: ANÀLISI DIRECTA
 - Compta quina 'category' és la més freqüent entre els errors recuperats de la base de dades.
@@ -119,7 +119,8 @@ PAS 3: VEREDICTE
 
 PAS 4: PERSISTÈNCIA
 - Invoca 'save_user_evaluation' passant:
-  * userId: El UUID de l'usuari.    
+  * userId: El UUID de l'usuari.
+  * sessionResourceId: El UUID del session_resource (recurs) que s'acaba de tancar.
   * summary: Un paràgraf explicant com evoluciona i quina categoria concentra les fallades.
   * weaknesses: Llista dels errors més crítics detectats.
   * priorityFocus: La categoria triada com a prioritària.`;
@@ -127,9 +128,13 @@ PAS 4: PERSISTÈNCIA
 // -------------------------------------------------------------
 // FUNCIÓ PRINCIPAL D'EXECUCIÓ DEL SUBAGENT
 // -------------------------------------------------------------
-export async function runPedagogicalEvaluation(userId: string): Promise<EvaluationReport | null> {
+export async function runPedagogicalEvaluation(
+  userId: string,
+  sessionResourceId: string,
+): Promise<EvaluationReport | null> {
   const trimmedUserId = userId.trim();
-  if (!trimmedUserId) return null;
+  const trimmedSessionResourceId = sessionResourceId.trim();
+  if (!trimmedUserId || !trimmedSessionResourceId) return null;
 
   const tStart = Date.now();
 
@@ -140,7 +145,7 @@ export async function runPedagogicalEvaluation(userId: string): Promise<Evaluati
       { role: 'system', content: SYSTEM_PROMPT_RECOMMENDATION },
       {
         role: 'user',
-        content: `Realitza l'avaluació diagnòstica periòdica per a l'usuari amb ID: "${trimmedUserId}". Consulta les seues dades i guarda l'informe resultant.`,
+        content: `Realitza l'avaluació diagnòstica per a l'usuari amb ID: "${trimmedUserId}" en tancar el recurs de sessió amb ID: "${trimmedSessionResourceId}". Consulta les seues dades i guarda l'informe resultant.`,
       },
     ];
 
