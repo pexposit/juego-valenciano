@@ -6,7 +6,7 @@ import {
 import { SceneArt } from './components/SceneArt';
 import { VoiceInput } from './components/VoiceInput';
 import { HistoryModal, type Msg } from './components/HistoryModal';
-import { createSession, fetchScenarios, sendTurn, type HistoryItem } from './lib/api';
+import { createSession, fetchScenarios, finishSession, sendTurn, startSessionResource, type HistoryItem, type SessionResource } from './lib/api';
 import { supabase } from './lib/supabase';
 import type { Mood, Scenario } from './lib/types';
 
@@ -500,8 +500,8 @@ function Dashboard({
 
 /* ══════════════════ CHAT PAGE ══════════════════════════════════════ */
 function Chat({
-  scenario, level, xp, setXp, onEnd, onBack,
-}: { scenario: Scenario; level: string; xp: number; setXp: (n: number) => void; onEnd: () => void; onBack: () => void }) {
+  scenario, level, xp, setXp, onEnd, onBack, sessionId, setSessionId, sessionResourceId, setSessionResource,
+}: { scenario: Scenario; level: string; xp: number; setXp: (n: number) => void; onEnd: () => void; onBack: () => void; sessionId?: string; setSessionId: (id: string) => void; sessionResourceId?: string; setSessionResource: (r: SessionResource) => void }) {
   const [mood, setMood] = useState<Mood>('neutral');
   const [character, setCharacter] = useState('Bon dia! Com et puc ajudar hui?');
   const [user, setUser] = useState('');
@@ -509,7 +509,6 @@ function Chat({
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<Msg[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [session, setSession] = useState<string>();
   const [bubbleKey, setBubbleKey] = useState(0);
   const [audioSource, setAudioSource] = useState<string>();
   const replyAudio = useRef<HTMLAudioElement | null>(null);
@@ -519,30 +518,6 @@ function Chat({
   // S'obri per defecte en pantalles amples; en mòbils es pot mostrar amb el botó.
   const [showGoals, setShowGoals] = useState(() => typeof window === 'undefined' || window.innerWidth >= 900);
   const [goalsInfo, setGoalsInfo] = useState<{ character: string; objectius: string[] }>(() => scenarioGoals[scenario]);
-
-  const handleExit = async () => {
-    // Si no ha arribat a iniciar cap sessió amb el personatge, eixim sense fer petició
-
-    try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-      const token = (await supabase?.auth.getSession())?.data.session?.access_token;
-
-      const response = await fetch(`${apiBase}/api/sessions/finish`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ session_id: session }),
-      });
-
-      if (!response.ok) {
-        console.warn(`[handleExit] El backend ha respost amb codi ${response.status}`);
-      }
-    } catch (err) {
-      console.error('Error notificant la fi de la sessió:', err);
-    }
-  };
 
   const loadTextAudio = async (text: string, autoplay = false) => {
     // Solo TTS real (matxa). Si falla tras un reintento, NO se usa la voz del
@@ -622,10 +597,17 @@ function Chat({
     setLoading(true);
     try {
     
-      //Se asume que si o si se va a seleccionar un escenario
-      //Falta añadir el tipo de mundo en el que nos encontramos
-      const activeSession = session || await createSession(scenario, level, "escenario");
-      if (!session) setSession(activeSession);
+      // La sessió es crea en fer login; només es crea ací com a alternativa
+      // (mode demo sense compte, o si la creació en el login ha fallat).
+      const activeSession = sessionId || await createSession(level);
+      if (!sessionId) setSessionId(activeSession);
+      // Si encara no s'ha creat l'entrada de session_resource (p. ex. mode demo), es crea ara.
+      let activeSessionResource = sessionResourceId;
+      if (!activeSessionResource) {
+        const created = await startSessionResource(activeSession, scenario);
+        setSessionResource(created);
+        activeSessionResource = created.id;
+      }
       // El personatge ha de recordar el que s'ha dit: li enviem el context de la
       // conversa actual (el primer missatge inclou el salut inicial del personatge).
       const context: HistoryItem[] = history.length > 0
@@ -633,7 +615,7 @@ function Chat({
         : [{ role: 'character', content_text: character }];
       // include_audio:false → el turno responde solo con texto (el usuario ve la
       // respuesta al instante) y el audio se pide en paralelo a /api/tts.
-      const r = await sendTurn({ session_id: activeSession, scenario, level, input_mode: audio ? 'voice' : 'text', text, audio_base64: audio || null, history: context, include_audio: false });
+      const r = await sendTurn({ session_id: activeSession, session_resource_id: activeSessionResource, scenario, level, input_mode: audio ? 'voice' : 'text', text, audio_base64: audio || null, history: context, include_audio: false });
       setCharacter(r.reply_text);
       setUserTranscription(r.transcription || undefined);
       setMood(r.mood);
@@ -669,7 +651,6 @@ function Chat({
          <button
             onClick={() => {
               onBack();
-              handleExit();
             }}
             id="chat-back-btn"
             className="btn-press rounded-full bg-white/90 px-4 py-2 font-bold shadow backdrop-blur-sm hover:bg-white transition-colors"
@@ -952,6 +933,11 @@ export function App() {
   const [level, setLevel] = useState('principiant');
   const [name, setName] = useState('Aina');
   const [user, setUser] = useState<any>(null);
+  const [sessionId, setSessionId] = useState<string>();
+  // Entrada de session_resource de l'escenari obert actualment.
+  const [sessionResource, setSessionResource] = useState<SessionResource>();
+  // Evita crear dues sessions per al mateix login (getSession + INITIAL_SESSION/SIGNED_IN).
+  const sessionOwner = useRef<string | null>(null);
 
   // Sync profile details from Supabase if logged in
   const fetchAndLoadProfile = async (uid: string) => {
@@ -966,9 +952,22 @@ export function App() {
         setName(data.display_name || 'Aina');
         setLevel(data.level || 'principiant');
         setXp(data.xp || 0);
+        return data.level as string | undefined;
       }
     } catch (e) {
       console.error('Error carregant perfil:', e);
+    }
+  };
+
+  // Crea la sessió en iniciar sessió (una per usuari autenticat).
+  const startSession = async (uid: string, accessToken: string, profileLevel?: string) => {
+    if (sessionOwner.current === uid) return;
+    sessionOwner.current = uid;
+    try {
+      setSessionId(await createSession(profileLevel || 'principiant', accessToken));
+    } catch (e) {
+      console.error('Error creant la sessió:', e);
+      sessionOwner.current = null;
     }
   };
 
@@ -976,11 +975,12 @@ export function App() {
     if (!supabase) return;
 
     // Check active session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        fetchAndLoadProfile(session.user.id);
         setPage('dashboard');
+        const profileLevel = await fetchAndLoadProfile(session.user.id);
+        await startSession(session.user.id, session.access_token, profileLevel);
       }
     });
 
@@ -988,10 +988,14 @@ export function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
-        await fetchAndLoadProfile(session.user.id);
+        const profileLevel = await fetchAndLoadProfile(session.user.id);
         setPage((prev) => (prev === 'home' || prev === 'auth' ? 'dashboard' : prev));
+        await startSession(session.user.id, session.access_token, profileLevel);
       } else {
         setUser(null);
+        setSessionId(undefined);
+        setSessionResource(undefined);
+        sessionOwner.current = null;
         setName('Aina');
         setLevel('principiant');
         setXp(35);
@@ -1026,15 +1030,35 @@ export function App() {
     }
   };
 
+  // En clicar un escenari predefinit (mercat, ajuntament...) es crea una entrada
+  // nova de session_resource per a la sessió actual i eixe recurs.
+  const openScenario = (s: Scenario) => {
+    setScenario(s);
+    setSessionResource(undefined);
+    setPage('chat');
+    if (!sessionId) return;
+    startSessionResource(sessionId, s)
+      .then(setSessionResource)
+      .catch((err) => console.error('Error vinculant el recurs a la sessió:', err));
+  };
+
   const handleLogOut = async () => {
     if (supabase) {
+      // Tanca la sessió abans de fer logout (encara tenim el token vàlid).
+      if (sessionId) {
+        try {
+          await finishSession(sessionId);
+        } catch (err) {
+          console.error('Error notificant la fi de la sessió:', err);
+        }
+      }
       await supabase.auth.signOut();
     }
   };
 
   if (page === 'home')      return <PageTransition><HomePage setPage={setPage} /></PageTransition>;
   if (page === 'auth')      return <PageTransition><AuthPage setPage={setPage} /></PageTransition>;
-  if (page === 'dashboard') return <PageTransition><Dashboard name={name} xp={xp} setPage={setPage} onScenario={s => { setScenario(s); setPage('chat'); }} /></PageTransition>;
+  if (page === 'dashboard') return <PageTransition><Dashboard name={name} xp={xp} setPage={setPage} onScenario={openScenario} /></PageTransition>;
   if (page === 'profile') {
     return (
       <PageTransition>
@@ -1061,6 +1085,10 @@ export function App() {
         setXp={setXp}
         onEnd={() => setPage('summary')}
         onBack={() => setPage('dashboard')}
+        sessionId={sessionId}
+        setSessionId={setSessionId}
+        sessionResourceId={sessionResource?.id}
+        setSessionResource={setSessionResource}
       />
     </PageTransition>
   );

@@ -53,6 +53,19 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
         if (sessionError) console.warn('[turn] error consultant la sessió:', sessionError.message);
         return res.status(403).json({ error: 'Sessió no vàlida o no autoritzada' });
       }
+
+      // El session_resource ha de pertànyer a eixa sessió
+      const { data: sessionResource, error: sessionResourceError } = await client
+        .from('session_resource')
+        .select('id')
+        .eq('id', data.session_resource_id)
+        .eq('sesion_id', data.session_id)
+        .maybeSingle();
+
+      if (sessionResourceError || !sessionResource) {
+        if (sessionResourceError) console.warn('[turn] error consultant el session_resource:', sessionResourceError.message);
+        return res.status(403).json({ error: 'Recurs de sessió no vàlid o no autoritzat' });
+      }
     }
 
     // 2. Historial aïllat per recurs
@@ -61,8 +74,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       const { data: historyData, error: historyError } = await client
         .from('conversation_messages')
         .select('role, content_text')
-        .eq('session_id', data.session_id)
-        .eq('recurso_id', data.recurso_id)
+        .eq('session_resource_id', data.session_resource_id)
         .order('created_at', { ascending: false })
         .limit(HISTORY_MAX_MESSAGES);
 
@@ -99,8 +111,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           const { data: userMsgInsert, error: userMsgError } = await client
             .from('conversation_messages')
             .insert({
-              session_id: data.session_id,
-              recurso_id: data.recurso_id,
+              session_resource_id: data.session_resource_id,
               role: 'user',
               content_text: text,
               input_mode: data.input_mode,
@@ -119,8 +130,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           const { error: characterMsgError } = await client
             .from('conversation_messages')
             .insert({
-              session_id: data.session_id,
-              recurso_id: data.recurso_id,
+              session_resource_id: data.session_resource_id,
               role: 'character',
               content_text: reply.reply_text,
               input_mode: 'text',
@@ -210,7 +220,10 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       xp_delta: xpDelta,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) return validationError(res, error);
+    if (error instanceof z.ZodError) {
+      console.warn('[turn] Petició invàlida:', error.issues);
+      return validationError(res, error);
+    }
     console.error(error);
     res.status(500).json({ error: 'No hem pogut processar el torn' });
   }

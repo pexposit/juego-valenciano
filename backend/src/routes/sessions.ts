@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
-import { sessionSchema } from '../schemas.js';
+import { scenarioSchema, sessionSchema } from '../schemas.js';
 import { runPedagogicalEvaluation } from '../services/subagentRecommendation.js';
 
 
@@ -12,7 +12,6 @@ export const sessionsRouter = Router();
 sessionsRouter.post('/api/sessions', requireAuth, async (req: AuthRequest, res) => {
   try {
     const body = sessionSchema.parse(req.body);
-
     const client = db(req.userId);
     if (!client) {
       // Demo mode: return a fake session
@@ -46,18 +45,30 @@ sessionsRouter.post('/api/sessions', requireAuth, async (req: AuthRequest, res) 
 });
 
 const sessionResourceSchema = z.object({
-  category: z.string().default('libre'),
-  scenario: z.string(), // o el nombre/tipo de la actividad
+  category: z.string().default('escenari'),
+  type: scenarioSchema,
 });
+
+// Nom del recurs (taula resources, type 'scene') per a cada escenari predefinit.
+const SCENE_RESOURCE_NAME: Record<z.infer<typeof scenarioSchema>, string> = {
+  mercat: 'Mercat',
+  bar: 'Bar',
+  oficina: 'Oficina',
+  ajuntament: 'Ayuntament',
+  colegi: 'Escola',
+  turisme: 'Oficina de Turisme',
+};
 
 sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (req: AuthRequest, res) => {
   try {
+    
     const { sessionId } = req.params;
     const body = sessionResourceSchema.parse(req.body);
-
+    console.log(body);
     const client = db(req.userId);
     if (!client) {
       return res.status(201).json({
+        id: crypto.randomUUID(),
         sesion_id: sessionId,
         recurso_id: crypto.randomUUID(),
         resolved: false,
@@ -70,7 +81,7 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
       .eq('id', sessionId)
       .eq('user_id', req.userId)
       .maybeSingle();
-    console.log(userSession);
+
     if (sessionCheckError) {
       console.error('[session_resource] Error verificant sessió:', sessionCheckError);
       return res.status(500).json({ error: 'Error verificant la sessió' });
@@ -80,21 +91,22 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
       return res.status(404).json({ error: 'Sessió no trobada o no autoritzada' });
     }
 
-
-    // A. Buscar el recurso existente por categoría y tipo
+    
+    // B. Buscar el recurs de l'escenari per categoria, tipus i nom
     const { data: resourceData, error: resourceError } = await client
       .from('resources')
       .select('id')
       .eq('category', body.category)
-      .eq('type', body.scenario)
-      .mayBesingle();
+      // A la BDD tots els escenaris tenen type 'scene'; l'escenari concret va en 'name'.
+      .eq('type', body.type)
+      .maybeSingle();
 
     if (resourceError || !resourceData) {
       console.error('[session_resource] Recurso no encontrado:', resourceError);
       return res.status(404).json({ error: 'No s\'ha trobat el recurs especificat' });
     }
 
-    // B. Insertar la instancia de actividad en session_resource
+    // C. Inserir una entrada nova a session_resource (una per cada vegada que s'obri l'escenari)
     // Nota: en la BDD la columna es 'sesion_id' con una sola 's'
     const { data: sessionResourceData, error: sessionResourceError } = await client
       .from('session_resource')
@@ -103,7 +115,7 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
         recurso_id: resourceData.id,
         resolved: false,
       })
-      .select('sesion_id, recurso_id, resolved')
+      .select('id, sesion_id, recurso_id, resolved')
       .single();
 
     if (sessionResourceError) throw sessionResourceError;
@@ -111,7 +123,10 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
     
     res.status(201).json(sessionResourceData);
   } catch (error) {
-    if (error instanceof z.ZodError) return validationError(res, error);
+    if (error instanceof z.ZodError) {
+      console.warn('[session_resource] Petició invàlida:', error.issues);
+      return validationError(res, error);
+    }
     console.error('[session_resource] Error:', error);
     res.status(500).json({ error: 'No s\'ha pogut vincular el recurs a la sessió' });
   }

@@ -13,7 +13,8 @@ export const levelSchema = z.enum(LEVELS);
 
 export const turnSchema = z.object({
   session_id: z.string().uuid(),
-  recurso_id: z.string().uuid(), // <--- AÑADE ESTO AQUÍ
+  // Entrada de session_resource creada en obrir l'escenari (sessió + recurs).
+  session_resource_id: z.string().uuid(),
   scenario: scenarioSchema,
   level: levelSchema,
   input_mode: z.enum(['text', 'voice']),
@@ -23,7 +24,6 @@ export const turnSchema = z.object({
   history: z.array(z.object({
     role: z.enum(['user', 'character']),
     content_text: z.string().max(MESSAGE_MAX_CHARS),
-    recurso_id: z.string().uuid().optional(),
   })).max(HISTORY_MAX_MESSAGES).optional().default([]),
 });
 
@@ -34,8 +34,10 @@ export const ttsSchema = z.object({
 });
 
 export const sessionSchema = z.object({
-  scenario: scenarioSchema,
+  // La sessió es crea en fer login, abans de triar escenari: l'escenari és opcional.
+  scenario: scenarioSchema.optional(),
   level: levelSchema,
-  categoria: z.string().optional().default('libre'),
-  type: z.string().optional().default('escenario'),
+  categoria: z.string().optional().default('lliure'),
+  type: z.string().optional().default('scenari'),
 });
+
