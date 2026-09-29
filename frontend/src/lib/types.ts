@@ -49,13 +49,28 @@ export type ExamArea = { n: number; title: string; weight: number; duration: str
 export type ExamContent = { level: string; session: string; body: string; source_url?: string; audio_source_url?: string; pass_rule?: string; areas: ExamArea[] };
 export type Exam = Pick<Resource, 'id' | 'name' | 'type' | 'category' | 'difficulty' | 'xp_earned' | 'content' | 'url' | 'icon' | 'color'> & { exam: ExamContent };
 
-// Avaluació amb LLM del formulari de l'Àrea 3 d'un examen A1 (rúbrica de la JQCV, 15 punts).
+// Avaluació amb LLM de l'Àrea 3 (Expressió escrita), amb la rúbrica oficial de la JQCV de cada nivell.
+// A1 (formulari): cada criteri en una franja i nota global sobre 15.
 export type WritingBand = '15-12' | '11-9' | '8-6' | '5-1';
 export type WritingCriterionKey = 'lexic' | 'estructures' | 'ortografia' | 'comprensibilitat_coherencia' | 'adequacio';
-export type WritingEvaluation = {
+export type A1WritingEvaluation = {
+  rubrica?: 'a1_formulari'; // les avaluacions guardades abans de l'A2 no el porten
   criteris: Record<WritingCriterionKey, { franja: WritingBand; observacions: string }>;
   puntuacio_global: number;
   resultat: 'no eliminatòria' | 'eliminatòria';
   errors_destacats: { element_original: string; correccio_suggerida: string; tipus: string; gravetat: 'lleu' | 'greu' }[];
   retorn_pedagogic: string;
 };
+// A2 (redacció): cada criteri val 10, 6, 4 o 1; total sobre 50 i mitjana sobre 10.
+export type A2CriterionKey = 'lexic' | 'morfosintaxi' | 'ortografia' | 'coherencia_cohesio' | 'adequacio';
+export type A2WritingEvaluation = {
+  rubrica: 'a2_redaccio';
+  recompte_paraules: number;
+  criteris: Record<A2CriterionKey, { puntuacio: number; justificacio: string }>;
+  paraules_obligatories: { utilitzades: string[]; compleix_minim: boolean };
+  puntuacio_total_rubrica: number;
+  mitjana_ponderada_base_10: number;
+  errors_detectats: { segment_original: string; proposta_correccio: string; categoria: string; sistematic: boolean }[];
+  comentari_global: string;
+};
+export type WritingEvaluation = A1WritingEvaluation | A2WritingEvaluation;

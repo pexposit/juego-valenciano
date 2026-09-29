@@ -44,9 +44,18 @@ const pointsOf = (scoring: ExamScoring, byExercise: ExerciseScore[]) =>
   Math.round(byExercise.reduce((sum, e) => sum + e.correct * pointsPerCorrect(scoring, e.n), 0));
 const passes = (scoring: ExamScoring, points: number) => points >= scoring.pass_points;
 
-// De moment només el formulari de l'examen A1 té rúbrica d'avaluació amb IA.
-const evaluable = (level: string, e: ExamExercise): e is Extract<ExamExercise, { kind: 'form' }> =>
-  level === 'A1' && e.kind === 'form';
+// Exercicis amb rúbrica d'avaluació amb IA: el formulari de l'A1 i la redacció de l'A2.
+type EvaluableExercise = Extract<ExamExercise, { kind: 'form' | 'writing' }>;
+const evaluable = (level: string, e: ExamExercise): e is EvaluableExercise =>
+  (level === 'A1' && e.kind === 'form') || (level === 'A2' && e.kind === 'writing');
+// El text de cada redacció es guarda a `form` amb esta clau (vegeu ExerciseBody).
+const writingKey = (n: number) => `writing-${n}`;
+const evaluationBody = (e: EvaluableExercise, form: Record<string, string>) =>
+  e.kind === 'form'
+    ? { answers: Object.fromEntries(e.fields.map(f => [f, form[f] ?? ''])) }
+    : { text: form[writingKey(e.n)] ?? '' };
+const hasContent = (e: EvaluableExercise, form: Record<string, string>) =>
+  e.kind === 'form' ? e.fields.some(f => form[f]?.trim()) : Boolean(form[writingKey(e.n)]?.trim());
 
 const questionsOf = (area: ExamArea) => area.exercises.filter(gradable).flatMap(e => e.questions);
 
@@ -94,12 +103,11 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
       for (const q of areaQuestions) delete answers[q.n];
       return { ...p, answers, checked: p.checked.filter(n => n !== area.n) };
     });
-  const evaluate = async (exercise: Extract<ExamExercise, { kind: 'form' }>) => {
+  const evaluate = async (exercise: EvaluableExercise) => {
     setEvaluating(exercise.n);
     setEvaluationError(undefined);
     try {
-      const answers = Object.fromEntries(exercise.fields.map(f => [f, progress.form[f] ?? '']));
-      const evaluation = await evaluateExamWriting(resource.id, exercise.n, answers);
+      const evaluation = await evaluateExamWriting(resource.id, exercise.n, evaluationBody(exercise, progress.form));
       setProgress(p => ({ ...p, evaluations: { ...p.evaluations, [exercise.n]: evaluation } }));
     } catch (error) {
       setEvaluationError({ n: exercise.n, message: error instanceof Error ? error.message : "No hem pogut avaluar l'exercici" });
@@ -274,7 +282,8 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
                 evaluation={progress.evaluations[exercise.n]}
                 loading={evaluating === exercise.n}
                 error={evaluationError?.n === exercise.n ? evaluationError.message : undefined}
-                canEvaluate={exercise.fields.some(f => progress.form[f]?.trim())}
+                canEvaluate={hasContent(exercise, progress.form)}
+                emptyHint={exercise.kind === 'form' ? 'Omple el formulari per a poder avaluar-lo.' : 'Escriu el text per a poder avaluar-lo.'}
                 onEvaluate={() => evaluate(exercise)}
               />
             )}
@@ -342,7 +351,7 @@ function ExerciseBody({
         />
       );
     case 'writing': {
-      const key = `writing-${exercise.n}`;
+      const key = writingKey(exercise.n);
       return (
         <WritingExercise
           title={exercise.title}

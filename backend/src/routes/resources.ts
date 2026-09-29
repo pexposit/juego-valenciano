@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getAdmin, requireAuth } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
-import { evaluateA1Writing } from '../services/examWritingEvaluator.js';
+import { evaluateA1Writing, evaluateA2Writing } from '../services/examWritingEvaluator.js';
 import { isScenarioPlayable, SCENARIO_CATEGORY } from '../services/scenarios.js';
 
 export const resourcesRouter = Router();
@@ -95,14 +95,21 @@ const EVALUATE_RATE_LIMIT = {
   maxAnonymous: Number(process.env.RATE_LIMIT_EVALUATE_ANON_PER_MIN) || 2,
 };
 
+// Formulari de l'A1 (`answers`: camp -> resposta) o redacció de l'A2 (`text`).
 const evaluateSchema = z.object({
-  answers: z.record(z.string().max(500)),
+  answers: z.record(z.string().max(500)).optional(),
+  text: z.string().max(3000).optional(),
 });
 
-type FormExercise = { n: number; kind: string; instructions: string; fields: string[] };
+type EvaluableExercise = {
+  n: number; kind: string; instructions: string;
+  fields?: string[];
+  min_words?: number; max_words?: number; words?: string[]; min_words_used?: number;
+};
 
-// Avaluació amb LLM del formulari de l'Àrea 3 (Expressió escrita) d'un examen A1.
-// La consigna i els camps es lligen de la BDD, no del client.
+// Avaluació amb LLM de l'Àrea 3 (Expressió escrita): el formulari de l'A1 i la
+// redacció de l'A2, cadascun amb la seua rúbrica. La consigna, els camps i les
+// paraules obligatòries es lligen de la BDD, no del client.
 resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLimit(EVALUATE_RATE_LIMIT), async (req, res) => {
   const parsedBody = evaluateSchema.safeParse(req.body);
   if (!parsedBody.success) return validationError(res, parsedBody.error);
@@ -122,19 +129,34 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
     return res.status(500).json({ error: "No hem pogut carregar l'examen" });
   }
 
-  const exam = data?.metadata?.exam as { level?: string; areas?: { exercises?: FormExercise[] }[] } | undefined;
+  const exam = data?.metadata?.exam as { level?: string; areas?: { exercises?: EvaluableExercise[] }[] } | undefined;
   const exercise = exam?.areas?.flatMap(a => a.exercises ?? []).find(e => String(e.n) === req.params.n);
-  if (exam?.level !== 'A1' || exercise?.kind !== 'form') {
+
+  let evaluate: () => Promise<unknown>;
+  if (exam?.level === 'A1' && exercise?.kind === 'form' && exercise.fields) {
+    const fields = exercise.fields;
+    const answers = parsedBody.data.answers ?? {};
+    if (!fields.some(f => answers[f]?.trim())) {
+      return res.status(400).json({ error: 'Omple el formulari abans d’avaluar-lo' });
+    }
+    evaluate = () => evaluateA1Writing({ instructions: exercise.instructions, fields, answers });
+  } else if (exam?.level === 'A2' && exercise?.kind === 'writing' && exercise.min_words && exercise.max_words) {
+    const text = parsedBody.data.text?.trim();
+    if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
+    evaluate = () => evaluateA2Writing({
+      instructions: exercise.instructions,
+      text,
+      minWords: exercise.min_words!,
+      maxWords: exercise.max_words!,
+      words: exercise.words ?? [],
+      minWordsUsed: exercise.min_words_used ?? 0,
+    });
+  } else {
     return res.status(404).json({ error: "Este exercici no es pot avaluar" });
   }
 
-  const answers = parsedBody.data.answers;
-  if (!exercise.fields.some(f => answers[f]?.trim())) {
-    return res.status(400).json({ error: 'Omple el formulari abans d’avaluar-lo' });
-  }
-
   try {
-    res.json(await evaluateA1Writing({ instructions: exercise.instructions, fields: exercise.fields, answers }));
+    res.json(await evaluate());
   } catch (err) {
     console.error('[exams] Error avaluant l’exercici:', err);
     res.status(503).json({ error: 'No hem pogut avaluar l’exercici. Torna-ho a provar.' });

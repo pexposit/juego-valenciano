@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-react';
-import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice, WritingCriterionKey, WritingEvaluation } from '../lib/types';
+import { countWords, usedRequiredWords } from '@parlaval/shared';
+import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice, A1WritingEvaluation, A2CriterionKey, A2WritingEvaluation, WritingCriterionKey, WritingEvaluation } from '../lib/types';
 
 // Respostes de l'aspirant (número de pregunta -> clau de l'opció) i si l'àrea ja
 // s'ha corregit: en eixe cas es marquen les encertades i les errades.
@@ -318,16 +319,6 @@ export function FormExercise({
 }
 
 /* ── Expressió escrita: redacció lliure amb límit de paraules ─────────── */
-const countWords = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
-const normalize = (text: string) => text.toLocaleLowerCase('ca').normalize('NFD').replace(/\p{M}/gu, '');
-// Formes acceptades d'una paraula: singular i plural (estoig/estoigs, agenda/agendes).
-// Una paraula amb gènere com «malalt/a» accepta també el femení (malalta, malaltes).
-const wordForms = (word: string) => {
-  const [base, feminine] = normalize(word).split('/');
-  const forms = (w: string) => [w, `${w}s`, w.endsWith('a') ? `${w.slice(0, -1)}es` : w];
-  return new Set([...forms(base), ...(feminine ? forms(base + feminine) : [])]);
-};
-
 export function WritingExercise({
   title, minWords, maxWords, words = [], minWordsUsed = 0, image, choices = [], choice, onChoose, value, onChange,
 }: {
@@ -346,8 +337,7 @@ export function WritingExercise({
   const count = countWords(value);
   const inRange = count >= minWords && count <= maxWords;
   // Una paraula compta com a usada també en plural o amb majúscules (estoigs, Llapis...).
-  const tokens = new Set(normalize(value).split(/[^\p{L}·]+/u).filter(Boolean));
-  const used = new Set(words.filter(w => [...wordForms(w)].some(f => tokens.has(f))));
+  const used = new Set(usedRequiredWords(value, words));
   const countColor = count === 0 ? 'bg-white/20' : inRange ? 'bg-white text-teal' : 'bg-coral';
 
   const picked = choices.find(c => c.key === choice);
@@ -560,25 +550,40 @@ const CRITERION_LABELS: Record<WritingCriterionKey, string> = {
   adequacio: 'Adequació',
 };
 
-// Color de cada franja: les dues de dalt aproven, les dues de baix són eliminatòries.
+const A2_CRITERION_LABELS: Record<A2CriterionKey, string> = {
+  lexic: 'Lèxic',
+  morfosintaxi: 'Morfosintaxi',
+  ortografia: 'Ortografia',
+  coherencia_cohesio: 'Coherència i cohesió',
+  adequacio: 'Adequació',
+};
+
+// Color de cada franja (A1) o puntuació (A2): de millor (verd-blau) a pitjor (coral).
 const BAND_STYLE: Record<string, string> = {
   '15-12': 'bg-teal text-white',
   '11-9': 'bg-mustard text-navy',
   '8-6': 'bg-orange text-white',
   '5-1': 'bg-coral text-white',
+  '10': 'bg-teal text-white',
+  '6': 'bg-mustard text-navy',
+  '4': 'bg-orange text-white',
+  '1': 'bg-coral text-white',
 };
+
+// En l'A2, l'Àrea 3 val un 20 % de la prova: cal el 40 % de l'àrea (4 de 10) per a continuar.
+const A2_PASS_MARK = 4;
 
 // Botó "Avaluar" i resultat de l'avaluació amb IA d'un exercici d'expressió escrita.
 export function WritingEvaluationPanel({
-  evaluation, loading, error, canEvaluate, onEvaluate,
+  evaluation, loading, error, canEvaluate, emptyHint, onEvaluate,
 }: {
   evaluation?: WritingEvaluation;
   loading: boolean;
   error?: string;
   canEvaluate: boolean;
+  emptyHint: string;
   onEvaluate: () => void;
 }) {
-  const pass = evaluation?.resultat === 'no eliminatòria';
   return (
     <div className="mt-5 flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -590,69 +595,138 @@ export function WritingEvaluationPanel({
           {loading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
           {loading ? 'Avaluant…' : evaluation ? 'Tornar a avaluar' : 'Avaluar'}
         </button>
-        {!canEvaluate && !loading && <p className="text-sm font-bold opacity-60">Omple el formulari per a poder avaluar-lo.</p>}
+        {!canEvaluate && !loading && <p className="text-sm font-bold opacity-60">{emptyHint}</p>}
         {loading && <p className="text-sm font-bold opacity-60">L'avaluador està revisant el teu text amb la normativa de l'AVL. Pot tardar un poc.</p>}
       </div>
       {error && <p className="rounded-2xl bg-coral/10 p-4 text-sm font-bold text-coral">{error}</p>}
 
       {evaluation && !loading && (
-        <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${pass ? 'border-teal/30' : 'border-coral/40'}`}>
-          <div className="flex flex-wrap items-center gap-5">
-            <div
-              className="grid h-24 w-24 shrink-0 place-items-center rounded-full"
-              style={{ background: `conic-gradient(${pass ? '#2CA99B' : '#FF675D'} ${(evaluation.puntuacio_global / 15) * 360}deg, #E7E5E4 0deg)` }}
-              aria-label={`${evaluation.puntuacio_global} de 15 punts`}
-            >
-              <div className="grid place-items-center rounded-full bg-white" style={{ height: '4.5rem', width: '4.5rem' }}>
-                <span className="text-center leading-none">
-                  <span className="block text-xl font-black">{evaluation.puntuacio_global}/15</span>
-                  <span className="text-[10px] font-black uppercase opacity-60">punts</span>
-                </span>
-              </div>
-            </div>
-            <div className="min-w-[12rem] flex-1">
-              <p className={`text-sm font-black uppercase tracking-wide ${pass ? 'text-teal' : 'text-coral'}`}>Avaluació de l'expressió escrita</p>
-              <p className="text-2xl font-black">{pass ? '✅ No eliminatòria' : '❌ Eliminatòria'}</p>
-              <p className="mt-1 text-sm opacity-70">Cal arribar a 9 de 15 punts perquè no siga eliminatòria.</p>
-            </div>
-          </div>
-
-          <p className="rounded-2xl bg-cream p-4 font-bold">{evaluation.retorn_pedagogic}</p>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(Object.keys(CRITERION_LABELS) as WritingCriterionKey[]).map(key => {
-              const c = evaluation.criteris[key];
-              return (
-                <div key={key} className="rounded-2xl border-2 border-ink/10 p-4">
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <p className="font-black">{CRITERION_LABELS[key]}</p>
-                    <span className={`rounded-full px-3 py-1 text-xs font-black ${BAND_STYLE[c.franja] ?? 'bg-cream'}`}>{c.franja}</span>
-                  </div>
-                  <p className="text-sm opacity-80">{c.observacions}</p>
-                </div>
-              );
-            })}
-          </div>
-
-          {evaluation.errors_destacats.length > 0 && (
-            <div>
-              <p className="mb-2 font-black">Errors destacats</p>
-              <ul className="flex flex-col gap-2">
-                {evaluation.errors_destacats.map((e, i) => (
-                  <li key={i} className="flex flex-wrap items-center gap-2 rounded-xl bg-cream px-3 py-2 text-sm">
-                    <span className="font-bold text-coral line-through">{e.element_original}</span>
-                    <span aria-hidden="true">→</span>
-                    <span className="font-black text-teal">{e.correccio_suggerida}</span>
-                    <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-xs font-black opacity-70">
-                      {e.tipus} · {e.gravetat}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
+        evaluation.rubrica === 'a2_redaccio' ? <A2Result evaluation={evaluation} /> : <A1Result evaluation={evaluation} />
       )}
     </div>
+  );
+}
+
+// Anell amb la nota, títol i veredicte, comú a les dues rúbriques.
+function ScoreHeader({ score, max, pass, label, verdict, note }: {
+  score: number; max: number; pass: boolean; label: string; verdict: string; note: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-5">
+      <div
+        className="grid h-24 w-24 shrink-0 place-items-center rounded-full"
+        style={{ background: `conic-gradient(${pass ? '#2CA99B' : '#FF675D'} ${(score / max) * 360}deg, #E7E5E4 0deg)` }}
+        aria-label={`${score.toLocaleString('ca')} de ${max}`}
+      >
+        <div className="grid place-items-center rounded-full bg-white" style={{ height: '4.5rem', width: '4.5rem' }}>
+          <span className="text-center leading-none">
+            <span className="block text-xl font-black">{score.toLocaleString('ca')}/{max}</span>
+            <span className="text-[10px] font-black uppercase opacity-60">punts</span>
+          </span>
+        </div>
+      </div>
+      <div className="min-w-[12rem] flex-1">
+        <p className={`text-sm font-black uppercase tracking-wide ${pass ? 'text-teal' : 'text-coral'}`}>{label}</p>
+        <p className="text-2xl font-black">{verdict}</p>
+        <p className="mt-1 text-sm opacity-70">{note}</p>
+      </div>
+    </div>
+  );
+}
+
+function CriterionCard({ label, badge, text }: { label: string; badge: string; text: string }) {
+  return (
+    <div className="rounded-2xl border-2 border-ink/10 p-4">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <p className="font-black">{label}</p>
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${BAND_STYLE[badge.split('/')[0]] ?? 'bg-cream'}`}>{badge}</span>
+      </div>
+      <p className="text-sm opacity-80">{text}</p>
+    </div>
+  );
+}
+
+function ErrorList({ errors }: { errors: { original: string; correction: string; tag: string }[] }) {
+  if (errors.length === 0) return null;
+  return (
+    <div>
+      <p className="mb-2 font-black">Errors destacats</p>
+      <ul className="flex flex-col gap-2">
+        {errors.map((e, i) => (
+          <li key={i} className="flex flex-wrap items-center gap-2 rounded-xl bg-cream px-3 py-2 text-sm">
+            <span className="font-bold text-coral line-through">{e.original}</span>
+            <span aria-hidden="true">→</span>
+            <span className="font-black text-teal">{e.correction}</span>
+            <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-xs font-black opacity-70">{e.tag}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function A1Result({ evaluation }: { evaluation: A1WritingEvaluation }) {
+  const pass = evaluation.resultat === 'no eliminatòria';
+  return (
+    <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${pass ? 'border-teal/30' : 'border-coral/40'}`}>
+      <ScoreHeader
+        score={evaluation.puntuacio_global}
+        max={15}
+        pass={pass}
+        label="Avaluació de l'expressió escrita"
+        verdict={pass ? '✅ No eliminatòria' : '❌ Eliminatòria'}
+        note="Cal arribar a 9 de 15 punts perquè no siga eliminatòria."
+      />
+      <p className="rounded-2xl bg-cream p-4 font-bold">{evaluation.retorn_pedagogic}</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(Object.keys(CRITERION_LABELS) as WritingCriterionKey[]).map(key => (
+          <CriterionCard key={key} label={CRITERION_LABELS[key]} badge={evaluation.criteris[key].franja} text={evaluation.criteris[key].observacions} />
+        ))}
+      </div>
+      <ErrorList errors={evaluation.errors_destacats.map(e => ({
+        original: e.element_original, correction: e.correccio_suggerida, tag: `${e.tipus} · ${e.gravetat}`,
+      }))} />
+    </section>
+  );
+}
+
+function A2Result({ evaluation }: { evaluation: A2WritingEvaluation }) {
+  const mark = evaluation.mitjana_ponderada_base_10;
+  const pass = mark >= A2_PASS_MARK;
+  const words = evaluation.paraules_obligatories;
+  return (
+    <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${pass ? 'border-teal/30' : 'border-coral/40'}`}>
+      <ScoreHeader
+        score={mark}
+        max={10}
+        pass={pass}
+        label="Avaluació de l'expressió escrita"
+        verdict={pass ? '✅ Apte · Continues en la prova' : '❌ No apte · Quedes fora de la prova'}
+        note={`${evaluation.puntuacio_total_rubrica} de 50 punts en la rúbrica. Mínim per a continuar: ${A2_PASS_MARK} de 10 (el 40 % de l'àrea).`}
+      />
+      <p className="rounded-2xl bg-cream p-4 font-bold">{evaluation.comentari_global}</p>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${words.compleix_minim ? 'bg-teal text-white' : 'bg-coral text-white'}`}>
+          {words.compleix_minim ? '✓' : '✗'} {words.utilitzades.length} paraules de la llista
+        </span>
+        {words.utilitzades.map(w => (
+          <span key={w} className="rounded-full bg-cream px-3 py-1 text-xs font-black">{w}</span>
+        ))}
+        <span className="ml-auto rounded-full bg-cream px-3 py-1 text-xs font-black">{evaluation.recompte_paraules} paraules en total</span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(Object.keys(A2_CRITERION_LABELS) as A2CriterionKey[]).map(key => (
+          <CriterionCard
+            key={key}
+            label={A2_CRITERION_LABELS[key]}
+            badge={`${evaluation.criteris[key].puntuacio}/10`}
+            text={evaluation.criteris[key].justificacio}
+          />
+        ))}
+      </div>
+      <ErrorList errors={evaluation.errors_detectats.map(e => ({
+        original: e.segment_original, correction: e.proposta_correccio, tag: `${e.categoria}${e.sistematic ? ' · sistemàtic' : ''}`,
+      }))} />
+    </section>
   );
 }

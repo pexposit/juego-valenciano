@@ -2,11 +2,13 @@ import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
+import { countWords, usedRequiredWords } from '@parlaval/shared';
 import { getMcpTools } from './subagentErrorDetector.js';
 
-// Avaluador de l'Àrea 3 (Expressió i Interacció Escrites) de l'examen A1 de la
-// JQCV: puntua el formulari de l'exercici 7 amb la rúbrica oficial. Fa servir
-// les mateixes eines MCP (DNV, softvalencia, apertium) que el detector d'errors.
+// Avaluadors de l'Àrea 3 (Expressió i Interacció Escrites) dels exàmens de la
+// JQCV amb la rúbrica oficial de cada nivell: el formulari de l'A1 i la redacció
+// de l'A2. Fan servir les mateixes eines MCP (DNV, softvalencia, apertium) que
+// el detector d'errors.
 
 const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-4o';
 // Límit de rondes d'eines: si el model no para de consultar, es talla.
@@ -40,7 +42,7 @@ export const WritingEvaluationSchema = z.object({
   retorn_pedagogic: z.string(),
 });
 
-export type WritingEvaluation = z.infer<typeof WritingEvaluationSchema>;
+export type A1WritingEvaluation = z.infer<typeof WritingEvaluationSchema>;
 
 export const SYSTEM_PROMPT_A1_EIE = `# ROL I OBJECTIU
 Actues com a avaluador oficial de la Junta Qualificadora de Coneixements de Valencià (JQCV), seguint estrictament la normativa lingüística de l'Acadèmia Valenciana de la Llengua (AVL).
@@ -146,24 +148,19 @@ Retorna exclusivament un objecte JSON vàlid amb l'estructura següent:
 }
 \`\`\``;
 
-export async function evaluateA1Writing(args: {
-  instructions: string;
-  fields: string[];
-  answers: Record<string, string>;
-}): Promise<WritingEvaluation> {
+// Crida el LLM amb la rúbrica i resol les consultes a les eines MCP que demane,
+// fins que retorna l'avaluació amb l'esquema demanat.
+async function runEvaluation<T extends z.ZodTypeAny>(args: {
+  systemPrompt: string;
+  userContent: string;
+  schema: T;
+  name: string;
+}): Promise<z.infer<T>> {
   if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY no està configurada');
 
-  // Els camps en blanc també s'envien: l'adequació depén de si s'ha completat la tasca.
-  const form = args.fields
-    .map(field => `- ${field}: ${args.answers[field]?.trim() || '(en blanc)'}`)
-    .join('\n');
-
   const messages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: SYSTEM_PROMPT_A1_EIE },
-    {
-      role: 'user',
-      content: `Consigna de l'exercici 7:\n${args.instructions}\n\nFormulari omplit per l'aspirant:\n${form}`,
-    },
+    { role: 'system', content: args.systemPrompt },
+    { role: 'user', content: args.userContent },
   ];
 
   const { client: mcp, tools } = await getMcpTools();
@@ -171,7 +168,7 @@ export async function evaluateA1Writing(args: {
     model: MODEL_NAME,
     messages,
     tools: tools.length > 0 ? tools : undefined,
-    response_format: zodResponseFormat(WritingEvaluationSchema, 'avaluacio_eie_a1'),
+    response_format: zodResponseFormat(args.schema, args.name),
     reasoning_effort: 'none', // Obligatori per a usar tools amb gpt-6-luna en /v1/chat/completions
   });
 
@@ -200,16 +197,217 @@ export async function evaluateA1Writing(args: {
     }
     choice = (await request()).choices[0];
   }
-  console.log(`[exam-eval] Temps total: ${Date.now() - tStart}ms`);
+  console.log(`[exam-eval] ${args.name}: ${Date.now() - tStart}ms`);
 
   const parsed = choice?.message?.parsed;
   if (!parsed) throw new Error("El model no ha retornat una avaluació vàlida");
+  return parsed;
+}
+
+export async function evaluateA1Writing(args: {
+  instructions: string;
+  fields: string[];
+  answers: Record<string, string>;
+}): Promise<A1WritingEvaluation & { rubrica: 'a1_formulari' }> {
+  // Els camps en blanc també s'envien: l'adequació depén de si s'ha completat la tasca.
+  const form = args.fields
+    .map(field => `- ${field}: ${args.answers[field]?.trim() || '(en blanc)'}`)
+    .join('\n');
+
+  const parsed = await runEvaluation({
+    systemPrompt: SYSTEM_PROMPT_A1_EIE,
+    userContent: `Consigna de l'exercici 7:\n${args.instructions}\n\nFormulari omplit per l'aspirant:\n${form}`,
+    schema: WritingEvaluationSchema,
+    name: 'avaluacio_eie_a1',
+  });
 
   // La nota de cort és fixa: el resultat es deriva de la puntuació (1-15).
   const puntuacio = Math.min(15, Math.max(1, parsed.puntuacio_global));
   return {
     ...parsed,
+    rubrica: 'a1_formulari',
     puntuacio_global: puntuacio,
     resultat: puntuacio >= 9 ? 'no eliminatòria' : 'eliminatòria',
+  };
+}
+
+// ── A2: redacció breu amb paraules obligatòries ─────────────────────────────
+
+const A2_SCORES = [10, 6, 4, 1] as const;
+const A2Criteri = z.object({ puntuacio: z.number().int(), justificacio: z.string() });
+
+export const A2WritingEvaluationSchema = z.object({
+  criteris: z.object({
+    lexic: A2Criteri,
+    morfosintaxi: A2Criteri,
+    ortografia: A2Criteri,
+    coherencia_cohesio: A2Criteri,
+    adequacio: A2Criteri,
+  }),
+  paraules_obligatories: z.object({
+    utilitzades: z.array(z.string()),
+    compleix_minim: z.boolean(),
+  }),
+  puntuacio_total_rubrica: z.number(),
+  mitjana_ponderada_base_10: z.number(),
+  errors_detectats: z.array(z.object({
+    segment_original: z.string(),
+    proposta_correccio: z.string(),
+    categoria: z.enum(['lèxic', 'morfosintaxi', 'ortografia', 'connector']),
+    sistematic: z.boolean(),
+  })),
+  comentari_global: z.string(),
+});
+
+export type A2WritingEvaluation = z.infer<typeof A2WritingEvaluationSchema>;
+
+export const SYSTEM_PROMPT_A2_EIE = `# ROL I CONTEXT
+Actues com a avaluador oficial de la Junta Qualificadora de Coneixements de Valencià (JQCV), seguint fidelment la normativa lingüística de l'Acadèmia Valenciana de la Llengua (AVL).
+La teua missió és avaluar una tasca d'expressió i interacció escrita corresponent al nivell A2 segons la rúbrica oficial de competències comunicatives.
+
+---
+
+# ESCALA I CRITERIS DE PUNTUACIÓ
+La rúbrica avalua 5 criteris independents. Cada criteri s'ha de puntuar estrictament amb un dels valors discrets següents: **10**, **6**, **4** o **1** punt.
+
+### 1. COMPETÈNCIES LINGÜÍSTIQUES
+
+* **Lèxic:**
+  - **10 punts:** Disposa d'un vocabulari ampli que li permet resoldre la tasca amb nivell; utilitza sinònims, hipònims...
+  - **6 punts:** Disposa de vocabulari suficient per a poder resoldre la tasca sense problemes.
+  - **4 punts:** Respon a la tasca de manera molt justa i amb algun error lèxic que dificulta la comprensió global.
+  - **1 punt:** La tasca presenta errors lèxics que no permeten la comprensió del text.
+
+* **Morfosintaxi:**
+  - **10 punts:** El text presenta un control gramatical sense errors sistemàtics.
+  - **6 punts:** Coneix la morfologia del nivell, i els errors que puga fer no són sistemàtics.
+  - **4 punts:** Les estructures que usa són senzilles i presenten errors sistemàtics.
+  - **1 punt:** No controla els elements bàsics de la norma (concordança, díctics, possessius...).
+
+* **Ortografia:**
+  - **10 punts:** El text presenta errors ortogràfics puntuals, però, en general, s'ajusta a la norma.
+  - **6 punts:** Utilitza ortografia aproximada, suficient per a fer-se entendre, però no forçosament ajustada a la norma ortogràfica.
+  - **4 punts:** Presenta faltes ortogràfiques, però no afecten la comprensió del text.
+  - **1 punt:** L'ortografia usada s'allunya tant de la norma que impedix o dificulta molt la comprensió del text.
+
+### 2. COMPETÈNCIES TEXTUALS
+
+* **Coherència i cohesió:**
+  - **10 punts:** L'organització de les idees és correcta, les parts estan ben estructurades i l'ús dels connectors és l'adequat (complix els tres aspectes: organització, parts i connectors).
+  - **6 punts:** Usa correctament **dos** dels ítems següents: organització, parts o connectors.
+  - **4 punts:** Usa correctament **un** dels ítems següents: organització, parts o connectors.
+  - **1 punt:** No fa un ús correcte de **cap** dels ítems següents: organització, parts, connectors.
+
+* **Adequació:**
+  - **10 punts:** Afig elements de valor a l'objectiu complit de la tasca i el text respecta les indicacions d'extensió.
+  - **6 punts:** Complix l'objectiu de la tasca i el text respecta les indicacions d'extensió.
+  - **4 punts:** Complix **un** dels dos ítems següents: objectiu o extensió.
+  - **1 punt:** No complix **cap** dels ítems següents: objectiu, extensió.
+
+---
+
+# PARAULES OBLIGATÒRIES I EXTENSIÓ
+La consigna dona una llista de paraules i l'aspirant n'ha d'usar un mínim en el text (la consigna indica quantes). Algunes paraules de la llista poden no tindre relació amb la situació: triar les adequades també forma part de la tasca.
+- Una paraula compta com a usada si apareix en qualsevol forma flexionada (singular/plural, masculí/femení) i amb un sentit adequat al context. Una paraula inserida sense sentit o com una llista solta NO compta.
+- Rebràs un recompte automàtic de paraules i de paraules obligatòries detectades. Pren-lo com a referència: confirma'l, afig les que el recompte no haja detectat per variació morfològica i descarta les usades sense sentit.
+- **No arribar al mínim de paraules obligatòries vol dir que NO es complix l'objectiu de la tasca**: el criteri d'Adequació no pot passar de 4 (o 1 si tampoc es respecta l'extensió), i el Lèxic no pot passar de 6.
+- **L'extensió** es considera respectada si el nombre de paraules està dins del rang que indica la consigna. Un text fora del rang no complix l'ítem d'extensió en el criteri d'Adequació.
+- Indica en \`paraules_obligatories\` les paraules de la llista que realment has comptat com a usades i si s'arriba al mínim.
+
+---
+
+# ÚS D'EINES I SERVIDOR MCP
+- Tens accés a ferramentes MCP de consulta normativa (diccionari normatiu AVL, verificador de gramàtica).
+- Si dubtes sobre la validesa d'una variant morfològica (p. ex., desinències verbals, combinacions de pronoms clítics, formes dobles admeses) o un terme lèxic abans de catalogar-lo com a error, **invoca la ferramenta MCP pertinent per a verificar la norma oficial de l'AVL**.
+- No penalitzes trets lingüístics legítims segons la gramàtica normativa valenciana.
+
+---
+
+# FORMAT D'EIXIDA (JSON ESTRICTE)
+Retorna exclusivament un objecte JSON estructurat d'aquesta manera:
+
+\`\`\`json
+{
+  "criteris": {
+    "lexic": {
+      "puntuacio": 10,
+      "justificacio": "Explicació concisa de la tria del valor segons la rúbrica."
+    },
+    "morfosintaxi": {
+      "puntuacio": 6,
+      "justificacio": "Explicació del control gramatical i tipus d'errors detectats."
+    },
+    "ortografia": {
+      "puntuacio": 6,
+      "justificacio": "Explicació sobre la precisió ortogràfica o grau d'aproximació."
+    },
+    "coherencia_cohesio": {
+      "puntuacio": 10,
+      "justificacio": "Detalla si complix els tres ítems (organització, parts i connectors) o quins fallen."
+    },
+    "adequacio": {
+      "puntuacio": 6,
+      "justificacio": "Detalla el grau de compliment de l'objectiu comunicatiu, de les paraules obligatòries i del recompte d'extensió."
+    }
+  },
+  "paraules_obligatories": {
+    "utilitzades": ["paraula1", "paraula2"],
+    "compleix_minim": true
+  },
+  "puntuacio_total_rubrica": 38,
+  "mitjana_ponderada_base_10": 7.6,
+  "errors_detectats": [
+    {
+      "segment_original": "text amb error",
+      "proposta_correccio": "forma normativa segons AVL",
+      "categoria": "lèxic | morfosintaxi | ortografia | connector",
+      "sistematic": false
+    }
+  ],
+  "comentari_global": "Avaluació constructiva i orientada a l'estudiant de nivell A2."
+}
+\`\`\``;
+
+// Un valor fora de l'escala es porta al més pròxim (10, 6, 4 o 1).
+const snapScore = (value: number) =>
+  A2_SCORES.reduce((best, s) => (Math.abs(s - value) < Math.abs(best - value) ? s : best), A2_SCORES[0]);
+
+export async function evaluateA2Writing(args: {
+  instructions: string;
+  text: string;
+  minWords: number;
+  maxWords: number;
+  words: string[];
+  minWordsUsed: number;
+}): Promise<A2WritingEvaluation & { rubrica: 'a2_redaccio'; recompte_paraules: number }> {
+  const count = countWords(args.text);
+  const detected = usedRequiredWords(args.text, args.words);
+
+  const parsed = await runEvaluation({
+    systemPrompt: SYSTEM_PROMPT_A2_EIE,
+    userContent: [
+      `Consigna:\n${args.instructions}`,
+      `Extensió demanada: entre ${args.minWords} i ${args.maxWords} paraules.`,
+      `Paraules de la llista (cal usar-ne almenys ${args.minWordsUsed}): ${args.words.join(', ')}.`,
+      `Recompte automàtic: ${count} paraules (${count >= args.minWords && count <= args.maxWords ? 'dins' : 'fora'} del rang). ` +
+        `Paraules de la llista detectades (${detected.length}): ${detected.join(', ') || 'cap'}.`,
+      `Text de l'aspirant:\n"""\n${args.text.trim()}\n"""`,
+    ].join('\n\n'),
+    schema: A2WritingEvaluationSchema,
+    name: 'avaluacio_eie_a2',
+  });
+
+  // Els totals es calculen ací a partir dels criteris, perquè sempre quadren.
+  const criteris = Object.fromEntries(
+    Object.entries(parsed.criteris).map(([k, c]) => [k, { ...c, puntuacio: snapScore(c.puntuacio) }]),
+  ) as A2WritingEvaluation['criteris'];
+  const total = Object.values(criteris).reduce((sum, c) => sum + c.puntuacio, 0);
+  return {
+    ...parsed,
+    rubrica: 'a2_redaccio',
+    recompte_paraules: count,
+    criteris,
+    puntuacio_total_rubrica: total,
+    mitjana_ponderada_base_10: Math.round((total / 5) * 10) / 10,
   };
 }

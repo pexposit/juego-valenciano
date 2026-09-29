@@ -42,3 +42,25 @@ export function sanitizeHistory(history: HistoryMessage[]): HistoryMessage[] {
   }
   return out;
 }
+
+/* ── Redaccions dels exàmens ──────────────────────────────────────────── */
+// El frontend (comptador en directe) i el backend (dades per a l'avaluador)
+// han de comptar igual les paraules i les paraules obligatòries usades.
+
+export const countWords = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+
+const normalizeWord = (text: string) => text.toLocaleLowerCase('ca').normalize('NFD').replace(/\p{M}/gu, '');
+
+// Formes acceptades d'una paraula: singular i plural (estoig/estoigs, agenda/agendes).
+// Una paraula amb gènere com «malalt/a» accepta també el femení (malalta, malaltes).
+const wordForms = (word: string) => {
+  const [base, feminine] = normalizeWord(word).split('/');
+  const forms = (w: string) => [w, `${w}s`, w.endsWith('a') ? `${w.slice(0, -1)}es` : w];
+  return new Set([...forms(base), ...(feminine ? forms(base + feminine) : [])]);
+};
+
+/** Paraules de la llista que apareixen en el text (en qualsevol de les seues formes). */
+export function usedRequiredWords(text: string, words: string[]): string[] {
+  const tokens = new Set(normalizeWord(text).split(/[^\p{L}·]+/u).filter(Boolean));
+  return words.filter(w => [...wordForms(w)].some(f => tokens.has(f)));
+}

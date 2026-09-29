@@ -24,15 +24,20 @@ export async function fetchExam(id: string): Promise<Exam | null> {
   if (!res.ok) throw new Error("No hem pogut carregar l'examen");
   return res.json();
 }
-// Avalua amb el LLM (rúbrica oficial de la JQCV) el formulari d'un exercici d'expressió escrita.
-export async function evaluateExamWriting(examId: string, exerciseN: number, answers: Record<string, string>): Promise<WritingEvaluation> {
+// Avalua amb el LLM (rúbrica oficial de la JQCV) un exercici d'expressió escrita:
+// el formulari de l'A1 (`answers`) o la redacció de l'A2 (`text`).
+export async function evaluateExamWriting(
+  examId: string,
+  exerciseN: number,
+  body: { answers: Record<string, string> } | { text: string },
+): Promise<WritingEvaluation> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(
     `${import.meta.env.VITE_API_BASE_URL}/api/exams/${encodeURIComponent(examId)}/exercises/${exerciseN}/evaluate`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify(body),
     },
   );
   if (!res.ok) {
