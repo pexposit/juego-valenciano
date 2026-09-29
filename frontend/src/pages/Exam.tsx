@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Clock, ExternalLink, Headphones, Mic, PenLine, RotateCcw } from 'lucide-react';
 import { Logo } from '../components/ui';
-import { BinaryExercise, ChoiceExercise, FormExercise, MatchExercise, OralExercise } from '../components/ExamExercises';
+import { BinaryExercise, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingExercise } from '../components/ExamExercises';
 import type { Exam as ExamResource, ExamArea, ExamExercise, ExamQuestion } from '../lib/types';
 
 const AREA_ICONS = [Headphones, BookOpen, PenLine, Mic];
@@ -9,7 +9,7 @@ const AREA_ICONS = [Headphones, BookOpen, PenLine, Mic];
 type Progress = {
   answers: Record<number, string>;
   checked: number[]; // àrees corregides
-  form: Record<string, string>;
+  form: Record<string, string>; // camps del formulari i textos de redacció
 };
 
 const EMPTY: Progress = { answers: {}, checked: [], form: {} };
@@ -27,6 +27,10 @@ function loadProgress(id: string): Progress {
 
 const gradable = (e: ExamExercise): e is Extract<ExamExercise, { questions: ExamQuestion[] }> =>
   e.kind === 'choice' || e.kind === 'binary' || e.kind === 'match';
+
+// "de l'exercici 1", "dels exercicis 1 i 2", "dels exercicis 1, 2 i 3".
+const listExercises = (ns: number[]) =>
+  ns.length === 1 ? `de l'exercici ${ns[0]}` : `dels exercicis ${ns.slice(0, -1).join(', ')} i ${ns[ns.length - 1]}`;
 
 const questionsOf = (area: ExamArea) => area.exercises.filter(gradable).flatMap(e => e.questions);
 
@@ -124,6 +128,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
               Basat en l'examen oficial de la {exam.body} <ExternalLink size={12} />
             </a>
           )}
+          {exam.pass_rule && <p className="relative mt-2 max-w-3xl text-xs text-white/60">{exam.pass_rule}</p>}
         </section>
 
         {/* Navegació per àrees */}
@@ -177,7 +182,17 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
             </span>
             <div className="min-w-[14rem] flex-1">
               <p className="font-black">Àudio de la comprensió oral</p>
-              <p className="text-sm opacity-60">Conté els àudios dels exercicis 1, 2 i 3. Escolta'ls dos vegades.</p>
+              <p className="text-sm opacity-60">
+                Conté els àudios {listExercises(area.exercises.map(e => e.n))}. Escolta'ls dos vegades.
+                {exam.audio_source_url && (
+                  <>
+                    {' '}
+                    <a href={exam.audio_source_url} target="_blank" rel="noreferrer" className="font-bold text-teal hover:underline">
+                      Àudio oficial
+                    </a>
+                  </>
+                )}
+              </p>
             </div>
             <audio controls preload="metadata" src={resource.url} className="w-full sm:w-80" aria-label="Àudio de la comprensió oral" />
           </section>
@@ -189,6 +204,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
               <span className="shrink-0 rounded-xl bg-orange px-3 py-1 text-sm font-black text-white">Exercici {exercise.n}</span>
               <p className="font-bold opacity-80">{exercise.instructions}</p>
             </div>
+            {'reading' in exercise && exercise.reading && <Reading reading={exercise.reading} />}
             <ExerciseBody
               exercise={exercise}
               answers={progress.answers}
@@ -248,10 +264,11 @@ function ExerciseBody({
     case 'binary':
       return <BinaryExercise questions={exercise.questions} options={exercise.options ?? []} {...props} />;
     case 'match':
-      return <MatchExercise questions={exercise.questions} options={exercise.options ?? []} {...props} />;
+      return <MatchExercise questions={exercise.questions} options={exercise.options ?? []} optionsTitle={exercise.options_title} {...props} />;
     case 'form':
       return (
         <FormExercise
+          title={exercise.title}
           fields={exercise.fields}
           criteria={exercise.criteria}
           maxPoints={exercise.max_points}
@@ -259,6 +276,20 @@ function ExerciseBody({
           onChange={onFormChange}
         />
       );
+    case 'writing': {
+      const key = `writing-${exercise.n}`;
+      return (
+        <WritingExercise
+          title={exercise.title}
+          minWords={exercise.min_words}
+          maxWords={exercise.max_words}
+          words={exercise.words}
+          minWordsUsed={exercise.min_words_used}
+          value={form[key] ?? ''}
+          onChange={value => onFormChange(key, value)}
+        />
+      );
+    }
     case 'oral':
       return <OralExercise proposals={exercise.proposals} />;
   }

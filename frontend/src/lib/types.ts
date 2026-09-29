@@ -12,16 +12,28 @@ export type TurnResponse={reply_text:string;transcription?:string|null;reply_aud
 export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; playable:boolean };
 
 // Contingut d'un examen (resources.metadata.exam). Els exercicis `choice`,
-// `binary` i `match` es corregixen sols amb `answer`; `form` i `oral` són de
-// pràctica lliure.
+// `binary` i `match` es corregixen sols amb `answer`; `form`, `writing` i
+// `oral` són de pràctica lliure.
 export type ExamOption = { key: string; text?: string; image?: string; sign?: { title: string; lines: string[] } };
 export type ExamQuestion = { n: number; prompt?: string; image?: string; options?: ExamOption[]; answer: string };
 export type ExamCriterion = { title: string; items: { name: string; description: string }[] };
-export type ExamProposal = { title: string; questions: string[]; images: { prompt: string; image: string }[] };
+// Text de lectura que acompanya un exercici de comprensió escrita.
+export type ExamReading = { title?: string; paragraphs: string[] };
+export type ExamProposal = {
+  title: string;
+  duration?: string;
+  intro?: string;
+  questions: string[];
+  images: { prompt: string; image: string }[];
+  // Diàleg: cada aspirant defén el paper d'una persona.
+  roles?: { name: string; text: string }[];
+};
+type GradableExercise = { n: number; kind: 'choice' | 'binary' | 'match'; instructions: string; reading?: ExamReading; options_title?: string; options?: ExamOption[]; questions: ExamQuestion[] };
 export type ExamExercise =
-  | { n: number; kind: 'choice' | 'binary' | 'match'; instructions: string; options?: ExamOption[]; questions: ExamQuestion[] }
-  | { n: number; kind: 'form'; instructions: string; fields: string[]; max_points: number; criteria: ExamCriterion[] }
+  | GradableExercise
+  | { n: number; kind: 'form'; title?: string; instructions: string; fields: string[]; max_points: number; criteria: ExamCriterion[] }
+  | { n: number; kind: 'writing'; title?: string; instructions: string; min_words: number; max_words: number; words?: string[]; min_words_used?: number }
   | { n: number; kind: 'oral'; instructions: string; proposals: ExamProposal[] };
 export type ExamArea = { n: number; title: string; weight: number; duration: string; intro?: string; audio?: boolean; exercises: ExamExercise[] };
-export type ExamContent = { level: string; session: string; body: string; source_url?: string; areas: ExamArea[] };
+export type ExamContent = { level: string; session: string; body: string; source_url?: string; audio_source_url?: string; pass_rule?: string; areas: ExamArea[] };
 export type Exam = Pick<Resource, 'id' | 'name' | 'type' | 'category' | 'difficulty' | 'xp_earned' | 'content' | 'url' | 'icon' | 'color'> & { exam: ExamContent };

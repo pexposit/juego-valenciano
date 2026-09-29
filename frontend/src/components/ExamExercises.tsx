@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion } from '../lib/types';
+import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading } from '../lib/types';
 
 // Respostes de l'aspirant (número de pregunta -> clau de l'opció) i si l'àrea ja
 // s'ha corregit: en eixe cas es marquen les encertades i les errades.
@@ -74,7 +74,44 @@ function OptionChips({ q, options, answers, checked, onAnswer }: AnswerProps & {
   );
 }
 
-/* ── Exercici amb opcions pròpies per pregunta (imatges a/b/c) ─────────── */
+/* ── Text de lectura dels exercicis de comprensió escrita ─────────────── */
+export function Reading({ reading }: { reading: ExamReading }) {
+  return (
+    <div className="mb-6 rounded-2xl border-l-4 border-mustard bg-cream px-6 py-5">
+      {reading.title && <h3 className="mb-3 text-xl font-black">{reading.title}</h3>}
+      <div className="flex flex-col gap-3 leading-relaxed">
+        {reading.paragraphs.map(p => <p key={p.slice(0, 40)}>{p}</p>)}
+      </div>
+    </div>
+  );
+}
+
+/* ── Opció de text en una llista (a, b, c) ─────────────────────────────── */
+function TextOption({ q, option, ...props }: AnswerProps & { q: ExamQuestion; option: ExamOption }) {
+  const status = optionStatus(q, option.key, props.answers, props.checked);
+  const box = {
+    idle: 'border-ink/10 bg-white hover:border-teal/60',
+    selected: 'border-teal bg-teal/10',
+    correct: 'border-teal bg-teal/10',
+    wrong: 'border-coral bg-coral/10',
+    missed: 'border-teal border-dashed bg-white',
+  }[status];
+  return (
+    <button
+      disabled={props.checked}
+      onClick={() => props.onAnswer(q.n, option.key)}
+      aria-pressed={props.answers[q.n] === option.key}
+      className={`btn-press flex w-full items-center gap-3 rounded-xl border-2 px-4 py-2.5 text-left transition-colors disabled:cursor-default ${box}`}
+    >
+      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-black uppercase ${CHIP[status]}`}>
+        {option.key}
+      </span>
+      <span className="font-bold">{option.text}</span>
+    </button>
+  );
+}
+
+/* ── Exercici amb opcions pròpies per pregunta (imatges o frases a/b/c) ── */
 export function ChoiceExercise({ questions, ...props }: AnswerProps & { questions: ExamQuestion[] }) {
   const { answers, checked, onAnswer } = props;
   return (
@@ -85,6 +122,11 @@ export function ChoiceExercise({ questions, ...props }: AnswerProps & { question
             <QuestionNumber n={q.n} result={resultOf(q, answers, checked)} />
             <p className="text-lg font-black">{q.prompt}</p>
           </div>
+          {q.options?.every(o => !o.image) ? (
+            <div className="flex flex-col gap-2 pl-11">
+              {q.options.map(o => <TextOption key={o.key} q={q} option={o} {...props} />)}
+            </div>
+          ) : (
           <div className="grid grid-cols-3 gap-3">
             {(q.options ?? []).map(o => {
               const status = optionStatus(q, o.key, answers, checked);
@@ -107,6 +149,7 @@ export function ChoiceExercise({ questions, ...props }: AnswerProps & { question
               );
             })}
           </div>
+          )}
         </div>
       ))}
     </div>
@@ -189,12 +232,15 @@ function MatchOption({ option, index }: { option: ExamOption; index: number }) {
   );
 }
 
-export function MatchExercise({ questions, options, ...props }: AnswerProps & { questions: ExamQuestion[]; options: ExamOption[] }) {
+export function MatchExercise({ questions, options, optionsTitle, ...props }: AnswerProps & { questions: ExamQuestion[]; options: ExamOption[]; optionsTitle?: string }) {
   const grid = options.some(o => o.image || o.sign) ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2';
   return (
     <div className="flex flex-col gap-5">
-      <div className={`grid gap-4 rounded-2xl bg-cream p-4 ${grid}`}>
-        {options.map((o, i) => <MatchOption key={o.key} option={o} index={i} />)}
+      <div className="rounded-2xl bg-cream p-4">
+        {optionsTitle && <h3 className="mb-3 text-center text-lg font-black">{optionsTitle}</h3>}
+        <div className={`grid gap-4 ${grid}`}>
+          {options.map((o, i) => <MatchOption key={o.key} option={o} index={i} />)}
+        </div>
       </div>
       <ul className="flex flex-col divide-y divide-ink/10">
         {questions.map(q => (
@@ -211,8 +257,9 @@ export function MatchExercise({ questions, options, ...props }: AnswerProps & { 
 
 /* ── Expressió escrita: formulari lliure amb la rúbrica d'avaluació ────── */
 export function FormExercise({
-  fields, criteria, maxPoints, values, onChange,
+  title, fields, criteria, maxPoints, values, onChange,
 }: {
+  title?: string;
   fields: string[];
   criteria: ExamCriterion[];
   maxPoints: number;
@@ -224,7 +271,7 @@ export function FormExercise({
     <div className="flex flex-col gap-5">
       <div className="overflow-hidden rounded-2xl border-2 border-teal/30 bg-white">
         <div className="flex items-center justify-between bg-teal px-5 py-3 text-white">
-          <p className="font-black">📚 Biblioteca municipal · Sol·licitud de carnet</p>
+          <p className="font-black">📝 {title ?? 'Formulari'}</p>
           <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black">{filled}/{fields.length} camps</span>
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2">
@@ -270,14 +317,84 @@ export function FormExercise({
   );
 }
 
-/* ── Expressió oral: propostes amb targetes de preguntes i imatges ─────── */
+/* ── Expressió escrita: redacció lliure amb límit de paraules ─────────── */
+const countWords = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+const normalize = (text: string) => text.toLocaleLowerCase('ca').normalize('NFD').replace(/\p{M}/gu, '');
+// Formes acceptades d'una paraula: singular i plural (estoig/estoigs, agenda/agendes).
+const wordForms = (word: string) => {
+  const w = normalize(word);
+  return new Set([w, `${w}s`, w.endsWith('a') ? `${w.slice(0, -1)}es` : w]);
+};
+
+export function WritingExercise({
+  title, minWords, maxWords, words = [], minWordsUsed = 0, value, onChange,
+}: {
+  title?: string;
+  minWords: number;
+  maxWords: number;
+  words?: string[];
+  minWordsUsed?: number;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const count = countWords(value);
+  const inRange = count >= minWords && count <= maxWords;
+  // Una paraula compta com a usada també en plural o amb majúscules (estoigs, Llapis...).
+  const tokens = new Set(normalize(value).split(/[^\p{L}·]+/u).filter(Boolean));
+  const used = new Set(words.filter(w => [...wordForms(w)].some(f => tokens.has(f))));
+  const countColor = count === 0 ? 'bg-white/20' : inRange ? 'bg-white text-teal' : 'bg-coral';
+
+  return (
+    <div className="flex flex-col gap-4">
+      {words.length > 0 && (
+        <div className="rounded-2xl bg-cream p-4">
+          <p className="mb-2 text-sm font-black">
+            Utilitza com a mínim {minWordsUsed} d'estes paraules (en singular o en plural):{' '}
+            <span className={used.size >= minWordsUsed ? 'text-teal' : 'opacity-60'}>{used.size}/{minWordsUsed}</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {words.map(w => (
+              <span
+                key={w}
+                className={`flex items-center gap-1 rounded-full border-2 px-3 py-1 text-sm font-black transition-colors ${
+                  used.has(w) ? 'border-teal bg-teal text-white' : 'border-ink/10 bg-white text-ink/70'
+                }`}
+              >
+                {used.has(w) && <Check size={14} />} {w}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-2xl border-2 border-teal/30 bg-white">
+        <div className="flex items-center justify-between bg-teal px-5 py-3 text-white">
+          <p className="font-black">📌 {title ?? 'Redacció'}</p>
+          <span className={`rounded-full px-3 py-1 text-xs font-black ${countColor}`}>
+            {count} paraules · {minWords}–{maxWords}
+          </span>
+        </div>
+        <textarea
+          rows={9}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="Escriu ací la teua nota..."
+          className="w-full resize-y bg-[repeating-linear-gradient(transparent,transparent_31px,#E7E5E4_32px)] px-5 py-3 leading-8 outline-none"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Expressió oral: propostes amb preguntes, imatges o diàleg per rols ── */
 export function OralExercise({ proposals }: { proposals: ExamProposal[] }) {
   const [active, setActive] = useState(0);
   const [index, setIndex] = useState(0);
+  const [role, setRole] = useState(0);
   const proposal = proposals[active];
   const total = proposal.questions.length;
 
-  const choose = (i: number) => { setActive(i); setIndex(0); };
+  const choose = (i: number) => { setActive(i); setIndex(0); setRole(0); };
 
   return (
     <div className="flex flex-col gap-5">
@@ -295,8 +412,18 @@ export function OralExercise({ proposals }: { proposals: ExamProposal[] }) {
         ))}
       </div>
 
+      {(proposal.intro || proposal.duration) && (
+        <p className="flex flex-wrap items-center gap-2 font-bold opacity-80">
+          {proposal.duration && (
+            <span className="rounded-full bg-mustard/40 px-3 py-1 text-xs font-black text-ink">⏱ {proposal.duration}</span>
+          )}
+          {proposal.intro}
+        </p>
+      )}
+
+      {total > 0 && (
       <div>
-        <p className="mb-2 text-sm font-black uppercase tracking-wide opacity-60">Primera part · Preguntes de l'examinador</p>
+        <p className="mb-2 text-sm font-black uppercase tracking-wide opacity-60">Preguntes de l'examinador</p>
         <div className="flex items-center gap-3 rounded-3xl bg-navy p-6 text-white">
           <button
             onClick={() => setIndex(i => Math.max(0, i - 1))}
@@ -330,6 +457,30 @@ export function OralExercise({ proposals }: { proposals: ExamProposal[] }) {
           ))}
         </div>
       </div>
+      )}
+
+      {proposal.roles && proposal.roles.length > 0 && (
+        <div>
+          <p className="mb-2 text-sm font-black uppercase tracking-wide opacity-60">Tria el teu paper i defén la teua proposta</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {proposal.roles.map((r, i) => (
+              <button
+                key={r.name}
+                onClick={() => setRole(i)}
+                aria-pressed={i === role}
+                className={`btn-press flex flex-col gap-2 rounded-3xl border-2 p-5 text-left transition-colors ${
+                  i === role ? 'border-navy bg-navy text-white shadow-lg' : 'border-ink/10 bg-cream hover:border-navy/40'
+                }`}
+              >
+                <span className={`text-xs font-black uppercase tracking-widest ${i === role ? 'text-mustard' : 'text-teal'}`}>
+                  {i === role ? `Tu eres la ${r.name.toLowerCase()}` : r.name}
+                </span>
+                <span className="leading-relaxed">{r.text}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {proposal.images.length > 0 && (
         <div>
