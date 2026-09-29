@@ -30,6 +30,7 @@ export const SCENARIOS: ScenarioDef[] = [
   { id: 'bar',        name: 'El Bar',             icon: '☕', color: '#F2B47C', bgIllustration: '#FDE8D0' },
   { id: 'oficina',    name: "L'Oficina",          icon: '💻', color: '#BDE9E8', bgIllustration: '#E2F5F4' },
   { id: 'ajuntament', name: "L'Ajuntament",       icon: '🏛️', color: '#C8D7EE', bgIllustration: '#E8EFF8' },
+  { id: 'colegi',     name: "L'Escola",           icon: '🏫', color: '#D9C8EE', bgIllustration: '#F0E8F8' },
   { id: 'turisme',    name: 'Oficina de Turisme', icon: '🗺️', color: '#9AD0EC', bgIllustration: '#E4F3FB' },
 ];
 

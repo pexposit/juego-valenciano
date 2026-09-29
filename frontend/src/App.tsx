@@ -6,7 +6,7 @@ import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
 import { endSession } from './lib/api';
 import type { Scenario } from './lib/types';
-import { chatRoute, DEFAULT_PROFILE, ROUTES, SCENARIOS, SCENARIO_GOALS, type Page } from './data/content';
+import { chatRoute, DEFAULT_PROFILE, ROUTES, SCENARIOS, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
@@ -151,7 +151,6 @@ export function App() {
           <PageTransition>
             <ScenarioSelect
               scenarios={SCENARIOS}
-              goals={SCENARIO_GOALS}
               name={name}
               onSelectScenario={s => navigate(chatRoute(s))}
               onBack={goDashboard}

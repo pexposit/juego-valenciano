@@ -1,10 +1,16 @@
-import type { Scenario, ScenarioInfo, TurnResponse } from './types';
+import type { Resource, Scenario, ScenarioInfo, TurnResponse } from './types';
 import { sanitizeHistory } from '@parlaval/shared';
 import { supabase } from './supabase';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
 export async function fetchScenarios(): Promise<Record<Scenario, ScenarioInfo>> {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenarios`);
   if (!res.ok) throw new Error('No hem pogut carregar els escenaris');
+  return res.json();
+}
+// Catàleg d'activitats de la BDD (taula resources).
+export async function fetchResources(): Promise<Resource[]> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/resources`);
+  if (!res.ok) throw new Error('No hem pogut carregar les activitats');
   return res.json();
 }
 export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];include_audio?:boolean}):Promise<TurnResponse>{
