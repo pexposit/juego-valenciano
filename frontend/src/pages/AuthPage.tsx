@@ -16,6 +16,13 @@ async function recordLogin(level: string) {
   }
 }
 
+// Marca la data d'avui com a última activitat. Un error no ha d'impedir l'accés.
+async function updateLastActive(client: NonNullable<typeof supabase>, userId: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { error } = await client.from('profiles').update({ last_active_on: today }).eq('id', userId);
+  if (error) console.error('Error actualitzant last_active_on:', error.message);
+}
+
 export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,6 +82,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
       return setNotice('Este compte no té cap perfil associat. Contacta amb l\'administrador.');
     }
 
+    await updateLastActive(client, data.user.id);
     await recordLogin(profile.level);
     setPage('dashboard');
   });

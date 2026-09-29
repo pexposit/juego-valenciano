@@ -3,7 +3,7 @@ import { MessageCircle, Volume2 } from 'lucide-react';
 import { SceneArt } from '../components/SceneArt';
 import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
-import { ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
+import { ensureSession, fetchInitialPrompt, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
 import type { Mood, Scenario } from '../lib/types';
 import { GREETING_BY_SCENARIO, scenarioName } from '../data/content';
 
@@ -93,8 +93,20 @@ export function Chat({
   // Salutació pregenerada: fitxer estàtic servit per Vite, es reprodueix en obrir
   // l'escenari sense processar res (autoplay si el navegador ho permet; sinó,
   // el botó de repetir la llança amb un gest de l'usuari).
+  // Comentat de moment: el text de la salutació ara ve de resources.metadata
+  // .initial_prompt i no coincideix amb l'àudio pregenerat.
+  // useEffect(() => {
+  //   if (!hasSubmitted.current) setReplyAudio(GREETING_BY_SCENARIO[scenario], true);
+  // }, [scenario]);
+
+  // Salutació de text de l'escenari (resources.metadata.initial_prompt a la BD).
+  // Si encara no ha arribat o falla, es queda amb el text per defecte.
   useEffect(() => {
-    if (!hasSubmitted.current) setReplyAudio(GREETING_BY_SCENARIO[scenario], true);
+    fetchInitialPrompt(scenario)
+      .then(prompt => {
+        if (prompt && !hasSubmitted.current) setCharacter(prompt);
+      })
+      .catch(error => console.error("Error carregant la salutació de l'escenari:", error));
   }, [scenario]);
 
   // En entrar a l'escenari es crea la seua entrada a session_resource.

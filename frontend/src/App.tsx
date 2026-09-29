@@ -125,11 +125,6 @@ export function App() {
     void saveProfile({ display_name });
   };
 
-  const updateLevel = (newLevel: string) => {
-    setLevel(newLevel);
-    void saveProfile({ level: newLevel });
-  };
-
   const logOut = async () => {
     // Tanca la sessió al backend abans d'invalidar el token de Supabase.
     await endSession().catch(err => console.error('Error tancant la sessió:', err));
@@ -167,7 +162,6 @@ export function App() {
               name={name}
               setName={updateName}
               level={level}
-              setLevel={updateLevel}
               xp={xp}
               back={() => navigate(-1)}
               onLogOut={logOut}

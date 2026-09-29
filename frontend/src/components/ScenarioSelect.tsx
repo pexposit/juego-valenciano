@@ -91,7 +91,7 @@ export function ScenarioSelect({
         )}
 
         {activitat === 'escenaris' && !loading && !error && (
-        <div className="desk-grid grid grid-cols-2 gap-4">
+        <div className="desk-grid grid gap-4">
           {scenarios.map((s) => {
             const style = SCENARIO_STYLE[s.scenario];
             return (

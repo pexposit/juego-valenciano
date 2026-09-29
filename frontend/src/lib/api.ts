@@ -158,3 +158,18 @@ export async function startSessionResource(sessionId: string, scenario: Scenario
   if (!res.ok) throw new Error("No s'ha pogut vincular l'escenari a la sessió");
   return res.json();
 }
+
+// Salutació inicial del personatge, definida a `resources.metadata.initial_prompt`
+// (veure supabase/migrations/20260929081233_reset_and_seed_resources.sql).
+export async function fetchInitialPrompt(scenario: Scenario): Promise<string | undefined> {
+  if (!supabase) return undefined;
+  const { data, error } = await supabase
+    .from('resources')
+    .select('metadata')
+    .eq('category', 'escenari')
+    .eq('type', scenario)
+    .single();
+  if (error) throw error;
+  const prompt = (data?.metadata as { initial_prompt?: unknown } | null)?.initial_prompt;
+  return typeof prompt === 'string' && prompt.trim() ? prompt : undefined;
+}
