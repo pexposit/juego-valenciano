@@ -1,11 +1,31 @@
 import type { Scenario, ScenarioInfo, TurnResponse } from './types';
 import { sanitizeHistory } from '@parlaval/shared';
 import { supabase } from './supabase';
+import { SCENARIO_BY_RESOURCE_NAME, sortByDisplayOrder, type ScenarioResource } from './scenarioResources';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
 export async function fetchScenarios(): Promise<Record<Scenario, ScenarioInfo>> {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenarios`);
   if (!res.ok) throw new Error('No hem pogut carregar els escenaris');
   return res.json();
+}
+
+// Catàleg d'escenaris: dades de domini compartides (no d'un usuari concret),
+// per això es llig directament de Supabase en lloc de passar pel backend.
+export async function fetchScenarioResources(): Promise<ScenarioResource[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('resources')
+    .select('id,name,content,xp_earned')
+    .eq('category', 'escenari');
+  if (error) throw error;
+  const resources = (data ?? [])
+    .map((row): ScenarioResource | null => {
+      const scenario = SCENARIO_BY_RESOURCE_NAME[row.name];
+      if (!scenario) return null;
+      return { id: row.id, name: row.name, content: row.content, xp_earned: row.xp_earned, scenario };
+    })
+    .filter((r): r is ScenarioResource => r !== null);
+  return sortByDisplayOrder(resources);
 }
 export async function sendTurn(payload:{session_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];include_audio?:boolean}):Promise<TurnResponse>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;

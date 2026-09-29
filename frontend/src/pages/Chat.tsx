@@ -35,6 +35,22 @@ export function Chat({
   const [audioSource, setAudioSource] = useState<string>();
   const replyAudio = useRef<HTMLAudioElement | null>(null);
   const hasSubmitted = useRef(false);
+  const sessionPromise = useRef<Promise<string>>();
+
+  // Crea la sessió (i el vincle session_resource al backend) en entrar a
+  // l'escenari, no en el primer missatge: un mateix escenari no ha de crear
+  // dos sessions encara que `submit` també la demane abans que acabe açò.
+  const getSession = () => {
+    if (!sessionPromise.current) {
+      sessionPromise.current = createSession(scenario, level).then(id => { setSession(id); return id; });
+    }
+    return sessionPromise.current;
+  };
+
+  useEffect(() => {
+    getSession().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenario]);
 
   // Nunca se usa la voz del navegador (speechSynthesis): solo audio generado
   // por el backend o los saludos pregenerados.
@@ -88,8 +104,7 @@ export function Chat({
     setBubbleKey(k => k + 1);
     setLoading(true);
     try {
-      const activeSession = session || await createSession(scenario, level);
-      if (!session) setSession(activeSession);
+      const activeSession = session || await getSession();
       // El personatge ha de recordar el que s'ha dit: li enviem el context de la
       // conversa actual (el primer missatge inclou el salut inicial del personatge).
       const context: HistoryItem[] = history.length > 0

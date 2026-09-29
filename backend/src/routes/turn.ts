@@ -15,6 +15,13 @@ import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
 import { stt, tts } from '../services/voice.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
+import { RESOURCE_NAME_BY_SCENARIO } from '../scenarios/resourceNames.js';
+
+// A la BD, el rol del personatge es desa com "system" (conveni user/system
+// dels LLM); a la resta del codi (agent, frontend, wire format) es continua
+// dient "character" perquè no depenga de com es diu la columna a la BD.
+const roleToDb = (role: 'user' | 'character') => (role === 'character' ? 'system' : 'user');
+const roleFromDb = (role: string): 'user' | 'character' => (role === 'system' ? 'character' : 'user');
 
 export const turnRouter = Router();
 
@@ -43,19 +50,32 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
 
     const client = db(req.userId);
 
-    // Validate session (skip in demo mode)
+    // Validate session (skip in demo mode). Una sessió ja no porta l'escenari
+    // directament (columna eliminada): es comprova a través de la fila de
+    // `session_resource` que l'enllaça amb el recurs de l'escenari demanat.
+    let sessionResourceId: string | undefined;
     if (client) {
-      const { data: session, error: sessionError } = await client
-        .from('conversation_sessions')
-        .select('id,user_id,scenario')
-        .eq('id', data.session_id)
-        .single();
-      if (!session || session.user_id !== req.userId || session.scenario !== data.scenario) {
+      const resourceName = RESOURCE_NAME_BY_SCENARIO[data.scenario];
+      const { data: resource } = resourceName
+        ? await client.from('resources').select('id').eq('name', resourceName).single()
+        : { data: null };
+
+      const { data: link, error: linkError } = resource
+        ? await client
+            .from('session_resource')
+            .select('id, sessions!inner(user_id)')
+            .eq('sesion_id', data.session_id)
+            .eq('recurso_id', resource.id)
+            .single()
+        : { data: null, error: null };
+
+      if (!link || (link.sessions as unknown as { user_id: string }).user_id !== req.userId) {
         // Un error de consulta (BD caiguda, permisos) es veu als logs; el client
         // rep el mateix 403 que si la sessió no existira.
-        if (sessionError) console.warn('[turn] error consultant la sessió:', sessionError.message);
+        if (linkError) console.warn('[turn] error consultant la sessió:', linkError.message);
         return res.status(403).json({ error: 'Sessió no vàlida' });
       }
+      sessionResourceId = link.id;
     }
 
     // El historial enviado por el cliente NO es de confianza (un cliente
@@ -70,13 +90,18 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       const { data: historyData, error: historyError } = await client
         .from('conversation_messages')
         .select('role,content_text')
-        .eq('session_id', data.session_id)
+        .eq('session_resource_id', sessionResourceId)
         .order('created_at', { ascending: false })
         .limit(HISTORY_MAX_MESSAGES);
       // Si la lectura falla, el torn continua sense context: pitjor resposta,
       // però el client no es queda sense contestació.
       if (historyError) console.error("[turn] no hem pogut llegir l'historial:", historyError.message);
-      history = sanitizeHistory(((historyData || []).reverse()) as HistoryMessage[]);
+      history = sanitizeHistory(
+        (historyData || []).reverse().map((m: { role: string; content_text: string }) => ({
+          role: roleFromDb(m.role),
+          content_text: m.content_text,
+        })),
+      );
     } else {
       history = sanitizeHistory(data.history);
     }
@@ -101,16 +126,15 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           // es perd en silenci (i l'operador no se n'assabenta mai).
           const { error: insertError } = await client.from('conversation_messages').insert([
             {
-              session_id: data.session_id,
-              role: 'user',
+              session_resource_id: sessionResourceId,
+              role: roleToDb('user'),
               content_text: text,
               input_mode: data.input_mode,
               detected_level_signal: reply.detected_level_signal,
-              error_flags: reply.error_flags,
             },
             {
-              session_id: data.session_id,
-              role: 'character',
+              session_resource_id: sessionResourceId,
+              role: roleToDb('character'),
               content_text: reply.reply_text,
               input_mode: 'text',
             },

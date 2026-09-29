@@ -5,7 +5,8 @@ import { ScenarioSelect } from './components/ScenarioSelect';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
 import type { Scenario } from './lib/types';
-import { chatRoute, DEFAULT_PROFILE, ROUTES, SCENARIOS, SCENARIO_GOALS, type Page } from './data/content';
+import { SCENARIO_KEYS } from '@parlaval/shared';
+import { chatRoute, DEFAULT_PROFILE, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
@@ -15,7 +16,7 @@ import { Profile } from './pages/Profile';
 
 type ProfileFields = { display_name?: string; level?: string };
 
-const SCENARIO_IDS = new Set<string>(SCENARIOS.map(s => s.id));
+const SCENARIO_IDS = new Set<string>(SCENARIO_KEYS);
 const isScenario = (value: string | undefined): value is Scenario => !!value && SCENARIO_IDS.has(value);
 
 // Llig l'escenari de la URL (/xat/:scenario) i el valida; si no és un
@@ -147,8 +148,6 @@ export function App() {
         element={
           <PageTransition>
             <ScenarioSelect
-              scenarios={SCENARIOS}
-              goals={SCENARIO_GOALS}
               name={name}
               onSelectScenario={s => navigate(chatRoute(s))}
               onBack={goDashboard}

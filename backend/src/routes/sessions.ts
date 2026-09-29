@@ -4,6 +4,7 @@ import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { sessionSchema } from '../schemas.js';
+import { RESOURCE_NAME_BY_SCENARIO } from '../scenarios/resourceNames.js';
 import { runPedagogicalEvaluation } from '../services/subagentRecommendation.js';
 
 export const sessionsRouter = Router();
@@ -18,13 +19,32 @@ sessionsRouter.post('/api/sessions', requireAuth, async (req: AuthRequest, res) 
       return res.status(201).json({ session_id: crypto.randomUUID() });
     }
 
-    const { data, error } = await client
-      .from('conversation_sessions')
-      .insert({ user_id: req.userId!, scenario: body.scenario, level_at_start: body.level })
+    const resourceName = RESOURCE_NAME_BY_SCENARIO[body.scenario];
+    if (!resourceName) return res.status(400).json({ error: 'Escenari sense recurs associat' });
+
+    const { data: resource, error: resourceError } = await client
+      .from('resources')
+      .select('id')
+      .eq('name', resourceName)
+      .single();
+    if (resourceError || !resource) {
+      console.error('[sessions] Recurs no trobat per a l\'escenari:', body.scenario, resourceError?.message);
+      return res.status(500).json({ error: 'No hem pogut iniciar la sessió' });
+    }
+
+    const { data: session, error: sessionError } = await client
+      .from('sessions')
+      .insert({ user_id: req.userId!, level_at_start: body.level })
       .select('id')
       .single();
-    if (error) throw error;
-    res.status(201).json({ session_id: data.id });
+    if (sessionError) throw sessionError;
+
+    const { error: linkError } = await client
+      .from('session_resource')
+      .insert({ sesion_id: session.id, recurso_id: resource.id });
+    if (linkError) throw linkError;
+
+    res.status(201).json({ session_id: session.id });
   } catch (error) {
     if (error instanceof z.ZodError) return validationError(res, error);
     console.error(error);

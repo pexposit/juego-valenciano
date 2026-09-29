@@ -1,7 +1,8 @@
-﻿import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Logo, ProfileButton } from './ui';
-import type { Scenario, ScenarioInfo } from '../lib/types';
-import type { ScenarioDef } from '../data/content';
+import type { Scenario } from '../lib/types';
+import { SCENARIO_STYLE, type ScenarioResource } from '../lib/scenarioResources';
+import { fetchScenarioResources } from '../lib/api';
 
 type Activitat = 'escenaris' | 'dictats' | 'expressio';
 
@@ -12,21 +13,29 @@ const ACTIVITATS: { id: Activitat; label: string }[] = [
 ];
 
 export function ScenarioSelect({
-  scenarios,
-  goals,
   name,
   onSelectScenario,
   onBack,
   onProfile,
 }: {
-  scenarios: ScenarioDef[];
-  goals: Record<Scenario, ScenarioInfo>;
   name: string;
   onSelectScenario: (s: Scenario) => void;
   onBack: () => void;
   onProfile: () => void;
 }) {
   const [activitat, setActivitat] = useState<Activitat>('escenaris');
+  const [scenarios, setScenarios] = useState<ScenarioResource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchScenarioResources()
+      .then(rows => { if (!cancelled) setScenarios(rows); })
+      .catch(() => { if (!cancelled) setError(true); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <main className="fade-up relative min-h-screen" style={{ background: '#FFF9ED' }}>
@@ -71,27 +80,37 @@ export function ScenarioSelect({
           </p>
         )}
 
-        {activitat === 'escenaris' && (
+        {activitat === 'escenaris' && loading && (
+          <p className="mt-10 text-center text-sm font-bold opacity-50">Carregant escenaris…</p>
+        )}
+
+        {activitat === 'escenaris' && !loading && error && (
+          <p className="mt-10 text-center text-sm font-bold opacity-50">
+            No hem pogut carregar els escenaris. Torna-ho a provar més tard.
+          </p>
+        )}
+
+        {activitat === 'escenaris' && !loading && !error && (
         <div className="desk-grid grid grid-cols-2 gap-4">
           {scenarios.map((s) => {
-            const g = goals[s.id];
+            const style = SCENARIO_STYLE[s.scenario];
             return (
               <button
                 key={s.id}
-                id={`scenario-select-${s.id}`}
-                onClick={() => onSelectScenario(s.id)}
+                id={`scenario-select-${s.scenario}`}
+                onClick={() => onSelectScenario(s.scenario)}
                 className="desk-card flex items-stretch text-left"
                 style={{ background: '#fff' }}
               >
                 <div
                   className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-l-[20px]"
-                  style={{ background: s.color }}
+                  style={{ background: style.color }}
                 >
-                  <span className="text-6xl select-none">{s.icon}</span>
+                  <span className="text-6xl select-none">{style.icon}</span>
                 </div>
                 <div className="flex flex-1 flex-col justify-center px-4 py-3">
                   <h1 className="block text-base font-black text-2xl"> {s.name} </h1>
-                  <p>Descripció</p>
+                  <p>{s.content || 'Descripció'}</p>
                 </div>
               </button>
             );
