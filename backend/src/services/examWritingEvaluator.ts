@@ -490,7 +490,7 @@ Has d'avaluar 5 criteris independents. Cada criteri s'ha de puntuar exclusivamen
 # CONTEXT DE LA TASCA
 Rebràs la consigna exacta a la qual respon l'aspirant. L'objectiu de la tasca s'avalua SEMPRE respecte d'eixa consigna:
 - **Exercici 6 (redacció amb opcions):** l'aspirant tria una de les dos opcions (A o B). Rebràs només l'opció triada, amb la seua situació comunicativa i els punts que ha de desenvolupar. L'objectiu es complix si el text respon a eixa situació (gènere textual, destinatari i registre: correu, blog, entrada web...) i tracta TOTS els punts indicats. Si en falta algun o el text respon a l'altra opció, l'ítem «objectiu» de l'Adequació NO es complix.
-- **Exercici 7 (text a partir d'un enunciat):** l'objectiu es complix si el text respon a la situació i a totes les demandes de l'enunciat (gènere textual, destinatari, registre i continguts que es demanen). L'enunciat pot remetre a una imatge de suport que no reps: no penalitzes que no se'n reproduïsquen dades concretes, però sí que el text s'allunye del tema o no faça el que demana l'enunciat.
+- **Exercici 7 (text a partir d'un enunciat):** l'objectiu es complix si el text respon a la situació i a totes les demandes de l'enunciat (gènere textual, destinatari, registre i continguts que es demanen). Quan l'enunciat demana tindre en compte una imatge, rebràs la transcripció del seu contingut: el text ha d'aprofitar-ne la informació (per exemple, incorporant alguns dels consells o dades, amb paraules pròpies i integrats en el discurs, no copiats com una llista). Si no n'aprofita res, l'ítem «objectiu» de l'Adequació NO es complix; si només copia la infografia sense elaboració, no pot tindre 10 en Adequació.
 - Indica en la justificació de l'Adequació quins punts o demandes de la consigna s'han tractat i quins no.
 
 # EXTENSIÓ
@@ -564,6 +564,7 @@ export async function evaluateB1Writing(args: {
   exerciseN: number;
   instructions: string;
   choice?: { key: string; text: string; points?: string[] };
+  imageText?: string; // contingut de la imatge de suport (exercici 7)
   text: string;
   minWords: number;
   maxWords: number;
@@ -581,7 +582,10 @@ export async function evaluateB1Writing(args: {
         `Opció triada per l'aspirant: ${args.choice.key}\nSituació: ${args.choice.text}`,
         ...(args.choice.points?.length ? [`Punts que ha de desenvolupar:\n${args.choice.points.map(p => `- ${p}`).join('\n')}`] : []),
       ]
-    : [`Exercici ${args.exerciseN}. Enunciat: ${args.instructions}`];
+    : [
+        `Exercici ${args.exerciseN}. Enunciat: ${args.instructions}`,
+        ...(args.imageText ? [`Contingut de la imatge de suport:\n${args.imageText}`] : []),
+      ];
 
   const parsed = await runEvaluation({
     systemPrompt: SYSTEM_PROMPT_B1_EIE,

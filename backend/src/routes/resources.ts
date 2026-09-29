@@ -108,6 +108,7 @@ type EvaluableExercise = {
   fields?: string[];
   min_words?: number; max_words?: number; words?: string[]; min_words_used?: number;
   choices?: { key: string; text: string; points?: string[] }[];
+  image_text?: string; // transcripció de la imatge de suport, per a l'avaluador
 };
 
 // Avaluació amb LLM de l'Àrea 3 (Expressió escrita): el formulari de l'A1 i les
@@ -164,6 +165,7 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
       exerciseN: exercise.n,
       instructions: exercise.instructions,
       choice,
+      imageText: exercise.image_text,
       text,
       minWords: exercise.min_words!,
       maxWords: exercise.max_words!,
