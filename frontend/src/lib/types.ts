@@ -8,4 +8,5 @@ export type TurnResponse={reply_text:string;transcription?:string|null;reply_aud
 
 // Fila de la taula resources: `category` agrupa les activitats (p. ex. 'escenari')
 // i `type` n'és la secció dins de la categoria (p. ex. 'mercat').
-export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null };
+// `icon`, `color` i `section_name` venen de resources.metadata (aparença de la secció).
+export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null };

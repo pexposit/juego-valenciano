@@ -12,7 +12,8 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
 
   const { data, error } = await client
     .from('resources')
-    .select('id, name, type, category, difficulty, xp_earned, content, url')
+    // De metadata només s'exposa l'aparença de la secció, no els prompts.
+    .select('id, name, type, category, difficulty, xp_earned, content, url, icon:metadata->>icon, color:metadata->>color, section_name:metadata->>section_name')
     .order('category')
     .order('type')
     .order('name');

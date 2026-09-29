@@ -17,24 +17,8 @@ export const ROUTES: Record<Page, string> = {
 
 export const chatRoute = (scenario: Scenario) => `/xat/${scenario}`;
 
-export type ScenarioDef = {
-  id: Scenario;
-  name: string;
-  icon: string;
-  color: string;
-  bgIllustration: string;
-};
 
-export const SCENARIOS: ScenarioDef[] = [
-  { id: 'mercat',     name: 'El Mercat',          icon: '🍊', color: '#FFD98A', bgIllustration: '#FFF3CC' },
-  { id: 'bar',        name: 'El Bar',             icon: '☕', color: '#F2B47C', bgIllustration: '#FDE8D0' },
-  { id: 'oficina',    name: "L'Oficina",          icon: '💻', color: '#BDE9E8', bgIllustration: '#E2F5F4' },
-  { id: 'ajuntament', name: "L'Ajuntament",       icon: '🏛️', color: '#C8D7EE', bgIllustration: '#E8EFF8' },
-  { id: 'colegi',     name: "L'Escola",           icon: '🏫', color: '#D9C8EE', bgIllustration: '#F0E8F8' },
-  { id: 'turisme',    name: 'Oficina de Turisme', icon: '🗺️', color: '#9AD0EC', bgIllustration: '#E4F3FB' },
-];
 
-export const scenarioName = (id: Scenario) => SCENARIOS.find(s => s.id === id)?.name ?? id;
 
 /* Objectius per defecte de cada escenari; es mostren mentres el backend respon. */
 export const SCENARIO_GOALS: Record<Scenario, ScenarioInfo> = {

@@ -5,7 +5,7 @@ import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
 import { ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
 import type { Mood, Scenario } from '../lib/types';
-import { GREETING_BY_SCENARIO, scenarioName } from '../data/content';
+import { GREETING_BY_SCENARIO } from '../data/content';
 
 const INITIAL_GREETING = 'Bon dia! Com et puc ajudar hui?';
 const VOICE_MESSAGE_LABEL = '🎙️ Missatge de veu';
@@ -14,9 +14,10 @@ const TTS_ATTEMPTS = 2;
 const ROUND_BUTTON = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors';
 
 export function Chat({
-  scenario, level, xp, onXpGained, onEnd, onBack,
+  scenario, title, level, xp, onXpGained, onEnd, onBack,
 }: {
   scenario: Scenario;
+  title: string;
   level: string;
   xp: number;
   onXpGained: (delta: number) => void;
@@ -170,7 +171,7 @@ export function Chat({
             className="rounded-full px-3.5 py-1.5 text-xs font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm"
             style={{ background: 'rgba(255,255,255,0.92)' }}
           >
-            {scenarioName(scenario)}
+            {title}
           </span>
         </div>
         <div

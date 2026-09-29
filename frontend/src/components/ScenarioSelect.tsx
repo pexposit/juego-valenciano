@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Logo, ProfileButton } from './ui';
 import { fetchResources } from '../lib/api';
 import type { Resource, Scenario } from '../lib/types';
-import type { ScenarioDef } from '../data/content';
 
 // Noms visibles de les categories conegudes; la resta es mostren capitalitzades.
 const CATEGORY_LABELS: Record<string, string> = {
@@ -34,15 +33,16 @@ function groupResources(resources: Resource[]): Category[] {
 }
 
 export function ScenarioSelect({
-  scenarios,
   name,
+  playable: isPlayableType,
   onSelectScenario,
   onBack,
   onProfile,
 }: {
-  scenarios: ScenarioDef[];
   name: string;
-  onSelectScenario: (s: Scenario) => void;
+  // Indica si un `type` té xat implementat (clau d'escenari coneguda).
+  playable: (type: string) => type is Scenario;
+  onSelectScenario: (s: Scenario, title: string) => void;
   onBack: () => void;
   onProfile: () => void;
 }) {
@@ -120,27 +120,30 @@ export function ScenarioSelect({
         {current && (
           <div key={current.id} className="desk-grid grid grid-cols-2 gap-4">
             {current.sections.map(({ type, resources: list }) => {
-              const def = scenarios.find(s => s.id === type);
-              const playable = current.id === PLAYABLE_CATEGORY && !!def;
               const [first] = list;
+              // L'aparença de la secció ve de metadata; es pren del primer recurs que la tinga.
+              const icon = list.find(r => r.icon)?.icon ?? '📘';
+              const color = list.find(r => r.color)?.color ?? '#E7E5E4';
+              const title = list.find(r => r.section_name)?.section_name ?? capitalize(type);
+              const playable = current.id === PLAYABLE_CATEGORY && isPlayableType(type);
               return (
                 <button
                   key={type}
                   id={`activity-${current.id}-${type}`}
                   disabled={!playable}
                   title={playable ? undefined : 'Pròximament disponible'}
-                  onClick={() => def && onSelectScenario(def.id)}
+                  onClick={() => isPlayableType(type) && onSelectScenario(type, title)}
                   className="desk-card flex items-stretch text-left"
                   style={{ background: '#fff' }}
                 >
                   <div
                     className="relative flex min-h-28 w-28 shrink-0 self-stretch items-center justify-center overflow-hidden rounded-l-[20px]"
-                    style={{ background: def?.color ?? '#E7E5E4' }}
+                    style={{ background: color }}
                   >
-                    <span className="text-6xl select-none">{def?.icon ?? '📘'}</span>
+                    <span className="text-6xl select-none">{icon}</span>
                   </div>
                   <div className="flex flex-1 flex-col justify-center gap-1 px-4 py-3">
-                    <h2 className="block text-2xl font-black">{def?.name ?? capitalize(type)}</h2>
+                    <h2 className="block text-2xl font-black">{title}</h2>
                     {list.length === 1 ? (
                       <>
                         <p className="text-sm font-bold">{first.name}</p>

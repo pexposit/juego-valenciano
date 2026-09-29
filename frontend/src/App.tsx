@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { SCENARIO_KEYS } from '@parlaval/shared';
 import { ScenarioSelect } from './components/ScenarioSelect';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
 import { endSession } from './lib/api';
 import type { Scenario } from './lib/types';
-import { chatRoute, DEFAULT_PROFILE, ROUTES, SCENARIOS, type Page } from './data/content';
+import { chatRoute, DEFAULT_PROFILE, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
@@ -16,7 +17,8 @@ import { Profile } from './pages/Profile';
 
 type ProfileFields = { display_name?: string; level?: string };
 
-const SCENARIO_IDS = new Set<string>(SCENARIOS.map(s => s.id));
+// Escenaris amb xat implementat (prompt al backend); el catàleg visible ve de la BDD.
+const SCENARIO_IDS = new Set<string>(SCENARIO_KEYS);
 const isScenario = (value: string | undefined): value is Scenario => !!value && SCENARIO_IDS.has(value);
 
 // Llig l'escenari de la URL (/xat/:scenario) i el valida; si no és un
@@ -26,11 +28,14 @@ function ChatRoute({
 }: { level: string; xp: number; onXpGained: (delta: number) => void; onBack: () => void }) {
   const { scenario } = useParams<{ scenario: string }>();
   const navigate = useNavigate();
+  // Nom de la secció triada (resources.metadata); si s'obri l'enllaç directament no hi és.
+  const title = (useLocation().state as { title?: string } | null)?.title;
   if (!isScenario(scenario)) return <Navigate to={ROUTES.scenarioselect} replace />;
   return (
     <PageTransition>
       <Chat
         scenario={scenario}
+        title={title ?? scenario}
         level={level}
         xp={xp}
         onXpGained={onXpGained}
@@ -150,9 +155,9 @@ export function App() {
         element={
           <PageTransition>
             <ScenarioSelect
-              scenarios={SCENARIOS}
               name={name}
-              onSelectScenario={s => navigate(chatRoute(s))}
+              playable={isScenario}
+              onSelectScenario={(s, title) => navigate(chatRoute(s), { state: { title } })}
               onBack={goDashboard}
               onProfile={() => navigate(ROUTES.profile)}
             />
