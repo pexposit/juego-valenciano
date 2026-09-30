@@ -8,6 +8,13 @@ export const LEVELS = ['principiant', 'intermedi', 'avancat'] as const;
 
 export type LevelKey = (typeof LEVELS)[number];
 
+/** Nivells del MECR (els de practice_exercises i dels exàmens) de cada nivell de l'aprenent. */
+export const LEVEL_CEFR: Record<LevelKey, readonly string[]> = {
+  principiant: ['A1', 'A2'],
+  intermedi: ['B1', 'B2'],
+  avancat: ['C1', 'C2'],
+};
+
 /* ── Límits de l'historial de conversa ────────────────────────────────── */
 /** Longitud màxima d'un missatge individual. */
 export const MESSAGE_MAX_CHARS = 2000;

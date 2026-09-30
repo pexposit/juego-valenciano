@@ -61,6 +61,8 @@ function ChatRoute({
         voice={section.voice}
         background={section.background}
         initialPrompt={section.initial_prompt}
+        summary={section.content}
+        objectives={section.objectius ?? []}
         level={level}
         xp={xp}
         onXpGained={onXpGained}
@@ -95,7 +97,7 @@ function ExamRoute({ onBack }: { onBack: () => void }) {
 }
 
 // Exercicis d'un contingut del temari (/practica/:id), de la taula practice_exercises.
-function PracticeRoute({ onBack }: { onBack: () => void }) {
+function PracticeRoute({ level, onBack }: { level: string; onBack: () => void }) {
   const { id } = useParams<{ id: string }>();
   // undefined = carregant; null = no existix.
   const [practice, setPractice] = useState<PracticeResource | null>();
@@ -114,7 +116,7 @@ function PracticeRoute({ onBack }: { onBack: () => void }) {
 
   if (practice === undefined) return null;
   if (!practice) return <Navigate to={ROUTES.scenarioselect} replace />;
-  return <PageTransition><Practice practice={practice} onBack={onBack} /></PageTransition>;
+  return <PageTransition><Practice practice={practice} userLevel={level} onBack={onBack} /></PageTransition>;
 }
 
 export function App() {
@@ -222,6 +224,7 @@ export function App() {
           <PageTransition>
             <ScenarioSelect
               name={name}
+              level={level}
               onSelect={resource => {
                 const route = activityRoute(resource);
                 if (route) navigate(route);
@@ -257,7 +260,7 @@ export function App() {
         element={<ChatRoute level={level} xp={xp} onXpGained={delta => setXp(x => x + delta)} onBack={() => navigate(-1)} />}
       />
       <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
-      <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute onBack={() => navigate(-1)} />} />
+      <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );

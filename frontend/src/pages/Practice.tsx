@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Headphones, Lightbulb, RotateCcw } from 'lucide-react';
-import { normalizeAnswer, PRACTICE_AREAS, type PracticeArea } from '@parlaval/shared';
+import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type PracticeArea } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
 import { evaluatePracticeExercise } from '../lib/api';
@@ -60,8 +60,14 @@ function groupByPassage(exercises: PracticeExercise[], passages: PracticePassage
   return groups;
 }
 
-export function Practice({ practice, onBack }: { practice: PracticeResource; onBack: () => void }) {
-  const levels = useMemo(() => [...new Set(practice.exercises.map(e => e.level))], [practice]);
+export function Practice({ practice, userLevel, onBack }: { practice: PracticeResource; userLevel: string; onBack: () => void }) {
+  // Només els nivells del MECR de l'aprenent (A1-A2, B1-B2 o C1-C2); si el
+  // contingut no en té cap (p. ex. un enllaç directe), es mostren tots.
+  const levels = useMemo(() => {
+    const all = [...new Set(practice.exercises.map(e => e.level))];
+    const own = all.filter(l => LEVEL_CEFR[userLevel as LevelKey]?.includes(l));
+    return own.length ? own : all;
+  }, [practice, userLevel]);
   const [level, setLevel] = useState(levels[0]);
   const [progress, setProgress] = useState<Progress>(() => loadProgress(practice.id, level));
   const [evaluating, setEvaluating] = useState<string>();

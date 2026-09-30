@@ -1,1 +1,1 @@
-select * from resources;
+Select * from resources where category = 'escenari';

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MessageCircle, Volume2 } from 'lucide-react';
+import { MessageCircle, Target, Volume2, X } from 'lucide-react';
 import { SceneArt } from '../components/SceneArt';
 import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
@@ -14,7 +14,7 @@ const TTS_ATTEMPTS = 2;
 const ROUND_BUTTON = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors';
 
 export function Chat({
-  scenario, category, title, voice, background, initialPrompt, level, xp, onXpGained, onEnd, onBack,
+  scenario, category, title, voice, background, initialPrompt, summary, objectives, level, xp, onXpGained, onEnd, onBack,
 }: {
   scenario: Scenario;
   // Categoria del recurs a la BDD: 'escenari' o una àrea de conversa del temari.
@@ -25,6 +25,9 @@ export function Chat({
   background: string | null;
   // Primer missatge del personatge (resources.metadata.initial_prompt); si no en té, es fa servir la salutació genèrica.
   initialPrompt: string | null;
+  // Quadre d'objectius: el resum de la situació (resources.content) i les tasques (metadata.objectius).
+  summary: string | null;
+  objectives: string[];
   level: string;
   xp: number;
   onXpGained: (delta: number) => void;
@@ -38,6 +41,9 @@ export function Chat({
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<Msg[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  // En pantalles estretes el quadre tapa la bombolla del personatge: comença tancat.
+  const [showObjectives, setShowObjectives] = useState(() => window.matchMedia('(min-width: 768px)').matches);
+  const hasObjectives = Boolean(summary) || objectives.length > 0;
   const [bubbleKey, setBubbleKey] = useState(0);
   const [audioSource, setAudioSource] = useState<string>();
   const replyAudio = useRef<HTMLAudioElement | null>(null);
@@ -194,6 +200,17 @@ export function Chat({
           ⚡ {xp} XP
         </div>
         <div className="flex items-center gap-2">
+          {hasObjectives && (
+            <button
+              onClick={() => setShowObjectives(v => !v)}
+              id="chat-objectives-btn"
+              aria-label="Objectius"
+              aria-pressed={showObjectives}
+              className={ROUND_BUTTON}
+            >
+              <Target size={19} />
+            </button>
+          )}
           <button
             onClick={() => setShowHistory(true)}
             id="chat-history-btn"
@@ -203,6 +220,29 @@ export function Chat({
           </button>
         </div>
       </header>
+
+      {/* Quadre d'objectius de l'escenari */}
+      {hasObjectives && showObjectives && (
+        <aside
+          id="chat-objectives"
+          className="absolute right-5 top-20 z-20 w-[min(calc(100%-2.5rem),320px)] rounded-3xl bg-white/95 p-5 shadow-xl backdrop-blur-sm"
+        >
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider" style={{ color: '#0D9488' }}>
+              <Target size={16} /> Objectius
+            </h2>
+            <button onClick={() => setShowObjectives(false)} aria-label="Tancar els objectius" className="btn-press rounded-full p-1 opacity-60 hover:opacity-100">
+              <X size={16} />
+            </button>
+          </div>
+          {summary && <p className="mb-3 text-sm font-bold opacity-70">{summary}</p>}
+          {objectives.length > 0 && (
+            <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm font-bold">
+              {objectives.map(o => <li key={o}>{o}</li>)}
+            </ol>
+          )}
+        </aside>
+      )}
 
       {/* Character bubble with entrance animation */}
       <section key={`char-${bubbleKey}`} className="bubble-enter bubble absolute left-5 top-[13%] z-10 max-w-[min(76%,440px)] rounded-3xl bg-white p-5 font-bold shadow-xl text-base">

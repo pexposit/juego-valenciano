@@ -49,11 +49,13 @@ function groupResources(resources: Resource[]): Category[] {
 
 export function ScenarioSelect({
   name,
+  level,
   onSelect,
   onBack,
   onProfile,
 }: {
   name: string;
+  level: string;
   onSelect: (resource: Resource) => void;
   onBack: () => void;
   onProfile: () => void;
@@ -73,7 +75,12 @@ export function ScenarioSelect({
     return () => { cancelled = true; };
   }, []);
 
-  const categories = useMemo(() => groupResources(resources ?? []), [resources]);
+  // Només les activitats del nivell de l'aprenent: resources.difficulty fa servir
+  // els mateixos valors que profiles.level (principiant, intermedi, avancat).
+  const categories = useMemo(
+    () => groupResources((resources ?? []).filter(r => r.difficulty === level)),
+    [resources, level],
+  );
   const current = categories.find(c => c.id === selected) ?? categories[0];
 
   return (
@@ -108,7 +115,7 @@ export function ScenarioSelect({
         )}
 
         {resources && categories.length === 0 && (
-          <p className="mt-10 text-center text-sm font-bold opacity-50">Encara no hi ha activitats disponibles.</p>
+          <p className="mt-10 text-center text-sm font-bold opacity-50">Encara no hi ha activitats per al teu nivell.</p>
         )}
 
         {/* Categories (resources.category), generades a partir de la BDD. */}

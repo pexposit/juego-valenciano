@@ -14,6 +14,8 @@ type Metadata = Record<string, unknown> | null;
 type ResourceRow = { category: string; url: string | null; metadata: Metadata; practice_exercises?: { count: number }[] };
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value : null);
+const textList = (value: unknown) =>
+  Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && v.trim() !== '') : [];
 
 export const EXAM_CATEGORY = 'examen';
 
@@ -67,6 +69,8 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
     background: text(metadata?.background),
     voice: text(metadata?.voice),
     initial_prompt: text(metadata?.initial_prompt),
+    // Objectius de la conversa dels escenaris, per al quadre de la pantalla del xat.
+    objectius: textList(metadata?.objectius),
     playable: isPlayable({ ...resource, metadata, practice_exercises }),
   })));
 });
