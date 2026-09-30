@@ -95,6 +95,9 @@ export const CONVERSATION_AREAS = {
   expressio_oral: 'Expressió oral',
 } as const;
 
+/** Àrees de conversa on només es pot parlar: el xat no admet missatges escrits. */
+export const isVoiceOnlyCategory = (category: string) => category in CONVERSATION_AREAS;
+
 /** Categories de resources que s'obrin al xat: els escenaris i les àrees de conversa. */
 export const CHAT_CATEGORIES: readonly string[] = ['escenari', ...Object.keys(CONVERSATION_AREAS)];
 

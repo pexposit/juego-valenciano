@@ -6,6 +6,7 @@ import { HistoryModal, type Msg } from '../components/HistoryModal';
 import { ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
 import type { Mood, Scenario } from '../lib/types';
 import { GREETING_BY_VOICE } from '../data/content';
+import { isVoiceOnlyCategory } from '@parlaval/shared';
 
 const INITIAL_GREETING = 'Bon dia! Com et puc ajudar hui?';
 const VOICE_MESSAGE_LABEL = '🎙️ Missatge de veu';
@@ -285,7 +286,7 @@ export function Chat({
 
       {/* Input */}
       <div className="absolute inset-x-4 bottom-5 z-20">
-        <VoiceInput onSend={submit} disabled={loading} />
+        <VoiceInput onSend={submit} disabled={loading} voiceOnly={isVoiceOnlyCategory(category)} />
         <button
           onClick={onEnd}
           id="chat-end-btn"

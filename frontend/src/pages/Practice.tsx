@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Headphones, Lightbulb, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Headphones, Lightbulb, RotateCcw } from 'lucide-react';
 import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type PracticeArea } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
@@ -60,6 +60,23 @@ function groupByPassage(exercises: PracticeExercise[], passages: PracticePassage
   return groups;
 }
 
+// Les àrees de continguts lingüístics tenen moltes preguntes soltes (35 o més)
+// i es mostren per pàgines; les destreses (textos, àudios, redaccions) no.
+const PAGINATED_AREAS: readonly string[] = ['fonetica_ortografia', 'morfosintaxi', 'lexic_semantica'];
+const PAGE_SIZE = 10;
+// Les preguntes soltes van juntes en un mateix grup (sense text): es partixen
+// en grups de PAGE_SIZE, i cada grup és una pàgina. Un text o àudio no es partix.
+function paginate(groups: Group[]): Group[][] {
+  return groups.flatMap(group => {
+    if (group.passage) return [[group]];
+    const pages: Group[][] = [];
+    for (let i = 0; i < group.exercises.length; i += PAGE_SIZE) {
+      pages.push([{ exercises: group.exercises.slice(i, i + PAGE_SIZE) }]);
+    }
+    return pages;
+  });
+}
+
 export function Practice({ practice, userLevel, onBack }: { practice: PracticeResource; userLevel: string; onBack: () => void }) {
   // Només els nivells del MECR de l'aprenent (A1-A2, B1-B2 o C1-C2); si el
   // contingut no en té cap (p. ex. un enllaç directe), es mostren tots.
@@ -72,9 +89,15 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
   const [progress, setProgress] = useState<Progress>(() => loadProgress(practice.id, level));
   const [evaluating, setEvaluating] = useState<string>();
   const [evaluationError, setEvaluationError] = useState<{ id: string; message: string }>();
+  const [page, setPage] = useState(0);
 
   const exercises = useMemo(() => practice.exercises.filter(e => e.level === level), [practice, level]);
   const groups = useMemo(() => groupByPassage(exercises, practice.passages), [exercises, practice.passages]);
+  const pages = useMemo(
+    () => (PAGINATED_AREAS.includes(practice.category) ? paginate(groups) : [groups]),
+    [groups, practice.category],
+  );
+  const currentPage = pages[Math.min(page, pages.length - 1)] ?? [];
   const gradable = useMemo(() => exercises.filter(isGradable), [exercises]);
   const questions = useMemo(
     () => Object.fromEntries(exercises.flatMap((e, i) => (e.kind === 'choice' ? [[e.id, asQuestion(e, i + 1)]] : []))),
@@ -92,6 +115,11 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
   const changeLevel = (next: string) => {
     setLevel(next);
     setProgress(loadProgress(practice.id, next));
+    setPage(0);
+  };
+  const goToPage = (next: number) => {
+    setPage(next);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const answer = (id: string, value: string) =>
     setProgress(p => ({ ...p, answers: { ...p.answers, [id]: value } }));
@@ -101,6 +129,7 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
   };
   const reset = () => {
     setProgress(p => ({ ...p, answers: {}, checked: false }));
+    setPage(0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const evaluationBody = (e: Evaluable) =>
@@ -239,7 +268,7 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
 
         {checked && gradable.length > 0 && <PracticeResult correct={correct} total={gradable.length} onReset={reset} />}
 
-        {groups.map(group => (
+        {currentPage.map(group => (
           <section key={group.passage?.id ?? group.exercises[0].exercise.id} className="flex flex-col gap-4">
             {group.passage && <Passage passage={group.passage} showTranscript={checked} />}
             {group.exercises.map(({ exercise: e, n }) => (
@@ -255,6 +284,8 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
             ))}
           </section>
         ))}
+
+        {pages.length > 1 && <Pagination page={page} pages={pages} answers={answers} onChange={goToPage} />}
 
         {gradable.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -281,6 +312,45 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
         )}
       </div>
     </main>
+  );
+}
+
+/* ── Paginació ─────────────────────────────────────────────────────────── */
+// Els números de les pàgines amb totes les preguntes respostes es marquen, perquè
+// es veja d'un colp d'ull què falta abans de corregir.
+function Pagination({
+  page, pages, answers, onChange,
+}: {
+  page: number;
+  pages: Group[][];
+  answers: Record<string, string>;
+  onChange: (page: number) => void;
+}) {
+  const isDone = (groups: Group[]) =>
+    groups.every(g => g.exercises.every(({ exercise: e }) => !isGradable(e) || Boolean(answers[e.id]?.trim())));
+  const arrow = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white shadow-sm hover:bg-teal/10 disabled:opacity-30';
+  return (
+    <nav aria-label="Pàgines d'exercicis" className="flex flex-wrap items-center justify-center gap-2">
+      <button onClick={() => onChange(page - 1)} disabled={page === 0} aria-label="Pàgina anterior" className={arrow}>
+        <ChevronLeft size={18} />
+      </button>
+      {pages.map((groups, i) => (
+        <button
+          key={i}
+          onClick={() => onChange(i)}
+          aria-current={i === page ? 'page' : undefined}
+          aria-label={`Pàgina ${i + 1}${isDone(groups) ? ', completa' : ''}`}
+          className={`btn-press h-10 min-w-10 rounded-full px-3 text-sm font-black shadow-sm transition-colors ${
+            i === page ? 'bg-teal text-white' : isDone(groups) ? 'bg-teal/15 text-teal hover:bg-teal/25' : 'bg-white hover:bg-teal/10'
+          }`}
+        >
+          {i + 1}
+        </button>
+      ))}
+      <button onClick={() => onChange(page + 1)} disabled={page === pages.length - 1} aria-label="Pàgina següent" className={arrow}>
+        <ChevronRight size={18} />
+      </button>
+    </nav>
   );
 }
 

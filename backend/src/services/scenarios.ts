@@ -11,6 +11,7 @@ export const SCENARIO_CATEGORY = 'escenari';
 
 export interface ScenarioDefinition {
   type: string;
+  category: string;
   character: string;
   systemPrompt: string;
   objectius: string[];
@@ -50,6 +51,7 @@ export function toScenarioDefinition(row: ScenarioRow): ScenarioDefinition | nul
   const objectius = row.metadata?.objectius;
   return {
     type: row.type,
+    category: row.category,
     character,
     systemPrompt: text(row.metadata?.system_prompt) ?? defaultSystemPrompt(character, row),
     objectius: Array.isArray(objectius) ? objectius.filter((o): o is string => typeof o === 'string') : [],

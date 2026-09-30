@@ -12,6 +12,7 @@ import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
 import { getScenario } from '../services/scenarios.js';
+import { isVoiceOnlyCategory } from '@parlaval/shared';
 import { stt, tts } from '../services/voice.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
 import { beginErrorAnalysis } from '../services/pendingErrorAnalysis.js';
@@ -33,6 +34,14 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     let text = data.text.trim();
     const startedAt = Date.now();
 
+    // L'escenari (prompt, personatge, veu) es llig de la taula resources.
+    const scenario = await getScenario(data.scenario);
+    if (!scenario) return res.status(404).json({ error: "L'escenari no existix o encara no està disponible" });
+    // En l'Expressió oral es practica parlant: no s'admeten missatges escrits.
+    if (isVoiceOnlyCategory(scenario.category) && data.input_mode !== 'voice') {
+      return res.status(400).json({ error: 'En esta activitat només es pot parlar' });
+    }
+
     if (data.input_mode === 'voice') {
       if (!data.audio_base64) return res.status(400).json({ error: "Falta l'àudio" });
       const sttStart = Date.now();
@@ -40,10 +49,6 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       console.log(`[turn] stt=${Date.now() - sttStart}ms`);
     }
     if (!text) return res.status(400).json({ error: 'No hi ha cap missatge' });
-
-    // L'escenari (prompt, personatge, veu) es llig de la taula resources.
-    const scenario = await getScenario(data.scenario);
-    if (!scenario) return res.status(404).json({ error: "L'escenari no existix o encara no està disponible" });
 
     const client = db(req.userId);
 
