@@ -1,939 +1,141 @@
-import { useState, useEffect, useRef } from 'react';
-import {
-    ChevronRight, ListTodo, LayoutGrid, MessageCircle,
-  RotateCcw, Volume2, X, LogOut,
-} from 'lucide-react';
-import { SceneArt } from './components/SceneArt';
-import { ClassroomScene } from './components/ClassroomScene';
-import { TeacherAvatar } from './components/TeacherAvatar';
+import { useEffect, useState } from 'react';
+import { CHAT_CATEGORIES } from '@parlaval/shared';
+import type { User } from '@supabase/supabase-js';
+import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
-import { VoiceInput } from './components/VoiceInput';
-import { HistoryModal, type Msg } from './components/HistoryModal';
-import { InstitutionalLogos } from './components/InstitutionalLogos';
-import { createSession, fetchScenarios, sendTurn, type HistoryItem } from './lib/api';
+import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
-import type { Mood, Scenario } from './lib/types';
+import { endSession, fetchExam, fetchPractice, fetchResources } from './lib/api';
+import type { Exam as ExamResource, Practice as PracticeResource, Resource } from './lib/types';
+import { activityRoute, DEFAULT_PROFILE, ROUTES, type Page } from './data/content';
+import { HomePage } from './pages/HomePage';
+import { AuthPage } from './pages/AuthPage';
+import { Dashboard } from './pages/Dashboard';
+import { Chat } from './pages/Chat';
+import { Exam } from './pages/Exam';
+import { Practice } from './pages/Practice';
+import { Summary } from './pages/Summary';
+import { Profile } from './pages/Profile';
 
-type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'summary' | 'profile';
+type ProfileFields = { display_name?: string; level?: string };
 
-const scenarios: { id: Scenario; name: string; icon: string; required: number; color: string; bgIllustration: string }[] = [
-  { id: 'mercat',     name: 'El Mercat',     icon: '🍊', required: 0, color: '#FFD98A', bgIllustration: '#FFF3CC' },
-  { id: 'bar',        name: 'El Bar',        icon: '☕', required: 0, color: '#F2B47C', bgIllustration: '#FDE8D0' },
-  { id: 'oficina',    name: "L'Oficina",     icon: '💻', required: 0, color: '#BDE9E8', bgIllustration: '#E2F5F4' },
-  { id: 'ajuntament', name: "L'Ajuntament",  icon: '🏛️', required: 0, color: '#C8D7EE', bgIllustration: '#E8EFF8' },
-  { id: 'colegi',     name: "L'Escola",      icon: '🎒', required: 0, color: '#C4E3A3', bgIllustration: '#EFF8E2' },
-  { id: 'turisme',    name: 'Oficina de Turisme', icon: '🗺️', required: 0, color: '#9AD0EC', bgIllustration: '#E4F3FB' },
-];
+// Busca al catàleg de la BDD el recurs que obri una ruta.
+// undefined = carregant; null = no existix o no és jugable.
+function useCatalogResource(match: (resource: Resource) => boolean, key: string | undefined) {
+  const [resource, setResource] = useState<Resource | null>();
 
-/* Objectius per defecte de cada escenari; es mostren mentres el backend respon. */
-const scenarioGoals: Record<Scenario, { character: string; objectius: string[] }> = {
-  mercat: { character: 'Vicent, venedor del mercat', objectius: ['Saluda a Vicent i pregunta com va tot.', 'Demana un quilo de taronges o una altra fruita.', 'Pregunta el preu o demana el canvi.', "Paga, dona les gràcies i acomiada't."] },
-  bar: { character: 'Maria, cambrera', objectius: ['Saluda a Maria i busca una taula.', 'Demana una beguda o el desdejuni del dia.', 'Pregunta quant és o demana el compte.', "Paga, dona les gràcies i acomiada't."] },
-  oficina: { character: "Joan, company d'oficina", objectius: ['Saluda a Joan i pregunta com està.', "Pregunta per la reunió o les tasques d'avui.", 'Demana ajuda o un aclariment sobre un tema.', "Confirma el que has de fer i acomiada't."] },
-  ajuntament: { character: "Amparo, funcionària d'atenció", objectius: ['Saluda a Amparo i digues què necessites.', 'Explica el tràmit que vols fer.', 'Pregunta els requisits o els horaris.', "Dona les gràcies i acomiada't."] },
-  colegi: { character: 'Marta, mestra', objectius: ['Saluda a Marta i pregunta com està.', "Pregunta pels deures o la tasca d'avui.", 'Demana permís o explica un dubte.', "Dona les gràcies i acomiada't."] },
-  turisme: { character: 'Laura, guia turística', objectius: ['Saluda a Laura i digues què busques.', 'Demana una recomanació de lloc per a visitar.', 'Pregunta horaris, preus o com arribar-hi.', "Dona les gràcies i acomiada't."] },
-};
-
-/* ── Decorative oranges header ──────────────────────────────────── */
-function OrangeHeader({ children, showOranges = true }: { children: React.ReactNode; showOranges?: boolean }) {
-  return (
-    <div
-      className={`${
-        showOranges ? 'azulejo-border bg-gradient-to-br from-[#FFF9ED] to-[#FFE8BA]' : 'border-b border-[#E7E5E4] bg-gradient-to-br from-[#FAFAF9] to-[#FFFFFF]'
-      } relative overflow-hidden rounded-b-[40px] pb-4 pt-5 shadow-sm`}
-    >
-      {/* Decorative oranges */}
-      {showOranges && (
-        <>
-          <span className="orange-deco absolute left-3 top-1 text-2xl select-none">🍊</span>
-          <span className="orange-deco absolute left-14 top-0 text-xl select-none opacity-70">🍊</span>
-          <span className="orange-deco absolute right-14 top-0 text-xl select-none opacity-70">🍊</span>
-          <span className="orange-deco absolute right-3 top-1 text-2xl select-none">🍊</span>
-        </>
-      )}
-      {/* Small sun rays */}
-      {showOranges && (
-        <div className="absolute inset-0 opacity-20 pointer-events-none"
-             style={{ background: 'radial-gradient(ellipse at 50% -20%, #F9C74F 0%, transparent 70%)' }} />
-      )}
-      {children}
-    </div>
-  );
-}
-
-/* ── Logo ────────────────────────────────────────────────────────── */
-export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const cls = size === 'lg' ? 'text-4xl' : size === 'sm' ? 'text-xl' : 'text-2xl';
-  return (
-    <b className={`${cls} font-black tracking-tight`}>
-      <span style={{ color: '#0D9488' }}>Parla</span>
-      <span style={{ color: '#F97316' }}>Val</span>
-    </b>
-  );
-}
-
-/* ── Stat pill ───────────────────────────────────────────────────── */
-function Stat({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
-    <div className="stat-pill flex-1 flex-col text-center min-w-0">
-      <span className="text-xl block">{icon}</span>
-      <b className="text-sm block">{value}</b>
-      <small className="text-[11px] font-semibold opacity-55">{label}</small>
-    </div>
-  );
-}
-
-/* ── Page transition wrapper ─────────────────────────────────────── */
-function PageTransition({ children }: { children: React.ReactNode }) {
-  return <div className="page-enter">{children}</div>;
-}
-
-/* ══════════════════ HOME PAGE ══════════════════════════════════════ */
-// Salutacions d'inici pregenerades com a fitxers estàtics (veu segons el sexe del
-// personatge: lluc = masculina, gina = femenina). En obrir l'escenari es reprodueixen
-// al moment, sense cap crida al TTS del backend.
-const GREETING_BY_SCENARIO: Record<Scenario, string> = {
-  mercat: '/audio/salutacio-lluc.wav',
-  bar: '/audio/salutacio-gina.wav',
-  oficina: '/audio/salutacio-lluc.wav',
-  ajuntament: '/audio/salutacio-gina.wav',
-  colegi: '/audio/salutacio-gina.wav',
-  turisme: '/audio/salutacio-gina.wav',
-};
-
-const homeImages = [
-  {
-    src: '/images/Ciudad de las Artes y las Ciencias Complejo arquitectónico moderno con edificios blancos y formas futuristas rodeados de agua, símbolo de innovación.jpeg',
-    label: '🏛️ Ciutat de les Arts i les Ciències · València',
-    alt: 'Ciutat de les Arts i les Ciències de València',
-  },
-  {
-    src: '/images/Mercado Central Espacio lleno de vida con puestos de comida fresca, colores y productos típicos valencianos.jpeg',
-    label: '🍊 Mercat Central · València',
-    alt: 'Mercat Central de València',
-  },
-  {
-    src: '/images/Plaza del Ayuntamiento Centro neurálgico de la ciudad, rodeado de edificios históricos y escenario de eventos importantes.jpeg',
-    label: '🏙️ Plaça de l’Ajuntament · València',
-    alt: 'Plaça de l’Ajuntament de València',
-  },
-  {
-    src: '/images/Playa de la Malvarrosa Amplia playa urbana con arena dorada y paseo marítimo muy animado.jpeg',
-    label: '🌊 Platja de la Malva-rosa · València',
-    alt: 'Platja de la Malva-rosa de València',
-  },
-  {
-    src: '/images/Playa de Gandía Playa extensa, de aguas tranquilas y arena fina, ideal para familias.jpeg',
-    label: '🏖️ Platja de Gandia',
-    alt: 'Platja de Gandia',
-  },
-  {
-    src: '/images/Calas de Jávea Pequeñas calas de aguas cristalinas y rocas, perfectas para bucear.jpeg',
-    label: '🐠 Caletes de Xàbia',
-    alt: 'Caletes de Xàbia',
-  },
-  {
-    src: '/images/Castillo del Papa Luna Fortaleza situada sobre una roca junto al mar, imponente y bien conservada.jpeg',
-    label: '🏰 Castell del Papa Luna · Peníscola',
-    alt: 'Castell del Papa Luna de Peníscola',
-  },
-];
-
-function HomePage({ setPage }: { setPage: (p: Page) => void }) {
-  const [activeImage, setActiveImage] = useState(0);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setActiveImage(current => (current + 1) % homeImages.length);
-    }, 5000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const image = homeImages[activeImage];
-
-  return (
-    <main className="fade-up min-h-screen flex flex-col">
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4">
-        <Logo />
-        <button
-          onClick={() => setPage('auth')}
-          className="btn-press rounded-full border-2 border-[#0D9488] px-4 py-1.5 text-sm font-extrabold text-[#0D9488] hover:bg-[#0D9488] hover:text-white transition-colors"
-        >
-          Entra
-        </button>
-      </nav>
-
-      {/* Hero */}
-      <section className="mx-auto grid max-w-6xl flex-1 items-center gap-10 px-6 pb-16 pt-6 md:grid-cols-2 md:pt-16">
-        <div className="hero-stagger">
-          <span
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-extrabold"
-            style={{ background: 'rgba(249,199,79,0.28)', color: '#9A6B00' }}
-          >
-            ✨ Valencià per a la vida real
-          </span>
-          <h1 className="mt-5 text-5xl font-black leading-[1.08] sm:text-6xl">
-            Parla valencià.<br />
-            <em className="not-italic" style={{ color: '#F97316' }}>Viu-lo.</em>
-          </h1>
-          <p className="mt-4 max-w-md text-lg leading-relaxed opacity-65">
-            Practica converses reals, al teu ritme, amb personatges que t'acompanyen cada dia pels carrers de València.
-          </p>
-          <button
-            onClick={() => setPage('auth')}
-            id="hero-cta"
-            className="btn-press mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-4 text-lg font-extrabold text-white shadow-lg transition hover:scale-[1.03] hover:shadow-xl active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, #F97316, #FB923C)' }}
-          >
-            Comença ara <ChevronRight size={20} />
-          </button>
-          <p className="mt-4 text-sm opacity-50">🍊 Mercat · Bar · Oficina · Ajuntament · Escola · Turisme</p>
-        </div>
-
-        {/* Hero image carousel — Comunitat Valenciana */}
-        <div className="relative h-[400px] overflow-hidden rounded-[44px] shadow-2xl">
-          {homeImages.map((item, index) => (
-            <img
-              key={item.src}
-              src={item.src}
-              alt={index === activeImage ? item.alt : ''}
-              aria-hidden={index !== activeImage}
-              className="hero-carousel-image"
-              style={{ opacity: index === activeImage ? 1 : 0 }}
-            />
-          ))}
-          {/* Bottom gradient overlay for legibility */}
-          <div
-            className="absolute inset-0 rounded-[44px]"
-            style={{ background: 'linear-gradient(to top, rgba(38,55,71,0.45) 0%, transparent 55%)' }}
-          />
-          {/* Caption */}
-          <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
-            <span className="rounded-2xl bg-white/90 px-4 py-2 text-sm font-extrabold shadow backdrop-blur-sm">
-              {image.label}
-            </span>
-          </div>
-          {/* Floating chat preview */}
-          <div className="absolute left-5 top-6 max-w-[58%] rounded-2xl bg-white/95 p-3 text-sm font-bold shadow-xl backdrop-blur-sm leading-snug">
-            Bon dia! Què voldries practicar hui? 🍊
-          </div>
-          <div className="absolute bottom-6 right-6 flex gap-1.5" aria-label="Imatges de la Comunitat Valenciana">
-            {homeImages.map((item, index) => (
-              <button
-                key={item.src}
-                type="button"
-                aria-label={`Veure ${item.alt}`}
-                aria-current={index === activeImage ? 'true' : undefined}
-                onClick={() => setActiveImage(index)}
-                className="h-2.5 rounded-full transition-all"
-                style={{
-                  width: index === activeImage ? '24px' : '10px',
-                  background: index === activeImage ? '#fff' : 'rgba(255,255,255,0.55)',
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Entitats que donen suport al projecte */}
-      <InstitutionalLogos />
-
-      {/* Footer strip */}
-      <div
-        className="py-6 text-center text-white font-black text-lg"
-        style={{ background: 'linear-gradient(90deg, #0D9488, #0F766E)' }}
-      >
-        Aprén parlant, no memoritzant.
-      </div>
-    </main>
-  );
-}
-
-/* ══════════════════ AUTH PAGE ══════════════════════════════════════ */
-function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [level, setLevel] = useState('principiant');
-  const [notice, setNotice] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  // Registre directe amb email + contrasenya. Amb Supabase local
-  // (enable_confirmations = false) no cal verificar cap correu: la sessió
-  // es crea a l'instant i l'usuari entra directament al tauler.
-  const signUp = async () => {
-    if (!supabase) return setPage('dashboard');
-    if (password.length < 6) {
-      return setNotice('La contrasenya ha de tindre almenys 6 caràcters.');
-    }
-    try {
-      setBusy(true);
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { level, display_name: email.split('@')[0] } },
-      });
-      if (error) {
-        if (error.message?.toLowerCase().includes('already registered')) {
-          setNotice('Ja hi ha un compte amb aquest correu. Utilitza «Inicia sessió» amb la teua contrasenya.');
-        } else {
-          setNotice(`No hem pogut crear el compte: ${error.message}`);
-        }
-        return;
-      }
-      setNotice('Compte creat! Entrant...');
-      setPage('dashboard');
-    } catch {
-      setNotice('No hem pogut connectar. Revisa la connexió i torna-ho a provar.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  // Inici de sessió per a comptes ja creats (mateixa contrasenya).
-  const logIn = async () => {
-    if (!supabase) return setPage('dashboard');
-    try {
-      setBusy(true);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return setNotice(`No hem pogut iniciar sessió: ${error.message}`);
-      setPage('dashboard');
-    } catch {
-      setNotice('No hem pogut connectar. Revisa la connexió i torna-ho a provar.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <main className="fade-up grid min-h-screen place-items-center p-6" style={{ background: '#FAFAF9' }}>
-      <section className="w-full max-w-md rounded-[36px] bg-white p-8 shadow-xl">
-        {/* Decorative top */}
-        <div className="mb-6 flex items-center gap-3">
-          <button onClick={() => setPage('home')} className="text-sm font-bold opacity-50 hover:opacity-100 transition-opacity">
-            ← Tornar
-          </button>
-        </div>
-        <div className="text-center mb-6">
-          <span className="text-4xl">🍊</span>
-          <h1 className="mt-2 text-3xl font-black"><span style={{ color: '#0D9488' }}>Parla</span><span style={{ color: '#F97316' }}>Val</span></h1>
-          <p className="mt-1 opacity-60">Crea el teu compte i comença, sense necessitat de correu de verificació.</p>
-        </div>
-
-        <label className="block text-sm font-extrabold mb-1">Correu electrònic</label>
-        <input
-          value={email}
-          onChange={e => { setEmail(e.target.value); setNotice(''); }}
-          type="email"
-          placeholder="tu@exemple.com"
-          id="auth-email"
-          autoComplete="email"
-          className="w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0D9488] transition-colors"
-        />
-
-        <label className="mt-4 block text-sm font-extrabold mb-1">Contrasenya</label>
-        <input
-          value={password}
-          onChange={e => { setPassword(e.target.value); setNotice(''); }}
-          type="password"
-          placeholder="Mínim 6 caràcters"
-          id="auth-password"
-          autoComplete="new-password"
-          onKeyDown={e => { if (e.key === 'Enter') void signUp(); }}
-          className="w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0D9488] transition-colors"
-        />
-
-        <label className="mt-4 block text-sm font-extrabold mb-1">El teu nivell</label>
-        <select
-          value={level}
-          onChange={e => setLevel(e.target.value)}
-          id="auth-level"
-          className="w-full rounded-2xl border-2 border-gray-100 bg-white p-3 outline-none focus:border-[#0D9488] transition-colors"
-        >
-          <option value="principiant">Principiant</option>
-          <option value="intermedi">Intermedi</option>
-          <option value="avancat">Avançat</option>
-        </select>
-
-        <button
-          onClick={() => void signUp()}
-          disabled={busy}
-          id="auth-submit"
-          className="btn-press mt-6 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
-        >
-          {busy ? 'Espera...' : 'Crear el compte'}
-        </button>
-
-        <button
-          onClick={() => void logIn()}
-          disabled={busy}
-          id="auth-login"
-          className="btn-press mt-3 w-full rounded-2xl border-2 border-gray-200 py-3 font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:opacity-60"
-        >
-          Ja tinc compte · Inicia sessió
-        </button>
-
-        {notice && (
-          <div
-            role="status"
-            className="mt-4 rounded-2xl p-4 text-sm font-bold"
-            style={{ background: '#E8F7F5', color: '#1a7a6f', border: '1px solid #b2ddd9' }}
-          >
-            {notice}
-          </div>
-        )}
-
-        <p className="mt-5 text-center text-xs opacity-40">Mode demo disponible sense Supabase.</p>
-      </section>
-    </main>
-  );
-}
-
-/* ══════════════════ DASHBOARD PAGE ════════════════════════════════ */
-function Dashboard({
-  name, setPage,
-}: { name: string; setPage: (p: Page) => void }) {
-  const [dashInput, setDashInput] = useState('');
-  const [dashLoading, setDashLoading] = useState(false);
-
-  const handleDashChat = () => {
-    if (!dashInput.trim() || dashLoading) return;
-    setDashLoading(true);
-    setTimeout(() => setDashLoading(false), 600);
-  };
-
-  return (
-    <main className="fade-up relative min-h-screen" style={{ background: '#FFF9ED' }}>
-      <ClassroomScene opacity={0.5} />
-      <div className="absolute left-3 top-2/3 -translate-y-1/2 z-20 flex items-center gap-3">
-          <TeacherAvatar className="drop-shadow-lg" size={400} />
-          {/* Speech bubble to the right of the teacher */}
-          <div className="relative max-w-[260px] rounded-2xl rounded-bl-none bg-white px-4 py-3 text-sm font-bold text-slate-800 shadow-lg">
-            Començem la classe
-            <button
-              id="dashboard-start-btn"
-              onClick={() => setPage('scenarioselect')}
-              className="btn-press mt-2 w-full rounded-xl bg-teal px-3 py-1.5 text-xs font-black text-white hover:bg-teal/90"
-            >
-              Començem
-            </button>
-            <svg
-              className="absolute -left-2 top-3 h-4 w-4 -rotate-45"
-              viewBox="0 0 16 16"
-              fill="white"
-              aria-hidden="true"
-            >
-              <path d="M0 0h16v16H0z" />
-            </svg>
-          </div>
-        </div>
-      {/* Classroom header: top-right scenario selector + profile */}
-      <header className="classroom-header z-10">
-        <div className="relative isolate flex items-center justify-between px-5 pb-3 pt-4">
-          <Logo />
-          <div className="flex items-center gap-2">
-            <button
-              id="dashboard-scenario-btn"
-              aria-label="Tria l'escenari"
-              title="Tria l'escenari"
-              onClick={() => setPage('scenarioselect')}
-              className="scenario-fab btn-press flex h-10 items-center gap-1.5 rounded-full bg-teal px-3 py-2 text-sm font-black text-white hover:bg-teal/90"
-            >
-              <LayoutGrid size={18} />
-              Escenaris
-            </button>
-            <button
-              id="dashboard-profile-btn"
-              onClick={() => setPage('profile')}
-              className="avatar-ring grid h-11 w-11 place-items-center rounded-full font-black text-lg text-white"
-              style={{ background: '#F9731C' }}
-            >
-              {name[0]}
-            </button>
-          </div>
-        </div>
-        <div className="px-5 pb-4">
-          <span className="block text-xs font-black uppercase tracking-widest" style={{ color: '#FFD166' }}>Aula d'aprenentatge</span>
-          <p className="mt-1 text-sm opacity-65">Practica valencià en situacions reals</p>
-        </div>
-      </header>
-
-      <div className="relative z-10 mx-auto max-w-2xl px-5 pt-6 pb-10">
-        {/* Greeting */}
-        <h1 className="text-3xl font-black">Bon dia, {name}! 👋</h1>
-
-        {/* Escenaris accessibles des del botó de la cantina superior dreta. */}
-        <div className="mt-8 rounded-3xl border-2 border-dashed border-[#E7E5E4] p-6 text-center">
-          <p className="text-sm font-bold text-teal">Tria una situació fent clic al botó de la cantina, a la part superior dreta del mapa.</p>
-          <p className="mt-2 text-xs opacity-50">Mercat · Bar · Oficina · Ajuntament · Escola · Turisme</p>
-        </div>
-
-        {/* Chat-style input at the bottom of the dashboard */}
-        <div className="fixed inset-x-4 bottom-4 z-30 mx-auto max-w-xl">
-          <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg">
-            <input
-              type="text"
-              value={dashInput}
-              onChange={e => setDashInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && dashInput.trim() && !dashLoading) handleDashChat(); }}
-              placeholder="Escriu aquí per a començar a practicar…"
-              className="flex-1 rounded-xl border-0 bg-transparent px-4 py-3 text-sm outline-none"
-            />
-            <button
-              onClick={handleDashChat}
-              disabled={dashLoading || !dashInput.trim()}
-              className="rounded-xl bg-teal px-4 py-2 text-sm font-black text-white disabled:opacity-60"
-            >
-              {dashLoading ? '…' : '→'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-/* ══════════════════ CHAT PAGE ══════════════════════════════════════ */
-function Chat({
-  scenario, level, xp, setXp, onEnd, onBack,
-}: { scenario: Scenario; level: string; xp: number; setXp: (n: number) => void; onEnd: () => void; onBack: () => void }) {
-  const [mood, setMood] = useState<Mood>('neutral');
-  const [character, setCharacter] = useState('Bon dia! Com et puc ajudar hui?');
-  const [user, setUser] = useState('');
-  const [userTranscription, setUserTranscription] = useState<string>();
-  const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState<Msg[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
-  const [session, setSession] = useState<string>();
-  const [bubbleKey, setBubbleKey] = useState(0);
-  const [audioSource, setAudioSource] = useState<string>();
-  const replyAudio = useRef<HTMLAudioElement | null>(null);
-  const hasSubmitted = useRef(false);
-
-  // Pissarra lateral amb els objectius: què ha de dir o demanar la persona.
-  // S'obri per defecte en pantalles amples; en mòbils es pot mostrar amb el botó.
-  const [showGoals, setShowGoals] = useState(() => typeof window === 'undefined' || window.innerWidth >= 900);
-  const [goalsInfo, setGoalsInfo] = useState<{ character: string; objectius: string[] }>(() => scenarioGoals[scenario]);
-
-  const loadTextAudio = async (text: string, autoplay = false) => {
-    // Solo TTS real (matxa). Si falla tras un reintento, NO se usa la voz del
-    // navegador (speechSynthesis): se queda sin audio y el usuario puede reintentar.
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      try {
-        // El token fa que la petició compte contra el límit de l'usuari amb
-        // sessió: el backend limita molt més les peticions anònimes.
-        const token = (await supabase?.auth.getSession())?.data.session?.access_token;
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ text, scenario }),
-        });
-        if (!response.ok) throw new Error(`tts ${response.status}`);
-        const payload = await response.json() as { audio_base64: string; mime_type: string };
-        const source = `data:${payload.mime_type};base64,${payload.audio_base64}`;
-        const audio = new Audio(source);
-        replyAudio.current = audio;
-        setAudioSource(source);
-        if (autoplay) void audio.play().catch(() => {});
-        return;
-      } catch {
-        if (attempt === 1) {
-          replyAudio.current = null;
-          setAudioSource(undefined);
-        }
-      }
-    }
-  };
-
-  const replayCharacter = () => {
-    // Nunca se usa la voz del navegador: solo el audio TTS generado por el backend.
-    const audio = replyAudio.current;
-    if (!audio) return;
-    audio.currentTime = 0;
-    void audio.play().catch(() => {});
-  };
-
-  // Salutació pregenerada: fitxer estàtic servit per Vite, es reprodueix en obrir
-  // l'escenari sense processar res (autoplay si el navegador ho permet; sinó,
-  // el botó de repetir la llança amb un gest de l'usuari).
-  useEffect(() => {
-    if (hasSubmitted.current) return;
-    const source = GREETING_BY_SCENARIO[scenario];
-    const audio = new Audio(source);
-    replyAudio.current = audio;
-    setAudioSource(source);
-    void audio.play().catch(() => {});
-  }, [scenario]);
-
-  // Carrega els objectius des del backend; si falla, es mostren els per defecte.
   useEffect(() => {
     let cancelled = false;
-    void fetchScenarios()
-      .then((data) => {
-        if (!cancelled) {
-          const found = data[scenario];
-          if (found && Array.isArray(found.objectius) && found.objectius.length > 0) setGoalsInfo(found);
-        }
+    fetchResources()
+      .then(resources => {
+        if (!cancelled) setResource(resources.find(r => r.playable && match(r)) ?? null);
       })
-      .catch(() => {});
+      .catch(error => {
+        console.error("Error carregant l'activitat:", error);
+        if (!cancelled) setResource(null);
+      });
     return () => { cancelled = true; };
-  }, [scenario]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
-  const submit = async (text: string, audio?: string) => {
-    if ((!text && !audio) || loading) return;
-    hasSubmitted.current = true;
-    replyAudio.current = null;
-    setAudioSource(undefined);
-    setUser(text || '🎙️ Missatge de veu');
-    setUserTranscription(undefined);
-    setBubbleKey(k => k + 1);
-    setLoading(true);
-    try {
-      const activeSession = session || await createSession(scenario, level);
-      if (!session) setSession(activeSession);
-      // El personatge ha de recordar el que s'ha dit: li enviem el context de la
-      // conversa actual (el primer missatge inclou el salut inicial del personatge).
-      const context: HistoryItem[] = history.length > 0
-        ? history.map((m) => ({ role: m.role, content_text: m.text }))
-        : [{ role: 'character', content_text: character }];
-      // include_audio:false → el turno responde solo con texto (el usuario ve la
-      // respuesta al instante) y el audio se pide en paralelo a /api/tts.
-      const r = await sendTurn({ session_id: activeSession, scenario, level, input_mode: audio ? 'voice' : 'text', text, audio_base64: audio || null, history: context, include_audio: false });
-      setCharacter(r.reply_text);
-      setUserTranscription(r.transcription || undefined);
-      setMood(r.mood);
-      setXp(xp + r.xp_delta);
-      setHistory(h => [...h, { role: 'user', text: text || '🎙️ Missatge de veu', transcription: r.transcription || undefined }, { role: 'character', text: r.reply_text }]);
-      if (r.reply_audio_base64) {
-        const mimeType = r.reply_audio_mime_type || 'audio/mpeg';
-        const source = `data:${mimeType};base64,${r.reply_audio_base64}`;
-        const a = new Audio(source);
-        replyAudio.current = a;
-        setAudioSource(source);
-        a.play().catch(() => {});
-      } else {
-        void loadTextAudio(r.reply_text, true);
-      }
-    } catch {
-      const errorMessage = "No t'he sentit bé, pots repetir-ho?";
-      setCharacter(errorMessage);
-      setMood('confus');
-      void loadTextAudio(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  return resource;
+}
 
+// Llig l'escenari de la URL (/xat/:scenario) i el busca al catàleg de la BDD;
+// si no existix o no és jugable (enllaç trencat, escrit a mà...), torna a la selecció.
+function ChatRoute({
+  level, xp, onXpGained, onBack,
+}: { level: string; xp: number; onXpGained: (delta: number) => void; onBack: () => void }) {
+  const { scenario } = useParams<{ scenario: string }>();
+  const navigate = useNavigate();
+  const section = useCatalogResource(r => CHAT_CATEGORIES.includes(r.category) && r.type === scenario, scenario);
+
+  if (section === undefined) return null;
+  if (!section || !scenario) return <Navigate to={ROUTES.scenarioselect} replace />;
   return (
-    <main className="relative h-[100dvh] overflow-hidden">
-      <SceneArt scenario={scenario} mood={mood} />
-
-      {/* Top bar */}
-      <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            id="chat-back-btn"
-            className="btn-press rounded-full bg-white/90 px-4 py-2 font-bold shadow backdrop-blur-sm hover:bg-white transition-colors"
-          >
-            ← Eixir
-          </button>
-          <span
-            className="rounded-full px-3.5 py-1.5 text-xs font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm"
-            style={{ background: 'rgba(255,255,255,0.92)' }}
-          >
-            {scenario === 'mercat' ? 'El Mercat' : scenario === 'bar' ? 'El Bar' : scenario === 'oficina' ? "L'Oficina" : scenario === 'ajuntament' ? "L'Ajuntament" : scenario === 'colegi' ? "L'Escola" : 'Oficina de Turisme'}
-          </span>
-        </div>
-        <div
-          className="absolute left-1/2 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-black shadow backdrop-blur-sm"
-          style={{ background: 'rgba(255,255,255,0.9)' }}
-        >
-          ⚡ {xp} XP
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowGoals(!showGoals)}
-            id="chat-goals-btn"
-            aria-label={showGoals ? 'Amagar objectius' : 'Mostrar objectius'}
-            title="Objectius"
-            className={`btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors ${showGoals ? 'text-teal' : 'text-slate-800'}`}
-          >
-            <ListTodo size={19} />
-          </button>
-          <button
-            onClick={() => setShowHistory(true)}
-            id="chat-history-btn"
-            className="btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors"
-          >
-            <MessageCircle size={19} />
-          </button>
-        </div>
-      </header>
-
-      {/* Character bubble with entrance animation */}
-      <section key={`char-${bubbleKey}`} className="bubble-enter bubble absolute left-5 top-[13%] z-10 max-w-[min(76%,440px)] rounded-3xl bg-white p-5 font-bold shadow-xl text-base">
-        <p className="leading-relaxed">
-          {loading
-            ? <span className="opacity-50">El personatge està escrivint…</span>
-            : character
-          }
-        </p>
-        {!loading && <>
-          <button
-            onClick={replayCharacter}
-            className="btn-press mt-3 flex items-center gap-1 text-sm font-extrabold"
-            style={{ color: '#0D9488' }}
-          >
-            <Volume2 size={15} /> Escolta de nou
-          </button>
-          {audioSource && (
-            <audio
-              controls
-              preload="auto"
-              src={audioSource}
-              className="mt-2 h-9 w-full max-w-xs"
-              aria-label="Àudio de la resposta"
-            />
-          )}
-        </>}
-      </section>
-
-      {/* User bubble with entrance animation */}
-      {user && (
-        <div
-          key={`user-${bubbleKey}`}
-          className="user-bubble-enter user-bubble absolute bottom-36 right-5 z-10 max-w-[70%] rounded-3xl p-4 font-bold text-white shadow-lg"
-          style={{ background: '#0D9488' }}
-        >
-          <p>{user}</p>
-          {userTranscription && <p className="mt-2 border-t border-white/30 pt-2 text-sm font-normal">Transcripció: {userTranscription}</p>}
-        </div>
-      )}
-
-      {/* Pissarra d'objectius (lateral dret) */}
-      {showGoals && (
-        <aside
-          id="goals-board"
-          className="goals-board goals-enter"
-          aria-label="Objectius de la conversa"
-        >
-          <div className="goals-frame">
-            <div className="goals-head">
-              <b className="goals-title">📌 Objectius</b>
-              <button
-                onClick={() => setShowGoals(false)}
-                id="goals-close-btn"
-                aria-label="Amagar objectius"
-                className="btn-press grid h-7 w-7 place-items-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                <X size={14} />
-              </button>
-            </div>
-            <p className="goals-sub">
-              Això és el que pots dir o demanar a {goalsInfo.character.split(',')[0]}:
-            </p>
-            <ul className="goals-list">
-              {goalsInfo.objectius.map((goal, i) => (
-                <li key={`${scenario}-${i}`} className="goals-item">
-                  <span className="goals-num">{i + 1}</span>
-                  <span>{goal}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="goals-footer">✨ Practica en veu alta i diverteix-te!</p>
-          </div>
-        </aside>
-      )}
-
-      {/* Input */}
-      <div className="absolute inset-x-4 bottom-5 z-20">
-        <VoiceInput onSend={submit} disabled={loading} />
-        <button
-          onClick={onEnd}
-          id="chat-end-btn"
-          className="btn-press mx-auto mt-3 block rounded-full bg-white/80 px-4 py-2 text-xs font-extrabold backdrop-blur-sm hover:bg-white transition-colors"
-        >
-          Acabar conversa
-        </button>
-      </div>
-
-      {showHistory && <HistoryModal messages={history} onClose={() => setShowHistory(false)} />}
-    </main>
+    <PageTransition>
+      <Chat
+        scenario={scenario}
+        category={section.category}
+        title={section.section_name ?? section.name}
+        voice={section.voice}
+        background={section.background}
+        initialPrompt={section.initial_prompt}
+        level={level}
+        xp={xp}
+        onXpGained={onXpGained}
+        onEnd={() => navigate(ROUTES.summary)}
+        onBack={onBack}
+      />
+    </PageTransition>
   );
 }
 
-/* ══════════════════ SUMMARY PAGE ═══════════════════════════════════ */
-function Summary({ xp, onMap, onContinue }: { xp: number; onMap: () => void; onContinue: () => void }) {
-  return (
-    <main className="fade-up grid min-h-screen place-items-center p-5" style={{ background: '#FAFAF9' }}>
-      <section className="w-full max-w-lg rounded-[40px] bg-white p-8 text-center shadow-xl">
-        <div
-          className="mx-auto grid h-20 w-20 place-items-center rounded-full text-4xl"
-          style={{ background: '#FFE5B4' }}
-        >
-          🎉
-        </div>
-        <h1 className="mt-5 text-3xl font-black">Molt bé!</h1>
-        <p className="mt-2 opacity-60">Has practicat valencià en una situació real.</p>
+// Examen interactiu (/examen/:id): el contingut ve de resources.metadata.exam.
+function ExamRoute({ onBack }: { onBack: () => void }) {
+  const { id } = useParams<{ id: string }>();
+  // undefined = carregant; null = no existix.
+  const [exam, setExam] = useState<ExamResource | null>();
 
-        {/* XP gained */}
-        <div
-          className="mt-7 rounded-3xl p-5"
-          style={{ background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)' }}
-        >
-          <b className="text-4xl font-black" style={{ color: '#F97316' }}>+10 XP</b>
-          <p className="mt-1 text-sm font-bold opacity-60">Total: {xp} XP</p>
-        </div>
+  useEffect(() => {
+    let cancelled = false;
+    if (!id) return setExam(null);
+    fetchExam(id)
+      .then(data => { if (!cancelled) setExam(data); })
+      .catch(error => {
+        console.error("Error carregant l'examen:", error);
+        if (!cancelled) setExam(null);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
 
-        {/* Vocabulary */}
-        <div className="mt-6 text-left">
-          <h2 className="font-black text-lg">Paraules noves 🌟</h2>
-          <p
-            className="mt-2 rounded-2xl p-3 text-sm font-bold"
-            style={{ background: '#E8F7F5', color: '#1a7a6f' }}
-          >
-            bon dia · voldria · gràcies
-          </p>
-          <h2 className="mt-5 font-black text-lg">A millorar 💪</h2>
-          <p className="mt-2 text-sm opacity-60">Continua practicant la concordança de gènere.</p>
-        </div>
-
-        <button
-          onClick={onContinue}
-          id="summary-continue-btn"
-          className="btn-press mt-7 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
-        >
-          Continuar
-        </button>
-        <button
-          onClick={onMap}
-          id="summary-map-btn"
-          className="btn-press mt-3 font-bold"
-          style={{ color: '#0D9488' }}
-        >
-          Tornar al mapa
-        </button>
-      </section>
-    </main>
-  );
+  if (exam === undefined) return null;
+  if (!exam) return <Navigate to={ROUTES.scenarioselect} replace />;
+  return <PageTransition><Exam exam={exam} onBack={onBack} /></PageTransition>;
 }
 
-/* ══════════════════ PROFILE PAGE ════════════════════════════════════ */
-function Profile({
-  name, setName, level, setLevel, xp, back, onLogOut, isDemo,
-}: {
-  name: string;
-  setName: (v: string) => void;
-  level: string;
-  setLevel: (v: string) => void;
-  xp: number;
-  back: () => void;
-  onLogOut: () => void;
-  isDemo: boolean;
-}) {
-  return (
-    <main className="fade-up" style={{ background: '#FAFAF9', minHeight: '100vh' }}>
-      <OrangeHeader showOranges={false}>
-        <div className="px-5 pb-2">
-          <button
-            onClick={back}
-            className="btn-press font-bold text-sm"
-            style={{ color: '#0D9488' }}
-          >
-            ← Tornar al mapa
-          </button>
-        </div>
-      </OrangeHeader>
+// Exercicis d'un contingut del temari (/practica/:id), de la taula practice_exercises.
+function PracticeRoute({ onBack }: { onBack: () => void }) {
+  const { id } = useParams<{ id: string }>();
+  // undefined = carregant; null = no existix.
+  const [practice, setPractice] = useState<PracticeResource | null>();
 
-      <div className="mx-auto max-w-lg px-5 pt-6 pb-10">
-        <h1 className="text-3xl font-black">El teu progrés 🏆</h1>
+  useEffect(() => {
+    let cancelled = false;
+    if (!id) return setPractice(null);
+    fetchPractice(id)
+      .then(data => { if (!cancelled) setPractice(data); })
+      .catch(error => {
+        console.error('Error carregant els exercicis:', error);
+        if (!cancelled) setPractice(null);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
 
-        <div className="mt-5 rounded-3xl bg-white p-6 shadow-sm space-y-4">
-          <label className="block font-extrabold text-sm">
-            Nom
-            <input
-              value={name}
-              onChange={e => setName(e.target.value)}
-              id="profile-name"
-              className="mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 font-normal outline-none focus:border-[#0D9488] transition-colors"
-            />
-          </label>
-          <label className="block font-extrabold text-sm">
-            Nivell
-            <select
-              value={level}
-              onChange={e => setLevel(e.target.value)}
-              id="profile-level"
-              className="mt-1 w-full rounded-2xl border-2 border-gray-100 bg-white p-3 font-normal outline-none focus:border-[#0D9488] transition-colors"
-            >
-              <option value="principiant">Principiant</option>
-              <option value="intermedi">Intermedi</option>
-              <option value="avancat">Avançat</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <Stat icon="⚡" label="XP total" value={String(xp)} />
-          <Stat icon="🗺️" label="Escenaris" value="1 / 6" />
-          <Stat icon="💬" label="Paraules" value="24" />
-          <Stat icon="🏆" label="Insígnies" value="1" />
-        </div>
-
-        <div className="mt-8 flex flex-col gap-3">
-          <button
-            onClick={() => confirm('Vols reiniciar el teu progrés?') && location.reload()}
-            id="profile-reset-btn"
-            className="btn-press flex items-center justify-center gap-2 rounded-2xl border-2 border-coral/20 bg-coral/5 py-3 text-sm font-extrabold text-coral hover:bg-coral/10 transition-colors"
-          >
-            <RotateCcw size={16} /> Reinicia el progrés
-          </button>
-
-          {!isDemo && (
-            <button
-              onClick={() => confirm('Segur que vols tancar la sessió?') && onLogOut()}
-              id="profile-logout-btn"
-              className="btn-press flex items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white py-3 text-sm font-extrabold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-            >
-              <LogOut size={16} /> Tanca la sessió
-            </button>
-          )}
-        </div>
-      </div>
-    </main>
-  );
+  if (practice === undefined) return null;
+  if (!practice) return <Navigate to={ROUTES.scenarioselect} replace />;
+  return <PageTransition><Practice practice={practice} onBack={onBack} /></PageTransition>;
 }
 
-/* ══════════════════ APP ROOT ════════════════════════════════════════ */
 export function App() {
-  const [page, setPage] = useState<Page>('home');
-  const [xp, setXp] = useState(35);
-  const [scenario, setScenario] = useState<Scenario>('mercat');
-  const [level, setLevel] = useState('principiant');
-  const [name, setName] = useState('Aina');
-  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+  const [xp, setXp] = useState(DEFAULT_PROFILE.xp);
+  const [level, setLevel] = useState(DEFAULT_PROFILE.level);
+  const [name, setName] = useState(DEFAULT_PROFILE.name);
+  const [user, setUser] = useState<User | null>(null);
 
   // Sync profile details from Supabase if logged in
-  const fetchAndLoadProfile = async (uid: string) => {
+  const loadProfile = async (uid: string) => {
     if (!supabase) return;
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('display_name, level, xp')
         .eq('id', uid)
         .single();
       if (data) {
-        setName(data.display_name || 'Aina');
-        setLevel(data.level || 'principiant');
+        setName(data.display_name || DEFAULT_PROFILE.name);
+        setLevel(data.level || DEFAULT_PROFILE.level);
         setXp(data.xp || 0);
       }
     } catch (e) {
@@ -941,97 +143,122 @@ export function App() {
     }
   };
 
+  const resetProfile = () => {
+    setUser(null);
+    setName(DEFAULT_PROFILE.name);
+    setLevel(DEFAULT_PROFILE.level);
+    setXp(DEFAULT_PROFILE.xp);
+    navigate(ROUTES.home, { replace: true });
+  };
+
   useEffect(() => {
     if (!supabase) return;
 
-    // Check active session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchAndLoadProfile(session.user.id);
-        setPage('dashboard');
+    // Check active session on mount. Sols redirigix si encara estava a l'inici
+    // o a l'autenticació: si es recarrega qualsevol altra pàgina (p. ex.
+    // /scenaris o /perfil) amb sessió activa, s'hi queda en lloc de tornar
+    // sempre al tauler.
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+      setUser(session.user);
+      void loadProfile(session.user.id);
+      const path = window.location.pathname;
+      if (path === ROUTES.home || path === ROUTES.auth) {
+        navigate(ROUTES.dashboard, { replace: true });
       }
     });
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        await fetchAndLoadProfile(session.user.id);
-        setPage((prev) => (prev === 'home' || prev === 'auth' ? 'dashboard' : prev));
-      } else {
-        setUser(null);
-        setName('Aina');
-        setLevel('principiant');
-        setXp(35);
-        setPage('home');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!session?.user) return resetProfile();
+      setUser(session.user);
+      await loadProfile(session.user.id);
+      // Sols redirigix si encara estava a l'inici o a l'autenticació; si ja
+      // navegava per l'app (p. ex. refresc del token), es queda on estava.
+      const path = window.location.pathname;
+      if (path === ROUTES.home || path === ROUTES.auth) {
+        navigate(ROUTES.dashboard, { replace: true });
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const updateProfileName = async (newName: string) => {
-    setName(newName);
-    if (supabase && user) {
-      try {
-        await supabase.from('profiles').update({ display_name: newName }).eq('id', user.id);
-      } catch (err) {
-        console.error('Error desant nom:', err);
-      }
+  // Actualitza l'estat local a l'instant i desa el canvi a Supabase si hi ha sessió.
+  const saveProfile = async (fields: ProfileFields) => {
+    if (!supabase || !user) return;
+    try {
+      await supabase.from('profiles').update(fields).eq('id', user.id);
+    } catch (err) {
+      console.error('Error desant perfil:', err);
     }
   };
 
-  const updateProfileLevel = async (newLevel: string) => {
-    setLevel(newLevel);
-    if (supabase && user) {
-      try {
-        await supabase.from('profiles').update({ level: newLevel }).eq('id', user.id);
-      } catch (err) {
-        console.error('Error desant nivell:', err);
-      }
-    }
+  const updateName = (display_name: string) => {
+    setName(display_name);
+    void saveProfile({ display_name });
   };
 
-  const handleLogOut = async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+  const logOut = async () => {
+    // Tanca la sessió al backend abans d'invalidar el token de Supabase.
+    await endSession().catch(err => console.error('Error tancant la sessió:', err));
+    await supabase?.auth.signOut();
   };
 
-  if (page === 'home')      return <PageTransition><HomePage setPage={setPage} /></PageTransition>;
-  if (page === 'auth')      return <PageTransition><AuthPage setPage={setPage} /></PageTransition>;
-  if (page === 'dashboard') return <PageTransition><Dashboard name={name} setPage={setPage} /></PageTransition>;
-  if (page === 'scenarioselect') return <PageTransition><ScenarioSelect scenarios={scenarios} goals={scenarioGoals} xp={xp} onSelectScenario={s => { setScenario(s); setPage('chat'); }} onBack={() => setPage('dashboard')} /></PageTransition>;
-  if (page === 'profile') {
-    return (
-      <PageTransition>
-        <Profile
-          name={name}
-          setName={updateProfileName}
-          level={level}
-          setLevel={updateProfileLevel}
-          xp={xp}
-          back={() => setPage('dashboard')}
-          onLogOut={handleLogOut}
-          isDemo={!user}
-        />
-      </PageTransition>
-    );
-  }
-  if (page === 'summary')   return <PageTransition><Summary xp={xp} onMap={() => setPage('dashboard')} onContinue={() => setPage('scenarioselect')} /></PageTransition>;
+  const goDashboard = () => navigate(ROUTES.dashboard);
+  // Callback compatible amb les pàgines que només naveguen entre pantalles
+  // simples (sense paràmetres); el xat es gestiona a banda amb `chatRoute`.
+  const goToPage = (p: Page) => navigate(ROUTES[p]);
+
   return (
-    <PageTransition>
-      <Chat
-        scenario={scenario}
-        level={level}
-        xp={xp}
-        setXp={setXp}
-        onEnd={() => setPage('summary')}
-        onBack={() => setPage('dashboard')}
+    <Routes>
+      <Route path={ROUTES.home} element={<PageTransition><HomePage setPage={goToPage} /></PageTransition>} />
+      <Route path={ROUTES.auth} element={<PageTransition><AuthPage setPage={goToPage} /></PageTransition>} />
+      <Route path={ROUTES.dashboard} element={<PageTransition><Dashboard name={name} setPage={goToPage} /></PageTransition>} />
+      <Route
+        path={ROUTES.scenarioselect}
+        element={
+          <PageTransition>
+            <ScenarioSelect
+              name={name}
+              onSelect={resource => {
+                const route = activityRoute(resource);
+                if (route) navigate(route);
+              }}
+              onBack={goDashboard}
+              onProfile={() => navigate(ROUTES.profile)}
+            />
+          </PageTransition>
+        }
       />
-    </PageTransition>
+      <Route
+        path={ROUTES.profile}
+        element={
+          <PageTransition>
+            <Profile
+              name={name}
+              setName={updateName}
+              level={level}
+              xp={xp}
+              back={() => navigate(-1)}
+              onLogOut={logOut}
+              isDemo={!user}
+            />
+          </PageTransition>
+        }
+      />
+      <Route
+        path={ROUTES.summary}
+        element={<PageTransition><Summary xp={xp} onMap={goDashboard} onContinue={() => navigate(ROUTES.scenarioselect)} /></PageTransition>}
+      />
+      <Route
+        path={`${ROUTES.chat}/:scenario`}
+        element={<ChatRoute level={level} xp={xp} onXpGained={delta => setXp(x => x + delta)} onBack={() => navigate(-1)} />}
+      />
+      <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
+      <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute onBack={() => navigate(-1)} />} />
+      <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+    </Routes>
   );
 }

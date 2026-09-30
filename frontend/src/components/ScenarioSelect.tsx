@@ -1,98 +1,179 @@
-﻿import { Lock } from 'lucide-react';
-import { ClassroomScene } from './ClassroomScene';
-import { Logo } from '../App';
-import type { Scenario, ScenarioInfo } from '../lib/types';
+import { useEffect, useMemo, useState } from 'react';
+import { CONVERSATION_AREAS, PRACTICE_AREAS } from '@parlaval/shared';
+import { Logo, ProfileButton } from './ui';
+import { fetchResources } from '../lib/api';
+import type { Resource } from '../lib/types';
 
-type ScenarioDef = {
-  id: Scenario;
-  name: string;
-  icon: string;
-  required: number;
-  color: string;
-  bgIllustration: string;
+// Noms visibles de les categories conegudes, en l'ordre en què es mostren; la
+// resta van darrere, capitalitzades.
+const CATEGORY_LABELS: Record<string, string> = {
+  escenari: 'Escenaris',
+  comprensio_oral: PRACTICE_AREAS.comprensio_oral,
+  comprensio_escrita: PRACTICE_AREAS.comprensio_escrita,
+  expressio_escrita: PRACTICE_AREAS.expressio_escrita,
+  expressio_oral: CONVERSATION_AREAS.expressio_oral,
+  fonetica_ortografia: PRACTICE_AREAS.fonetica_ortografia,
+  morfosintaxi: PRACTICE_AREAS.morfosintaxi,
+  lexic_semantica: PRACTICE_AREAS.lexic_semantica,
+  examen: 'Exàmens',
+};
+const CATEGORY_ORDER = Object.keys(CATEGORY_LABELS);
+const categoryRank = (c: string) => {
+  const i = CATEGORY_ORDER.indexOf(c);
+  return i === -1 ? CATEGORY_ORDER.length : i;
 };
 
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
+const categoryLabel = (c: string) => CATEGORY_LABELS[c] ?? capitalize(c);
+
+type Section = { type: string; resources: Resource[] };
+type Category = { id: string; sections: Section[] };
+
+// Agrupa els recursos per categoria i, dins de cada categoria, per tipus
+// (secció). Les categories segueixen CATEGORY_LABELS i, dins de cadascuna, es
+// manté l'ordre en què arriben del backend.
+function groupResources(resources: Resource[]): Category[] {
+  const categories = new Map<string, Map<string, Resource[]>>();
+  for (const r of resources) {
+    const sections = categories.get(r.category) ?? new Map<string, Resource[]>();
+    sections.set(r.type, [...(sections.get(r.type) ?? []), r]);
+    categories.set(r.category, sections);
+  }
+  return [...categories]
+    .map(([id, sections]) => ({
+      id,
+      sections: [...sections].map(([type, list]) => ({ type, resources: list })),
+    }))
+    .sort((a, b) => categoryRank(a.id) - categoryRank(b.id));
+}
+
 export function ScenarioSelect({
-  scenarios,
-  goals,
-  xp,
-  onSelectScenario,
+  name,
+  onSelect,
   onBack,
+  onProfile,
 }: {
-  scenarios: ScenarioDef[];
-  goals: Record<Scenario, ScenarioInfo>;
-  xp: number;
-  onSelectScenario: (s: Scenario) => void;
+  name: string;
+  onSelect: (resource: Resource) => void;
   onBack: () => void;
+  onProfile: () => void;
 }) {
+  const [resources, setResources] = useState<Resource[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [selected, setSelected] = useState<string>();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchResources()
+      .then(data => { if (!cancelled) setResources(data); })
+      .catch(error => {
+        console.error('Error carregant les activitats:', error);
+        if (!cancelled) setLoadError(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const categories = useMemo(() => groupResources(resources ?? []), [resources]);
+  const current = categories.find(c => c.id === selected) ?? categories[0];
+
   return (
     <main className="fade-up relative min-h-screen" style={{ background: '#FFF9ED' }}>
-      <ClassroomScene opacity={0.18} />
-
       {/* Classroom header */}
       <header className="classroom-header z-10">
-        <div className="relative isolate flex items-center justify-between px-5 pb-3 pt-4">
+        <div className="relative isolate flex items-center justify-between px-5 p-4">
           <button
             onClick={onBack}
-            className="btn-press rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-teal shadow hover:bg-white transition-colors"
+            className="text-xl btn-press rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-teal shadow hover:bg-white transition-colors"
           >
             ← Tornar
           </button>
           <Logo />
-          <div className="w-10" />
-        </div>
-        <div className="px-5 pb-4">
-          <span className="block text-xs font-black uppercase tracking-widest" style={{ color: '#FFD166' }}>
-            Aula d'aprenentatge
-          </span>
-          <p className="mt-1 text-sm opacity-65">Tria on practicar valencià avui</p>
+          <ProfileButton name={name} onClick={onProfile} />
         </div>
       </header>
 
-      {/* Scenario desk grid: 2 rows x 3 columns */}
-      <div className="relative z-10 mx-auto max-w-2xl px-5 pt-6 pb-20">
-        <p className="mb-4 text-center text-xs font-black uppercase tracking-wider opacity-55">
-          Tria una situació
-        </p>
-        <div className="desk-grid grid grid-cols-3 gap-4">
-          {scenarios.map((s) => {
-            const locked = xp < s.required;
-            const g = goals[s.id];
-            return (
+      <div className="relative z-10 mx-auto max-w-4xl px-5 pt-6 pb-20">
+        <h1 className="mb-6 text-4xl text-center font-black uppercase tracking-wider opacity-55">
+          ACTIVITATS
+        </h1>
+
+        {loadError && (
+          <p className="mt-10 text-center text-sm font-bold opacity-50">
+            No hem pogut carregar les activitats. Torna-ho a provar més tard.
+          </p>
+        )}
+
+        {!loadError && !resources && (
+          <p className="mt-10 text-center text-sm font-bold opacity-50">Carregant activitats…</p>
+        )}
+
+        {resources && categories.length === 0 && (
+          <p className="mt-10 text-center text-sm font-bold opacity-50">Encara no hi ha activitats disponibles.</p>
+        )}
+
+        {/* Categories (resources.category), generades a partir de la BDD. */}
+        {categories.length > 0 && (
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+            {categories.map(c => (
               <button
-                key={s.id}
-                id={`scenario-select-${s.id}`}
-                disabled={locked}
-                onClick={() => onSelectScenario(s.id)}
-                className="desk-card text-left"
-                style={{ background: locked ? '#F5F5F5' : '#fff' }}
+                key={c.id}
+                onClick={() => setSelected(c.id)}
+                className={`btn-press rounded-full px-4 py-2 text-xl font-black transition-colors ${
+                  current?.id === c.id ? 'bg-teal text-white' : 'bg-white text-teal hover:bg-teal/10'
+                }`}
               >
-                <div
-                  className="relative flex h-28 items-center justify-center overflow-hidden rounded-t-[20px]"
-                  style={{ background: locked ? '#E8E8E8' : s.color }}
-                >
-                  <span className="text-6xl select-none">{s.icon}</span>
-                  {locked && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-t-[20px]">
-                      <Lock size={24} className="text-white drop-shadow" />
-                    </div>
-                  )}
-                </div>
-                <div className="px-4 py-3">
-                  <b className="block text-base font-black" style={{ color: locked ? '#aaa' : '#263747' }}>
-                    {s.name}
-                  </b>
-                  {g && (
-                    <p className="mt-0.5 text-xs font-bold text-teal">{g.character.split(',')[0]}</p>
-                  )}
-                  <span className="text-xs font-bold" style={{ color: locked ? '#bbb' : '#0D9488' }}>
-                    {locked ? `🔒 ${s.required} XP necessaris` : '✓ Disponible'}
-                  </span>
-                </div>
+                {categoryLabel(c.id)}
               </button>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {/* Seccions de la categoria triada (resources.type). */}
+        {current && (
+          <div key={current.id} className="desk-grid grid gap-4">
+            {current.sections.map(({ type, resources: list }) => {
+              const [first] = list;
+              // L'aparença de la secció ve de metadata; es pren del primer recurs que la tinga.
+              const icon = list.find(r => r.icon)?.icon ?? '📘';
+              const color = list.find(r => r.color)?.color ?? '#E7E5E4';
+              const title = list.find(r => r.section_name)?.section_name ?? capitalize(type);
+              // El backend decidix si la categoria té pantalla i la fila en té les dades.
+              const playable = list.find(r => r.playable);
+              return (
+                <button
+                  key={type}
+                  id={`activity-${current.id}-${type}`}
+                  disabled={!playable}
+                  title={playable ? undefined : 'Pròximament disponible'}
+                  onClick={() => playable && onSelect(playable)}
+                  className="desk-card flex items-stretch text-left"
+                  style={{ background: '#fff' }}
+                >
+                  <div
+                    className="relative flex min-h-28 w-28 shrink-0 self-stretch items-center justify-center overflow-hidden rounded-l-[20px]"
+                    style={{ background: color }}
+                  >
+                    <span className="text-6xl select-none">{icon}</span>
+                  </div>
+                  <div className="flex flex-1 flex-col justify-center gap-1 px-4 py-3">
+                    <h2 className="block text-2xl font-black">{title}</h2>
+                    {list.length === 1 ? (
+                      <>
+                        <p className="text-sm font-bold">{first.name}</p>
+                        {first.content && <p className="text-sm opacity-70">{first.content}</p>}
+                      </>
+                    ) : (
+                      <ul className="list-disc pl-4 text-sm">
+                        {list.map(r => <li key={r.id}>{r.name}</li>)}
+                      </ul>
+                    )}
+                    {!playable && <p className="text-xs font-bold opacity-50">Pròximament disponible</p>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </main>
   );

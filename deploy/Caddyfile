@@ -1,11 +1,21 @@
 # Rutes de Supabase amb els mateixos prefixos que Supabase Cloud, així
 # supabase-js funciona sense canvis apuntant a https://{$DOMAIN}.
 (supabase) {
+	# GoTrue i PostgREST ja afigen les seues pròpies capçaleres CORS (només en
+	# peticions normals, no en el preflight OPTIONS). En el port :8000 nosaltres
+	# n'afegim les nostres (a baix); sense llevar estes abans, el navegador veu
+	# dos valors d'Access-Control-Allow-Origin i rebutja la resposta sencera.
 	handle_path /auth/v1/* {
-		reverse_proxy auth:9999
+		reverse_proxy auth:9999 {
+			header_down -Access-Control-Allow-Origin
+			header_down -Access-Control-Allow-Credentials
+		}
 	}
 	handle_path /rest/v1/* {
-		reverse_proxy rest:3000
+		reverse_proxy rest:3000 {
+			header_down -Access-Control-Allow-Origin
+			header_down -Access-Control-Allow-Credentials
+		}
 	}
 }
 
@@ -37,8 +47,20 @@
 	}
 }
 
-# Entrada interna per al backend (SUPABASE_URL=http://web:8000). El port no es
-# publica: només és accessible des de la xarxa de compose.
+# Entrada interna per al backend (SUPABASE_URL=http://web:8000) i, en dev,
+# publicada a 127.0.0.1:8000 perquè el frontend/backend en local (npm run dev,
+# un origen diferent: localhost:5173) puguen parlar amb esta Supabase.
+# GoTrue no afig capçaleres CORS pel seu compte (a diferència de PostgREST);
+# sense Kong davant, cal afegir-les ací perquè el navegador no bloquege les
+# peticions entre orígens.
 http://:8000 {
+	header {
+		Access-Control-Allow-Origin "{http.request.header.Origin}"
+		Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+		# Reflectix els que demane el navegador (supabase-js n'afig alguns,
+		# com x-supabase-api-version, que canvien segons la versió del SDK).
+		Access-Control-Allow-Headers "{http.request.header.Access-Control-Request-Headers}"
+		Vary "Origin, Access-Control-Request-Headers"
+	}
 	import supabase
 }

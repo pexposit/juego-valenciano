@@ -1,37 +1,12 @@
 /**
- * Font única de veritat per a escenaris, nivells i límits compartits entre el
- * backend i el frontend. En afegir un escenari nou només cal tocar aquest
- * fitxer: `ScenarioKey` deriva de `SCENARIO_KEYS` i tots els `Record` tipats
- * obliguen a cobrir-lo (el compilador falla si se n'oblida alguno).
+ * Font única de veritat per a nivells i límits compartits entre el backend i
+ * el frontend. Els escenaris (clau, personatge, prompt, veu) ja no viuen ací:
+ * es defineixen a la taula resources de la BDD.
  */
-
-export const SCENARIO_KEYS = [
-  'mercat',
-  'bar',
-  'oficina',
-  'ajuntament',
-  'colegi',
-  'turisme',
-] as const;
-
-export type ScenarioKey = (typeof SCENARIO_KEYS)[number];
 
 export const LEVELS = ['principiant', 'intermedi', 'avancat'] as const;
 
 export type LevelKey = (typeof LEVELS)[number];
-
-// Cada escenari té el seu personatge amb una veu TTS pròpia.
-export const VOICE_BY_SCENARIO: Record<ScenarioKey, string> = {
-  mercat: 'lluc',
-  bar: 'gina',
-  oficina: 'lluc',
-  ajuntament: 'gina',
-  colegi: 'gina',
-  turisme: 'gina',
-};
-
-/** XP necessària per completar un escenari. */
-export const SCENARIO_XP = 100;
 
 /* ── Límits de l'historial de conversa ────────────────────────────────── */
 /** Longitud màxima d'un missatge individual. */
@@ -67,3 +42,58 @@ export function sanitizeHistory(history: HistoryMessage[]): HistoryMessage[] {
   }
   return out;
 }
+
+/* ── Redaccions dels exàmens ──────────────────────────────────────────── */
+// El frontend (comptador en directe) i el backend (dades per a l'avaluador)
+// han de comptar igual les paraules i les paraules obligatòries usades.
+
+export const countWords = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+
+const normalizeWord = (text: string) => text.toLocaleLowerCase('ca').normalize('NFD').replace(/\p{M}/gu, '');
+
+// Formes acceptades d'una paraula: singular i plural (estoig/estoigs, agenda/agendes).
+// Una paraula amb gènere com «malalt/a» accepta també el femení (malalta, malaltes).
+const wordForms = (word: string) => {
+  const [base, feminine] = normalizeWord(word).split('/');
+  const forms = (w: string) => [w, `${w}s`, w.endsWith('a') ? `${w.slice(0, -1)}es` : w];
+  return new Set([...forms(base), ...(feminine ? forms(base + feminine) : [])]);
+};
+
+/** Paraules de la llista que apareixen en el text (en qualsevol de les seues formes). */
+export function usedRequiredWords(text: string, words: string[]): string[] {
+  const tokens = new Set(normalizeWord(text).split(/[^\p{L}·]+/u).filter(Boolean));
+  return words.filter(w => [...wordForms(w)].some(f => tokens.has(f)));
+}
+
+/* ── Pràctica del temari ──────────────────────────────────────────────── */
+/**
+ * Àrees del temari de la JQCV amb pantalla d'exercicis: les destreses (menys
+ * l'expressió oral) i els continguts lingüístics. Cadascuna és una `category` de
+ * resources, i els seus continguts (`type`) tenen exercicis a practice_exercises.
+ * L'ordre és el del temari.
+ */
+export const PRACTICE_AREAS = {
+  comprensio_oral: 'Comprensió oral',
+  comprensio_escrita: 'Comprensió escrita',
+  expressio_escrita: 'Expressió escrita',
+  fonetica_ortografia: 'Fonètica i ortografia',
+  morfosintaxi: 'Morfosintaxi',
+  lexic_semantica: 'Lèxic i semàntica',
+} as const;
+
+export type PracticeArea = keyof typeof PRACTICE_AREAS;
+
+/** Àrees que es practiquen conversant amb un personatge, en la pantalla del xat. */
+export const CONVERSATION_AREAS = {
+  expressio_oral: 'Expressió oral',
+} as const;
+
+/** Categories de resources que s'obrin al xat: els escenaris i les àrees de conversa. */
+export const CHAT_CATEGORIES: readonly string[] = ['escenari', ...Object.keys(CONVERSATION_AREAS)];
+
+export const isPracticeArea = (category: string): category is PracticeArea => category in PRACTICE_AREAS;
+
+/** Compara una resposta escrita amb les acceptades: sense diferenciar majúscules,
+ * espais sobrants, puntuació final ni la forma de l'apòstrof, però sí els accents. */
+export const normalizeAnswer = (text: string) =>
+  text.trim().toLocaleLowerCase('ca').replace(/[’`´]/g, "'").replace(/l\.l/g, 'l·l').replace(/\s+/g, ' ').replace(/[.,;:!?¡¿]+$/, '');

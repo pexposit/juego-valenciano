@@ -19,7 +19,16 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { replyFromAgent } from './agent.js';
-import type { ScenarioKey } from '../scenarios/types.js';
+import { getScenario } from './scenarios.js';
+
+// Els escenaris es lligen de la taula resources (type).
+type ScenarioKey = string;
+
+async function loadScenario(type: ScenarioKey) {
+  const scenario = await getScenario(type);
+  if (!scenario) throw new Error(`L'escenari ${type} no existix a la BDD o no té system_prompt`);
+  return scenario;
+}
 import type { LevelKey } from '@parlaval/shared';
 
 // Carga las variables del fichero .env del backend (ruta absoluta robusta).
@@ -273,7 +282,7 @@ describe.skipIf(!hasCredentials)(`Integración real con la API de OpenAI (${CASE
     '$name (nivell $level)',
     async (c: Case) => {
       const reply = await replyFromAgent({
-        scenario: c.scenario,
+        scenario: await loadScenario(c.scenario),
         level: c.level,
         message: c.message,
         history: [],
@@ -288,19 +297,11 @@ describe.skipIf(!hasCredentials)(`Integración real con la API de OpenAI (${CASE
 
       // 2) Tots els camps sempre dins dels valors permesos.
       expect(MOODS).toContain(reply.mood);
-      expect(SIGNALS).toContain(reply.detected_level_signal);
-      expect(Array.isArray(reply.error_flags)).toBe(true);
-
       // 3) Coherència amb l'estat induït.
       if (c.mood) expect(reply.mood).toBe(c.mood);
-      if (c.signal) expect(reply.detected_level_signal).toBe(c.signal);
       if (c.error) {
         // En un cas d'error, el model deu assenyalar-ho d'alguna manera.
-        const flagged =
-          reply.mood === 'confus' ||
-          reply.detected_level_signal === 'below' ||
-          reply.error_flags.length > 0;
-        expect(flagged, `No es va detectar cap senyal d'error a: ${JSON.stringify(reply)}`).toBe(true);
+        expect(reply.mood, `No es va detectar cap senyal d'error a: ${JSON.stringify(reply)}`).toBe('confus');
       }
     },
     60_000,
@@ -380,7 +381,7 @@ describe.skipIf(!hasCredentials)(`Integración real · conversa multi-torn amb h
     '$name',
     async (c: HistoryCase) => {
       const reply = await replyFromAgent({
-        scenario: c.scenario,
+        scenario: await loadScenario(c.scenario),
         level: c.level,
         message: c.message,
         history: c.history,
@@ -392,18 +393,10 @@ describe.skipIf(!hasCredentials)(`Integración real · conversa multi-torn amb h
       expect(typeof reply.reply_text).toBe('string');
       expect(reply.reply_text.trim().length).toBeGreaterThan(3);
       expect(MOODS).toContain(reply.mood);
-      expect(SIGNALS).toContain(reply.detected_level_signal);
-      expect(Array.isArray(reply.error_flags)).toBe(true);
-
       // Coherencia con el estado inducido.
       if (c.mood) expect(reply.mood).toBe(c.mood);
-      if (c.signal) expect(reply.detected_level_signal).toBe(c.signal);
       if (c.error) {
-        const flagged =
-          reply.mood === 'confus' ||
-          reply.detected_level_signal === 'below' ||
-          reply.error_flags.length > 0;
-        expect(flagged, `No es va detectar cap senyal d'error a: ${JSON.stringify(reply)}`).toBe(true);
+        expect(reply.mood, `No es va detectar cap senyal d'error a: ${JSON.stringify(reply)}`).toBe('confus');
       }
 
       // El modelo debe mantener el tema de la conversación.
