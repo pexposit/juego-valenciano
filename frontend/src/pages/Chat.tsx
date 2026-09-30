@@ -14,9 +14,11 @@ const TTS_ATTEMPTS = 2;
 const ROUND_BUTTON = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors';
 
 export function Chat({
-  scenario, title, voice, background, initialPrompt, level, xp, onXpGained, onEnd, onBack,
+  scenario, category, title, voice, background, initialPrompt, level, xp, onXpGained, onEnd, onBack,
 }: {
   scenario: Scenario;
+  // Categoria del recurs a la BDD: 'escenari' o una àrea de conversa del temari.
+  category: string;
   title: string;
   // Veu TTS i foto de fons de l'escenari (resources.metadata).
   voice: string | null;
@@ -49,7 +51,7 @@ export function Chat({
   const openActivity = () => {
     activity.current ??= (async () => {
       const sessionId = await ensureSession(level);
-      const { id } = await startSessionResource(sessionId, scenario);
+      const { id } = await startSessionResource(sessionId, scenario, category);
       openedActivity.current = { sessionId, sessionResourceId: id };
       return openedActivity.current;
     })().catch(error => {

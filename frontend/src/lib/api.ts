@@ -1,4 +1,4 @@
-import type { Exam, Resource, Scenario, TurnResponse, WritingEvaluation } from './types';
+import type { Exam, Practice, Resource, Scenario, TurnResponse, WritingEvaluation } from './types';
 import { sanitizeHistory } from '@parlaval/shared';
 import { supabase } from './supabase';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
@@ -22,6 +22,30 @@ export async function fetchExam(id: string): Promise<Exam | null> {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/exams/${encodeURIComponent(id)}`);
   if (res.status === 404) return null;
   if (!res.ok) throw new Error("No hem pogut carregar l'examen");
+  return res.json();
+}
+// Exercicis d'un contingut del temari (fonètica, morfosintaxi, lèxic). null si no existix.
+export async function fetchPractice(id: string): Promise<Practice | null> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/practice/${encodeURIComponent(id)}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('No hem pogut carregar els exercicis');
+  return res.json();
+}
+// Avalua amb el LLM una redacció o un formulari de l'àrea d'Expressió escrita.
+export async function evaluatePracticeExercise(
+  exerciseId: string,
+  body: { answers: Record<string, string> } | { text: string },
+): Promise<WritingEvaluation> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/practice/exercises/${encodeURIComponent(exerciseId)}/evaluate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(res.status === 429 ? 'Has fet massa avaluacions seguides. Espera un minut.' : payload?.error ?? "No hem pogut avaluar l'exercici");
+  }
   return res.json();
 }
 // Avalua amb el LLM (rúbrica oficial de la JQCV) un exercici d'expressió escrita:
@@ -161,7 +185,8 @@ export async function finishSessionResource(sessionId: string, sessionResourceId
 }
 
 // Vincula l'escenari triat a la sessió actual: crea una entrada nova a session_resource.
-export async function startSessionResource(sessionId: string, scenario: Scenario): Promise<SessionResource> {
+// `category` és la del recurs: 'escenari' o una àrea de conversa (p. ex. 'expressio_oral').
+export async function startSessionResource(sessionId: string, scenario: Scenario, category = 'escenari'): Promise<SessionResource> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/sessions/${sessionId}/resources`, {
     method: 'POST',
@@ -169,7 +194,7 @@ export async function startSessionResource(sessionId: string, scenario: Scenario
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ type: scenario, category: 'escenari' }),
+    body: JSON.stringify({ type: scenario, category }),
   });
   if (!res.ok) throw new Error("No s'ha pogut vincular l'escenari a la sessió");
   return res.json();

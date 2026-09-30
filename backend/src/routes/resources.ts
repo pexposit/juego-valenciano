@@ -4,12 +4,14 @@ import { getAdmin, requireAuth } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
 import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing } from '../services/examWritingEvaluator.js';
-import { isScenarioPlayable, SCENARIO_CATEGORY } from '../services/scenarios.js';
+import { isScenarioPlayable } from '../services/scenarios.js';
+import { CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
 
 export const resourcesRouter = Router();
 
 type Metadata = Record<string, unknown> | null;
-type ResourceRow = { category: string; url: string | null; metadata: Metadata };
+// `practice_exercises` és el recompte embegut ([{ count }]) dels exercicis del recurs.
+type ResourceRow = { category: string; url: string | null; metadata: Metadata; practice_exercises?: { count: number }[] };
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value : null);
 
@@ -18,8 +20,8 @@ export const EXAM_CATEGORY = 'examen';
 // Cada categoria té la seua pantalla de joc i decidix si una fila té les dades
 // que necessita. Les categories sense pantalla es mostren com a "Pròximament".
 const PLAYABLE_BY_CATEGORY: Record<string, (row: ResourceRow) => boolean> = {
-  // Xat amb un personatge.
-  [SCENARIO_CATEGORY]: row => isScenarioPlayable(row.metadata),
+  // Xat amb un personatge: els escenaris i les àrees de conversa (Expressió oral).
+  ...Object.fromEntries(CHAT_CATEGORIES.map(c => [c, (row: ResourceRow) => isScenarioPlayable(row.metadata)])),
   // Examen interactiu: contingut a metadata.exam i, opcionalment, l'àudio de comprensió oral a `url`.
   [EXAM_CATEGORY]: row => hasExam(row.metadata),
 };
@@ -29,7 +31,12 @@ function hasExam(metadata: Metadata) {
   return Array.isArray(exam?.areas) && exam.areas.length > 0;
 }
 
-const isPlayable = (row: ResourceRow) => PLAYABLE_BY_CATEGORY[row.category]?.(row) ?? false;
+// Les àrees del temari (PRACTICE_AREAS) comparteixen la pantalla d'exercicis: un
+// contingut és jugable si té algun exercici a practice_exercises.
+const hasExercises = (row: ResourceRow) => (row.practice_exercises?.[0]?.count ?? 0) > 0;
+
+const isPlayable = (row: ResourceRow) =>
+  isPracticeArea(row.category) ? hasExercises(row) : PLAYABLE_BY_CATEGORY[row.category]?.(row) ?? false;
 
 // Catàleg d'activitats (taula resources). El frontend l'agrupa per `category`
 // i, dins de cada categoria, per `type`: afegir una fila a la BDD fa aparéixer
@@ -40,8 +47,9 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
 
   const { data, error } = await client
     .from('resources')
-    .select('id, name, type, category, difficulty, xp_earned, content, url, metadata')
+    .select('id, name, type, category, difficulty, xp_earned, content, url, metadata, practice_exercises(count)')
     .order('category')
+    .order('sort_order')
     .order('type')
     .order('name');
 
@@ -51,7 +59,7 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
   }
 
   // De metadata només s'exposa el que necessiten les pantalles, no el prompt del personatge.
-  res.json((data ?? []).map(({ metadata, ...resource }: ResourceRow & Record<string, unknown>) => ({
+  res.json((data ?? []).map(({ metadata, practice_exercises, ...resource }: ResourceRow & Record<string, unknown>) => ({
     ...resource,
     icon: text(metadata?.icon),
     color: text(metadata?.color),
@@ -59,8 +67,46 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
     background: text(metadata?.background),
     voice: text(metadata?.voice),
     initial_prompt: text(metadata?.initial_prompt),
-    playable: isPlayable({ ...resource, metadata }),
+    playable: isPlayable({ ...resource, metadata, practice_exercises }),
   })));
+});
+
+// Exercicis d'un contingut del temari (una àrea de PRACTICE_AREAS), de tots els
+// nivells, en l'ordre de `position`, i els textos o àudios que acompanyen alguns
+// (`passage_id`). Les preguntes tancades porten la solució: es corregixen en
+// pantalla, com les dels exàmens.
+resourcesRouter.get('/api/practice/:id', async (req, res) => {
+  const client = getAdmin() as any;
+  if (!client) return res.status(503).json({ error: "El catàleg no està disponible" });
+  if (!z.string().uuid().safeParse(req.params.id).success) return res.status(404).json({ error: "Els exercicis no existixen" });
+
+  const { data, error } = await client
+    .from('resources')
+    .select(`id, name, type, category, content, metadata,
+      practice_passages(id, level, position, media, title, lines, audio_url),
+      practice_exercises(id, level, position, passage_id, kind, prompt, options, answers, task, explanation)`)
+    .eq('id', req.params.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[practice] Error carregant els exercicis:', error);
+    return res.status(500).json({ error: "No hem pogut carregar els exercicis" });
+  }
+  if (!data || !isPracticeArea(data.category) || !data.practice_exercises?.length) {
+    return res.status(404).json({ error: "Els exercicis no existixen" });
+  }
+
+  type Ordered = { level: string; position: number };
+  const byOrder = (a: Ordered, b: Ordered) => a.level.localeCompare(b.level) || a.position - b.position;
+  const { metadata, practice_exercises: exercises, practice_passages: passages, ...resource } = data;
+  res.json({
+    ...resource,
+    icon: text(metadata?.icon),
+    color: text(metadata?.color),
+    section_name: text(metadata?.section_name),
+    passages: (passages as Ordered[]).sort(byOrder).map(({ position: _position, ...passage }) => passage),
+    exercises: (exercises as Ordered[]).sort(byOrder).map(({ position: _position, ...exercise }) => exercise),
+  });
 });
 
 // Contingut complet d'un examen (preguntes, opcions i solucions). Va a banda del
@@ -179,6 +225,55 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
     res.json(await evaluate());
   } catch (err) {
     console.error('[exams] Error avaluant l’exercici:', err);
+    res.status(503).json({ error: 'No hem pogut avaluar l’exercici. Torna-ho a provar.' });
+  }
+});
+
+// Avaluació amb LLM d'una redacció (`writing`) o d'un formulari (`form`) de
+// l'àrea d'Expressió escrita. La consigna i els camps es lligen de la BDD.
+resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLimit(EVALUATE_RATE_LIMIT), async (req, res) => {
+  const parsedBody = evaluateSchema.safeParse(req.body);
+  if (!parsedBody.success) return validationError(res, parsedBody.error);
+  if (!z.string().uuid().safeParse(req.params.id).success) return res.status(404).json({ error: "L'exercici no existix" });
+
+  const client = getAdmin() as any;
+  if (!client) return res.status(503).json({ error: "El catàleg no està disponible" });
+  const { data: exercise, error } = await client
+    .from('practice_exercises')
+    .select('kind, prompt, task')
+    .eq('id', req.params.id)
+    .maybeSingle();
+  if (error) {
+    console.error("[practice] Error carregant l'exercici:", error);
+    return res.status(500).json({ error: "No hem pogut carregar l'exercici" });
+  }
+
+  let evaluate: () => Promise<unknown>;
+  if (exercise?.kind === 'form') {
+    const fields: string[] = exercise.task.fields;
+    const answers = parsedBody.data.answers ?? {};
+    if (!fields.some(f => answers[f]?.trim())) return res.status(400).json({ error: 'Omple el formulari abans d’avaluar-lo' });
+    evaluate = () => evaluateA1Writing({ instructions: exercise.prompt, fields, answers });
+  } else if (exercise?.kind === 'writing') {
+    const text = parsedBody.data.text?.trim();
+    if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
+    const task = exercise.task as { min_words: number; max_words: number; words?: string[]; min_words_used?: number };
+    evaluate = () => evaluateA2Writing({
+      instructions: exercise.prompt,
+      text,
+      minWords: task.min_words,
+      maxWords: task.max_words,
+      words: task.words ?? [],
+      minWordsUsed: task.min_words_used ?? 0,
+    });
+  } else {
+    return res.status(404).json({ error: "Este exercici no es pot avaluar" });
+  }
+
+  try {
+    res.json(await evaluate());
+  } catch (err) {
+    console.error('[practice] Error avaluant l’exercici:', err);
     res.status(503).json({ error: 'No hem pogut avaluar l’exercici. Torna-ho a provar.' });
   }
 });

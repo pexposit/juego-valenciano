@@ -1,9 +1,12 @@
+import { CHAT_CATEGORIES } from '@parlaval/shared';
 import { getAdmin } from '../middleware/auth.js';
 
 // Els escenaris (xats amb un personatge) viuen a la taula resources:
 // category 'escenari', `type` com a clau i el personatge a `metadata`.
 // Afegir una fila amb el personatge (`character_role` o `character`) fa jugable
 // un escenari nou sense tocar codi; `system_prompt` és opcional i permet afinar-lo.
+// Les àrees de conversa del temari (p. ex. 'expressio_oral') funcionen igual:
+// CHAT_CATEGORIES les inclou totes. Els `type` no es poden repetir entre elles.
 export const SCENARIO_CATEGORY = 'escenari';
 
 export interface ScenarioDefinition {
@@ -42,7 +45,7 @@ function defaultSystemPrompt(character: string, row: ScenarioRow) {
 }
 
 export function toScenarioDefinition(row: ScenarioRow): ScenarioDefinition | null {
-  if (row.category !== SCENARIO_CATEGORY || !isScenarioPlayable(row.metadata)) return null;
+  if (!CHAT_CATEGORIES.includes(row.category) || !isScenarioPlayable(row.metadata)) return null;
   const character = characterOf(row.metadata) ?? 'Personatge';
   const objectius = row.metadata?.objectius;
   return {
@@ -62,7 +65,7 @@ export async function getScenario(type: string): Promise<ScenarioDefinition | nu
   const { data, error } = await client
     .from('resources')
     .select('type, category, name, content, metadata')
-    .eq('category', SCENARIO_CATEGORY)
+    .in('category', CHAT_CATEGORIES)
     .eq('type', type)
     .limit(1)
     .maybeSingle();

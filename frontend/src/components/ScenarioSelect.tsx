@@ -1,11 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CONVERSATION_AREAS, PRACTICE_AREAS } from '@parlaval/shared';
 import { Logo, ProfileButton } from './ui';
 import { fetchResources } from '../lib/api';
 import type { Resource } from '../lib/types';
 
-// Noms visibles de les categories conegudes; la resta es mostren capitalitzades.
+// Noms visibles de les categories conegudes, en l'ordre en què es mostren; la
+// resta van darrere, capitalitzades.
 const CATEGORY_LABELS: Record<string, string> = {
   escenari: 'Escenaris',
+  comprensio_oral: PRACTICE_AREAS.comprensio_oral,
+  comprensio_escrita: PRACTICE_AREAS.comprensio_escrita,
+  expressio_escrita: PRACTICE_AREAS.expressio_escrita,
+  expressio_oral: CONVERSATION_AREAS.expressio_oral,
+  fonetica_ortografia: PRACTICE_AREAS.fonetica_ortografia,
+  morfosintaxi: PRACTICE_AREAS.morfosintaxi,
+  lexic_semantica: PRACTICE_AREAS.lexic_semantica,
+  examen: 'Exàmens',
+};
+const CATEGORY_ORDER = Object.keys(CATEGORY_LABELS);
+const categoryRank = (c: string) => {
+  const i = CATEGORY_ORDER.indexOf(c);
+  return i === -1 ? CATEGORY_ORDER.length : i;
 };
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
@@ -15,7 +30,8 @@ type Section = { type: string; resources: Resource[] };
 type Category = { id: string; sections: Section[] };
 
 // Agrupa els recursos per categoria i, dins de cada categoria, per tipus
-// (secció), mantenint l'ordre en què arriben del backend.
+// (secció). Les categories segueixen CATEGORY_LABELS i, dins de cadascuna, es
+// manté l'ordre en què arriben del backend.
 function groupResources(resources: Resource[]): Category[] {
   const categories = new Map<string, Map<string, Resource[]>>();
   for (const r of resources) {
@@ -23,10 +39,12 @@ function groupResources(resources: Resource[]): Category[] {
     sections.set(r.type, [...(sections.get(r.type) ?? []), r]);
     categories.set(r.category, sections);
   }
-  return [...categories].map(([id, sections]) => ({
-    id,
-    sections: [...sections].map(([type, list]) => ({ type, resources: list })),
-  }));
+  return [...categories]
+    .map(([id, sections]) => ({
+      id,
+      sections: [...sections].map(([type, list]) => ({ type, resources: list })),
+    }))
+    .sort((a, b) => categoryRank(a.id) - categoryRank(b.id));
 }
 
 export function ScenarioSelect({

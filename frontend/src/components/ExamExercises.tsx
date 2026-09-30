@@ -38,7 +38,7 @@ const CHIP: Record<Status, string> = {
   missed: 'bg-white text-teal border-teal border-dashed',
 };
 
-function QuestionNumber({ n, result }: { n: number; result?: boolean }) {
+export function QuestionNumber({ n, result }: { n: number; result?: boolean }) {
   return (
     <span
       className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-black ${
@@ -301,7 +301,7 @@ export function FormExercise({
         </div>
       </div>
 
-      <details className="rounded-2xl bg-cream p-4">
+      {criteria.length > 0 && <details className="rounded-2xl bg-cream p-4">
         <summary className="cursor-pointer font-black">Com s'avalua? (fins a {maxPoints} punts)</summary>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           {criteria.map(c => (
@@ -313,7 +313,7 @@ export function FormExercise({
             </div>
           ))}
         </div>
-      </details>
+      </details>}
     </div>
   );
 }

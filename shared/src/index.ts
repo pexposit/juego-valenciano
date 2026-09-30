@@ -64,3 +64,36 @@ export function usedRequiredWords(text: string, words: string[]): string[] {
   const tokens = new Set(normalizeWord(text).split(/[^\p{L}·]+/u).filter(Boolean));
   return words.filter(w => [...wordForms(w)].some(f => tokens.has(f)));
 }
+
+/* ── Pràctica del temari ──────────────────────────────────────────────── */
+/**
+ * Àrees del temari de la JQCV amb pantalla d'exercicis: les destreses (menys
+ * l'expressió oral) i els continguts lingüístics. Cadascuna és una `category` de
+ * resources, i els seus continguts (`type`) tenen exercicis a practice_exercises.
+ * L'ordre és el del temari.
+ */
+export const PRACTICE_AREAS = {
+  comprensio_oral: 'Comprensió oral',
+  comprensio_escrita: 'Comprensió escrita',
+  expressio_escrita: 'Expressió escrita',
+  fonetica_ortografia: 'Fonètica i ortografia',
+  morfosintaxi: 'Morfosintaxi',
+  lexic_semantica: 'Lèxic i semàntica',
+} as const;
+
+export type PracticeArea = keyof typeof PRACTICE_AREAS;
+
+/** Àrees que es practiquen conversant amb un personatge, en la pantalla del xat. */
+export const CONVERSATION_AREAS = {
+  expressio_oral: 'Expressió oral',
+} as const;
+
+/** Categories de resources que s'obrin al xat: els escenaris i les àrees de conversa. */
+export const CHAT_CATEGORIES: readonly string[] = ['escenari', ...Object.keys(CONVERSATION_AREAS)];
+
+export const isPracticeArea = (category: string): category is PracticeArea => category in PRACTICE_AREAS;
+
+/** Compara una resposta escrita amb les acceptades: sense diferenciar majúscules,
+ * espais sobrants, puntuació final ni la forma de l'apòstrof, però sí els accents. */
+export const normalizeAnswer = (text: string) =>
+  text.trim().toLocaleLowerCase('ca').replace(/[’`´]/g, "'").replace(/l\.l/g, 'l·l').replace(/\s+/g, ' ').replace(/[.,;:!?¡¿]+$/, '');

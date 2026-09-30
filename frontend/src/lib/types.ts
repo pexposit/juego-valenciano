@@ -11,6 +11,24 @@ export type TurnResponse={reply_text:string;transcription?:string|null;reply_aud
 // de joc i la fila en té les dades (el decidix el backend).
 export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; playable:boolean };
 
+// Exercici de pràctica del temari (taula practice_exercises). `choice`: la correcta
+// és answers[0], una de les `options`; `fill`: val qualsevol de les `answers`;
+// `writing` i `form` s'avaluen amb el LLM a partir de `task`.
+type PracticeBase = { id: string; level: string; prompt: string; explanation: string | null; passage_id: string | null };
+export type PracticeWritingTask = { min_words: number; max_words: number; words?: string[]; min_words_used?: number };
+export type PracticeExercise = PracticeBase & (
+  | { kind: 'choice'; options: string[]; answers: string[] }
+  | { kind: 'fill'; answers: string[] }
+  | { kind: 'writing'; task: PracticeWritingTask }
+  | { kind: 'form'; task: { fields: string[] } }
+);
+// Text o àudio (transcripció per torns) que acompanya unes preguntes de comprensió.
+export type PracticePassage = { id: string; level: string; media: 'text' | 'audio'; title: string | null; audio_url: string | null; lines: { text: string; speaker?: string; voice?: string }[] };
+export type Practice = Pick<Resource, 'id' | 'name' | 'type' | 'category' | 'content' | 'icon' | 'color' | 'section_name'> & {
+  passages: PracticePassage[];
+  exercises: PracticeExercise[];
+};
+
 // Contingut d'un examen (resources.metadata.exam). Els exercicis `choice`,
 // `binary` i `match` es corregixen sols amb `answer`; `form`, `writing` i
 // `oral` són de pràctica lliure.

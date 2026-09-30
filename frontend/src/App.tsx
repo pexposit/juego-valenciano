@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
+import { CHAT_CATEGORIES } from '@parlaval/shared';
 import type { User } from '@supabase/supabase-js';
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
-import { endSession, fetchExam, fetchResources } from './lib/api';
-import type { Exam as ExamResource, Resource } from './lib/types';
+import { endSession, fetchExam, fetchPractice, fetchResources } from './lib/api';
+import type { Exam as ExamResource, Practice as PracticeResource, Resource } from './lib/types';
 import { activityRoute, DEFAULT_PROFILE, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
 import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
+import { Practice } from './pages/Practice';
 import { Summary } from './pages/Summary';
 import { Profile } from './pages/Profile';
 
@@ -46,7 +48,7 @@ function ChatRoute({
 }: { level: string; xp: number; onXpGained: (delta: number) => void; onBack: () => void }) {
   const { scenario } = useParams<{ scenario: string }>();
   const navigate = useNavigate();
-  const section = useCatalogResource(r => r.category === 'escenari' && r.type === scenario, scenario);
+  const section = useCatalogResource(r => CHAT_CATEGORIES.includes(r.category) && r.type === scenario, scenario);
 
   if (section === undefined) return null;
   if (!section || !scenario) return <Navigate to={ROUTES.scenarioselect} replace />;
@@ -54,6 +56,7 @@ function ChatRoute({
     <PageTransition>
       <Chat
         scenario={scenario}
+        category={section.category}
         title={section.section_name ?? section.name}
         voice={section.voice}
         background={section.background}
@@ -89,6 +92,29 @@ function ExamRoute({ onBack }: { onBack: () => void }) {
   if (exam === undefined) return null;
   if (!exam) return <Navigate to={ROUTES.scenarioselect} replace />;
   return <PageTransition><Exam exam={exam} onBack={onBack} /></PageTransition>;
+}
+
+// Exercicis d'un contingut del temari (/practica/:id), de la taula practice_exercises.
+function PracticeRoute({ onBack }: { onBack: () => void }) {
+  const { id } = useParams<{ id: string }>();
+  // undefined = carregant; null = no existix.
+  const [practice, setPractice] = useState<PracticeResource | null>();
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!id) return setPractice(null);
+    fetchPractice(id)
+      .then(data => { if (!cancelled) setPractice(data); })
+      .catch(error => {
+        console.error('Error carregant els exercicis:', error);
+        if (!cancelled) setPractice(null);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (practice === undefined) return null;
+  if (!practice) return <Navigate to={ROUTES.scenarioselect} replace />;
+  return <PageTransition><Practice practice={practice} onBack={onBack} /></PageTransition>;
 }
 
 export function App() {
@@ -231,6 +257,7 @@ export function App() {
         element={<ChatRoute level={level} xp={xp} onXpGained={delta => setXp(x => x + delta)} onBack={() => navigate(-1)} />}
       />
       <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
+      <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute onBack={() => navigate(-1)} />} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );
