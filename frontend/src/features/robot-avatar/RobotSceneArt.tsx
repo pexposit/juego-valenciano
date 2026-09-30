@@ -1,0 +1,48 @@
+import { useEffect, useState } from 'react';
+import type { Mood } from '../../lib/types';
+import { RobotAvatar } from './RobotAvatar';
+import { robotStateFromMood } from './states';
+
+const GREETING_MS = 2600;
+
+/**
+ * [robot-avatar] Substitut de SceneArt per al xat: la foto de l'escenari de fons
+ * i el robot al centre. Saluda en entrar i després reflectix l'estat de la conversa:
+ *   neutral → idle · content → happy · confus → confused · esperant resposta → thinking
+ *   i mou la boca mentre sona l'àudio del personatge.
+ */
+export function RobotSceneArt({
+  background, mood, thinking = false, talking = false,
+}: {
+  background: string | null;
+  mood: Mood;
+  thinking?: boolean;
+  talking?: boolean;
+}) {
+  const [greeting, setGreeting] = useState(true);
+  useEffect(() => {
+    const id = window.setTimeout(() => setGreeting(false), GREETING_MS);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  const state = greeting && !thinking ? 'wave' : robotStateFromMood(mood, thinking);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-[#FFF9ED]">
+      {background && (
+        <img
+          src={background}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover opacity-40"
+        />
+      )}
+      <RobotAvatar
+        state={state}
+        talking={talking}
+        label="Robot que conversa amb tu"
+        className="robot-avatar-chat absolute left-1/2 top-[22%] aspect-square h-[52%] max-w-[96vw] -translate-x-1/2"
+      />
+    </div>
+  );
+}

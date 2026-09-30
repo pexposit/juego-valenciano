@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LayoutGrid } from 'lucide-react';
 import { Logo, ProfileButton } from '../components/ui';
 import type { Page } from '../data/content';
+import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
 
 export function Dashboard({ name, setPage }: { name: string; setPage: (p: Page) => void }) {
   const [dashInput, setDashInput] = useState('');
@@ -43,7 +44,10 @@ export function Dashboard({ name, setPage }: { name: string; setPage: (p: Page) 
       </header>
 
       <div className="absolute left-2 top-2/3 -translate-y-1/2 z-20 flex items-center gap-3">
-        <img src="/images/avatar_professor.svg" alt="El professor" className="float relative left-16 drop-shadow-lg" width={400} height={400} />
+        {/* [robot-avatar] Robot 3D en lloc del professor SVG quan el mòdul està actiu. */}
+        {isRobotAvatarEnabled('dashboard')
+          ? <DashboardRobot className="relative left-16 drop-shadow-lg" size={400} />
+          : <img src="/images/avatar_professor.svg" alt="El professor" className="float relative left-16 drop-shadow-lg" width={400} height={400} />}
         {/* Speech bubble to the right of the teacher */}
         <div className="relative -mt-48 w-[400px]" style={{ aspectRatio: '404.69 / 229.62' }}>
           <img
