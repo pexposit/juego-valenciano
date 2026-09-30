@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion } from '../lib/types';
+import { Check, ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-react';
+import { countWords, usedRequiredWords } from '@parlaval/shared';
+import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice, A1WritingEvaluation, A2CriterionKey, A2WritingEvaluation, B1WritingEvaluation, WritingCriterionKey, WritingEvaluation } from '../lib/types';
 
 // Respostes de l'aspirant (número de pregunta -> clau de l'opció) i si l'àrea ja
 // s'ha corregit: en eixe cas es marquen les encertades i les errades.
@@ -74,7 +75,44 @@ function OptionChips({ q, options, answers, checked, onAnswer }: AnswerProps & {
   );
 }
 
-/* ── Exercici amb opcions pròpies per pregunta (imatges a/b/c) ─────────── */
+/* ── Text de lectura dels exercicis de comprensió escrita ─────────────── */
+export function Reading({ reading }: { reading: ExamReading }) {
+  return (
+    <div className="mb-6 rounded-2xl border-l-4 border-mustard bg-cream px-6 py-5">
+      {reading.title && <h3 className="mb-3 text-xl font-black">{reading.title}</h3>}
+      <div className="flex flex-col gap-3 leading-relaxed">
+        {reading.paragraphs.map(p => <p key={p.slice(0, 40)}>{p}</p>)}
+      </div>
+    </div>
+  );
+}
+
+/* ── Opció de text en una llista (a, b, c) ─────────────────────────────── */
+function TextOption({ q, option, ...props }: AnswerProps & { q: ExamQuestion; option: ExamOption }) {
+  const status = optionStatus(q, option.key, props.answers, props.checked);
+  const box = {
+    idle: 'border-ink/10 bg-white hover:border-teal/60',
+    selected: 'border-teal bg-teal/10',
+    correct: 'border-teal bg-teal/10',
+    wrong: 'border-coral bg-coral/10',
+    missed: 'border-teal border-dashed bg-white',
+  }[status];
+  return (
+    <button
+      disabled={props.checked}
+      onClick={() => props.onAnswer(q.n, option.key)}
+      aria-pressed={props.answers[q.n] === option.key}
+      className={`btn-press flex w-full items-center gap-3 rounded-xl border-2 px-4 py-2.5 text-left transition-colors disabled:cursor-default ${box}`}
+    >
+      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-black uppercase ${CHIP[status]}`}>
+        {option.key}
+      </span>
+      <span className="font-bold">{option.text}</span>
+    </button>
+  );
+}
+
+/* ── Exercici amb opcions pròpies per pregunta (imatges o frases a/b/c) ── */
 export function ChoiceExercise({ questions, ...props }: AnswerProps & { questions: ExamQuestion[] }) {
   const { answers, checked, onAnswer } = props;
   return (
@@ -85,6 +123,11 @@ export function ChoiceExercise({ questions, ...props }: AnswerProps & { question
             <QuestionNumber n={q.n} result={resultOf(q, answers, checked)} />
             <p className="text-lg font-black">{q.prompt}</p>
           </div>
+          {q.options?.every(o => !o.image) ? (
+            <div className="flex flex-col gap-2 pl-11">
+              {q.options.map(o => <TextOption key={o.key} q={q} option={o} {...props} />)}
+            </div>
+          ) : (
           <div className="grid grid-cols-3 gap-3">
             {(q.options ?? []).map(o => {
               const status = optionStatus(q, o.key, answers, checked);
@@ -107,6 +150,7 @@ export function ChoiceExercise({ questions, ...props }: AnswerProps & { question
               );
             })}
           </div>
+          )}
         </div>
       ))}
     </div>
@@ -189,12 +233,15 @@ function MatchOption({ option, index }: { option: ExamOption; index: number }) {
   );
 }
 
-export function MatchExercise({ questions, options, ...props }: AnswerProps & { questions: ExamQuestion[]; options: ExamOption[] }) {
+export function MatchExercise({ questions, options, optionsTitle, ...props }: AnswerProps & { questions: ExamQuestion[]; options: ExamOption[]; optionsTitle?: string }) {
   const grid = options.some(o => o.image || o.sign) ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2';
   return (
     <div className="flex flex-col gap-5">
-      <div className={`grid gap-4 rounded-2xl bg-cream p-4 ${grid}`}>
-        {options.map((o, i) => <MatchOption key={o.key} option={o} index={i} />)}
+      <div className="rounded-2xl bg-cream p-4">
+        {optionsTitle && <h3 className="mb-3 text-center text-lg font-black">{optionsTitle}</h3>}
+        <div className={`grid gap-4 ${grid}`}>
+          {options.map((o, i) => <MatchOption key={o.key} option={o} index={i} />)}
+        </div>
       </div>
       <ul className="flex flex-col divide-y divide-ink/10">
         {questions.map(q => (
@@ -211,8 +258,9 @@ export function MatchExercise({ questions, options, ...props }: AnswerProps & { 
 
 /* ── Expressió escrita: formulari lliure amb la rúbrica d'avaluació ────── */
 export function FormExercise({
-  fields, criteria, maxPoints, values, onChange,
+  title, fields, criteria, maxPoints, values, onChange,
 }: {
+  title?: string;
   fields: string[];
   criteria: ExamCriterion[];
   maxPoints: number;
@@ -224,7 +272,7 @@ export function FormExercise({
     <div className="flex flex-col gap-5">
       <div className="overflow-hidden rounded-2xl border-2 border-teal/30 bg-white">
         <div className="flex items-center justify-between bg-teal px-5 py-3 text-white">
-          <p className="font-black">📚 Biblioteca municipal · Sol·licitud de carnet</p>
+          <p className="font-black">📝 {title ?? 'Formulari'}</p>
           <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black">{filled}/{fields.length} camps</span>
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2">
@@ -270,14 +318,126 @@ export function FormExercise({
   );
 }
 
-/* ── Expressió oral: propostes amb targetes de preguntes i imatges ─────── */
+/* ── Expressió escrita: redacció lliure amb límit de paraules ─────────── */
+export function WritingExercise({
+  title, minWords, maxWords, words = [], minWordsUsed = 0, image, choices = [], choice, onChoose, value, onChange,
+}: {
+  title?: string;
+  minWords: number;
+  maxWords: number;
+  words?: string[];
+  minWordsUsed?: number;
+  image?: string;
+  choices?: ExamWritingChoice[];
+  choice?: string;
+  onChoose?: (key: string) => void;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const count = countWords(value);
+  const inRange = count >= minWords && count <= maxWords;
+  // Una paraula compta com a usada també en plural o amb majúscules (estoigs, Llapis...).
+  const used = new Set(usedRequiredWords(value, words));
+  const countColor = count === 0 ? 'bg-white/20' : inRange ? 'bg-white text-teal' : 'bg-coral';
+
+  const picked = choices.find(c => c.key === choice);
+
+  const editor = (
+    <div className="flex flex-col gap-4">
+      {words.length > 0 && (
+        <div className="rounded-2xl bg-cream p-4">
+          <p className="mb-2 text-sm font-black">
+            Utilitza com a mínim {minWordsUsed} d'estes paraules (en singular o en plural):{' '}
+            <span className={used.size >= minWordsUsed ? 'text-teal' : 'opacity-60'}>{used.size}/{minWordsUsed}</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {words.map(w => (
+              <span
+                key={w}
+                className={`flex items-center gap-1 rounded-full border-2 px-3 py-1 text-sm font-black transition-colors ${
+                  used.has(w) ? 'border-teal bg-teal text-white' : 'border-ink/10 bg-white text-ink/70'
+                }`}
+              >
+                {used.has(w) && <Check size={14} />} {w}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-2xl border-2 border-teal/30 bg-white">
+        <div className="flex items-center justify-between bg-teal px-5 py-3 text-white">
+          <p className="font-black">📌 {picked ? `Opció ${picked.key}` : title ?? 'Redacció'}</p>
+          <span className={`rounded-full px-3 py-1 text-xs font-black ${countColor}`}>
+            {count} paraules · {minWords}–{maxWords}
+          </span>
+        </div>
+        <textarea
+          rows={9}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="Escriu ací el teu text..."
+          className="w-full resize-y bg-[repeating-linear-gradient(transparent,transparent_31px,#E7E5E4_32px)] px-5 py-3 leading-8 outline-none"
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      {choices.length > 0 && (
+        <div>
+          <p className="mb-2 text-sm font-black uppercase tracking-wide opacity-60">Tria una de les dos opcions</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {choices.map(c => (
+              <button
+                key={c.key}
+                onClick={() => onChoose?.(c.key)}
+                aria-pressed={c.key === choice}
+                className={`btn-press flex flex-col gap-2 rounded-3xl border-2 p-5 text-left transition-colors ${
+                  c.key === choice ? 'border-navy bg-navy text-white shadow-lg' : 'border-ink/10 bg-cream hover:border-navy/40'
+                }`}
+              >
+                <span className={`text-xs font-black uppercase tracking-widest ${c.key === choice ? 'text-mustard' : 'text-teal'}`}>
+                  Opció {c.key}{c.key === choice ? ' · triada' : ''}
+                </span>
+                <span className="leading-relaxed">{c.text}</span>
+                {c.points && c.points.length > 0 && (
+                  <ul className="mt-1 flex flex-col gap-1 text-sm">
+                    {c.points.map(pt => (
+                      <li key={pt} className="flex gap-2"><Check size={14} className="mt-1 shrink-0 opacity-70" /> {pt}</li>
+                    ))}
+                  </ul>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {choices.length > 0 && !picked ? (
+        <p className="rounded-2xl bg-cream p-4 text-center text-sm font-bold opacity-70">Tria una opció per a començar a escriure.</p>
+      ) : image ? (
+        <div className="grid gap-4 md:grid-cols-[minmax(0,16rem)_1fr]">
+          <img src={image} alt="Imatge de suport de l'exercici" className="w-full rounded-2xl shadow-sm" />
+          {editor}
+        </div>
+      ) : (
+        editor
+      )}
+    </div>
+  );
+}
+
+/* ── Expressió oral: propostes amb preguntes, imatges o diàleg per rols ── */
 export function OralExercise({ proposals }: { proposals: ExamProposal[] }) {
   const [active, setActive] = useState(0);
   const [index, setIndex] = useState(0);
+  const [role, setRole] = useState(0);
   const proposal = proposals[active];
   const total = proposal.questions.length;
 
-  const choose = (i: number) => { setActive(i); setIndex(0); };
+  const choose = (i: number) => { setActive(i); setIndex(0); setRole(0); };
 
   return (
     <div className="flex flex-col gap-5">
@@ -295,8 +455,18 @@ export function OralExercise({ proposals }: { proposals: ExamProposal[] }) {
         ))}
       </div>
 
+      {(proposal.intro || proposal.duration) && (
+        <p className="flex flex-wrap items-center gap-2 font-bold opacity-80">
+          {proposal.duration && (
+            <span className="rounded-full bg-mustard/40 px-3 py-1 text-xs font-black text-ink">⏱ {proposal.duration}</span>
+          )}
+          {proposal.intro}
+        </p>
+      )}
+
+      {total > 0 && (
       <div>
-        <p className="mb-2 text-sm font-black uppercase tracking-wide opacity-60">Primera part · Preguntes de l'examinador</p>
+        <p className="mb-2 text-sm font-black uppercase tracking-wide opacity-60">Preguntes de l'examinador</p>
         <div className="flex items-center gap-3 rounded-3xl bg-navy p-6 text-white">
           <button
             onClick={() => setIndex(i => Math.max(0, i - 1))}
@@ -330,6 +500,30 @@ export function OralExercise({ proposals }: { proposals: ExamProposal[] }) {
           ))}
         </div>
       </div>
+      )}
+
+      {proposal.roles && proposal.roles.length > 0 && (
+        <div>
+          <p className="mb-2 text-sm font-black uppercase tracking-wide opacity-60">Tria el teu paper i defén la teua proposta</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {proposal.roles.map((r, i) => (
+              <button
+                key={r.name}
+                onClick={() => setRole(i)}
+                aria-pressed={i === role}
+                className={`btn-press flex flex-col gap-2 rounded-3xl border-2 p-5 text-left transition-colors ${
+                  i === role ? 'border-navy bg-navy text-white shadow-lg' : 'border-ink/10 bg-cream hover:border-navy/40'
+                }`}
+              >
+                <span className={`text-xs font-black uppercase tracking-widest ${i === role ? 'text-mustard' : 'text-teal'}`}>
+                  {i === role ? `Tu eres la ${r.name.toLowerCase()}` : r.name}
+                </span>
+                <span className="leading-relaxed">{r.text}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {proposal.images.length > 0 && (
         <div>
@@ -345,5 +539,256 @@ export function OralExercise({ proposals }: { proposals: ExamProposal[] }) {
         </div>
       )}
     </div>
+  );
+}
+
+const CRITERION_LABELS: Record<WritingCriterionKey, string> = {
+  lexic: 'Lèxic',
+  estructures: 'Estructures',
+  ortografia: 'Ortografia',
+  comprensibilitat_coherencia: 'Comprensibilitat i coherència',
+  adequacio: 'Adequació',
+};
+
+const A2_CRITERION_LABELS: Record<A2CriterionKey, string> = {
+  lexic: 'Lèxic',
+  morfosintaxi: 'Morfosintaxi',
+  ortografia: 'Ortografia',
+  coherencia_cohesio: 'Coherència i cohesió',
+  adequacio: 'Adequació',
+};
+
+// Color de cada franja (A1) o puntuació (A2): de millor (verd-blau) a pitjor (coral).
+const BAND_STYLE: Record<string, string> = {
+  '15-12': 'bg-teal text-white',
+  '11-9': 'bg-mustard text-navy',
+  '8-6': 'bg-orange text-white',
+  '5-1': 'bg-coral text-white',
+  '10': 'bg-teal text-white',
+  '6': 'bg-mustard text-navy',
+  '4': 'bg-orange text-white',
+  '1': 'bg-coral text-white',
+};
+
+// En l'A2, l'Àrea 3 val un 20 % de la prova: cal el 40 % de l'àrea (4 de 10) per a continuar.
+const A2_PASS_MARK = 4;
+// En el B1 val un 25 %: cal el 50 % de l'àrea (5 de 10), comptant les dos redaccions.
+export const B1_PASS_MARK = 5;
+
+// Botó "Avaluar" i resultat de l'avaluació amb IA d'un exercici d'expressió escrita.
+export function WritingEvaluationPanel({
+  evaluation, loading, error, canEvaluate, emptyHint, onEvaluate,
+}: {
+  evaluation?: WritingEvaluation;
+  loading: boolean;
+  error?: string;
+  canEvaluate: boolean;
+  emptyHint: string;
+  onEvaluate: () => void;
+}) {
+  return (
+    <div className="mt-5 flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={onEvaluate}
+          disabled={loading || !canEvaluate}
+          className="btn-press flex items-center gap-2 rounded-full bg-orange px-6 py-3 font-black text-white shadow hover:bg-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+          {loading ? 'Avaluant…' : evaluation ? 'Tornar a avaluar' : 'Avaluar'}
+        </button>
+        {!canEvaluate && !loading && <p className="text-sm font-bold opacity-60">{emptyHint}</p>}
+        {loading && <p className="text-sm font-bold opacity-60">L'avaluador està revisant el teu text amb la normativa de l'AVL. Pot tardar un poc.</p>}
+      </div>
+      {error && <p className="rounded-2xl bg-coral/10 p-4 text-sm font-bold text-coral">{error}</p>}
+
+      {evaluation && !loading && (
+        evaluation.rubrica === 'b1_redaccio' ? <B1Result evaluation={evaluation} />
+          : evaluation.rubrica === 'a2_redaccio' ? <A2Result evaluation={evaluation} />
+          : <A1Result evaluation={evaluation} />
+      )}
+    </div>
+  );
+}
+
+// Anell amb la nota, títol i veredicte, comú a les dues rúbriques.
+function ScoreHeader({ score, max, pass, label, verdict, note }: {
+  score: number; max: number; pass: boolean; label: string; verdict: string; note: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-5">
+      <div
+        className="grid h-24 w-24 shrink-0 place-items-center rounded-full"
+        style={{ background: `conic-gradient(${pass ? '#2CA99B' : '#FF675D'} ${(score / max) * 360}deg, #E7E5E4 0deg)` }}
+        aria-label={`${score.toLocaleString('ca')} de ${max}`}
+      >
+        <div className="grid place-items-center rounded-full bg-white" style={{ height: '4.5rem', width: '4.5rem' }}>
+          <span className="text-center leading-none">
+            <span className="block text-xl font-black">{score.toLocaleString('ca')}/{max}</span>
+            <span className="text-[10px] font-black uppercase opacity-60">punts</span>
+          </span>
+        </div>
+      </div>
+      <div className="min-w-[12rem] flex-1">
+        <p className={`text-sm font-black uppercase tracking-wide ${pass ? 'text-teal' : 'text-coral'}`}>{label}</p>
+        <p className="text-2xl font-black">{verdict}</p>
+        <p className="mt-1 text-sm opacity-70">{note}</p>
+      </div>
+    </div>
+  );
+}
+
+function CriterionCard({ label, badge, text }: { label: string; badge: string; text: string }) {
+  return (
+    <div className="rounded-2xl border-2 border-ink/10 p-4">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <p className="font-black">{label}</p>
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${BAND_STYLE[badge.split('/')[0]] ?? 'bg-cream'}`}>{badge}</span>
+      </div>
+      <p className="text-sm opacity-80">{text}</p>
+    </div>
+  );
+}
+
+function ErrorList({ errors }: { errors: { original: string; correction: string; tag: string }[] }) {
+  if (errors.length === 0) return null;
+  return (
+    <div>
+      <p className="mb-2 font-black">Errors destacats</p>
+      <ul className="flex flex-col gap-2">
+        {errors.map((e, i) => (
+          <li key={i} className="flex flex-wrap items-center gap-2 rounded-xl bg-cream px-3 py-2 text-sm">
+            <span className="font-bold text-coral line-through">{e.original}</span>
+            <span aria-hidden="true">→</span>
+            <span className="font-black text-teal">{e.correction}</span>
+            <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-xs font-black opacity-70">{e.tag}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function A1Result({ evaluation }: { evaluation: A1WritingEvaluation }) {
+  const pass = evaluation.resultat === 'no eliminatòria';
+  return (
+    <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${pass ? 'border-teal/30' : 'border-coral/40'}`}>
+      <ScoreHeader
+        score={evaluation.puntuacio_global}
+        max={15}
+        pass={pass}
+        label="Avaluació de l'expressió escrita"
+        verdict={pass ? '✅ No eliminatòria' : '❌ Eliminatòria'}
+        note="Cal arribar a 9 de 15 punts perquè no siga eliminatòria."
+      />
+      <p className="rounded-2xl bg-cream p-4 font-bold">{evaluation.retorn_pedagogic}</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(Object.keys(CRITERION_LABELS) as WritingCriterionKey[]).map(key => (
+          <CriterionCard key={key} label={CRITERION_LABELS[key]} badge={evaluation.criteris[key].franja} text={evaluation.criteris[key].observacions} />
+        ))}
+      </div>
+      <ErrorList errors={evaluation.errors_destacats.map(e => ({
+        original: e.element_original, correction: e.correccio_suggerida, tag: `${e.tipus} · ${e.gravetat}`,
+      }))} />
+    </section>
+  );
+}
+
+function A2Result({ evaluation }: { evaluation: A2WritingEvaluation }) {
+  const mark = evaluation.mitjana_ponderada_base_10;
+  const pass = mark >= A2_PASS_MARK;
+  const words = evaluation.paraules_obligatories;
+  return (
+    <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${pass ? 'border-teal/30' : 'border-coral/40'}`}>
+      <ScoreHeader
+        score={mark}
+        max={10}
+        pass={pass}
+        label="Avaluació de l'expressió escrita"
+        verdict={pass ? '✅ Apte · Continues en la prova' : '❌ No apte · Quedes fora de la prova'}
+        note={`${evaluation.puntuacio_total_rubrica} de 50 punts en la rúbrica. Mínim per a continuar: ${A2_PASS_MARK} de 10 (el 40 % de l'àrea).`}
+      />
+      <p className="rounded-2xl bg-cream p-4 font-bold">{evaluation.comentari_global}</p>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${words.compleix_minim ? 'bg-teal text-white' : 'bg-coral text-white'}`}>
+          {words.compleix_minim ? '✓' : '✗'} {words.utilitzades.length} paraules de la llista
+        </span>
+        {words.utilitzades.map(w => (
+          <span key={w} className="rounded-full bg-cream px-3 py-1 text-xs font-black">{w}</span>
+        ))}
+        <span className="ml-auto rounded-full bg-cream px-3 py-1 text-xs font-black">{evaluation.recompte_paraules} paraules en total</span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(Object.keys(A2_CRITERION_LABELS) as A2CriterionKey[]).map(key => (
+          <CriterionCard
+            key={key}
+            label={A2_CRITERION_LABELS[key]}
+            badge={`${evaluation.criteris[key].puntuacio}/10`}
+            text={evaluation.criteris[key].justificacio}
+          />
+        ))}
+      </div>
+      <ErrorList errors={evaluation.errors_detectats.map(e => ({
+        original: e.segment_original, correction: e.proposta_correccio, tag: `${e.categoria}${e.sistematic ? ' · sistemàtic' : ''}`,
+      }))} />
+    </section>
+  );
+}
+
+const COHESION_ITEMS: Record<string, string> = { organitzacio: 'Organització', parts: 'Parts', connectors: 'Connectors' };
+const ADEQUACY_ITEMS: Record<string, string> = { objectiu: 'Objectiu', extensio: 'Extensió' };
+
+// Ítems de la rúbrica assolits (✓) o no (✗), p. ex. organització/parts/connectors.
+function ItemChecks({ labels, achieved }: { labels: Record<string, string>; achieved: string[] }) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1">
+      {Object.entries(labels).map(([key, label]) => {
+        const ok = achieved.includes(key);
+        return (
+          <span key={key} className={`rounded-full px-2 py-0.5 text-[11px] font-black ${ok ? 'bg-teal/15 text-teal' : 'bg-coral/15 text-coral'}`}>
+            {ok ? '✓' : '✗'} {label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function B1Result({ evaluation }: { evaluation: B1WritingEvaluation }) {
+  const mark = evaluation.mitjana_base_10;
+  const { criteris: c, comprovacio_extensio: ext } = evaluation;
+  return (
+    <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${mark >= B1_PASS_MARK ? 'border-teal/30' : 'border-coral/40'}`}>
+      <ScoreHeader
+        score={mark}
+        max={10}
+        pass={mark >= B1_PASS_MARK}
+        label={`Avaluació de la redacció${evaluation.opcio ? ` · Opció ${evaluation.opcio}` : ''}`}
+        verdict={mark >= B1_PASS_MARK ? '✅ Per damunt del mínim' : '⚠️ Per davall del mínim'}
+        note={`${evaluation.puntuacio_total_rubrica} de 50 punts en la rúbrica. L'àrea es decidix amb la mitjana de les dos redaccions (mínim ${B1_PASS_MARK} de 10).`}
+      />
+      <p className="rounded-2xl bg-cream p-4 font-bold">{evaluation.retorn_pedagogic}</p>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${ext.dins_marge_10_percent ? 'bg-teal text-white' : 'bg-coral text-white'}`}>
+          {ext.dins_marge_10_percent ? '✓' : '✗'} {ext.paraules_reals} paraules
+        </span>
+        <span className="rounded-full bg-cream px-3 py-1 text-xs font-black">Demanades: {ext.objectiu_tasca} (±10 %)</span>
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${c.morfosintaxi.presencia_pronoms_febles ? 'bg-teal/15 text-teal' : 'bg-coral/15 text-coral'}`}>
+          {c.morfosintaxi.presencia_pronoms_febles ? '✓ Usa' : '✗ No usa'} pronoms febles
+        </span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(Object.keys(A2_CRITERION_LABELS) as A2CriterionKey[]).map(key => (
+          <div key={key}>
+            <CriterionCard label={A2_CRITERION_LABELS[key]} badge={`${c[key].puntuacio}/10`} text={c[key].justificacio} />
+            {key === 'coherencia_cohesio' && <ItemChecks labels={COHESION_ITEMS} achieved={c.coherencia_cohesio.items_assolits} />}
+            {key === 'adequacio' && <ItemChecks labels={ADEQUACY_ITEMS} achieved={c.adequacio.items_assolits} />}
+          </div>
+        ))}
+      </div>
+      <ErrorList errors={evaluation.errors_detectats.map(e => ({
+        original: e.segment_original, correction: e.proposta_correccio, tag: `${e.categoria}${e.sistematic ? ' · sistemàtic' : ''}`,
+      }))} />
+    </section>
   );
 }

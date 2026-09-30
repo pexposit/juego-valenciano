@@ -1,4 +1,4 @@
-import type { Exam, Resource, Scenario, TurnResponse } from './types';
+import type { Exam, Resource, Scenario, TurnResponse, WritingEvaluation } from './types';
 import { sanitizeHistory } from '@parlaval/shared';
 import { supabase } from './supabase';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
@@ -22,6 +22,28 @@ export async function fetchExam(id: string): Promise<Exam | null> {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/exams/${encodeURIComponent(id)}`);
   if (res.status === 404) return null;
   if (!res.ok) throw new Error("No hem pogut carregar l'examen");
+  return res.json();
+}
+// Avalua amb el LLM (rúbrica oficial de la JQCV) un exercici d'expressió escrita:
+// el formulari de l'A1 (`answers`) o una redacció de l'A2/B1 (`text` i, si té opcions, `choice`).
+export async function evaluateExamWriting(
+  examId: string,
+  exerciseN: number,
+  body: { answers: Record<string, string> } | { text: string; choice?: string },
+): Promise<WritingEvaluation> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/exams/${encodeURIComponent(examId)}/exercises/${exerciseN}/evaluate`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(res.status === 429 ? 'Has fet massa avaluacions seguides. Espera un minut.' : payload?.error ?? "No hem pogut avaluar l'exercici");
+  }
   return res.json();
 }
 export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];include_audio?:boolean}):Promise<TurnResponse>{
