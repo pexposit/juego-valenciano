@@ -47,6 +47,7 @@ export function Chat({
   const hasObjectives = Boolean(summary) || objectives.length > 0;
   const [bubbleKey, setBubbleKey] = useState(0);
   const [audioSource, setAudioSource] = useState<string>();
+  const [talking, setTalking] = useState(false); // [robot-avatar] true mentre sona l'àudio del personatge
   const replyAudio = useRef<HTMLAudioElement | null>(null);
   const hasSubmitted = useRef(false);
   // Sessió del login + entrada de session_resource d'aquest escenari. Es guarda
@@ -73,6 +74,8 @@ export function Chat({
   // por el backend o los saludos pregenerados.
   const setReplyAudio = (source: string | undefined, autoplay = false) => {
     const audio = source ? new Audio(source) : null;
+    setTalking(false); // [robot-avatar]
+    if (audio) { audio.onplay = () => setTalking(true); audio.onpause = audio.onended = () => setTalking(false); } // [robot-avatar]
     replyAudio.current = audio;
     setAudioSource(source);
     if (audio && autoplay) void audio.play().catch(() => {});
@@ -175,7 +178,7 @@ export function Chat({
 
   return (
     <main className="relative h-[100dvh] overflow-hidden">
-      <SceneArt scenario={scenario} background={background} mood={mood} />
+      <SceneArt scenario={scenario} background={background} mood={mood} thinking={loading} talking={talking} />
 
       {/* Top bar */}
       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
@@ -264,6 +267,7 @@ export function Chat({
                 controls
                 preload="auto"
                 src={audioSource}
+                onPlay={() => setTalking(true)} onPause={() => setTalking(false)} onEnded={() => setTalking(false)} // [robot-avatar]
                 className="mt-2 h-9 w-full max-w-xs"
                 aria-label="Àudio de la resposta"
               />

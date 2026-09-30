@@ -1,0 +1,92 @@
+diff --git a/frontend/package.json b/frontend/package.json
+index fe7bfa4..a0f545a 100644
+--- a/frontend/package.json
++++ b/frontend/package.json
+@@ -1 +1 @@
+-{"name":"parlaval-web","private":true,"version":"0.1.0","type":"module","scripts":{"dev":"vite","build":"tsc -b && vite build","preview":"vite preview"},"dependencies":{"@parlaval/shared":"*","@supabase/supabase-js":"^2.49.1","lucide-react":"^0.468.0","react":"^18.3.1","react-dom":"^18.3.1","react-router-dom":"^7.18.4"},"devDependencies":{"@types/react":"^18.3.31","@types/react-dom":"^18.3.1","@vitejs/plugin-react":"^4.3.4","autoprefixer":"^10.4.20","postcss":"^8.4.49","tailwindcss":"^3.4.16","typescript":"^5.7.2","vite":"^6.0.5"}}
+\ No newline at end of file
++{"name":"parlaval-web","private":true,"version":"0.1.0","type":"module","scripts":{"dev":"vite","build":"tsc -b && vite build","preview":"vite preview"},"dependencies":{"@parlaval/shared":"*","@supabase/supabase-js":"^2.49.1","lucide-react":"^0.468.0","react":"^18.3.1","react-dom":"^18.3.1","react-router-dom":"^7.18.4","three":"^0.186.1"},"devDependencies":{"@types/react":"^18.3.31","@types/react-dom":"^18.3.1","@types/three":"^0.186.0","@vitejs/plugin-react":"^4.3.4","autoprefixer":"^10.4.20","postcss":"^8.4.49","tailwindcss":"^3.4.16","typescript":"^5.7.2","vite":"^6.0.5"}}
+\ No newline at end of file
+diff --git a/frontend/src/components/SceneArt.tsx b/frontend/src/components/SceneArt.tsx
+index dad1c9a..d4322c8 100644
+--- a/frontend/src/components/SceneArt.tsx
++++ b/frontend/src/components/SceneArt.tsx
+@@ -1,4 +1,5 @@
+ import type { Mood, Scenario } from '../lib/types';
++import { isRobotAvatarEnabled, RobotSceneArt } from '../features/robot-avatar'; // [robot-avatar]
+ 
+ const moodFace = (mood: Mood, part: 'eyes' | 'eyebrows' | 'mouth') => {
+   if (part === 'eyebrows') {
+@@ -33,7 +34,9 @@ const moodFace = (mood: Mood, part: 'eyes' | 'eyebrows' | 'mouth') => {
+ 
+ // La foto de fons ve de resources.metadata.background; els personatges dibuixats
+ // només existixen per a alguns escenaris (la resta es mostren sense il·lustració).
+-export function SceneArt({ scenario, background, mood }: { scenario: Scenario; background: string | null; mood: Mood }) {
++export function SceneArt({ scenario, background, mood, thinking, talking }: { scenario: Scenario; background: string | null; mood: Mood; thinking?: boolean; talking?: boolean }) {
++  // [robot-avatar] Amb el mòdul actiu, el robot 3D substituïx el personatge il·lustrat.
++  if (isRobotAvatarEnabled('chat')) return <RobotSceneArt background={background} mood={mood} thinking={thinking} talking={talking} />;
+   return (
+     <div className="absolute inset-0 overflow-hidden bg-[#FFF9ED]">
+       {/* Foto real de l'escenari darrere del personatge i el taulell il·lustrats. */}
+diff --git a/frontend/src/pages/Chat.tsx b/frontend/src/pages/Chat.tsx
+index 75a8161..51d4195 100644
+--- a/frontend/src/pages/Chat.tsx
++++ b/frontend/src/pages/Chat.tsx
+@@ -40,6 +40,7 @@ export function Chat({
+   const [showHistory, setShowHistory] = useState(false);
+   const [bubbleKey, setBubbleKey] = useState(0);
+   const [audioSource, setAudioSource] = useState<string>();
++  const [talking, setTalking] = useState(false); // [robot-avatar] true mentre sona l'àudio del personatge
+   const replyAudio = useRef<HTMLAudioElement | null>(null);
+   const hasSubmitted = useRef(false);
+   // Sessió del login + entrada de session_resource d'aquest escenari. Es guarda
+@@ -66,6 +67,8 @@ export function Chat({
+   // por el backend o los saludos pregenerados.
+   const setReplyAudio = (source: string | undefined, autoplay = false) => {
+     const audio = source ? new Audio(source) : null;
++    setTalking(false); // [robot-avatar]
++    if (audio) { audio.onplay = () => setTalking(true); audio.onpause = audio.onended = () => setTalking(false); } // [robot-avatar]
+     replyAudio.current = audio;
+     setAudioSource(source);
+     if (audio && autoplay) void audio.play().catch(() => {});
+@@ -168,7 +171,7 @@ export function Chat({
+ 
+   return (
+     <main className="relative h-[100dvh] overflow-hidden">
+-      <SceneArt scenario={scenario} background={background} mood={mood} />
++      <SceneArt scenario={scenario} background={background} mood={mood} thinking={loading} talking={talking} />
+ 
+       {/* Top bar */}
+       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
+@@ -223,6 +226,7 @@ export function Chat({
+                 controls
+                 preload="auto"
+                 src={audioSource}
++                onPlay={() => setTalking(true)} onPause={() => setTalking(false)} onEnded={() => setTalking(false)} // [robot-avatar]
+                 className="mt-2 h-9 w-full max-w-xs"
+                 aria-label="Àudio de la resposta"
+               />
+diff --git a/frontend/src/pages/Dashboard.tsx b/frontend/src/pages/Dashboard.tsx
+index 566c691..772e8cf 100644
+--- a/frontend/src/pages/Dashboard.tsx
++++ b/frontend/src/pages/Dashboard.tsx
+@@ -2,6 +2,7 @@ import { useState } from 'react';
+ import { LayoutGrid } from 'lucide-react';
+ import { Logo, ProfileButton } from '../components/ui';
+ import type { Page } from '../data/content';
++import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
+ 
+ export function Dashboard({ name, setPage }: { name: string; setPage: (p: Page) => void }) {
+   const [dashInput, setDashInput] = useState('');
+@@ -43,7 +44,10 @@ export function Dashboard({ name, setPage }: { name: string; setPage: (p: Page)
+       </header>
+ 
+       <div className="absolute left-2 top-2/3 -translate-y-1/2 z-20 flex items-center gap-3">
+-        <img src="/images/avatar_professor.svg" alt="El professor" className="float relative left-16 drop-shadow-lg" width={400} height={400} />
++        {/* [robot-avatar] Robot 3D en lloc del professor SVG quan el mòdul està actiu. */}
++        {isRobotAvatarEnabled('dashboard')
++          ? <DashboardRobot className="relative left-16 drop-shadow-lg" size={400} />
++          : <img src="/images/avatar_professor.svg" alt="El professor" className="float relative left-16 drop-shadow-lg" width={400} height={400} />}
+         {/* Speech bubble to the right of the teacher */}
+         <div className="relative -mt-48 w-[400px]" style={{ aspectRatio: '404.69 / 229.62' }}>
+           <img
