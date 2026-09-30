@@ -277,6 +277,13 @@ La rúbrica avalua 5 criteris independents. Cada criteri s'ha de puntuar estrict
   - **6 punts:** Disposa de vocabulari suficient per a poder resoldre la tasca sense problemes.
   - **4 punts:** Respon a la tasca de manera molt justa i amb algun error lèxic que dificulta la comprensió global.
   - **1 punt:** La tasca presenta errors lèxics que no permeten la comprensió del text.
+  - **CALIBRATGE PER A UN A2 (obligatori):** avalua el lèxic amb les expectatives d'un usuari **bàsic** (A2), no d'un B1 o superior. El criteri és la **comprensió i la suficiència per a resoldre la tasca**, no la riquesa ni la precisió estilística.
+    · **6 punts és la nota de referència d'un text A2 correcte**: vocabulari quotidià, repetitiu o limitat, però suficient i comprensible. No el rebaixes per repetir paraules, usar lèxic simple, no emprar sinònims o registre poc elaborat.
+    · **10 punts** es reserva per a un vocabulari clarament ric per a l'A2 (varietat, alguns sinònims o mots més precisos). Si el text és sòlid i variat per al nivell, no cal que siga perfecte per a arribar-hi.
+    · **4 punts** només si els errors lèxics (paraules inventades, calcs o mots en castellà) dificulten de veres la comprensió **global**. Uns quants castellanismes, calcs o imprecisions lèxiques aïllades que no impedeixen entendre el text NO justifiquen baixar de 6; tracta'ls com a observacions en \`errors_detectats\` (gravetat lleu), no com a motiu de penalització.
+    · **1 punt** només si el text és pràcticament incomprensible pel lèxic.
+    · Una paraula mal triada però que s'entén pel context, o una falta lèxica aïllada, no canvia la franja. Els errors ortogràfics o morfològics NO es compten dins del lèxic (ja tenen el seu criteri).
+    · En cas de dubte entre dues franges, tria la **més alta** (principi de benefici del dubte propi del nivell inicial).
 
 * **Morfosintaxi:**
   - **10 punts:** El text presenta un control gramatical sense errors sistemàtics.
@@ -303,6 +310,13 @@ La rúbrica avalua 5 criteris independents. Cada criteri s'ha de puntuar estrict
   - **6 punts:** Complix l'objectiu de la tasca i el text respecta les indicacions d'extensió.
   - **4 punts:** Complix **un** dels dos ítems següents: objectiu o extensió.
   - **1 punt:** No complix **cap** dels ítems següents: objectiu, extensió.
+  - **CALIBRATGE PER A UN A2 (obligatori):** l'adequació es jutja amb flexibilitat, atenent només si la tasca s'ha resolt, no la perfecció del text.
+    · **Objectiu complit** = el text respon a la situació de la consigna (tema, tipus de text i propòsit comunicatiu bàsics) encara que siga de manera simple, breu o amb alguna idea poc desenvolupada. No exigisques tots els punts de la consigna ni un registre perfecte; un desajust menor de registre (tu/vosté) no implica no complir l'objectiu.
+    · **6 punts és la nota de referència** d'un text A2 que resol la tasca i respecta l'extensió.
+    · **10 punts:** basta que afija algun element de valor (un detall, una explicació, una idea pròpia) sense necessitat que siga excepcional.
+    · **Extensió:** sigues tolerant amb desviacions xicotetes fora del rang (uns pocs mots de més o de menys, aprox. ±10 %) si la resta del text és adequat; només compta com a no respectada si la desviació és clara.
+    · **Paraules obligatòries:** compten sempre que s'usen amb un sentit raonable; no exigisques un ús brillant ni penalitzes una paraula usada de manera millorable però comprensible.
+    · En cas de dubte entre dues franges, tria la **més alta**.
 
 ---
 
