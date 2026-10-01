@@ -1,4 +1,4 @@
-import type { Exam, Practice, Resource, Scenario, TurnResponse, WritingEvaluation } from './types';
+import type { Exam, Lesson, Practice, Resource, Scenario, TurnResponse, WritingEvaluation } from './types';
 import { sanitizeHistory } from '@parlaval/shared';
 import { supabase } from './supabase';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
@@ -29,6 +29,13 @@ export async function fetchPractice(id: string): Promise<Practice | null> {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/practice/${encodeURIComponent(id)}`);
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('No hem pogut carregar els exercicis');
+  return res.json();
+}
+// Lliçó fixa d'un contingut (teoria del nivell a partir de l'AVL). null si no en té.
+export async function fetchLesson(id: string): Promise<Lesson | null> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/resources/${encodeURIComponent(id)}/lesson`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('No hem pogut carregar la lliçó');
   return res.json();
 }
 // Avalua amb el LLM una redacció o un formulari de l'àrea d'Expressió escrita.

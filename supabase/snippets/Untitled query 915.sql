@@ -1,0 +1,1 @@
+Select count(*) from practice_exercises;
