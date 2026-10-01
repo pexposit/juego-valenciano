@@ -26,6 +26,16 @@ const categoryRank = (c: string) => {
   return i === -1 ? CATEGORY_ORDER.length : i;
 };
 
+// La pantalla es desmunta en entrar en una activitat; la categoria triada es
+// guarda a sessionStorage perquè en tornar es mostre la mateixa.
+const SELECTED_KEY = 'parlaval.activities.category';
+const readSelected = () => {
+  try { return sessionStorage.getItem(SELECTED_KEY) ?? undefined; } catch { return undefined; }
+};
+const writeSelected = (id: string) => {
+  try { sessionStorage.setItem(SELECTED_KEY, id); } catch { /* sense emmagatzematge: es perd en tornar */ }
+};
+
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
 const categoryLabel = (c: string) => CATEGORY_LABELS[c] ?? capitalize(c);
 
@@ -65,7 +75,7 @@ export function ScenarioSelect({
 }) {
   const [resources, setResources] = useState<Resource[] | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [selected, setSelected] = useState<string>();
+  const [selected, setSelected] = useState<string | undefined>(readSelected);
   const [lesson, setLesson] = useState<Resource>();
   const closeLesson = useCallback(() => setLesson(undefined), []);
 
@@ -135,7 +145,7 @@ export function ScenarioSelect({
             {categories.map(c => (
               <button
                 key={c.id}
-                onClick={() => setSelected(c.id)}
+                onClick={() => { setSelected(c.id); writeSelected(c.id); }}
                 className={`btn-press rounded-full px-4 py-2 text-xl font-black transition-colors ${
                   current?.id === c.id ? 'bg-teal text-white' : 'bg-white text-teal hover:bg-teal/10'
                 }`}
