@@ -1,0 +1,1 @@
+Select * from practice_passages;
