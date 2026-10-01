@@ -1,0 +1,70 @@
+libtoolize: putting auxiliary files in '.'.
+libtoolize: copying file './ltmain.sh'
+libtoolize: putting macros in AC_CONFIG_MACRO_DIRS, 'm4'.
+libtoolize: copying file 'm4/libtool.m4'
+libtoolize: copying file 'm4/ltoptions.m4'
+libtoolize: copying file 'm4/ltsugar.m4'
+libtoolize: copying file 'm4/ltversion.m4'
+libtoolize: copying file 'm4/lt~obsolete.m4'
+configure.ac:4: installing './compile'
+configure.ac:4: installing './config.guess'
+configure.ac:4: installing './config.sub'
+configure.ac:3: installing './install-sh'
+configure.ac:3: installing './missing'
+Makefile.am:112: warning: shell dirname $@: non-POSIX variable name
+Makefile.am:112: (probably a GNU make extension)
+Makefile.am:115: warning: shell dirname $@: non-POSIX variable name
+Makefile.am:115: (probably a GNU make extension)
+Makefile.am:117: warning: wildcard docs/*.md: non-POSIX variable name
+Makefile.am:117: (probably a GNU make extension)
+Makefile.am:117: warning: wildcard docs/*/*.md: non-POSIX variable name
+Makefile.am:117: (probably a GNU make extension)
+Makefile.am:117: warning: wildcard docs/*/*/*.md: non-POSIX variable name
+Makefile.am:117: (probably a GNU make extension)
+Makefile.am:324: warning: filter-out tests/windows-data.test,$(wildcard tests/*.test: non-POSIX variable name
+Makefile.am:324: (probably a GNU make extension)
+Makefile.am:366: warning: wildcard tests/ssml/*.ssml tests/ssml-fuzzer/*.ssml: non-POSIX variable name
+Makefile.am:366: (probably a GNU make extension)
+Makefile.am:373: warning: wildcard tests/ssml/*.expected: non-POSIX variable name
+Makefile.am:373: (probably a GNU make extension)
+Makefile.am:383: warning: wildcard phsource/*: non-POSIX variable name
+Makefile.am:383: (probably a GNU make extension)
+Makefile.am:383: warning: wildcard phsource/*/*: non-POSIX variable name
+Makefile.am:383: (probably a GNU make extension)
+Makefile.am:383: warning: wildcard phsource/*/*/*: non-POSIX variable name
+Makefile.am:383: (probably a GNU make extension)
+Makefile.am:388: warning: wildcard espeak-ng-data/lang/*: non-POSIX variable name
+Makefile.am:388: (probably a GNU make extension)
+Makefile.am:388: warning: wildcard espeak-ng-data/lang/*/*: non-POSIX variable name
+Makefile.am:388: (probably a GNU make extension)
+Makefile.am:388: warning: wildcard espeak-ng-data/voices/*/*: non-POSIX variable name
+Makefile.am:388: (probably a GNU make extension)
+Makefile.am:393: warning: filter-out phsource/phonemes.stamp,$(PHSOURCE: non-POSIX variable name
+Makefile.am:393: (probably a GNU make extension)
+Makefile.am:393: warning: filter-out espeak-ng-data/voices/!v/Mr serious,$(LANGDATA: non-POSIX variable name
+Makefile.am:393: (probably a GNU make extension)
+Makefile.am:418: warning: '%'-style pattern rules are a GNU make extension
+Makefile.am:429: warning: '%'-style pattern rules are a GNU make extension
+Makefile.am:440: warning: '%'-style pattern rules are a GNU make extension
+Makefile.am:443: warning: *F: non-POSIX variable name
+Makefile.am:564: warning: wildcard dictsource/*_emoji: non-POSIX variable name
+Makefile.am:564: (probably a GNU make extension)
+Makefile.am:564: warning: wildcard dictsource/*_extra: non-POSIX variable name
+Makefile.am:564: (probably a GNU make extension)
+Makefile.am:564: warning: wildcard dictsource/*_list: non-POSIX variable name
+Makefile.am:564: (probably a GNU make extension)
+Makefile.am:564: warning: wildcard dictsource/*_rules: non-POSIX variable name
+Makefile.am:564: (probably a GNU make extension)
+Makefile.am:564: warning: wildcard dictsource/extra/*: non-POSIX variable name
+Makefile.am:564: (probably a GNU make extension)
+Makefile.am:974: warning: wildcard phsource/mbrola/*: non-POSIX variable name
+Makefile.am:974: (probably a GNU make extension)
+Makefile.am:980: warning: '%'-style pattern rules are a GNU make extension
+Makefile.am:986: warning: all-local was already defined in condition TRUE, which includes condition OPT_MBROLA ...
+Makefile.am:51: ... 'all-local' previously defined here
+Makefile.am: installing './INSTALL'
+Makefile.am: installing './depcomp'
+configure.ac:78: warning: The macro `AC_PROG_LIBTOOL' is obsolete.
+configure.ac:78: You should run autoupdate.
+aclocal.m4:122: AC_PROG_LIBTOOL is expanded from...
+configure.ac:78: the top level

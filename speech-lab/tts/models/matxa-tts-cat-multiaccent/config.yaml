@@ -1,0 +1,43 @@
+cfm:
+  name: CFM
+  sigma_min: 0.0001
+  solver: euler
+data_statistics:
+  mel_mean: -6.578195
+  mel_std: 2.538758
+decoder:
+  act_fn: snakebeta
+  attention_head_dim: 64
+  channels:
+  - 256
+  - 256
+  dropout: 0.05
+  n_blocks: 1
+  num_heads: 2
+  num_mid_blocks: 2
+encoder:
+  duration_predictor_params:
+    filter_channels_dp: 256
+    kernel_size: 3
+    p_dropout: 0.1
+  encoder_params:
+    filter_channels: 768
+    filter_channels_dp: 256
+    kernel_size: 3
+    n_channels: 192
+    n_feats: 80
+    n_heads: 2
+    n_layers: 6
+    n_spks: 47
+    p_dropout: 0.1
+    prenet: true
+    spk_emb_dim: 64
+  encoder_type: RoPE Encoder
+n_feats: 80
+n_spks: 8
+n_vocab: 178
+optimizer: null
+out_size: null
+prior_loss: true
+scheduler: null
+spk_emb_dim: 64

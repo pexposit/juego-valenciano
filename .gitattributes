@@ -1,1 +1,4 @@
 *.sh text eol=lf
+speech-lab/tts/models/**/*.onnx filter=lfs diff=lfs merge=lfs -text
+speech-lab/tts/models/**/*.ckpt filter=lfs diff=lfs merge=lfs -text
+speech-lab/tts/models/**/*.bin filter=lfs diff=lfs merge=lfs -text

@@ -11,5 +11,15 @@ __pycache__/
 .venv-voz/
 audios/
 voz-dataset/
-# Matxa: espeak compilat, codi de Matcha, models i execucions (es refà amb scripts/setup-matxa.sh).
-tts/
+# Matxa (es refà amb scripts/setup-matxa.sh). Només es versionen els models
+# d'Aina (amb LFS), l'espeak compilat i els logs: el codi de Matcha i l'espeak
+# font són clons, i les execucions (checkpoints, mostres, tensorboard) porten la
+# veu del narrador de l'audiollibre.
+tts/*
+!tts/README.md
+!tts/models/
+tts/models/**/.cache/
+!tts/espeak-ng/
+!tts/narrador-v1.log
+!tts/narrador-v1-b.log
+!tts/espeak-build.log
