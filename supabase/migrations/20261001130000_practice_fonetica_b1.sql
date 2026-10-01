@@ -586,7 +586,8 @@ ON CONFLICT (id) DO UPDATE SET
   difficulty = EXCLUDED.difficulty,
   xp_earned = EXCLUDED.xp_earned,
   sort_order = EXCLUDED.sort_order,
-  metadata = EXCLUDED.metadata;
+  -- Conserva la lliçó fixa («Aprendre lliçó»), que s'afig en una migració posterior.
+  metadata = EXCLUDED.metadata || jsonb_strip_nulls(jsonb_build_object('lesson', resources.metadata -> 'lesson'));
 
 DELETE FROM public.practice_exercises e
 USING practice_catalog c
