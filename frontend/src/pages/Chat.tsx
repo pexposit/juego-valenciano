@@ -15,7 +15,7 @@ const TTS_ATTEMPTS = 2;
 const ROUND_BUTTON = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors';
 
 export function Chat({
-  scenario, category, title, voice, background, initialPrompt, summary, objectives, level, xp, onXpGained, onEnd, onBack,
+  scenario, category, title, voice, background, initialPrompt, actor, summary, objectives, level, xp, onXpGained, onEnd, onBack,
 }: {
   scenario: Scenario;
   // Categoria del recurs a la BDD: 'escenari' o una àrea de conversa del temari.
@@ -26,6 +26,9 @@ export function Chat({
   background: string | null;
   // Primer missatge del personatge (resources.metadata.initial_prompt); si no en té, es fa servir la salutació genèrica.
   initialPrompt: string | null;
+  // Nom i rol del personatge (resources.metadata.character, p. ex. "Vicent, venedor del mercat"),
+  // mostrat tal qual en una etiqueta davall l'actor.
+  actor: string | null;
   // Quadre d'objectius: el resum de la situació (resources.content) i les tasques (metadata.objectius).
   summary: string | null;
   objectives: string[];
@@ -180,6 +183,16 @@ export function Chat({
     <main className="relative h-[100dvh] overflow-hidden">
       <SceneArt scenario={scenario} background={background} mood={mood} thinking={loading} talking={talking} />
 
+      {/* Nom i rol de l'actor, davall seu (resources.metadata.character). */}
+      {actor && (
+        <div
+          className="absolute left-1/2 top-[76%] z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1.5 text-xl font-black uppercase tracking-wider text-slate-800 shadow-md backdrop-blur-sm"
+          style={{ background: 'rgba(255,255,255,0.92)' }}
+        >
+          {actor}
+        </div>
+      )}
+
       {/* Top bar */}
       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
@@ -232,7 +245,7 @@ export function Chat({
           className="absolute right-5 top-20 z-20 w-[min(calc(100%-2.5rem),320px)] rounded-3xl bg-white/95 p-5 shadow-xl backdrop-blur-sm"
         >
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider" style={{ color: '#0D9488' }}>
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider" style={{ color: '#0F47AF' }}>
               <Target size={16} /> Objectius
             </h2>
             <button onClick={() => setShowObjectives(false)} aria-label="Tancar els objectius" className="btn-press rounded-full p-1 opacity-60 hover:opacity-100">
@@ -258,7 +271,7 @@ export function Chat({
             <button
               onClick={replayCharacter}
               className="btn-press mt-3 flex items-center gap-1 text-sm font-extrabold"
-              style={{ color: '#0D9488' }}
+              style={{ color: '#0F47AF' }}
             >
               <Volume2 size={15} /> Escolta de nou
             </button>
@@ -281,7 +294,7 @@ export function Chat({
         <div
           key={`user-${bubbleKey}`}
           className="user-bubble-enter user-bubble absolute bottom-36 right-5 z-10 max-w-[70%] rounded-3xl p-4 font-bold text-white shadow-lg"
-          style={{ background: '#0D9488' }}
+          style={{ background: '#0F47AF' }}
         >
           <p>{user}</p>
           {userTranscription && <p className="mt-2 border-t border-white/30 pt-2 text-sm font-normal">Transcripció: {userTranscription}</p>}

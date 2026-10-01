@@ -26,7 +26,7 @@ export function Dashboard({ name, setPage }: { name: string; setPage: (p: Page) 
       {/* Classroom header: top-right scenario selector + profile */}
       <header className="classroom-header z-10">
         <div className="relative isolate flex items-center justify-between px-5 p-4">
-          <Logo />
+          <Logo onDark />
           <div className="flex items-center gap-5">
             <button
               id="dashboard-scenario-btn"

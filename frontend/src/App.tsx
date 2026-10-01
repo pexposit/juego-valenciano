@@ -3,6 +3,7 @@ import { CHAT_CATEGORIES } from '@parlaval/shared';
 import type { User } from '@supabase/supabase-js';
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
+import { SceneLoading, useSceneAssets } from './components/SceneLoading';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
 import { endSession, fetchExam, fetchPractice, fetchResources } from './lib/api';
@@ -49,9 +50,12 @@ function ChatRoute({
   const { scenario } = useParams<{ scenario: string }>();
   const navigate = useNavigate();
   const section = useCatalogResource(r => CHAT_CATEGORIES.includes(r.category) && r.type === scenario, scenario);
+  // Pantalla de càrrega fins que hi ha la fila, el fons i el robot: el xat no es munta
+  // abans perquè en muntar-se ja sona la salutació del personatge.
+  const ready = useSceneAssets(scenario, section);
 
-  if (section === undefined) return null;
-  if (!section || !scenario) return <Navigate to={ROUTES.scenarioselect} replace />;
+  if (!scenario || section === null) return <Navigate to={ROUTES.scenarioselect} replace />;
+  if (section === undefined || !ready) return <SceneLoading />;
   return (
     <PageTransition>
       <Chat
@@ -61,6 +65,7 @@ function ChatRoute({
         voice={section.voice}
         background={section.background}
         initialPrompt={section.initial_prompt}
+        actor={section.character}
         summary={section.content}
         objectives={section.objectius ?? []}
         level={level}

@@ -619,7 +619,7 @@ function ScoreHeader({ score, max, pass, label, verdict, note }: {
     <div className="flex flex-wrap items-center gap-5">
       <div
         className="grid h-24 w-24 shrink-0 place-items-center rounded-full"
-        style={{ background: `conic-gradient(${pass ? '#2CA99B' : '#FF675D'} ${(score / max) * 360}deg, #E7E5E4 0deg)` }}
+        style={{ background: `conic-gradient(${pass ? '#3366C4' : '#FF7FA8'} ${(score / max) * 360}deg, #E7E5E4 0deg)` }}
         aria-label={`${score.toLocaleString('ca')} de ${max}`}
       >
         <div className="grid place-items-center rounded-full bg-white" style={{ height: '4.5rem', width: '4.5rem' }}>

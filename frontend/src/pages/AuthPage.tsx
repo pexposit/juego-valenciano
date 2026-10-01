@@ -4,7 +4,7 @@ import { LEVEL_OPTIONS, type Page } from '../data/content';
 import { startSession } from '../lib/api';
 
 const NETWORK_ERROR = 'No hem pogut connectar. Revisa la connexió i torna-ho a provar.';
-const INPUT_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0D9488] transition-colors';
+const INPUT_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0F47AF] transition-colors';
 
 // Crea la sessió al backend en entrar. Si falla, no impedix l'accés:
 // el xat en crearà una en obrir l'escenari.
@@ -97,7 +97,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         </div>
         <div className="text-center mb-6">
           <span className="text-4xl">🍊</span>
-          <h1 className="mt-2 text-3xl font-black"><span style={{ color: '#0D9488' }}>Parla</span><span style={{ color: '#F97316' }}>Val</span></h1>
+          <h1 className="mt-2 text-3xl font-black"><span style={{ color: '#0F47AF' }}>Parla</span><span style={{ color: '#FF3B3B' }}>Val</span></h1>
           <p className="mt-1 opacity-60">Crea el teu compte i comença, sense necessitat de correu de verificació.</p>
         </div>
 
@@ -139,7 +139,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           disabled={busy}
           id="auth-submit"
           className="btn-press mt-6 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
+          style={{ background: 'linear-gradient(135deg, #0F47AF, #0B3785)' }}
         >
           {busy ? 'Espera...' : 'Crear el compte'}
         </button>
@@ -157,7 +157,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           <div
             role="status"
             className="mt-4 rounded-2xl p-4 text-sm font-bold"
-            style={{ background: '#E8F7F5', color: '#1a7a6f', border: '1px solid #b2ddd9' }}
+            style={{ background: '#E8EFFC', color: '#0B3785', border: '1px solid #B9D0F5' }}
           >
             {notice}
           </div>

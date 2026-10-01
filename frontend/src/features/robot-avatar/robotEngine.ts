@@ -5,6 +5,7 @@
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {
   IDLE_BODY_CLIP, LAYER_BONES, STATE_CLIPS, STATE_EYE_COLOR, TALK_CLIP,
@@ -26,6 +27,35 @@ export type RobotEngine = {
 };
 
 const FADE = 0.35;
+
+// Bytes del GLB per URL: es descarrega una sola vegada (també des de preloadRobotAvatar)
+// i cada motor el parseja de nou, perquè dispose() allibera geometries i materials.
+const modelBuffers = new Map<string, Promise<ArrayBuffer>>();
+
+// Les malles dels GLB van comprimides amb Draco. El descodificador (wasm, de three.js)
+// es servix des de /draco/ i es comparteix entre tots els robots.
+let draco: DRACOLoader | undefined;
+function dracoLoader() {
+  draco ??= new DRACOLoader().setDecoderPath('/draco/').setDecoderConfig({ type: 'wasm' });
+  return draco;
+}
+/** Baixa i prepara el descodificador Draco (per a fer-ho abans d'entrar a l'escena). */
+export function preloadDracoDecoder() {
+  dracoLoader().preload();
+}
+
+export function fetchRobotModel(url: string): Promise<ArrayBuffer> {
+  let p = modelBuffers.get(url);
+  if (!p) {
+    p = fetch(url).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status} en carregar ${url}`);
+      return r.arrayBuffer();
+    });
+    p.catch(() => modelBuffers.delete(url)); // si falla, el pròxim intent ho torna a provar
+    modelBuffers.set(url, p);
+  }
+  return p;
+}
 
 export async function createRobotEngine(container: HTMLElement, opts: RobotEngineOptions): Promise<RobotEngine> {
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -61,7 +91,7 @@ export async function createRobotEngine(container: HTMLElement, opts: RobotEngin
   camera.position.set(cx, cy, cz);
   camera.lookAt(tx, ty, tz);
 
-  const gltf = await new GLTFLoader().loadAsync(opts.modelUrl);
+  const gltf = await new GLTFLoader().setDRACOLoader(dracoLoader()).parseAsync(await fetchRobotModel(opts.modelUrl), '');
   const model = gltf.scene;
   scene.add(model);
 

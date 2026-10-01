@@ -23,7 +23,7 @@ type ScenarioRow = { type: string; category: string; name: string; content: stri
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : undefined);
 
-const characterOf = (metadata: ResourceMetadata) =>
+export const characterOf = (metadata: ResourceMetadata) =>
   text(metadata?.character) ?? text(metadata?.character_role);
 
 // Un escenari és jugable com a xat si se sap quin personatge fer.

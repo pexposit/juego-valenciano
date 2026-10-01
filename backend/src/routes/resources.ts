@@ -4,7 +4,7 @@ import { getAdmin, requireAuth } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
 import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing } from '../services/examWritingEvaluator.js';
-import { isScenarioPlayable } from '../services/scenarios.js';
+import { characterOf, isScenarioPlayable } from '../services/scenarios.js';
 import { CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
 
 export const resourcesRouter = Router();
@@ -69,6 +69,9 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
     background: text(metadata?.background),
     voice: text(metadata?.voice),
     initial_prompt: text(metadata?.initial_prompt),
+    // Nom i rol del personatge (p. ex. "Vicent, venedor del mercat"), sense separar-los:
+    // l'etiqueta de sota l'actor a la pantalla del xat el mostra tal qual.
+    character: characterOf(metadata) ?? null,
     // Objectius de la conversa dels escenaris, per al quadre de la pantalla del xat.
     objectius: textList(metadata?.objectius),
     playable: isPlayable({ ...resource, metadata, practice_exercises }),

@@ -25,7 +25,7 @@ export function HomePage({ setPage }: { setPage: (p: Page) => void }) {
         <Logo />
         <button
           onClick={() => setPage('auth')}
-          className="btn-press rounded-full border-2 border-[#0D9488] px-4 py-1.5 text-sm font-extrabold text-[#0D9488] hover:bg-[#0D9488] hover:text-white transition-colors"
+          className="btn-press rounded-full border-2 border-[#0F47AF] px-4 py-1.5 text-sm font-extrabold text-[#0F47AF] hover:bg-[#0F47AF] hover:text-white transition-colors"
         >
           Entra
         </button>
@@ -36,13 +36,13 @@ export function HomePage({ setPage }: { setPage: (p: Page) => void }) {
         <div className="hero-stagger">
           <span
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-extrabold"
-            style={{ background: 'rgba(249,199,79,0.28)', color: '#9A6B00' }}
+            style={{ background: 'rgba(252,221,9,0.28)', color: '#8A6D00' }}
           >
             ✨ Valencià per a la vida real
           </span>
           <h1 className="mt-5 text-5xl font-black leading-[1.08] sm:text-6xl">
             Parla valencià.<br />
-            <em className="not-italic" style={{ color: '#F97316' }}>Viu-lo.</em>
+            <em className="not-italic" style={{ color: '#FF3B3B' }}>Viu-lo.</em>
           </h1>
           <p className="mt-4 max-w-md text-lg leading-relaxed opacity-65">
             Practica converses reals, al teu ritme, amb personatges que t'acompanyen cada dia pels carrers de València.
@@ -51,7 +51,7 @@ export function HomePage({ setPage }: { setPage: (p: Page) => void }) {
             onClick={() => setPage('auth')}
             id="hero-cta"
             className="btn-press mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-4 text-lg font-extrabold text-white shadow-lg transition hover:scale-[1.03] hover:shadow-xl active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, #F97316, #FB923C)' }}
+            style={{ background: 'linear-gradient(135deg, #FF3B3B, #FF6B6B)' }}
           >
             Comença ara <ChevronRight size={20} />
           </button>
@@ -110,7 +110,7 @@ export function HomePage({ setPage }: { setPage: (p: Page) => void }) {
       {/* Footer strip */}
       <div
         className="py-6 text-center text-white font-black text-lg"
-        style={{ background: 'linear-gradient(90deg, #0D9488, #0F766E)' }}
+        style={{ background: 'linear-gradient(90deg, #0F47AF, #0B3785)' }}
       >
         Aprén parlant, no memoritzant.
       </div>

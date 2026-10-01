@@ -3,6 +3,7 @@ import { CONVERSATION_AREAS, PRACTICE_AREAS } from '@parlaval/shared';
 import { Logo, ProfileButton } from './ui';
 import { fetchResources } from '../lib/api';
 import type { Resource } from '../lib/types';
+import { isRobotAvatarEnabled, preloadRobotAvatar } from '../features/robot-avatar'; // [robot-avatar]
 
 // Noms visibles de les categories conegudes, en l'ordre en què es mostren; la
 // resta van darrere, capitalitzades.
@@ -75,6 +76,12 @@ export function ScenarioSelect({
     return () => { cancelled = true; };
   }, []);
 
+  // [robot-avatar] En obrir, three.js i el robot normal; en apuntar a un escenari, només
+  // la seua roba, perquè el robot del xat aparega de seguida sense baixar-les totes.
+  const robotChat = isRobotAvatarEnabled('chat');
+  useEffect(() => { if (robotChat) preloadRobotAvatar(); }, [robotChat]);
+  const preloadScenario = (type: string) => { if (robotChat) preloadRobotAvatar(type); };
+
   // Només les activitats del nivell de l'aprenent: resources.difficulty fa servir
   // els mateixos valors que profiles.level (principiant, intermedi, avancat).
   const categories = useMemo(
@@ -94,7 +101,7 @@ export function ScenarioSelect({
           >
             ← Tornar
           </button>
-          <Logo />
+          <Logo onDark />
           <ProfileButton name={name} onClick={onProfile} />
         </div>
       </header>
@@ -153,6 +160,8 @@ export function ScenarioSelect({
                   disabled={!playable}
                   title={playable ? undefined : 'Pròximament disponible'}
                   onClick={() => playable && onSelect(playable)}
+                  onPointerEnter={() => playable && preloadScenario(type)}
+                  onFocus={() => playable && preloadScenario(type)}
                   className="desk-card flex items-stretch text-left"
                   style={{ background: '#fff' }}
                 >

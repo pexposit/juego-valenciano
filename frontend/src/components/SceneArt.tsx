@@ -36,7 +36,7 @@ const moodFace = (mood: Mood, part: 'eyes' | 'eyebrows' | 'mouth') => {
 // només existixen per a alguns escenaris (la resta es mostren sense il·lustració).
 export function SceneArt({ scenario, background, mood, thinking, talking }: { scenario: Scenario; background: string | null; mood: Mood; thinking?: boolean; talking?: boolean }) {
   // [robot-avatar] Amb el mòdul actiu, el robot 3D substituïx el personatge il·lustrat.
-  if (isRobotAvatarEnabled('chat')) return <RobotSceneArt background={background} mood={mood} thinking={thinking} talking={talking} />;
+  if (isRobotAvatarEnabled('chat')) return <RobotSceneArt scenario={scenario} background={background} mood={mood} thinking={thinking} talking={talking} />;
   return (
     <div className="absolute inset-0 overflow-hidden bg-[#FFF9ED]">
       {/* Foto real de l'escenari darrere del personatge i el taulell il·lustrats. */}

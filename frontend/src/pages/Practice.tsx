@@ -229,7 +229,7 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
           >
             ← Tornar
           </button>
-          <Logo />
+          <Logo onDark />
           <span className="w-24" aria-hidden="true" />
         </div>
       </header>
@@ -241,7 +241,7 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
           <div className="relative flex flex-wrap items-center gap-6">
             <div
               className="grid h-24 w-24 shrink-0 place-items-center rounded-3xl text-5xl shadow-lg"
-              style={{ background: practice.color ?? '#FFD166' }}
+              style={{ background: practice.color ?? '#FDE94D' }}
             >
               {practice.icon ?? '📘'}
             </div>
@@ -448,7 +448,7 @@ function PracticeResult({ correct, total, onReset }: { correct: number; total: n
     <section className="fade-up flex flex-wrap items-center gap-6 rounded-[1.75rem] border-2 border-teal/30 bg-white p-6">
       <div
         className="grid h-24 w-24 shrink-0 place-items-center rounded-full"
-        style={{ background: `conic-gradient(#2CA99B ${pct * 3.6}deg, #E7E5E4 0deg)` }}
+        style={{ background: `conic-gradient(#3366C4 ${pct * 3.6}deg, #E7E5E4 0deg)` }}
         aria-label={`${pct} % d'encerts`}
       >
         <div className="grid place-items-center rounded-full bg-white" style={{ height: '4.5rem', width: '4.5rem' }}>

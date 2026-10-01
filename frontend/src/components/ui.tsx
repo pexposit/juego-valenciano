@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react';
 
 /* ── Logo ────────────────────────────────────────────────────────── */
-export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+// `onDark`: sobre el capçal blau (classroom-header) "Parla" es mostra en blanc
+// perquè el blau del text no es perda sobre el blau del fons.
+export function Logo({ size = 'md', onDark = false }: { size?: 'sm' | 'md' | 'lg'; onDark?: boolean }) {
   const cls = size === 'lg' ? 'text-4xl' : size === 'sm' ? 'text-xl' : 'text-2xl';
   return (
     <b className={`${cls} font-black tracking-tight`}>
-      <span style={{ color: '#0D9488' }}>Parla</span>
-      <span style={{ color: '#F97316' }}>Val</span>
+      <span style={{ color: onDark ? '#FFFFFF' : '#0F47AF' }}>Parla</span>
+      <span style={{ color: onDark ? '#FCDD09' : '#FF3B3B' }}>Val</span>
     </b>
   );
 }
@@ -31,7 +33,7 @@ export function ProfileButton({ name, onClick }: { name: string; onClick: () => 
       title="El teu perfil"
       onClick={onClick}
       className="avatar-ring grid h-11 w-11 place-items-center rounded-full font-black text-lg text-white"
-      style={{ background: '#F9731C' }}
+      style={{ background: '#FF3B3B' }}
     >
       {name[0]}
     </button>
@@ -60,7 +62,7 @@ export function OrangeHeader({ children, showOranges = true }: { children: React
           <span className="orange-deco absolute right-3 top-1 text-2xl select-none">🍊</span>
           {/* Small sun rays */}
           <div className="absolute inset-0 opacity-20 pointer-events-none"
-               style={{ background: 'radial-gradient(ellipse at 50% -20%, #F9C74F 0%, transparent 70%)' }} />
+               style={{ background: 'radial-gradient(ellipse at 50% -20%, #FCDD09 0%, transparent 70%)' }} />
         </>
       )}
       {children}

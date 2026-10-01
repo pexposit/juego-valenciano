@@ -45,10 +45,10 @@ button { cursor: pointer; }
   height: 10px;
   background: repeating-linear-gradient(
     90deg,
-    #0D9488 0px, #0D9488 10px,
-    #F9C74F 10px, #F9C74F 20px,
-    #F97316 20px, #F97316 30px,
-    #0D9488 30px, #0D9488 40px
+    #0F47AF 0px, #0F47AF 10px,
+    #FCDD09 10px, #FCDD09 20px,
+    #FF3B3B 20px, #FF3B3B 30px,
+    #0F47AF 30px, #0F47AF 40px
   );
   opacity: 0.75;
 }
@@ -113,7 +113,7 @@ button { cursor: pointer; }
   left: auto;
   right: 30px;
   border-width: 14px 0 0 11px;
-  border-color: #0D9488 transparent transparent transparent;
+  border-color: #0F47AF transparent transparent transparent;
 }
 
 /* Bubble entrance animation */
@@ -149,7 +149,7 @@ button { cursor: pointer; }
   content: '';
   position: absolute;
   inset: -8px;
-  border: 2px solid #F97316;
+  border: 2px solid #FF3B3B;
   border-radius: 999px;
   animation: pulse-ring 1.2s infinite;
 }
@@ -162,7 +162,7 @@ button { cursor: pointer; }
   100% { background-position: 200% center; }
 }
 .xp-bar-fill {
-  background: linear-gradient(90deg, #F9731C, #FB923C, #F9731C);
+  background: linear-gradient(90deg, #FF3B3B, #FF6B6B, #FF3B3B);
   background-size: 200% auto;
   animation: shimmer 2.5s linear infinite;
 }
@@ -221,7 +221,7 @@ button { cursor: pointer; }
   transition: border-color 0.22s ease, box-shadow 0.22s ease;
 }
 .avatar-ring:hover {
-  border-color: #F97316;
+  border-color: #FF3B3B;
   box-shadow: 0 0 0 3px #FAFAF9, 0 4px 14px rgba(38,55,71,0.12);
 }
 
@@ -434,7 +434,7 @@ button { cursor: pointer; }
 }
 .goals-title {
   flex: 1;
-  color: #FFE9A8;
+  color: #FFF3B0;
   font-size: 0.95rem;
   font-weight: 900;
   text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
@@ -478,7 +478,7 @@ button { cursor: pointer; }
   margin-top: 1px;
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.08);
-  color: #FFC857;
+  color: #FCDD09;
   font-size: 0.68rem;
   font-weight: 900;
 }
@@ -496,18 +496,18 @@ button { cursor: pointer; }
    ═══════════════════════════════════════════════════════════════════════════ */
 .classroom-header {
   position: relative;
-  background: linear-gradient(135deg, #4A2F1D 0%, #8B5A2B 50%, #4A2F1D 100%);
-  border-bottom: 9px solid #2F5D50;
+  background: linear-gradient(135deg, #1A2140 0%, #0F47AF 50%, #1A2140 100%);
+  border-bottom: 9px solid #FCDD09;
   box-shadow: 0 2px 6px rgba(38, 55, 71, 0.1);
 }
 
 /* Top‑right scenario selector FAB */
 .scenario-fab {
-  background: #2CA99B; /* teal */
+  background: #3366C4; /* blau senyera (clar) */
   box-shadow: 0 2px 8px rgba(38, 55, 71, 0.12), 0 0 0 2px #ffffff;
 }
 .scenario-fab:hover {
-  background: #24867a;
+  background: #0B3785;
 }
 
 /* XP card re-themed as a chalkboard panel */

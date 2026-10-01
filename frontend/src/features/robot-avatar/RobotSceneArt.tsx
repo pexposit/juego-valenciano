@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Mood } from '../../lib/types';
+import { robotAssets } from './config';
 import { RobotAvatar } from './RobotAvatar';
 import { robotStateFromMood } from './states';
 
@@ -12,8 +13,9 @@ const GREETING_MS = 2600;
  *   i mou la boca mentre sona l'àudio del personatge.
  */
 export function RobotSceneArt({
-  background, mood, thinking = false, talking = false,
+  scenario, background, mood, thinking = false, talking = false,
 }: {
+  scenario?: string;
   background: string | null;
   mood: Mood;
   thinking?: boolean;
@@ -40,6 +42,7 @@ export function RobotSceneArt({
       <RobotAvatar
         state={state}
         talking={talking}
+        {...robotAssets(scenario)}
         label="Robot que conversa amb tu"
         className="robot-avatar-chat absolute left-1/2 top-[22%] aspect-square h-[52%] max-w-[96vw] -translate-x-1/2"
       />

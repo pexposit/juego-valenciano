@@ -3,7 +3,7 @@ import { Check, LogOut, Pencil, RotateCcw } from 'lucide-react';
 import { OrangeHeader, Stat } from '../components/ui';
 import { LEVEL_OPTIONS } from '../data/content';
 
-const FIELD_CLASS = 'mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 font-normal outline-none focus:border-[#0D9488] transition-colors';
+const FIELD_CLASS = 'mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 font-normal outline-none focus:border-[#0F47AF] transition-colors';
 
 const levelLabel = (value: string) => LEVEL_OPTIONS.find(o => o.value === value)?.label ?? value;
 
@@ -57,7 +57,7 @@ export function Profile({
               onClick={() => (editing ? confirmEditing() : startEditing())}
               id="profile-edit-toggle"
               aria-label={editing ? 'Guarda el nom' : 'Edita el nom'}
-              className="btn-press grid h-9 w-9 place-items-center rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-[#0D9488] transition-colors"
+              className="btn-press grid h-9 w-9 place-items-center rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-[#0F47AF] transition-colors"
             >
               {editing ? <Check size={16} /> : <Pencil size={16} />}
             </button>

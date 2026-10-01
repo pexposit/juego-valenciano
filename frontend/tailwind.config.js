@@ -1,2 +1,4 @@
 /** @type {import('tailwindcss').Config} */
-export default { content: ['./index.html','./src/**/*.{ts,tsx}'], theme: { extend: { colors: { cream:'#FFF9ED', ink:'#263747', orange:'#FF8A4C', coral:'#FF675D', teal:'#2CA99B', mustard:'#F9C74F', navy:'#203548' }, fontFamily:{sans:['Nunito','ui-sans-serif','system-ui']} } }, plugins: [] };
+// Paleta de l'avatar robot (veure assets-src/robot-avatar): Plastic_Blanc, Pantalla,
+// Ull_Brillant, Galta, Groc/Roig/Blau_Senyera, Metall, Llum_Antena.
+export default { content: ['./index.html','./src/**/*.{ts,tsx}'], theme: { extend: { colors: { cream:'#F5F2EA', ink:'#1A2140', orange:'#FF3B3B', coral:'#FF7FA8', teal:'#0F47AF', mustard:'#FCDD09', navy:'#1A2140', cyan:'#4FE3FF', metal:'#9AA3B5', senyeraRed:'#DA121A' }, fontFamily:{sans:['Nunito','ui-sans-serif','system-ui']} } }, plugins: [] };

@@ -135,7 +135,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
           >
             ← Tornar
           </button>
-          <Logo />
+          <Logo onDark />
           <span className="w-24" aria-hidden="true" />
         </div>
       </header>
@@ -404,7 +404,7 @@ function AreaResult({
   const pass = scoring ? passes(scoring, points!) : undefined;
   const pct = Math.round(scoring ? (points! / scoring.max_points) * 100 : (correct / total) * 100);
   const message = pct >= 80 ? 'Excel·lent!' : pct >= 50 ? 'Molt bé, vas pel bon camí!' : 'Continua practicant!';
-  const ring = pass === false ? '#FF675D' : '#2CA99B';
+  const ring = pass === false ? '#FF7FA8' : '#3366C4';
   return (
     <section className={`fade-up flex flex-wrap items-center gap-6 rounded-[1.75rem] border-2 bg-white p-6 ${pass === false ? 'border-coral/40' : 'border-teal/30'}`}>
       <div
@@ -467,7 +467,7 @@ function WritingAreaResult({ area, marks }: { area: ExamArea; marks: { n: number
     <section className={`fade-up flex flex-wrap items-center gap-6 rounded-[1.75rem] border-2 bg-white p-6 ${pass ? 'border-teal/30' : 'border-coral/40'}`}>
       <div
         className="grid h-24 w-24 shrink-0 place-items-center rounded-full"
-        style={{ background: `conic-gradient(${pass ? '#2CA99B' : '#FF675D'} ${average * 36}deg, #E7E5E4 0deg)` }}
+        style={{ background: `conic-gradient(${pass ? '#3366C4' : '#FF7FA8'} ${average * 36}deg, #E7E5E4 0deg)` }}
         aria-label={`${average} de 10`}
       >
         <div className="grid place-items-center rounded-full bg-white" style={{ height: '4.5rem', width: '4.5rem' }}>
