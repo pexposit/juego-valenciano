@@ -1,1 +1,1 @@
-Select * from practice_passages;
+Select count(*) from practice_exercises;
