@@ -40,6 +40,25 @@ const hasExercises = (row: ResourceRow) => (row.practice_exercises?.[0]?.count ?
 const isPlayable = (row: ResourceRow) =>
   isPracticeArea(row.category) ? hasExercises(row) : PLAYABLE_BY_CATEGORY[row.category]?.(row) ?? false;
 
+// Lliçó fixa del contingut (metadata.lesson), per al botó «Aprendre lliçó»: teoria
+// adaptada al nivell a partir de les gramàtiques de l'AVL (fonts en assets-src/avl).
+const lessonSchema = z.object({
+  intro: z.string(),
+  blocks: z.array(z.object({
+    title: z.string(),
+    text: z.string(),
+    table: z.object({ head: z.array(z.string()), rows: z.array(z.array(z.string())) }).optional(),
+    examples: z.array(z.string()).optional(),
+    watch: z.array(z.object({ wrong: z.string(), right: z.string() })).optional(),
+  })).min(1),
+  remember: z.array(z.string()),
+  sources: z.array(z.object({ gram: z.enum(['GVB', 'GNV']), section: z.string(), title: z.string(), url: z.string().url() })),
+});
+const lessonOf = (metadata: Metadata) => {
+  const parsed = lessonSchema.safeParse(metadata?.lesson);
+  return parsed.success ? parsed.data : null;
+};
+
 // Catàleg d'activitats (taula resources). El frontend l'agrupa per `category`
 // i, dins de cada categoria, per `type`: afegir una fila a la BDD fa aparéixer
 // l'activitat sense tocar codi. És públic: el catàleg no té dades d'usuari.
@@ -72,7 +91,31 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
     // Objectius de la conversa dels escenaris, per al quadre de la pantalla del xat.
     objectius: textList(metadata?.objectius),
     playable: isPlayable({ ...resource, metadata, practice_exercises }),
+    has_lesson: lessonOf(metadata) !== null,
   })));
+});
+
+// Lliçó d'un contingut (metadata.lesson). Va a banda del catàleg perquè només la
+// necessita el modal «Aprendre lliçó».
+resourcesRouter.get('/api/resources/:id/lesson', async (req, res) => {
+  const client = getAdmin() as any;
+  if (!client) return res.status(503).json({ error: "El catàleg no està disponible" });
+  if (!z.string().uuid().safeParse(req.params.id).success) return res.status(404).json({ error: "La lliçó no existix" });
+
+  const { data, error } = await client
+    .from('resources')
+    .select('id, name, type, category, metadata')
+    .eq('id', req.params.id)
+    .maybeSingle();
+  if (error) {
+    console.error('[lesson] Error carregant la lliçó:', error);
+    return res.status(500).json({ error: "No hem pogut carregar la lliçó" });
+  }
+  const lesson = lessonOf(data?.metadata ?? null);
+  if (!data || !lesson) return res.status(404).json({ error: "La lliçó no existix" });
+
+  const { metadata, ...resource } = data;
+  res.json({ ...resource, section_name: text(metadata?.section_name), icon: text(metadata?.icon), color: text(metadata?.color), ...lesson });
 });
 
 // Exercicis d'un contingut del temari (una àrea de PRACTICE_AREAS), de tots els

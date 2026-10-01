@@ -530,12 +530,13 @@ button { cursor: pointer; }
   transform: translateY(24px) scale(0.96);
   animation: cardSlideIn 0.52s cubic-bezier(.22,.65,.4,1) both;
 }
-.desk-card:hover:not(:disabled) {
+.desk-card:hover:not(:disabled):not(.desk-card-disabled) {
   transform: translateY(-6px) scale(1.02);
   border-color: #D6D3D1;
   box-shadow: 0 12px 28px rgba(38, 55, 71, 0.1);
 }
-.desk-card:disabled {
+.desk-card:disabled,
+.desk-card-disabled {
   opacity: 0.52;
   cursor: not-allowed;
 }
@@ -561,4 +562,27 @@ button { cursor: pointer; }
   0%, 100% { transform: rotate(0deg); }
   30% { transform: rotate(8deg); }
   70% { transform: rotate(-4deg); }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   LLIÇONS (modal «Aprendre lliçó»)
+   ════════════════════════════════════════════════════════════════════════ */
+.lesson-step {
+  animation: lessonStepIn 0.28s cubic-bezier(.22,.65,.4,1) both;
+}
+@keyframes lessonStepIn {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.lesson-table { border-collapse: collapse; background: #fff; font-size: 16px; }
+.lesson-table th { padding: 0.55rem 1rem; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; }
+.lesson-table td { padding: 0.5rem 1rem; border-top: 1px solid #F0EEEC; }
+.lesson-table tbody tr:nth-child(even) td { background: #FAFAF9; }
+.lesson-table em { font-style: normal; font-weight: 700; color: #0F766E; }
+@media (max-width: 480px) {
+  .lesson-table { font-size: 14px; }
+  .lesson-table th, .lesson-table td { padding-left: 0.6rem; padding-right: 0.6rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lesson-step { animation: none; }
 }

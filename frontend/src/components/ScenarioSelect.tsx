@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { BookOpen } from 'lucide-react';
 import { CONVERSATION_AREAS, PRACTICE_AREAS } from '@parlaval/shared';
 import { Logo, ProfileButton } from './ui';
+import { LessonModal } from './LessonModal';
 import { fetchResources } from '../lib/api';
 import type { Resource } from '../lib/types';
 
@@ -63,6 +65,8 @@ export function ScenarioSelect({
   const [resources, setResources] = useState<Resource[] | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState<string>();
+  const [lesson, setLesson] = useState<Resource>();
+  const closeLesson = useCallback(() => setLesson(undefined), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,42 +150,67 @@ export function ScenarioSelect({
               const title = list.find(r => r.section_name)?.section_name ?? capitalize(type);
               // El backend decidix si la categoria té pantalla i la fila en té les dades.
               const playable = list.find(r => r.playable);
+              const withLesson = list.find(r => r.has_lesson);
               return (
-                <button
+                <div
                   key={type}
-                  id={`activity-${current.id}-${type}`}
-                  disabled={!playable}
-                  title={playable ? undefined : 'Pròximament disponible'}
-                  onClick={() => playable && onSelect(playable)}
-                  className="desk-card flex items-stretch text-left"
+                  className={`desk-card flex flex-col ${playable ? '' : 'desk-card-disabled'}`}
                   style={{ background: '#fff' }}
                 >
-                  <div
-                    className="relative flex min-h-28 w-28 shrink-0 self-stretch items-center justify-center overflow-hidden rounded-l-[20px]"
-                    style={{ background: color }}
+                  <button
+                    id={`activity-${current.id}-${type}`}
+                    disabled={!playable}
+                    title={playable ? undefined : 'Pròximament disponible'}
+                    onClick={() => playable && onSelect(playable)}
+                    className="flex flex-1 items-stretch text-left disabled:cursor-not-allowed"
                   >
-                    <span className="text-6xl select-none">{icon}</span>
-                  </div>
-                  <div className="flex flex-1 flex-col justify-center gap-1 px-4 py-3">
-                    <h2 className="block text-2xl font-black">{title}</h2>
-                    {list.length === 1 ? (
-                      <>
-                        <p className="text-sm font-bold">{first.name}</p>
-                        {first.content && <p className="text-sm opacity-70">{first.content}</p>}
-                      </>
-                    ) : (
-                      <ul className="list-disc pl-4 text-sm">
-                        {list.map(r => <li key={r.id}>{r.name}</li>)}
-                      </ul>
-                    )}
-                    {!playable && <p className="text-xs font-bold opacity-50">Pròximament disponible</p>}
-                  </div>
-                </button>
+                    <div
+                      className="relative flex min-h-28 w-28 shrink-0 self-stretch items-center justify-center overflow-hidden rounded-l-[20px]"
+                      style={{ background: color }}
+                    >
+                      <span className="text-6xl select-none">{icon}</span>
+                    </div>
+                    <div className="flex flex-1 flex-col justify-center gap-1 px-4 py-3">
+                      <h2 className="block text-2xl font-black">{title}</h2>
+                      {list.length === 1 ? (
+                        <>
+                          <p className="text-sm font-bold">{first.name}</p>
+                          {first.content && <p className="text-sm opacity-70">{first.content}</p>}
+                        </>
+                      ) : (
+                        <ul className="list-disc pl-4 text-sm">
+                          {list.map(r => <li key={r.id}>{r.name}</li>)}
+                        </ul>
+                      )}
+                      {!playable && <p className="text-xs font-bold opacity-50">Pròximament disponible</p>}
+                    </div>
+                  </button>
+                  {/* Lliçó fixa del contingut (metadata.lesson), en un modal. */}
+                  {withLesson && (
+                    <div className="flex justify-end border-t border-black/5 px-4 py-2">
+                      <button
+                        id={`lesson-${current.id}-${type}`}
+                        onClick={() => setLesson(withLesson)}
+                        className="btn-press inline-flex items-center gap-1.5 rounded-full bg-teal/10 px-4 py-1.5 text-sm font-black text-teal hover:bg-teal hover:text-white transition-colors"
+                      >
+                        <BookOpen className="h-4 w-4" /> Aprendre lliçó
+                      </button>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {lesson && (
+        <LessonModal
+          resource={lesson}
+          onClose={closeLesson}
+          onPractice={lesson.playable ? () => { setLesson(undefined); onSelect(lesson); } : undefined}
+        />
+      )}
     </main>
   );
 }

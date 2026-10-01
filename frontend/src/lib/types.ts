@@ -8,8 +8,8 @@ export type TurnResponse={reply_text:string;transcription?:string|null;reply_aud
 // Fila de la taula resources: `category` agrupa les activitats (p. ex. 'escenari')
 // i `type` n'és la secció dins de la categoria (p. ex. 'mercat').
 // `icon`, `color`, `section_name`, `background`, `voice`, `initial_prompt` i `objectius` venen de resources.metadata; `playable` indica si la seua categoria té pantalla
-// de joc i la fila en té les dades (el decidix el backend).
-export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; objectius:string[]; playable:boolean };
+// de joc i la fila en té les dades (el decidix el backend); `has_lesson`, si té lliçó fixa (metadata.lesson).
+export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; objectius:string[]; playable:boolean; has_lesson:boolean };
 
 // Exercici de pràctica del temari (taula practice_exercises). `choice`: la correcta
 // és answers[0], una de les `options`; `fill`: val qualsevol de les `answers`;
@@ -24,6 +24,22 @@ export type PracticeExercise = PracticeBase & (
 );
 // Text o àudio (transcripció per torns) que acompanya unes preguntes de comprensió.
 export type PracticePassage = { id: string; level: string; media: 'text' | 'audio'; title: string | null; audio_url: string | null; lines: { text: string; speaker?: string; voice?: string }[] };
+// Lliçó fixa d'un contingut (metadata.lesson): teoria adaptada al nivell a partir
+// de les gramàtiques de l'AVL. Els textos admeten **negreta** i *cursiva*.
+export type LessonBlock = {
+  title: string;
+  text: string;
+  table?: { head: string[]; rows: string[][] };
+  examples?: string[];
+  watch?: { wrong: string; right: string }[]; // errors freqüents («Compte!»)
+};
+export type LessonSource = { gram: 'GVB' | 'GNV'; section: string; title: string; url: string };
+export type Lesson = Pick<Resource, 'id' | 'name' | 'type' | 'category' | 'section_name' | 'icon' | 'color'> & {
+  intro: string;
+  blocks: LessonBlock[];
+  remember: string[];
+  sources: LessonSource[];
+};
 export type Practice = Pick<Resource, 'id' | 'name' | 'type' | 'category' | 'content' | 'icon' | 'color' | 'section_name'> & {
   passages: PracticePassage[];
   exercises: PracticeExercise[];
