@@ -11,3 +11,5 @@ __pycache__/
 .venv-voz/
 audios/
 voz-dataset/
+# Matxa: espeak compilat, codi de Matcha, models i execucions (es refà amb scripts/setup-matxa.sh).
+tts/
