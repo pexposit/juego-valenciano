@@ -48,7 +48,28 @@ export function useSceneAssets(scenario: string | undefined, section: Resource |
   return (section !== undefined && robotLoaded && backgroundLoaded) || timedOut;
 }
 
-/** Pantalla de càrrega abans d'entrar en una escena del xat. */
+/**
+ * Espera el que necessita el tauler abans de mostrar-lo: el perfil (`profileReady`,
+ * perquè no isca el nom per defecte), el fons de l'aula, la bombolla i el robot.
+ * Si alguna baixada va lenta o falla, als MAX_MS s'entra igualment.
+ */
+export function useDashboardAssets(profileReady: boolean) {
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const max = window.setTimeout(() => setTimedOut(true), MAX_MS);
+    const robot = isRobotAvatarEnabled('dashboard') ? loadRobotAvatar().catch(() => {}) : Promise.resolve();
+    Promise.all([loadImage('/images/classroom.jpg'), loadImage('/images/speachBubble.svg'), robot])
+      .then(() => { if (!cancelled) setAssetsLoaded(true); });
+    return () => { cancelled = true; window.clearTimeout(max); };
+  }, []);
+
+  return (profileReady && assetsLoaded) || timedOut;
+}
+
+/** Pantalla de càrrega abans d'entrar en una escena del xat o en el tauler. */
 export function SceneLoading() {
   const [visible, setVisible] = useState(false);
   useEffect(() => {

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CHAT_CATEGORIES } from '@parlaval/shared';
 import type { User } from '@supabase/supabase-js';
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
-import { SceneLoading, useSceneAssets } from './components/SceneLoading';
+import { SceneLoading, useDashboardAssets, useSceneAssets } from './components/SceneLoading';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
 import { endSession, fetchExam, fetchPractice, fetchResources } from './lib/api';
@@ -78,6 +78,13 @@ function ChatRoute({
   );
 }
 
+// Tauler: no es mostra fins que hi ha el perfil i els recursos (fons, bombolla, robot).
+function DashboardRoute({ name, profileReady, setPage }: { name: string; profileReady: boolean; setPage: (p: Page) => void }) {
+  const ready = useDashboardAssets(profileReady);
+  if (!ready) return <SceneLoading />;
+  return <PageTransition><Dashboard name={name} setPage={setPage} /></PageTransition>;
+}
+
 // Examen interactiu (/examen/:id): el contingut ve de resources.metadata.exam.
 function ExamRoute({ onBack }: { onBack: () => void }) {
   const { id } = useParams<{ id: string }>();
@@ -130,6 +137,9 @@ export function App() {
   const [level, setLevel] = useState(DEFAULT_PROFILE.level);
   const [name, setName] = useState(DEFAULT_PROFILE.name);
   const [user, setUser] = useState<User | null>(null);
+  // false mentre es comprova la sessió i es carrega el perfil (sense Supabase, ja està).
+  const [profileReady, setProfileReady] = useState(!supabase);
+  const loadedProfileFor = useRef<string>();
 
   // Sync profile details from Supabase if logged in
   const loadProfile = async (uid: string) => {
@@ -147,10 +157,15 @@ export function App() {
       }
     } catch (e) {
       console.error('Error carregant perfil:', e);
+    } finally {
+      loadedProfileFor.current = uid;
+      setProfileReady(true);
     }
   };
 
   const resetProfile = () => {
+    loadedProfileFor.current = undefined;
+    setProfileReady(true);
     setUser(null);
     setName(DEFAULT_PROFILE.name);
     setLevel(DEFAULT_PROFILE.level);
@@ -166,7 +181,7 @@ export function App() {
     // /scenaris o /perfil) amb sessió activa, s'hi queda en lloc de tornar
     // sempre al tauler.
     void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user) return;
+      if (!session?.user) return setProfileReady(true);
       setUser(session.user);
       void loadProfile(session.user.id);
       const path = window.location.pathname;
@@ -179,6 +194,9 @@ export function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session?.user) return resetProfile();
       setUser(session.user);
+      // Un inici de sessió nou torna a mostrar la càrrega; un refresc del token
+      // del mateix usuari, no.
+      if (loadedProfileFor.current !== session.user.id) setProfileReady(false);
       await loadProfile(session.user.id);
       // Sols redirigix si encara estava a l'inici o a l'autenticació; si ja
       // navegava per l'app (p. ex. refresc del token), es queda on estava.
@@ -222,7 +240,7 @@ export function App() {
     <Routes>
       <Route path={ROUTES.home} element={<PageTransition><HomePage setPage={goToPage} /></PageTransition>} />
       <Route path={ROUTES.auth} element={<PageTransition><AuthPage setPage={goToPage} /></PageTransition>} />
-      <Route path={ROUTES.dashboard} element={<PageTransition><Dashboard name={name} setPage={goToPage} /></PageTransition>} />
+      <Route path={ROUTES.dashboard} element={<DashboardRoute name={name} profileReady={profileReady} setPage={goToPage} />} />
       <Route
         path={ROUTES.scenarioselect}
         element={

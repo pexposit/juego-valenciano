@@ -28,6 +28,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   const [password, setPassword] = useState('');
   const [level, setLevel] = useState('principiant');
   const [notice, setNotice] = useState('');
+  // El nivell només es tria en crear el compte: en iniciar sessió es llig del perfil.
+  const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // Executa una acció d'autenticació amb l'estat d'espera i l'error de xarxa
@@ -98,7 +100,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         <div className="text-center mb-6">
           <span className="text-4xl">🍊</span>
           <h1 className="mt-2 text-3xl font-black"><span style={{ color: '#0F47AF' }}>Parla</span><span style={{ color: '#FF3B3B' }}>Val</span></h1>
-          <p className="mt-1 opacity-60">Crea el teu compte i comença, sense necessitat de correu de verificació.</p>
+          <p className="mt-1 opacity-60">{creating ? 'Crea el teu compte i comença, sense necessitat de correu de verificació.' : 'Inicia sessió per continuar.'}</p>
         </div>
 
         <label className="block text-sm font-extrabold mb-1">Correu electrònic</label>
@@ -119,39 +121,68 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           type="password"
           placeholder="Mínim 6 caràcters"
           id="auth-password"
-          autoComplete="new-password"
-          onKeyDown={e => { if (e.key === 'Enter') void signUp(); }}
+          autoComplete={creating ? 'new-password' : 'current-password'}
+          onKeyDown={e => { if (e.key === 'Enter') void (creating ? signUp() : logIn()); }}
           className={INPUT_CLASS}
         />
 
-        <label className="mt-4 block text-sm font-extrabold mb-1">El teu nivell</label>
-        <select
-          value={level}
-          onChange={e => setLevel(e.target.value)}
-          id="auth-level"
-          className={`${INPUT_CLASS} bg-white`}
-        >
-          {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        {creating && (
+          <>
+            <label className="mt-4 block text-sm font-extrabold mb-1">El teu nivell</label>
+            <select
+              value={level}
+              onChange={e => setLevel(e.target.value)}
+              id="auth-level"
+              className={`${INPUT_CLASS} bg-white`}
+            >
+              {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </>
+        )}
 
-        <button
-          onClick={() => void signUp()}
-          disabled={busy}
-          id="auth-submit"
-          className="btn-press mt-6 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg, #0F47AF, #0B3785)' }}
-        >
-          {busy ? 'Espera...' : 'Crear el compte'}
-        </button>
+        {creating ? (
+          <>
+            <button
+              onClick={() => void signUp()}
+              disabled={busy}
+              id="auth-submit"
+              className="btn-press mt-6 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, #0F47AF, #0B3785)' }}
+            >
+              {busy ? 'Espera...' : 'Crear compte'}
+            </button>
 
-        <button
-          onClick={() => void logIn()}
-          disabled={busy}
-          id="auth-login"
-          className="btn-press mt-3 w-full rounded-2xl border-2 border-gray-200 py-3 font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:opacity-60"
-        >
-          Ja tinc compte · Inicia sessió
-        </button>
+            <button
+              onClick={() => { setCreating(false); setNotice(''); }}
+              disabled={busy}
+              id="auth-login"
+              className="btn-press mt-3 w-full rounded-xl py-1.5 text-sm font-bold text-gray-500 transition hover:text-[#0F47AF] disabled:opacity-60"
+            >
+              Ja tinc compte · Inicia sessió
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => void logIn()}
+              disabled={busy}
+              id="auth-login"
+              className="btn-press mt-6 w-full rounded-2xl py-3 font-extrabold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, #0F47AF, #0B3785)' }}
+            >
+              {busy ? 'Espera...' : 'Inicia sessió'}
+            </button>
+
+            <button
+              onClick={() => { setCreating(true); setNotice(''); }}
+              disabled={busy}
+              id="auth-submit"
+              className="btn-press mt-3 w-full rounded-2xl border-2 border-gray-200 py-3 font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:opacity-60"
+            >
+              Crear compte
+            </button>
+          </>
+        )}
 
         {notice && (
           <div
