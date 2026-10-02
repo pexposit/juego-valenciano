@@ -109,6 +109,14 @@ button { cursor: pointer; }
   border-style: solid;
   border-color: white transparent transparent transparent;
 }
+/* Bombolla del personatge: l'avatar està al centre de l'escena, a la dreta i per
+   davall de la bombolla, així que la cua va a la vora dreta i s'inclina cap a ell. */
+.bubble-to-avatar:after {
+  left: auto;
+  right: 24px;
+  bottom: -38px;
+  border-width: 38px 0 0 64px;
+}
 .user-bubble:after {
   left: auto;
   right: 30px;
