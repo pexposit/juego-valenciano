@@ -1,7 +1,7 @@
-import { CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
+import { CHAT_CATEGORIES, isPracticeArea, MOTHER_TONGUES } from '@parlaval/shared';
 import type { Resource, Scenario } from '../lib/types';
 
-export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'errors' | 'summary' | 'profile';
+export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'errors' | 'tutorhistory' | 'summary' | 'profile';
 
 /* Rutes URL de cada pàgina. La de xat porta l'escenari com a paràmetre de ruta
  * (/xat/:scenario): l'entrada `chat` és només un valor per defecte, no s'hi
@@ -15,6 +15,7 @@ export const ROUTES: Record<Page, string> = {
   exam: '/examen',
   practice: '/practica',
   errors: '/errors',
+  tutorhistory: '/converses',
   summary: '/resum',
   profile: '/perfil',
 };
@@ -51,8 +52,17 @@ export const LEVEL_OPTIONS = [
   { value: 'avancat', label: 'Avançat' },
 ];
 
+/* Públic de l'aprenent (profiles.age_group). Els xiquets no trien nivell: comencen en principiant. */
+export const AGE_GROUP_OPTIONS = [
+  { value: 'child', label: 'Xiquet o xiqueta' },
+  { value: 'adult', label: 'Persona adulta' },
+];
+
+/* Llengua materna que es tria en crear el compte (codi ISO 639-1 a profiles.mother_tongue). */
+export const MOTHER_TONGUE_OPTIONS = MOTHER_TONGUES;
+
 /* Valors del perfil demo (sense sessió de Supabase). */
-export const DEFAULT_PROFILE = { name: 'Aina', level: 'principiant', xp: 35 };
+export const DEFAULT_PROFILE = { name: 'Aina', level: 'principiant', xp: 35, ageGroup: 'adult' };
 
 export const HOME_IMAGES = [
   {

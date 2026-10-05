@@ -12,7 +12,8 @@ import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
 import { getScenario } from '../services/scenarios.js';
-import { isVoiceOnlyCategory } from '@parlaval/shared';
+import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
+import { motherTongueInstructions } from '../services/motherTongue.js';
 import { stt, tts } from '../services/voice.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
 import { beginErrorAnalysis } from '../services/pendingErrorAnalysis.js';
@@ -98,12 +99,20 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       history = sanitizeHistory(data.history as HistoryMessage[]);
     }
 
+    // El tutor infantil té en compte la llengua materna del xiquet (profiles.mother_tongue).
+    let extraInstructions: string | undefined;
+    if (client && scenario.category === ASSISTANT_CATEGORY) {
+      const { data: profile } = await client.from('profiles').select('mother_tongue').eq('id', req.userId!).maybeSingle();
+      extraInstructions = motherTongueInstructions(profile?.mother_tongue);
+    }
+
     const agentStart = Date.now();
     const reply = await replyFromAgent({
       scenario,
       level: data.level,
       message: text,
       history,
+      extraInstructions,
     });
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);

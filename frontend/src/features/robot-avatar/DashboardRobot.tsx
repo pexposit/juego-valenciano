@@ -6,7 +6,7 @@ import type { RobotState } from './states';
  * [robot-avatar] Robot del Dashboard (substituïx avatar_professor.svg).
  * Saluda en aparéixer i quan li passes el ratolí per damunt; fa un bot d'alegria si el cliques.
  */
-export function DashboardRobot({ className = '', size = 400 }: { className?: string; size?: number }) {
+export function DashboardRobot({ className = '', size = 400, talking = false, thinking = false }: { className?: string; size?: number; talking?: boolean; thinking?: boolean }) {
   const [state, setState] = useState<RobotState>('wave');
   const [until, setUntil] = useState(Date.now() + 3200);
 
@@ -27,7 +27,7 @@ export function DashboardRobot({ className = '', size = 400 }: { className?: str
       onMouseEnter={() => state === 'idle' && trigger('wave', 2400)}
       onClick={() => trigger('happy', 1600)}
     >
-      <RobotAvatar state={state} label="El robot professor" className="h-full w-full" />
+      <RobotAvatar state={thinking ? 'thinking' : state} talking={talking} label="El robot professor" className="h-full w-full" />
     </div>
   );
 }

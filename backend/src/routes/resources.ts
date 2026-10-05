@@ -5,7 +5,7 @@ import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
 import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing } from '../services/examWritingEvaluator.js';
 import { characterOf, isScenarioPlayable } from '../services/scenarios.js';
-import { CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
+import { ASSISTANT_CATEGORY, CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
 import { saveWritingErrors } from './errors.js';
 
 export const resourcesRouter = Router();
@@ -70,6 +70,8 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
   const { data, error } = await client
     .from('resources')
     .select('id, name, type, category, difficulty, xp_earned, content, url, metadata, practice_exercises(count)')
+    // El tutor infantil es xateja des del tauler: no és una activitat del catàleg.
+    .neq('category', ASSISTANT_CATEGORY)
     .order('category')
     .order('sort_order')
     .order('type')

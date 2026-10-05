@@ -236,3 +236,41 @@ export async function recordPracticeAnswers(answers: { exercise_id: string; answ
     body: JSON.stringify({ answers }),
   });
 }
+
+// Conversa del xiquet amb el tutor de valencià del tauler: la represa (amb els últims
+// missatges) o la crea amb la salutació. `session_id` és el de la conversa existent, que
+// pot ser d'un login anterior, i és el que s'ha d'enviar a /api/turn.
+export type AssistantConversation = {
+  session_id: string;
+  session_resource_id: string;
+  messages: { role: 'user' | 'character'; text: string }[];
+};
+async function callAssistant(action: 'open' | 'restart', sessionId: string): Promise<AssistantConversation> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+  if (!res.ok) throw new Error("No s'ha pogut obrir la conversa amb el professor");
+  return res.json();
+}
+export const openAssistant = (sessionId: string) => callAssistant('open', sessionId);
+// Tanca la conversa actual i en comença una de nova (amb la salutació); els missatges antics es conserven a la BDD.
+export const restartAssistant = (sessionId: string) => callAssistant('restart', sessionId);
+
+// Converses anteriors del xiquet amb el tutor (pestanya «Converses» del tauler infantil).
+export type TutorConversation = { id: string; started_at: string; message_count: number; preview: string; current: boolean };
+export type TutorMessage = { role: 'user' | 'character'; text: string; created_at: string };
+async function authedGet<T>(path: string, errorMessage: string): Promise<T> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(errorMessage);
+  return res.json();
+}
+export const fetchTutorConversations = () =>
+  authedGet<TutorConversation[]>('/api/assistant/conversations', 'No hem pogut carregar les converses');
+export const fetchTutorConversation = (id: string) =>
+  authedGet<TutorMessage[]>(`/api/assistant/conversations/${encodeURIComponent(id)}/messages`, 'No hem pogut carregar la conversa');

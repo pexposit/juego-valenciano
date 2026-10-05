@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { LEVEL_OPTIONS, type Page } from '../data/content';
+import { AGE_GROUP_OPTIONS, LEVEL_OPTIONS, MOTHER_TONGUE_OPTIONS, type Page } from '../data/content';
 import { startSession } from '../lib/api';
 
 const NETWORK_ERROR = 'No hem pogut connectar. Revisa la connexió i torna-ho a provar.';
@@ -27,6 +27,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [level, setLevel] = useState('principiant');
+  const [ageGroup, setAgeGroup] = useState('');
+  const [motherTongue, setMotherTongue] = useState('');
   const [notice, setNotice] = useState('');
   // El nivell només es tria en crear el compte: en iniciar sessió es llig del perfil.
   const [creating, setCreating] = useState(false);
@@ -53,11 +55,15 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
     if (supabase && password.length < 6) {
       return setNotice('La contrasenya ha de tindre almenys 6 caràcters.');
     }
+    if (supabase && !ageGroup) return setNotice('Indica si el compte és per a un xiquet o per a una persona adulta.');
+    if (supabase && !motherTongue) return setNotice('Tria la teua llengua materna.');
+    // Només les persones adultes trien nivell; els xiquets comencen en principiant.
+    const startLevel = ageGroup === 'adult' ? level : 'principiant';
     return withAuth(async client => {
       const { error } = await client.auth.signUp({
         email,
         password,
-        options: { data: { level, display_name: email.split('@')[0] } },
+        options: { data: { level: startLevel, age_group: ageGroup || 'adult', mother_tongue: motherTongue, display_name: email.split('@')[0] } },
       });
       if (error) {
         setNotice(error.message?.toLowerCase().includes('already registered')
@@ -66,7 +72,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         return;
       }
       setNotice('Compte creat! Entrant...');
-      await recordLogin(level);
+      await recordLogin(startLevel);
       setPage('dashboard');
     });
   };
@@ -128,14 +134,47 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
 
         {creating && (
           <>
-            <label className="mt-4 block text-sm font-extrabold mb-1">El teu nivell</label>
+            <span id="auth-age-group-label" className="mt-4 block text-sm font-extrabold mb-1">Aquest compte és per a...</span>
+            <div role="radiogroup" aria-labelledby="auth-age-group-label" id="auth-age-group" className="grid grid-cols-2 gap-3">
+              {AGE_GROUP_OPTIONS.map(o => (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={ageGroup === o.value}
+                  onClick={() => setAgeGroup(o.value)}
+                  className={`btn-press rounded-2xl border-2 p-3 text-sm font-extrabold transition-colors ${
+                    ageGroup === o.value ? 'border-[#0F47AF] bg-[#0F47AF]/10 text-[#0F47AF]' : 'border-gray-100 bg-white text-gray-600'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {ageGroup === 'adult' && (
+              <>
+                <label className="mt-4 block text-sm font-extrabold mb-1" htmlFor="auth-level">El teu nivell</label>
+                <select
+                  value={level}
+                  onChange={e => setLevel(e.target.value)}
+                  id="auth-level"
+                  className={`${INPUT_CLASS} bg-white`}
+                >
+                  {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </>
+            )}
+
+            <label className="mt-4 block text-sm font-extrabold mb-1" htmlFor="auth-mother-tongue">La teua llengua materna</label>
             <select
-              value={level}
-              onChange={e => setLevel(e.target.value)}
-              id="auth-level"
+              value={motherTongue}
+              onChange={e => setMotherTongue(e.target.value)}
+              id="auth-mother-tongue"
               className={`${INPUT_CLASS} bg-white`}
             >
-              {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <option value="" disabled>Tria una llengua</option>
+              {MOTHER_TONGUE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </>
         )}

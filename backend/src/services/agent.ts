@@ -6,6 +6,8 @@ import type { ScenarioDefinition } from './scenarios.js';
 const outputSchema = z.object({
   reply_text: z.string().min(1),
   mood: z.enum(['neutral', 'content', 'confus']),
+  // Només amb `extraInstructions` (tutor infantil): la mateixa idea en la llengua materna del xiquet.
+  help_text: z.string().optional(),
 });
 
 export type AgentReply = z.infer<typeof outputSchema>;
@@ -26,6 +28,8 @@ export async function replyFromAgent(args: {
   level: string;
   message: string;
   history: { role: string; content_text: string }[];
+  // Instruccions addicionals per a esta conversa (p. ex. la llengua materna del xiquet al tutor infantil).
+  extraInstructions?: string;
 }): Promise<AgentReply> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY no està configurada');
@@ -56,6 +60,12 @@ export async function replyFromAgent(args: {
               schema: {
                 type: 'object',
                 properties: {
+                  ...(args.extraInstructions ? {
+                    help_text: {
+                      type: 'string',
+                      description: "La mateixa idea que reply_text, explicada breument en la llengua materna de l'aprenent (traducció de les paraules noves inclosa).",
+                    },
+                  } : {}),
                   mood: {
                     type: 'string',
                     enum: ['neutral', 'content', 'confus'],
@@ -66,7 +76,7 @@ export async function replyFromAgent(args: {
                     description: 'La resposta directa del personatge a la conversa.',
                   },
                 },
-                required: ['mood', 'reply_text'],
+                required: args.extraInstructions ? ['mood', 'reply_text', 'help_text'] : ['mood', 'reply_text'],
                 additionalProperties: false,
               },
             },
@@ -82,7 +92,9 @@ export async function replyFromAgent(args: {
                             - Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
                             - Tria l'estat d'ànim ('mood') que millor represente la teua reacció com a personatge ('neutral', 'content', 'confus').
 
-                            Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood.`.trim(),
+                            ${args.extraInstructions ?? ''}
+
+                            Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${args.extraInstructions ? ', help_text' : ''}.`.trim(),
                         },
 
                         {
@@ -106,8 +118,10 @@ export async function replyFromAgent(args: {
         }
         console.log(`[agent] resposta vàlida de ${model}`);
 
-        const parsed = outputSchema.parse(parseJsonResponse(content));
-        return parsed;
+        const { help_text, ...parsed } = outputSchema.parse(parseJsonResponse(content));
+        // La llengua materna va en una línia a part: el TTS només llig la primera (en valencià).
+        return help_text?.trim() ? { ...parsed, reply_text: `${parsed.reply_text.trim()}
+${help_text.trim()}` } : parsed;
       } catch (error) {
         //console.error('[agent DEBUG ERROR]:', error); // <--- AÑADE ESTO
         lastError = error instanceof Error ? error.message : lastError;

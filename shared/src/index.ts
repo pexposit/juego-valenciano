@@ -99,7 +99,12 @@ export const CONVERSATION_AREAS = {
 export const isVoiceOnlyCategory = (category: string) => category in CONVERSATION_AREAS;
 
 /** Categories de resources que s'obrin al xat: els escenaris i les àrees de conversa. */
-export const CHAT_CATEGORIES: readonly string[] = ['escenari', ...Object.keys(CONVERSATION_AREAS)];
+/** Categoria del tutor de valencià dels comptes infantils: es xateja amb ell des del tauler, no és una activitat del catàleg. */
+export const ASSISTANT_CATEGORY = 'assistent';
+/** `type` del recurs del tutor infantil (resources.type). */
+export const KID_ASSISTANT_TYPE = 'ajuda_infantil';
+
+export const CHAT_CATEGORIES: readonly string[] = ['escenari', ...Object.keys(CONVERSATION_AREAS), ASSISTANT_CATEGORY];
 
 export const isPracticeArea = (category: string): category is PracticeArea => category in PRACTICE_AREAS;
 
@@ -107,3 +112,24 @@ export const isPracticeArea = (category: string): category is PracticeArea => ca
  * espais sobrants, puntuació final ni la forma de l'apòstrof, però sí els accents. */
 export const normalizeAnswer = (text: string) =>
   text.trim().toLocaleLowerCase('ca').replace(/[’`´]/g, "'").replace(/l\.l/g, 'l·l').replace(/\s+/g, ' ').replace(/[.,;:!?¡¿]+$/, '');
+
+/** Llengües maternes que es poden triar en crear el compte (profiles.mother_tongue: codi ISO 639-1 o 'other'). */
+export const MOTHER_TONGUES = [
+  { value: 'es', label: 'Castellà' },
+  { value: 'en', label: 'Anglés' },
+  { value: 'fr', label: 'Francés' },
+  { value: 'ar', label: 'Àrab' },
+  { value: 'ro', label: 'Romanés' },
+  { value: 'uk', label: 'Ucraïnés' },
+  { value: 'ru', label: 'Rus' },
+  { value: 'zh', label: 'Xinés' },
+  { value: 'it', label: 'Italià' },
+  { value: 'de', label: 'Alemany' },
+  { value: 'pt', label: 'Portugués' },
+  { value: 'ca', label: 'Valencià / Català' },
+  { value: 'other', label: 'Una altra llengua' },
+] as const;
+
+/** Nom (en valencià) d'una llengua materna, o undefined si no és una de les triables. */
+export const motherTongueLabel = (code: string | null | undefined) =>
+  MOTHER_TONGUES.find(t => t.value === code)?.label;

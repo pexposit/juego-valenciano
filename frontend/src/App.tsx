@@ -16,10 +16,11 @@ import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
 import { Practice } from './pages/Practice';
 import { ErrorPractice } from './pages/ErrorPractice';
+import { TutorHistory } from './pages/TutorHistory';
 import { Summary } from './pages/Summary';
 import { Profile } from './pages/Profile';
 
-type ProfileFields = { display_name?: string; level?: string };
+type ProfileFields = { display_name?: string; level?: string; show_mother_tongue?: boolean; mother_tongue?: string };
 
 // Busca al catàleg de la BDD el recurs que obri una ruta.
 // undefined = carregant; null = no existix o no és jugable.
@@ -80,10 +81,10 @@ function ChatRoute({
 }
 
 // Tauler: no es mostra fins que hi ha el perfil i els recursos (fons, bombolla, robot).
-function DashboardRoute({ name, profileReady, setPage }: { name: string; profileReady: boolean; setPage: (p: Page) => void }) {
+function DashboardRoute({ name, ageGroup, showMotherTongue, profileReady, setPage }: { name: string; ageGroup: string; showMotherTongue: boolean; profileReady: boolean; setPage: (p: Page) => void }) {
   const ready = useDashboardAssets(profileReady);
   if (!ready) return <SceneLoading />;
-  return <PageTransition><Dashboard name={name} setPage={setPage} /></PageTransition>;
+  return <PageTransition><Dashboard name={name} ageGroup={ageGroup} showMotherTongue={showMotherTongue} setPage={setPage} /></PageTransition>;
 }
 
 // Examen interactiu (/examen/:id): el contingut ve de resources.metadata.exam.
@@ -137,6 +138,9 @@ export function App() {
   const [xp, setXp] = useState(DEFAULT_PROFILE.xp);
   const [level, setLevel] = useState(DEFAULT_PROFILE.level);
   const [name, setName] = useState(DEFAULT_PROFILE.name);
+  const [ageGroup, setAgeGroup] = useState(DEFAULT_PROFILE.ageGroup);
+  const [motherTongue, setMotherTongue] = useState<string | null>(null);
+  const [showMotherTongue, setShowMotherTongue] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   // false mentre es comprova la sessió i es carrega el perfil (sense Supabase, ja està).
   const [profileReady, setProfileReady] = useState(!supabase);
@@ -148,13 +152,16 @@ export function App() {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, level, xp')
+        .select('display_name, level, xp, age_group, mother_tongue, show_mother_tongue')
         .eq('id', uid)
         .single();
       if (data) {
         setName(data.display_name || DEFAULT_PROFILE.name);
         setLevel(data.level || DEFAULT_PROFILE.level);
         setXp(data.xp || 0);
+        setAgeGroup(data.age_group || DEFAULT_PROFILE.ageGroup);
+        setMotherTongue(data.mother_tongue ?? null);
+        setShowMotherTongue(data.show_mother_tongue ?? true);
       }
     } catch (e) {
       console.error('Error carregant perfil:', e);
@@ -171,6 +178,9 @@ export function App() {
     setName(DEFAULT_PROFILE.name);
     setLevel(DEFAULT_PROFILE.level);
     setXp(DEFAULT_PROFILE.xp);
+    setAgeGroup(DEFAULT_PROFILE.ageGroup);
+    setMotherTongue(null);
+    setShowMotherTongue(true);
     navigate(ROUTES.home, { replace: true });
   };
 
@@ -226,6 +236,16 @@ export function App() {
     void saveProfile({ display_name });
   };
 
+  const updateMotherTongue = (mother_tongue: string) => {
+    setMotherTongue(mother_tongue);
+    void saveProfile({ mother_tongue });
+  };
+
+  const updateShowMotherTongue = (show_mother_tongue: boolean) => {
+    setShowMotherTongue(show_mother_tongue);
+    void saveProfile({ show_mother_tongue });
+  };
+
   const logOut = async () => {
     // Tanca la sessió al backend abans d'invalidar el token de Supabase.
     await endSession().catch(err => console.error('Error tancant la sessió:', err));
@@ -241,7 +261,7 @@ export function App() {
     <Routes>
       <Route path={ROUTES.home} element={<PageTransition><HomePage setPage={goToPage} /></PageTransition>} />
       <Route path={ROUTES.auth} element={<PageTransition><AuthPage setPage={goToPage} /></PageTransition>} />
-      <Route path={ROUTES.dashboard} element={<DashboardRoute name={name} profileReady={profileReady} setPage={goToPage} />} />
+      <Route path={ROUTES.dashboard} element={<DashboardRoute name={name} ageGroup={ageGroup} showMotherTongue={showMotherTongue} profileReady={profileReady} setPage={goToPage} />} />
       <Route
         path={ROUTES.scenarioselect}
         element={
@@ -272,6 +292,11 @@ export function App() {
               back={() => navigate(-1)}
               onLogOut={logOut}
               isDemo={!user}
+              ageGroup={ageGroup}
+              motherTongue={motherTongue}
+              setMotherTongue={updateMotherTongue}
+              showMotherTongue={showMotherTongue}
+              setShowMotherTongue={updateShowMotherTongue}
             />
           </PageTransition>
         }
@@ -287,6 +312,7 @@ export function App() {
       <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
       <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
       <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
+      <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} showHelp={showMotherTongue} /></PageTransition>} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );
