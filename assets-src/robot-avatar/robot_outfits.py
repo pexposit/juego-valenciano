@@ -78,7 +78,8 @@ class Builder:
         des del centre i fa un anell gruixut just per fora (p. ex. una cinta al cap)."""
         from math import pi, cos, sin
         from mathutils import Vector
-        tgt = bpy.data.objects[target]
+        # la malla avaluada (amb modificadors), que és la que es veu
+        tgt = bpy.data.objects[target].evaluated_get(bpy.context.evaluated_depsgraph_get())
         inv = tgt.matrix_world.inverted()
         def ring(zz, off):
             pts = []
@@ -90,12 +91,15 @@ class Builder:
                 r = ((tgt.matrix_world @ loc) - o).length if ok else 0.9
                 pts.append(o + d * (r + off))
             return pts
-        rings = [ring(z - height / 2, thick), ring(z + height / 2, thick),
-                 ring(z + height / 2, -0.01), ring(z - height / 2, -0.01)]
+        # diversos anells en l'altura (per fora, de baix a dalt, i per dins, de dalt a baix)
+        # perquè la cinta seguisca la corba de la malla i no la travesse pel mig
+        levels = [z - height / 2 + height * t / 4 for t in range(5)]
+        rings = [ring(zz, thick) for zz in levels] + [ring(zz, -0.01) for zz in reversed(levels)]
         verts = [v for r in rings for v in r]
         faces = []
-        for k in range(4):
-            a0, a1 = k * n, ((k + 1) % 4) * n
+        nr = len(rings)
+        for k in range(nr):
+            a0, a1 = k * n, ((k + 1) % nr) * n
             for i in range(n):
                 j = (i + 1) % n
                 faces.append((a0 + i, a0 + j, a1 + j, a1 + i))
@@ -713,6 +717,758 @@ def outfit_hotel(b):
     b.add("cube", "Clau_Dents", (x + 0.018 * k, y, 0.36 + 0.33 * k), "arm_L", daurat, scale=(0.01 * k, 0.005 * k, 0.025 * k), size=2)
 
 
+# --- ajuntament (Amparo, funcionària d'atenció ciutadana): americana blau petroli, brusa,
+#     collaret d'or, ulleres rectangulars, pestanyes, arracades i carpeta de documents ---
+def outfit_ajuntament(b):
+    from math import pi
+    americana = mat("Americana_Petroli", (0.02, 0.18, 0.25), 0.5)
+    solapa    = mat("Solapa_Petroli",    (0.01, 0.10, 0.14), 0.4)
+    brusa     = mat("Brusa_Crema",       (0.90, 0.85, 0.74), 0.6)
+    daurat    = mat("Daurat_Ajuntament", (0.85, 0.62, 0.15), 0.3, metal=0.9)
+    montura   = mat("Montura_Roja",      (0.60, 0.03, 0.05), 0.35)
+    carpeta   = mat("Carpeta_Blava",     (0.05, 0.15, 0.45), 0.5)
+    paper     = mat("Paper",             (0.95, 0.95, 0.93), 0.8)
+    goma      = mat("Goma_Carpeta",      (0.05, 0.05, 0.06), 0.6)
+
+    pestanyes(b)
+
+    # arracades: un puntet d'or davall de cada orella (os head)
+    for side in (-1, 1):
+        b.add("uv_sphere", f"Arracada.{'E' if side < 0 else 'D'}", (side * 0.98, -0.12, 1.70), "head", daurat,
+              radius=0.04, segments=16, ring_count=8)
+
+    # ulleres rectangulars roges al voltant dels ulls de la pantalla (os head)
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        cx, cz, hw, hh, t = side * 0.33, 2.13, 0.165, 0.215, 0.013  # centre, mitja amplària/altura, gruix
+        for k, (dx, dz, sx, sz) in enumerate(((0, hh, hw + t, t * 1.6), (0, -hh, hw + t, t),
+                                              (hw, 0, t, hh), (-hw, 0, t, hh))):
+            b.add("cube", f"Ulleres_Montura.{s}{k}", (cx + dx, -0.845, cz + dz), "head", montura,
+                  scale=(sx, 0.012, sz), bevel=0.006, size=2)
+    b.add("cube", "Ulleres_Pont", (0, -0.845, 2.22), "head", montura, scale=(0.165 - 0.013, 0.01, 0.011), size=2)
+
+    # americana blau petroli oberta amb brusa crema i botons daurats
+    americana_oberta(b, americana, solapa, brusa, daurat)
+    # collaret d'or fi amb un penjoll al davant (os body)
+    b.add("torus", "Collaret", (0, 0, 1.205), "body", daurat, major_radius=0.33, minor_radius=0.012,
+          major_segments=48, minor_segments=6)
+    b.add("uv_sphere", "Collaret_Penjoll", (0, -0.36, 1.19), "body", daurat, scale=(0.03, 0.012, 0.04),
+          segments=16, ring_count=8)
+
+    # carpeta de documents a la mà esquerra (os arm_L), amb fulls que sobreixen i una goma
+    x, y, z, w, h = -1.04, -0.24, 0.32, 0.18, 0.24
+    b.add("cube", "Carpeta_Fulls", (x + 0.01, y + 0.005, z + 0.03), "arm_L", paper, scale=(w - 0.02, 0.018, h), size=2)
+    b.add("cube", "Carpeta", (x, y, z), "arm_L", carpeta, scale=(w, 0.025, h), bevel=0.012, size=2)
+    b.add("cube", "Carpeta_Goma", (x, y - 0.027, z - h * 0.55), "arm_L", goma, scale=(w + 0.002, 0.004, 0.008), size=2)
+    b.add("cube", "Carpeta_Escut", (x, y - 0.027, z + h * 0.3), "arm_L", daurat, scale=(0.05, 0.003, 0.06), bevel=0.004, size=2)
+
+
+# --- bar (Maria, cambrera): polo taronja, davantal negre llarg amb llibreta i drap,
+#     pestanyes i safata amb un café i un suc de taronja ---------------------------------
+def outfit_bar(b):
+    from math import pi
+    polo    = mat("Polo_Taronja",   (0.80, 0.22, 0.04), 0.7)
+    blanc   = mat("Blanc_Polo",     (0.93, 0.93, 0.92), 0.7)
+    negre   = mat("Davantal_Negre", (0.03, 0.03, 0.035), 0.75)
+    paper   = mat("Llibreta",       (0.95, 0.95, 0.90), 0.8)
+    llapis  = mat("Llapis_Groc",    (0.95, 0.75, 0.10), 0.5)
+    drap    = mat("Drap_Blanc",     (0.92, 0.92, 0.90), 0.95)
+    ratlla  = mat("Ratlla_Drap",    (0.70, 0.05, 0.05), 0.9)
+    plata   = mat("Safata_Plata",   (0.75, 0.77, 0.80), 0.25, metal=1.0)
+    tassa   = mat("Tassa_Bar",      (0.95, 0.95, 0.95), 0.3)
+    cafe    = mat("Cafe_Bar",       (0.12, 0.05, 0.02), 0.2)
+    vidre   = mat("Vidre_Got",      (0.80, 0.90, 0.95), 0.05)
+    suc     = mat("Suc_Taronja",    (0.95, 0.50, 0.05), 0.2, emit=0.1)
+    gb = next(n for n in vidre.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
+    gb.inputs["Alpha"].default_value = 0.2
+    for attr, val in (("surface_render_method", 'BLENDED'), ("blend_method", 'BLEND')):
+        try: setattr(vidre, attr, val)
+        except (AttributeError, TypeError): pass
+
+    pestanyes(b)
+
+    # polo taronja (os body): la senyera queda com un logo estampat; coll blanc i botonera
+    b.add("cube", "Polo", (0, 0, 0.66), "body", polo, scale=(0.70, 0.548, 0.52), bevel=0.24, segs=6, size=2)
+    b.add("torus", "Polo_Coll", (0, 0, 1.2), "body", blanc, scale=(1, 1, 0.7),
+          major_radius=0.30, minor_radius=0.06, major_segments=48, minor_segments=12)
+    b.add("cube", "Polo_Botonera", (0, -0.552, 1.03), "body", polo, scale=(0.05, 0.006, 0.11), size=2)
+    for i, z in enumerate((1.10, 0.98)):
+        b.add("cylinder", f"Polo_Botó.{i}", (0, -0.56, z), "body", blanc, rot=(pi / 2, 0, 0), radius=0.018, depth=0.01, vertices=12)
+    for side in (-1, 1):  # mànegues curtes: només la part de dalt del braç
+        b.add("uv_sphere", f"Polo_Mànega.{'E' if side < 0 else 'D'}", (side * 0.806, 0, 0.758),
+              "arm_L" if side < 0 else "arm_R", polo, scale=(0.19, 0.19, 0.2), rot=(0, -side * 0.385, 0),
+              segments=32, ring_count=16)
+
+    # davantal negre llarg des de la cintura, cinta que s'ajusta al polo i butxaca amb llibreta
+    b.add("cube", "Davantal_Cinta", (0, 0, 0.395), "body", negre, scale=(0.706, 0.554, 0.02), bevel=0.24, segs=6, size=2)
+    b.add("cube", "Davantal", (0, -0.562, 0.19), "body", negre, scale=(0.58, 0.012, 0.21), bevel=0.01, size=2)
+    b.add("cube", "Davantal_Butxaca", (-0.30, -0.577, 0.22), "body", negre, scale=(0.16, 0.006, 0.1), bevel=0.008, size=2)
+    b.add("cube", "Llibreta", (-0.34, -0.585, 0.33), "body", paper, scale=(0.06, 0.006, 0.07), rot=(0, 0.12, 0), size=2)
+    b.add("cylinder", "Llapis", (-0.22, -0.587, 0.35), "body", llapis, rot=(0, -0.25, 0), radius=0.014, depth=0.2, vertices=6)
+    # drap blanc penjant a la cintura, a la dreta
+    b.add("cube", "Drap", (0.50, -0.575, 0.27), "body", drap, scale=(0.09, 0.012, 0.16), bevel=0.01, size=2)
+    b.add("cube", "Drap_Ratlla", (0.50, -0.589, 0.17), "body", ratlla, scale=(0.09, 0.003, 0.012), size=2)
+
+    # safata rodona damunt de la mà esquerra (os arm_L) amb un café i un got de suc
+    x, y, z = -1.12, -0.32, 0.42
+    b.add("cylinder", "Safata", (x, y, z), "arm_L", plata, bevel=0.008, radius=0.27, depth=0.025, vertices=48)
+    b.add("torus", "Safata_Vora", (x, y, z + 0.013), "arm_L", plata, major_radius=0.265, minor_radius=0.013,
+          major_segments=48, minor_segments=6)
+    b.add("cylinder", "Tassa", (x + 0.10, y - 0.06, z + 0.08), "arm_L", tassa, bevel=0.01, radius=0.075, depth=0.13, vertices=24)
+    b.add("cylinder", "Tassa_Cafe", (x + 0.10, y - 0.06, z + 0.142), "arm_L", cafe, radius=0.064, depth=0.008, vertices=24)
+    b.add("torus", "Tassa_Nansa", (x + 0.19, y - 0.06, z + 0.08), "arm_L", tassa, rot=(pi / 2, 0, 0),
+          major_radius=0.035, minor_radius=0.012, major_segments=16, minor_segments=6)
+    b.add("cylinder", "Got", (x - 0.10, y - 0.02, z + 0.13), "arm_L", vidre, radius=0.065, depth=0.24, vertices=24,
+          end_fill_type='NOTHING')
+    b.add("cylinder", "Got_Suc", (x - 0.10, y - 0.02, z + 0.11), "arm_L", suc, radius=0.06, depth=0.18, vertices=24)
+
+
+# --- taller (mecànic en cap): granota de treball blava amb taques de greix, pegat amb el
+#     nom, tornavís a la butxaca, drap, gorra de treball i clau fixa a la mà -------------
+def outfit_taller(b):
+    from math import pi
+    granota = mat("Granota_Blava",   (0.04, 0.10, 0.28), 0.85)
+    costura = mat("Costura_Taronja", (0.85, 0.35, 0.05), 0.8)
+    greix   = mat("Taca_Greix",      (0.03, 0.03, 0.03), 0.6)
+    pegat   = mat("Pegat_Nom",       (0.93, 0.93, 0.92), 0.7)
+    roig    = mat("Roig_Taller",     (0.70, 0.05, 0.04), 0.7)
+    crom    = mat("Crom_Eina",       (0.80, 0.82, 0.85), 0.15, metal=1.0)
+    mànec   = mat("Mànec_Tornavís",  (0.80, 0.08, 0.05), 0.4)
+
+    # granota de treball (os body): la senyera queda com un pegat cosit; mànegues llargues i coll
+    b.add("cube", "Granota", (0, 0, 0.60), "body", granota, scale=(0.70, 0.548, 0.575), bevel=0.24, segs=6, size=2)
+    for side in (-1, 1):
+        b.add("uv_sphere", f"Mànega.{'E' if side < 0 else 'D'}", (side * 0.87, 0, 0.60), "arm_L" if side < 0 else "arm_R",
+              granota, scale=(0.175, 0.175, 0.36), rot=(0, -side * 0.385, 0), segments=32, ring_count=16)
+    b.add("torus", "Granota_Coll", (0, 0, 1.2), "body", granota, scale=(1, 1, 0.7),
+          major_radius=0.30, minor_radius=0.065, major_segments=48, minor_segments=12)
+    b.add("cube", "Granota_Cremallera", (0, -0.552, 1.03), "body", costura, scale=(0.008, 0.004, 0.13), size=2)
+    b.add("cube", "Granota_Cintura", (0, 0, 0.36), "body", costura, scale=(0.706, 0.554, 0.012), bevel=0.24, segs=6, size=2)
+    # taques de greix
+    for k, (x, z, sx, sz) in enumerate(((-0.42, 0.18, 0.07, 0.04), (0.35, 0.12, 0.05, 0.03), (0.50, 0.55, 0.04, 0.03),
+                                        (-0.20, 0.08, 0.04, 0.025))):
+        b.add("uv_sphere", f"Taca_Greix.{k}", (x, -0.548, z), "body", greix, scale=(sx, 0.006, sz), segments=12, ring_count=6)
+
+    # pegat amb el nom al pit dret i butxaca amb tornavís al pit esquerre
+    b.add("cylinder", "Pegat_Nom", (0.52, -0.553, 0.95), "body", pegat, rot=(pi / 2, 0, 0), scale=(1.4, 1, 0.8),
+          radius=0.06, depth=0.008, vertices=32)
+    b.add("cube", "Pegat_Nom_Text", (0.52, -0.559, 0.95), "body", roig, scale=(0.055, 0.002, 0.008), size=2)
+    b.add("cube", "Butxaca_Pit", (-0.52, -0.556, 0.86), "body", granota, scale=(0.12, 0.008, 0.11), bevel=0.01, size=2)
+    b.add("cube", "Butxaca_Pit_Costura", (-0.52, -0.566, 0.96), "body", costura, scale=(0.12, 0.002, 0.006), size=2)
+    b.add("cylinder", "Tornavís_Mànec", (-0.48, -0.555, 1.02), "body", mànec, radius=0.022, depth=0.1, vertices=8)
+    b.add("cylinder", "Tornavís_Barra", (-0.48, -0.555, 0.93), "body", crom, radius=0.008, depth=0.12, vertices=6)
+
+    # drap roig penjant del maluc dret
+    b.add("cube", "Drap_Taller", (0.55, -0.565, 0.22), "body", roig, scale=(0.08, 0.014, 0.15), rot=(0, 0.08, 0),
+          bevel=0.01, size=2)
+    b.add("uv_sphere", "Drap_Taca", (0.53, -0.58, 0.16), "body", greix, scale=(0.03, 0.005, 0.025), segments=10, ring_count=5)
+
+    # gorra de treball blava amb pegat taronja (os head); l'antena ix pel botó de dalt
+    b.add("uv_sphere", "Gorra_Treball", (0, 0, 2.78), "head", granota, scale=(0.56, 0.56, 0.28), segments=40, ring_count=20)
+    b.add("cylinder", "Gorra_Treball_Visera", (0, -0.80, 2.79), "head", granota, scale=(1, 0.65, 1), rot=(0.22, 0, 0),
+          bevel=0.012, radius=0.40, depth=0.04, vertices=40)
+    b.add("cylinder", "Gorra_Treball_Pegat", (0, -0.49, 2.92), "head", costura, rot=(pi / 2 - 0.8, 0, 0),
+          radius=0.07, depth=0.01, vertices=24)
+
+    # clau fixa (inglesa) a la mà esquerra (os arm_L): barra cap amunt i cap obert per dalt
+    x, y = -1.02, -0.22
+    b.add("cube", "Clau_Fixa_Barra", (x, y, 0.42), "arm_L", crom, scale=(0.03, 0.012, 0.22), bevel=0.008, size=2)
+    cap_clau = b.mesh("cylinder", "Clau_Fixa_Cap", (x, y, 0.68), crom, rot=(pi / 2, 0, 0), radius=0.075, depth=0.024, vertices=32)
+    b.cut(cap_clau, (x, y, 0.74), (0.032, 0.05, 0.06))
+    b.attach(cap_clau, "arm_L")
+
+
+# --- turisme (Laura, guia turística): armilla de guia turquesa, samarreta blanca, visera,
+#     pestanyes, placa de guia, plànol a la butxaca i banderí per a guiar el grup ---------
+def outfit_turisme(b):
+    from math import pi
+    armilla = mat("Armilla_Guia",    (0.00, 0.33, 0.40), 0.6)
+    vora    = mat("Vora_Guia",       (0.00, 0.28, 0.32), 0.6)
+    samarreta = mat("Samarreta_Blanca_Guia", (0.93, 0.93, 0.92), 0.7)
+    placa   = mat("Placa_Guia",      (0.95, 0.80, 0.10), 0.4)
+    fosc    = mat("Text_Guia",       (0.05, 0.05, 0.05), 0.6)
+    planol  = mat("Planol",          (0.92, 0.90, 0.80), 0.8)
+    carrer  = mat("Planol_Carrer",   (0.85, 0.30, 0.20), 0.8)
+    pal     = mat("Pal_Banderi",     (0.70, 0.72, 0.75), 0.25, metal=1.0)
+    banderi = mat("Banderi",         (0.90, 0.25, 0.05), 0.5)
+
+    pestanyes(b)
+
+    # armilla de guia sense mànegues sobre una samarreta blanca, amb tapes de butxaca
+    jaqueta_oberta(b, armilla, samarreta, nom="Armilla_Guia", nom_camisa="Samarreta", manegues=False)
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        b.add("cube", f"Vora_Obertura.{s}", (side * 0.345, -0.568, 0.60), "body", vora, scale=(0.012, 0.01, 0.52), size=2)
+        b.add("cube", f"Butxaca_Tapa.{s}", (side * 0.53, -0.572, 0.36), "body", vora, scale=(0.12, 0.012, 0.04), bevel=0.01, size=2)
+    # plànol plegat que sobreix de la butxaca esquerra
+    b.add("cube", "Planol", (-0.55, -0.566, 0.43), "body", planol, scale=(0.08, 0.006, 0.07), rot=(0, 0.15, 0), size=2)
+    b.add("cube", "Planol_Carrer", (-0.55, -0.573, 0.44), "body", carrer, scale=(0.06, 0.002, 0.006), rot=(0, 0.6, 0), size=2)
+    # placa de guia al pit dret
+    b.add("cube", "Placa_Guia", (0.53, -0.572, 0.92), "body", placa, scale=(0.1, 0.006, 0.045), bevel=0.008, size=2)
+    b.add("cube", "Placa_Guia_Text", (0.53, -0.579, 0.92), "body", fosc, scale=(0.065, 0.002, 0.008), size=2)
+
+    # visera turquesa (os head): cinta al voltant del cap i ala per davant; sense copa, l'antena queda lliure
+    b.attach(b.band("Visera_Cinta", "Cap", 2.62, 0.10, armilla), "head")
+    b.add("cylinder", "Visera_Ala", (0, -0.86, 2.64), "head", armilla, scale=(1, 0.7, 1), rot=(0.3, 0, 0),
+          bevel=0.012, radius=0.46, depth=0.04, vertices=40)
+
+    # banderí per a guiar el grup, alçat a la mà esquerra (os arm_L)
+    x, y = -1.02, -0.22
+    b.add("cylinder", "Banderi_Pal", (x, y, 0.78), "arm_L", pal, radius=0.016, depth=1.26, vertices=8)
+    b.add("uv_sphere", "Banderi_Punta", (x, y, 1.42), "arm_L", pal, radius=0.03, segments=12, ring_count=6)
+    b.add("cone", "Banderi", (x - 0.24, y, 1.26), "arm_L", banderi, scale=(0.15, 0.012, 0.24),
+          rot=(0, -pi / 2, 0), radius1=1, depth=2, vertices=3)
+
+
+# --- b1_persones (Elena, companya del curs de cuina): jersei menta, davantal roig de pitet,
+#     mocador al cap, pestanyes, arracades, recepta a la butxaca i batedora de varetes ----
+def outfit_cuina(b):
+    from math import pi, sin, cos
+    jersei   = mat("Jersei_Menta",     (0.22, 0.50, 0.38), 0.85)
+    davantal = mat("Davantal_Roig",    (0.62, 0.04, 0.07), 0.75)
+    ribet    = mat("Ribet_Blanc",      (0.93, 0.93, 0.92), 0.7)
+    mocador  = mat("Mocador_Mostassa", (0.85, 0.58, 0.08), 0.7)
+    punt     = mat("Punt_Blanc",       (0.95, 0.95, 0.93), 0.7)
+    perla    = mat("Arracada_Cuina",   (0.95, 0.93, 0.88), 0.15)
+    recepta  = mat("Recepta",          (0.95, 0.93, 0.85), 0.8)
+    tinta    = mat("Tinta_Recepta",    (0.10, 0.15, 0.40), 0.6)
+    acer     = mat("Acer_Batedora",    (0.80, 0.82, 0.85), 0.15, metal=1.0)
+    manec    = mat("Manec_Batedora",   (0.62, 0.42, 0.22), 0.6)
+
+    pestanyes(b)
+    for side in (-1, 1):  # arracades: una perleta davall de cada orella
+        b.add("uv_sphere", f"Arracada.{'E' if side < 0 else 'D'}", (side * 0.98, -0.12, 1.70), "head", perla,
+              radius=0.04, segments=16, ring_count=8)
+
+    # jersei menta (os body) amb mànegues llargues; el davantal va per damunt
+    b.add("cube", "Jersei", (0, 0, 0.60), "body", jersei, scale=(0.70, 0.545, 0.575), bevel=0.24, segs=6, size=2)
+    for side in (-1, 1):
+        b.add("uv_sphere", f"Mànega.{'E' if side < 0 else 'D'}", (side * 0.87, 0, 0.60), "arm_L" if side < 0 else "arm_R",
+              jersei, scale=(0.175, 0.175, 0.36), rot=(0, -side * 0.385, 0), segments=32, ring_count=16)
+    b.add("torus", "Jersei_Coll", (0, 0, 1.2), "body", jersei, scale=(1, 1, 0.7),
+          major_radius=0.29, minor_radius=0.055, major_segments=48, minor_segments=12)
+
+    # davantal roig de pitet (darrere de la insígnia, que queda com un pegat) amb ribet blanc
+    b.add("cube", "Davantal_Falda", (0, -0.551, 0.30), "body", davantal, scale=(0.55, 0.004, 0.27), bevel=0.003, size=2)
+    b.add("cube", "Davantal_Pitet", (0, -0.551, 0.80), "body", davantal, scale=(0.38, 0.004, 0.23), bevel=0.003, size=2)
+    b.add("cube", "Davantal_Ribet_Baix", (0, -0.565, 0.035), "body", ribet, scale=(0.55, 0.004, 0.01), size=2)
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        b.add("cube", f"Davantal_Ribet_Pitet.{s}", (side * 0.375, -0.565, 0.80), "body", ribet, scale=(0.008, 0.004, 0.22), size=2)
+        b.add("cube", f"Davantal_Tirant.{s}", (side * 0.31, -0.555, 1.10), "body", davantal, scale=(0.03, 0.008, 0.08), size=2)
+        b.add("cube", f"Davantal_Tirant_Dalt.{s}", (side * 0.27, -0.35, 1.18), "body", davantal,
+              scale=(0.03, 0.19, 0.008), rot=(0, 0, side * 0.2), size=2)
+    # butxaca amb una recepta
+    b.add("cube", "Davantal_Butxaca", (0.27, -0.567, 0.24), "body", davantal, scale=(0.15, 0.006, 0.1), bevel=0.012, size=2)
+    b.add("cube", "Davantal_Butxaca_Ribet", (0.27, -0.574, 0.335), "body", ribet, scale=(0.15, 0.003, 0.008), size=2)
+    b.add("cube", "Recepta", (0.24, -0.572, 0.38), "body", recepta, scale=(0.07, 0.004, 0.06), rot=(0, -0.15, 0), size=2)
+    for k in range(3):
+        b.add("cube", f"Recepta_Linia.{k}", (0.24 - 0.004 * k, -0.577, 0.405 - k * 0.02), "body", tinta,
+              scale=(0.05, 0.002, 0.003), rot=(0, -0.15, 0), size=2)
+
+    # mocador mostassa al cap amb punts blancs i nus al costat (os head)
+    b.attach(b.band("Mocador_Cap", "Cap", 2.62, 0.17, mocador), "head")
+    for k, (x, z) in enumerate(((-0.55, 2.64), (-0.2, 2.6), (0.15, 2.65), (0.5, 2.6))):
+        b.add("uv_sphere", f"Mocador_Punt.{k}", (x, -0.775, z), "head", punt, scale=(0.022, 0.006, 0.022), segments=10, ring_count=5)
+    b.add("uv_sphere", "Mocador_Nus", (0.93, -0.25, 2.66), "head", mocador, scale=(0.05, 0.06, 0.05), segments=16, ring_count=8)
+    for k, ang in enumerate((0.5, -0.4)):
+        b.add("cone", f"Mocador_Punta.{k}", (0.98, -0.25 + 0.06 * (1 if k else -1), 2.58), "head", mocador,
+              scale=(0.012, 0.05, 0.09), rot=(ang, 0, 0), radius1=1, depth=2, vertices=3)
+
+    # batedora de varetes a la mà esquerra (os arm_L): mànec de fusta i varetes d'acer
+    x, y = -1.03, -0.24
+    b.add("cylinder", "Batedora_Manec", (x, y, 0.38), "arm_L", manec, radius=0.036, depth=0.3, vertices=12)
+    for k in range(4):
+        a = k * pi / 4
+        b.add("torus", f"Batedora_Vareta.{k}", (x, y, 0.72), "arm_L", acer, scale=(0.55, 0.55, 1.0),
+              rot=(pi / 2, 0, a), major_radius=0.2, minor_radius=0.01, major_segments=24, minor_segments=5)
+
+
+# --- b1_relacions (Pau, el teu cosí, que prepara les noces d'or dels avis): sobrecamisa de
+#     pana, samarreta, gorro de llana i globus daurat amb el número 50 ---------------------
+def outfit_cosi(b):
+    from math import pi, atan2
+    from mathutils import Vector
+    pana     = mat("Pana_Rovell",      (0.50, 0.18, 0.06), 0.9)
+    pana_c   = mat("Pana_Clara",       (0.65, 0.30, 0.12), 0.9)
+    samarreta = mat("Samarreta_Marina", (0.04, 0.07, 0.20), 0.8)
+    botó     = mat("Botó_Banya",       (0.20, 0.12, 0.06), 0.4)
+    llana    = mat("Gorro_Llana",      (0.04, 0.08, 0.22), 0.95)
+    or_      = mat("Globus_Or",        (0.90, 0.68, 0.20), 0.25, metal=0.85)
+    fil      = mat("Fil_Globus_Or",    (0.90, 0.90, 0.90), 0.6)
+
+    # sobrecamisa de pana oberta amb samarreta marina; butxaques de pit amb tapa i botó, punys girats
+    jaqueta_oberta(b, pana, samarreta, nom="Sobrecamisa", nom_camisa="Samarreta")
+    b.add("torus", "Sobrecamisa_Coll", (0, 0, 1.2), "body", pana, scale=(1, 1, 0.7),
+          major_radius=0.31, minor_radius=0.065, major_segments=48, minor_segments=12)
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        b.add("cube", f"Butxaca_Tapa.{s}", (side * 0.53, -0.572, 0.93), "body", pana_c, scale=(0.12, 0.012, 0.045), bevel=0.01, size=2)
+        b.add("cylinder", f"Butxaca_Botó.{s}", (side * 0.53, -0.587, 0.91), "body", botó, rot=(pi / 2, 0, 0),
+              radius=0.02, depth=0.01, vertices=12)
+        b.add("torus", f"Puny_Girat.{s}", (side * 0.964, 0, 0.368), "arm_L" if side < 0 else "arm_R", pana_c,
+              rot=(0, -side * 0.385, 0), major_radius=0.135, minor_radius=0.04, major_segments=32, minor_segments=8)
+    for i, z in enumerate((0.75, 0.55, 0.35)):
+        b.add("cylinder", f"Botó.{i}", (-0.40, -0.57, z), "body", botó, rot=(pi / 2, 0, 0), radius=0.024, depth=0.014, vertices=12)
+
+    # gorro de llana amb la vora girada (os head); l'antena ix per dalt com una borla
+    b.add("uv_sphere", "Gorro_Llana", (0, 0, 2.74), "head", llana, scale=(0.62, 0.62, 0.32), segments=40, ring_count=20)
+    b.attach(b.band("Gorro_Llana_Vora", "Cap", 2.66, 0.14, llana), "head")
+
+    # globus daurat «50» per a les noces d'or, lligat a la mà esquerra (os arm_L)
+    y, k = -0.12, 1.5                     # k: mida dels números
+    ox, oz = -1.40, 1.62                  # centre del globus
+    ma, nus = Vector((-1.0, y, 0.36)), Vector((ox + 0.05, y, oz - 0.15 * k))
+    d = nus - ma
+    b.add("cylinder", "Globus_Fil", (ma + nus) / 2, "arm_L", fil, rot=(0, atan2(d.x, d.z), 0),
+          radius=0.008, depth=d.length, vertices=6)
+    # el «0»
+    b.add("torus", "Globus_0", (ox + 0.14 * k, y, oz), "arm_L", or_, rot=(pi / 2, 0, 0), scale=(0.72, 1, 1),
+          major_radius=0.12 * k, minor_radius=0.045 * k, major_segments=32, minor_segments=12)
+    # el «5»: barra de dalt, traç vertical i panxa oberta a l'esquerra
+    cx = ox - 0.13 * k
+    b.add("cube", "Globus_5_Dalt", (cx + 0.02 * k, y, oz + 0.13 * k), "arm_L", or_,
+          scale=(0.075 * k, 0.04 * k, 0.035 * k), bevel=0.03 * k, segs=6, size=2)
+    b.add("cube", "Globus_5_Pal", (cx - 0.05 * k, y, oz + 0.06 * k), "arm_L", or_,
+          scale=(0.035 * k, 0.04 * k, 0.07 * k), bevel=0.03 * k, segs=6, size=2)
+    panxa = b.mesh("torus", "Globus_5_Panxa", (cx, y, oz - 0.08 * k), or_, rot=(pi / 2, 0, 0),
+                   major_radius=0.085 * k, minor_radius=0.045 * k, major_segments=32, minor_segments=12)
+    b.cut(panxa, (cx - 0.1 * k, y, oz - 0.02 * k), (0.07 * k, 0.1 * k, 0.07 * k))
+    b.attach(panxa, "arm_L")
+
+
+# --- b1_vida_quotidiana (Amparo, atenció al client d'Electrodomèstics Túria): auriculars
+#     amb micròfon, polo blau de la botiga, pestanyes, arracada i cafetera italiana -------
+def outfit_atencio_client(b):
+    from math import pi, atan2
+    from mathutils import Vector
+    polo     = mat("Polo_Turia",       (0.03, 0.25, 0.55), 0.7)
+    blanc    = mat("Blanc_Turia",      (0.93, 0.93, 0.92), 0.7)
+    negre    = mat("Auriculars_Negre", (0.04, 0.04, 0.045), 0.4)
+    escuma   = mat("Escuma_Micro",     (0.08, 0.08, 0.09), 0.95)
+    perla    = mat("Arracada_Turia",   (0.95, 0.93, 0.88), 0.15)
+    alumini  = mat("Alumini_Cafetera", (0.75, 0.77, 0.80), 0.3, metal=1.0)
+    baquelita = mat("Baquelita",       (0.03, 0.03, 0.03), 0.4)
+
+    pestanyes(b)
+    b.add("uv_sphere", "Arracada.E", (-0.98, -0.12, 1.70), "head", perla, radius=0.04, segments=16, ring_count=8)
+
+    # auriculars (os head): diadema per damunt del cap, desplaçada cap arrere perquè no toque
+    # l'antena; un auricular a l'orella dreta i el micròfon cap a la boca
+    diadema = b.mesh("torus", "Auriculars_Diadema", (0, 0.28, 2.05), negre, rot=(pi / 2, 0, 0), scale=(1.0, 1.0, 0.87),
+                     major_radius=1.0, minor_radius=0.03, major_segments=64, minor_segments=8)
+    b.cut(diadema, (0, 0.28, 1.5), (1.3, 0.2, 0.55))
+    b.attach(diadema, "head")
+    for side in (-1, 1):  # suports damunt de cada orella
+        b.add("cube", f"Auriculars_Suport.{'E' if side < 0 else 'D'}", (side * 1.0, 0.28, 2.12), "head", negre,
+              scale=(0.03, 0.03, 0.08), bevel=0.01, size=2)
+    b.add("cylinder", "Auricular", (1.17, 0.0, 2.05), "head", negre, rot=(0, pi / 2, 0), bevel=0.02,
+          radius=0.2, depth=0.08, vertices=32)
+    b.add("cube", "Auricular_Pont", (1.07, 0.15, 2.1), "head", negre, scale=(0.08, 0.13, 0.025), size=2)
+    # braç del micròfon: primer per fora del costat del cap i després per davant de la pantalla
+    punts = [Vector((1.13, -0.15, 1.97)), Vector((1.0, -0.90, 1.86)), Vector((0.52, -0.92, 1.79))]
+    for k, (p0, p1) in enumerate(zip(punts, punts[1:])):
+        d = p1 - p0
+        b.add("cylinder", f"Micro_Brac.{k}", (p0 + p1) / 2, "head", negre, rot=tuple(d.to_track_quat('Z', 'Y').to_euler()),
+              radius=0.016, depth=d.length, vertices=8)
+    b.add("uv_sphere", "Micro_Colze", punts[1], "head", negre, radius=0.018, segments=12, ring_count=6)
+    b.add("uv_sphere", "Micro_Escuma", punts[2], "head", escuma, scale=(0.06, 0.05, 0.05), segments=16, ring_count=8)
+
+    # polo blau d'Electrodomèstics Túria (os body): la senyera com a estampat, coll blanc i logo d'una ona
+    b.add("cube", "Polo", (0, 0, 0.60), "body", polo, scale=(0.70, 0.548, 0.575), bevel=0.24, segs=6, size=2)
+    b.add("torus", "Polo_Coll", (0, 0, 1.2), "body", blanc, scale=(1, 1, 0.7),
+          major_radius=0.30, minor_radius=0.06, major_segments=48, minor_segments=12)
+    for side in (-1, 1):  # mànegues curtes
+        b.add("uv_sphere", f"Polo_Mànega.{'E' if side < 0 else 'D'}", (side * 0.806, 0, 0.758),
+              "arm_L" if side < 0 else "arm_R", polo, scale=(0.19, 0.19, 0.2), rot=(0, -side * 0.385, 0),
+              segments=32, ring_count=16)
+    for k, dx in enumerate((-0.04, 0.04)):  # logo: dues ones blanques
+        ona = b.mesh("torus", f"Logo_Ona.{k}", (0.52 + dx, -0.553, 0.92 - 0.02 * k), blanc, rot=(pi / 2, 0, 0),
+                     major_radius=0.035, minor_radius=0.008, major_segments=24, minor_segments=6)
+        b.cut(ona, (0.52 + dx, -0.553, 0.88 - 0.02 * k), (0.06, 0.05, 0.035))
+        b.attach(ona, "body")
+
+    # cafetera italiana a la mà esquerra (os arm_L): dipòsit i part de dalt octogonals, mànec negre
+    x, y = -1.03, -0.24
+    b.add("cone", "Cafetera_Baix", (x, y, 0.29), "arm_L", alumini, radius1=0.10, radius2=0.075, depth=0.16, vertices=8)
+    b.add("cylinder", "Cafetera_Cintura", (x, y, 0.38), "arm_L", alumini, radius=0.078, depth=0.025, vertices=8)
+    b.add("cone", "Cafetera_Dalt", (x, y, 0.47), "arm_L", alumini, radius1=0.075, radius2=0.095, depth=0.16, vertices=8)
+    b.add("cone", "Cafetera_Tapa", (x, y, 0.57), "arm_L", alumini, radius1=0.095, radius2=0.04, depth=0.04, vertices=8)
+    b.add("uv_sphere", "Cafetera_Pom", (x, y, 0.605), "arm_L", baquelita, radius=0.022, segments=12, ring_count=6)
+    b.add("cube", "Cafetera_Manec", (x + 0.12, y, 0.47), "arm_L", baquelita, scale=(0.02, 0.018, 0.075), bevel=0.01, size=2)
+    b.add("cone", "Cafetera_Broc", (x - 0.1, y, 0.53), "arm_L", alumini, rot=(0, -1.0, 0), radius1=0.025, radius2=0.008,
+          depth=0.06, vertices=8)
+
+
+# --- b1_llocs (Joan, agent immobiliari de Castelló): americana camel, camisa celeste de
+#     coll obert, mocador de butxaca, rellotge i claus del pis amb un clauer en forma de casa
+def outfit_immobiliaria(b):
+    from math import pi
+    from mathutils import Matrix, Vector
+    camel   = mat("Americana_Camel",  (0.38, 0.22, 0.08), 0.6)
+    solapa  = mat("Solapa_Camel",     (0.24, 0.13, 0.05), 0.5)
+    camisa  = mat("Camisa_Celeste_Coll_Obert", (0.55, 0.72, 0.88), 0.6)
+    daurat  = mat("Daurat_Immobiliaria", (0.85, 0.62, 0.15), 0.3, metal=0.9)
+    roig    = mat("Mocador_Butxaca_Roig", (0.65, 0.04, 0.05), 0.5)
+    esfera  = mat("Esfera_Rellotge",  (0.95, 0.95, 0.93), 0.2)
+    casa    = mat("Clauer_Casa",      (0.95, 0.93, 0.88), 0.5)
+    teulada = mat("Clauer_Teulada",   (0.70, 0.12, 0.06), 0.5)
+    acer    = mat("Acer_Claus_Pis",   (0.72, 0.74, 0.77), 0.25, metal=1.0)
+
+    # americana camel amb camisa celeste; coll de la camisa obert (dues puntes) i mocador de butxaca
+    americana_oberta(b, camel, solapa, camisa, daurat)
+    for side in (-1, 1):
+        b.add("cone", f"Camisa_Coll.{'E' if side < 0 else 'D'}", (side * 0.17, -0.40, 1.19), "body", camisa,
+              scale=(0.09, 0.012, 0.06), rot=(-0.6, 0, side * 0.5), radius1=1, depth=2, vertices=3)
+    b.add("torus", "Camisa_Coll_Darrere", (0, 0.02, 1.19), "body", camisa, scale=(1, 1, 0.6),
+          major_radius=0.30, minor_radius=0.05, major_segments=48, minor_segments=12)
+    b.add("cube", "Butxaca_Vora", (0.52, -0.572, 0.93), "body", solapa, scale=(0.12, 0.008, 0.012), size=2)
+    b.add("cone", "Mocador_Butxaca", (0.50, -0.568, 0.97), "body", roig,
+          scale=(0.07, 0.008, 0.05), rot=(0, 0.15, 0), radius1=1, depth=2, vertices=3)
+
+    # rellotge daurat al canell dret (os arm_R)
+    b.add("torus", "Rellotge_Corretja", (0.964, 0, 0.368), "arm_R", daurat, rot=(0, -0.385, 0),
+          major_radius=0.135, minor_radius=0.025, major_segments=32, minor_segments=8)
+    b.add("cylinder", "Rellotge_Caixa", (0.93, -0.14, 0.37), "arm_R", daurat, rot=(pi / 2, 0, 0),
+          radius=0.045, depth=0.025, vertices=24)
+    b.add("cylinder", "Rellotge_Esfera", (0.93, -0.153, 0.37), "arm_R", esfera, rot=(pi / 2, 0, 0),
+          radius=0.035, depth=0.004, vertices=24)
+
+    # claus del pis amb clauer en forma de caseta, a la mà esquerra (os arm_L), alçades per a ensenyar-les
+    x, y, k = -1.04, -0.26, 1.8
+    b.add("cube", "Clauer_Casa", (x, y, 0.36), "arm_L", casa, scale=(0.06 * k, 0.018 * k, 0.05 * k), bevel=0.006, size=2)
+    b.add("cone", "Clauer_Teulada", (x, y, 0.36 + 0.085 * k), "arm_L", teulada, scale=(0.075 * k, 0.022 * k, 0.035 * k),
+          rot=(0, 0, pi / 4), radius1=1.41, radius2=0, depth=2, vertices=4)
+    b.add("cube", "Clauer_Porta", (x, y - 0.02 * k, 0.345), "arm_L", teulada, scale=(0.015 * k, 0.003, 0.025 * k), size=2)
+    b.add("torus", "Clauer_Anella_Pis", (x, y, 0.36 + 0.16 * k), "arm_L", acer, rot=(pi / 2, 0, 0),
+          major_radius=0.035 * k, minor_radius=0.007 * k, major_segments=20, minor_segments=6)
+    for j, ang in enumerate((0.35, -0.3)):
+        rot = Matrix.Rotation(ang, 3, 'Y')
+        top = Vector((x, y, 0.36 + 0.19 * k))
+        b.add("cylinder", f"Clau_Pis_Cap.{j}", top + rot @ Vector((0, 0, 0.04 * k)), "arm_L", acer, rot=(pi / 2, 0, 0),
+              radius=0.035 * k, depth=0.012 * k, vertices=20)
+        b.add("cube", f"Clau_Pis_Tija.{j}", top + rot @ Vector((0, 0, 0.12 * k)), "arm_L", acer, rot=(0, ang, 0),
+              scale=(0.011 * k, 0.005 * k, 0.055 * k), size=2)
+        b.add("cube", f"Clau_Pis_Dents.{j}", top + rot @ Vector((0.016 * k, 0, 0.14 * k)), "arm_L", acer, rot=(0, ang, 0),
+              scale=(0.008 * k, 0.005 * k, 0.02 * k), size=2)
+
+
+# --- b1_viatges (Neus, agent de viatges de Gandia): americana blau cel, top blanc, fular de
+#     seda al coll, placa amb un avió, pestanyes, arracades i bola del món --------------
+def outfit_viatges(b):
+    from math import pi, sin, cos, radians
+    from mathutils import Vector
+    americana = mat("Americana_Cel",   (0.08, 0.32, 0.62), 0.5)
+    solapa    = mat("Solapa_Cel",      (0.04, 0.18, 0.40), 0.4)
+    top       = mat("Top_Blanc_Viatges", (0.93, 0.93, 0.92), 0.6)
+    daurat    = mat("Daurat_Viatges",  (0.85, 0.62, 0.15), 0.3, metal=0.9)
+    fular     = mat("Fular_Corall",    (0.90, 0.30, 0.20), 0.35)
+    perla     = mat("Arracada_Viatges", (0.95, 0.93, 0.88), 0.15)
+    mari      = mat("Avio_Mari",       (0.04, 0.10, 0.30), 0.5)
+    oceà      = mat("Bola_Ocea",       (0.05, 0.35, 0.75), 0.35)
+    terra     = mat("Bola_Terra",      (0.20, 0.55, 0.15), 0.6)
+
+    pestanyes(b)
+    for side in (-1, 1):
+        b.add("uv_sphere", f"Arracada.{'E' if side < 0 else 'D'}", (side * 0.98, -0.12, 1.70), "head", perla,
+              radius=0.04, segments=16, ring_count=8)
+
+    # americana blau cel oberta amb top blanc i botons daurats
+    americana_oberta(b, americana, solapa, top, daurat)
+
+    # fular de seda corall al coll, amb el nus i les puntes a la dreta (os body)
+    b.add("torus", "Fular_Coll", (0, 0, 1.22), "body", fular, scale=(1, 1, 0.8),
+          major_radius=0.28, minor_radius=0.055, major_segments=48, minor_segments=12)
+    # nus a la vora de davant del pit (per damunt de la senyera) i puntes penjant
+    b.add("cube", "Fular_Davant", (0.12, -0.42, 1.185), "body", fular, scale=(0.14, 0.11, 0.02), rot=(0, 0, -0.5),
+          bevel=0.015, size=2)
+    b.add("uv_sphere", "Fular_Nus", (0.22, -0.54, 1.14), "body", fular, scale=(0.075, 0.04, 0.065), segments=20, ring_count=10)
+    for k, (dx, ang, llarg) in enumerate(((-0.02, 0.15, 0.11), (0.08, -0.35, 0.09))):
+        b.add("cone", f"Fular_Punta.{k}", (0.22 + dx, -0.56, 1.14 - llarg), "body", fular, scale=(0.055, 0.012, llarg),
+              rot=(pi, ang, 0), radius1=1, depth=2, vertices=3)
+
+    # placa amb un avionet al pit dret
+    b.add("cube", "Placa_Viatges", (0.53, -0.572, 0.82), "body", daurat, scale=(0.1, 0.006, 0.04), bevel=0.008, size=2)
+    b.add("cube", "Avio_Fuselatge", (0.49, -0.579, 0.82), "body", mari, scale=(0.035, 0.002, 0.007), size=2)
+    b.add("cube", "Avio_Ales", (0.495, -0.579, 0.82), "body", mari, scale=(0.008, 0.002, 0.03), size=2)
+    b.add("cube", "Placa_Viatges_Text", (0.575, -0.579, 0.82), "body", mari, scale=(0.035, 0.002, 0.006), size=2)
+
+    # bola del món en un peu, damunt de la mà esquerra (os arm_L)
+    x, y = -1.06, -0.24
+    b.add("cylinder", "Bola_Peu", (x, y, 0.40), "arm_L", daurat, bevel=0.006, radius=0.09, depth=0.03, vertices=24)
+    b.add("cylinder", "Bola_Tija", (x, y, 0.46), "arm_L", daurat, radius=0.014, depth=0.1, vertices=8)
+    c = Vector((x, y, 0.67))
+    r = 0.18
+    b.add("uv_sphere", "Bola_Mon", c, "arm_L", oceà, radius=r, segments=32, ring_count=16)
+    b.add("torus", "Bola_Meridia", c, "arm_L", daurat, rot=(pi / 2, 0, 0.35), major_radius=r + 0.02, minor_radius=0.008,
+          major_segments=40, minor_segments=6)
+    for k, (lon, lat, sx, sz) in enumerate(((-110, 25, 0.08, 0.07), (-75, -10, 0.06, 0.08), (-130, -30, 0.05, 0.04),
+                                           (-50, 35, 0.055, 0.04))):
+        lo, la = radians(lon), radians(lat)
+        n = Vector((cos(la) * cos(lo), cos(la) * sin(lo), sin(la)))
+        b.add("uv_sphere", f"Bola_Continent.{k}", c + n * (r + 0.002), "arm_L", terra,
+              scale=(sx, 0.012, sz), rot=tuple(n.to_track_quat('Y', 'Z').to_euler()), segments=12, ring_count=6)
+
+
+# --- b1_oci_esport (Andreu, amic esportista amb el diari obert per l'agenda cultural):
+#     jaqueta de xandall amb franges, samarreta esportiva, rellotge esportiu i el diari ----
+def outfit_esport(b):
+    from math import pi, sin, cos
+    from mathutils import Vector
+    xandall  = mat("Xandall_Negre",    (0.03, 0.03, 0.035), 0.55)
+    franja   = mat("Franja_Taronja",   (0.95, 0.40, 0.03), 0.5)
+    samarreta = mat("Samarreta_Esport", (0.65, 0.67, 0.70), 0.7)
+    rellotge = mat("Rellotge_Esport",  (0.04, 0.04, 0.05), 0.3)
+    pantalla = mat("Pantalla_Rellotge", (0.10, 0.80, 0.50), 0.2, emit=0.8)
+    paper    = mat("Diari_Paper",      (0.90, 0.89, 0.85), 0.85)
+    text     = mat("Diari_Text",       (0.45, 0.45, 0.47), 0.8)
+    titular  = mat("Diari_Titular",    (0.05, 0.05, 0.05), 0.7)
+    foto     = mat("Diari_Foto",       (0.35, 0.45, 0.60), 0.6)
+
+    # jaqueta de xandall oberta amb samarreta gris; vores de la cremallera i coll taronja
+    jaqueta_oberta(b, xandall, samarreta, nom="Jaqueta_Xandall", nom_camisa="Samarreta")
+    b.add("torus", "Xandall_Coll", (0, 0, 1.2), "body", xandall, scale=(1, 1, 0.75),
+          major_radius=0.31, minor_radius=0.06, major_segments=48, minor_segments=12)
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        bone = "arm_L" if side < 0 else "arm_R"
+        b.add("cube", f"Cremallera_Vora.{s}", (side * 0.35, -0.568, 0.60), "body", franja, scale=(0.022, 0.01, 0.52), size=2)
+        # dues franges al llarg de cada mànega, pel costat de fora i un poc cap a davant
+        a = -side * 0.385
+        eix = Vector((sin(a), 0, cos(a)))
+        fora = Vector((cos(a) * side, 0, -sin(a) * side)).normalized()
+        centre = Vector((side * 0.87, 0, 0.60))
+        n = (fora * 0.8 + Vector((0, -0.6, 0))).normalized()
+        b.add("cube", f"Mànega_Franja.{s}", centre + n * 0.16, bone, franja, rot=(0, a, 0),
+              scale=(0.03, 0.03, 0.31), bevel=0.012, size=2)
+        b.add("cube", f"Costat_Franja.{s}", (side * 0.712, -0.1, 0.60), "body", franja, scale=(0.006, 0.012, 0.5), size=2)
+
+    # rellotge esportiu al canell dret (os arm_R)
+    b.add("torus", "Rellotge_Esport_Corretja", (0.964, 0, 0.368), "arm_R", rellotge, rot=(0, -0.385, 0),
+          major_radius=0.135, minor_radius=0.03, major_segments=32, minor_segments=8)
+    b.add("cube", "Rellotge_Esport_Caixa", (0.93, -0.15, 0.37), "arm_R", rellotge, scale=(0.045, 0.015, 0.05), bevel=0.012, size=2)
+    b.add("cube", "Rellotge_Esport_Pantalla", (0.93, -0.166, 0.37), "arm_R", pantalla, scale=(0.032, 0.002, 0.036), size=2)
+
+    # el diari obert per l'agenda cultural, a la mà esquerra (os arm_L)
+    x, y, z, w, h = -1.08, -0.27, 0.40, 0.21, 0.27
+    for k, dx in enumerate((-w * 0.5, w * 0.5)):  # dues pàgines, un poc en angle com un diari obert
+        b.add("cube", f"Diari_Pagina.{k}", (x + dx, y - 0.01 * (1 - k), z), "arm_L", paper, rot=(0, 0, (-1 if k else 1) * 0.18),
+              scale=(w * 0.5, 0.006, h), size=2)
+    yf = y - 0.03
+    b.add("cube", "Diari_Titular", (x - w * 0.5, yf, z + h * 0.78), "arm_L", titular, scale=(w * 0.42, 0.003, 0.018), size=2)
+    b.add("cube", "Diari_Foto", (x - w * 0.62, yf, z + h * 0.3), "arm_L", foto, scale=(w * 0.26, 0.003, 0.05), size=2)
+    for k in range(6):
+        col = -1 if k < 3 else 1
+        zz = z + h * (0.0 - 0.22 * (k % 3)) if col < 0 else z + h * (0.62 - 0.22 * (k % 3) * 1.4)
+        b.add("cube", f"Diari_Linia.{k}", (x + col * w * 0.5, yf, zz), "arm_L", text, scale=(w * 0.38, 0.003, 0.007), size=2)
+
+
+# --- b1_territori (Hannah, estudiant d'Erasmus que prepara una presentació sobre la Comunitat
+#     Valenciana): jersei mostassa, motxilla, pestanyes i un mapa per a la presentació -----
+def outfit_erasmus(b):
+    from math import pi
+    jersei  = mat("Jersei_Mostassa",  (0.70, 0.45, 0.05), 0.85)
+    motxilla = mat("Motxilla_Marina", (0.04, 0.08, 0.22), 0.7)
+    cremallera = mat("Cremallera_Taronja", (0.95, 0.40, 0.03), 0.5)
+    sivella = mat("Sivella_Negra",    (0.05, 0.05, 0.05), 0.5)
+    paper   = mat("Mapa_Paper",       (0.95, 0.94, 0.90), 0.8)
+    mar     = mat("Mapa_Mar",         (0.20, 0.50, 0.85), 0.6)
+    terra   = mat("Mapa_Terra",       (0.85, 0.70, 0.40), 0.7)
+    ciutat  = mat("Mapa_Ciutat",      (0.80, 0.05, 0.05), 0.5)
+
+    pestanyes(b)
+
+    # jersei mostassa (os body) amb mànegues llargues; la senyera queda com un estampat
+    b.add("cube", "Jersei", (0, 0, 0.60), "body", jersei, scale=(0.70, 0.548, 0.575), bevel=0.24, segs=6, size=2)
+    for side in (-1, 1):
+        b.add("uv_sphere", f"Mànega.{'E' if side < 0 else 'D'}", (side * 0.87, 0, 0.60), "arm_L" if side < 0 else "arm_R",
+              jersei, scale=(0.175, 0.175, 0.36), rot=(0, -side * 0.385, 0), segments=32, ring_count=16)
+    b.add("torus", "Jersei_Coll", (0, 0, 1.2), "body", jersei, scale=(1, 1, 0.75),
+          major_radius=0.29, minor_radius=0.06, major_segments=48, minor_segments=12)
+
+    # motxilla a l'esquena amb cremallera taronja i les corretges per davant (fora de la senyera)
+    b.add("cube", "Motxilla", (0, 0.68, 0.80), "body", motxilla, scale=(0.50, 0.15, 0.50), bevel=0.12, segs=6, size=2)
+    b.add("cube", "Motxilla_Butxaca", (0, 0.83, 0.50), "body", motxilla, scale=(0.36, 0.04, 0.18), bevel=0.05, segs=4, size=2)
+    b.add("cube", "Motxilla_Cremallera", (0, 0.875, 0.62), "body", cremallera, scale=(0.3, 0.006, 0.008), size=2)
+    b.add("torus", "Motxilla_Nansa", (0, 0.62, 1.31), "body", motxilla, rot=(0, pi / 2, 0), scale=(1, 0.6, 1),
+          major_radius=0.07, minor_radius=0.018, major_segments=20, minor_segments=6)
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        b.add("cube", f"Corretja_Davant.{s}", (side * 0.43, -0.556, 0.82), "body", motxilla, scale=(0.045, 0.008, 0.35), size=2)
+        b.add("cube", f"Corretja_Espatla.{s}", (side * 0.43, 0.0, 1.183), "body", motxilla, scale=(0.045, 0.56, 0.008), size=2)
+        b.add("cube", f"Corretja_Sivella.{s}", (side * 0.43, -0.565, 0.52), "body", sivella, scale=(0.05, 0.006, 0.02), size=2)
+    b.add("cube", "Corretja_Pit", (0, -0.566, 0.98), "body", motxilla, scale=(0.43, 0.006, 0.018), size=2)
+    b.add("cube", "Corretja_Pit_Sivella", (0, -0.574, 0.98), "body", sivella, scale=(0.035, 0.004, 0.025), size=2)
+
+    # mapa per a la presentació, a la mà esquerra (os arm_L): mar blau, la costa i València
+    x, y, z, w, h = -1.09, -0.27, 0.42, 0.22, 0.28
+    b.add("cube", "Mapa", (x, y, z), "arm_L", paper, scale=(w, 0.008, h), bevel=0.006, size=2)
+    b.add("cube", "Mapa_Mar", (x + w * 0.35, y - 0.009, z), "arm_L", mar, scale=(w * 0.6, 0.002, h * 0.92), size=2)
+    b.add("uv_sphere", "Mapa_Terra", (x - w * 0.18, y - 0.011, z), "arm_L", terra, scale=(0.08, 0.003, 0.24),
+          rot=(0, 0.3, 0), segments=16, ring_count=8)
+    b.add("uv_sphere", "Mapa_Valencia", (x - w * 0.05, y - 0.016, z - 0.01), "arm_L", ciutat, radius=0.024,
+          segments=12, ring_count=6)
+
+
+# --- b1_cultura (Àlex, locutor d'una ràdio local): auriculars d'estudi, jaqueta bomber,
+#     samarreta i micròfon de mà per a l'entrevista -----------------------------------------
+def outfit_radio(b):
+    from math import pi
+    bomber   = mat("Bomber_Granat",    (0.30, 0.03, 0.06), 0.55)
+    canale   = mat("Canale_Negre",     (0.04, 0.04, 0.045), 0.9)
+    samarreta = mat("Samarreta_Negra", (0.05, 0.05, 0.06), 0.8)
+    negre    = mat("Auriculars_Estudi", (0.04, 0.04, 0.045), 0.35)
+    roig     = mat("Anell_Roig",       (0.80, 0.06, 0.05), 0.4)
+    reixeta  = mat("Reixeta_Micro",    (0.75, 0.77, 0.80), 0.35, metal=1.0)
+    cub      = mat("Cub_Emissora",     (0.80, 0.06, 0.05), 0.4)
+    logo     = mat("Logo_Emissora",    (0.95, 0.95, 0.93), 0.6)
+
+    # auriculars d'estudi tapant les dues orelles (os head); la diadema va un poc arrere de l'antena
+    diadema = b.mesh("torus", "Auriculars_Estudi_Diadema", (0, 0.28, 2.05), negre, rot=(pi / 2, 0, 0), scale=(1.0, 1.0, 0.87),
+                     major_radius=1.05, minor_radius=0.04, major_segments=64, minor_segments=8)
+    b.cut(diadema, (0, 0.28, 1.5), (1.4, 0.2, 0.55))
+    b.attach(diadema, "head")
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        b.add("cylinder", f"Auricular_Estudi.{s}", (side * 1.10, 0.0, 2.05), "head", negre, rot=(0, pi / 2, 0),
+              bevel=0.04, radius=0.36, depth=0.2, vertices=40)
+        b.add("torus", f"Auricular_Estudi_Anell.{s}", (side * 1.205, 0.0, 2.05), "head", roig, rot=(0, pi / 2, 0),
+              major_radius=0.25, minor_radius=0.022, major_segments=40, minor_segments=8)
+        b.add("cube", f"Auricular_Estudi_Suport.{s}", (side * 1.08, 0.18, 2.32), "head", negre,
+              scale=(0.035, 0.12, 0.05), rot=(0.6, 0, 0), bevel=0.012, size=2)
+
+    # jaqueta bomber granat oberta amb samarreta negra; canalé al coll i als punys
+    jaqueta_oberta(b, bomber, samarreta, nom="Bomber", nom_camisa="Samarreta")
+    b.add("torus", "Bomber_Coll", (0, 0, 1.2), "body", canale, scale=(1, 1, 0.75),
+          major_radius=0.31, minor_radius=0.06, major_segments=48, minor_segments=12)
+    for side in (-1, 1):
+        b.add("torus", f"Bomber_Puny.{'E' if side < 0 else 'D'}", (side * 0.964, 0, 0.368), "arm_L" if side < 0 else "arm_R",
+              canale, rot=(0, -side * 0.385, 0), major_radius=0.135, minor_radius=0.04, major_segments=32, minor_segments=8)
+
+    # micròfon de mà amb el cub de l'emissora, alçat a la mà esquerra (os arm_L)
+    x, y = -1.04, -0.25
+    b.add("cylinder", "Micro_Ma_Manec", (x, y, 0.38), "arm_L", negre, radius=0.045, depth=0.36, vertices=16)
+    b.add("cube", "Micro_Ma_Cub", (x, y, 0.60), "arm_L", cub, scale=(0.09, 0.09, 0.07), bevel=0.012, size=2)
+    b.add("cylinder", "Micro_Ma_Logo", (x, y - 0.091, 0.60), "arm_L", logo, rot=(pi / 2, 0, 0), radius=0.045, depth=0.004, vertices=16)
+    b.add("uv_sphere", "Micro_Ma_Reixeta", (x, y, 0.76), "arm_L", reixeta, radius=0.1, segments=24, ring_count=12)
+
+
+# --- b1_natura_clima (Pilar, guia del Parc Natural del Montgó): camisa de guarda oliva amb
+#     butxaques i insígnia, barret d'excursió, pestanyes, prismàtics i bastó de senderisme --
+def outfit_parc_natural(b):
+    from math import pi
+    camisa  = mat("Camisa_Guarda",    (0.20, 0.24, 0.10), 0.8)
+    tapa    = mat("Tapa_Guarda",      (0.14, 0.17, 0.07), 0.8)
+    caqui   = mat("Barret_Caqui",     (0.45, 0.37, 0.20), 0.9)
+    cinta   = mat("Cinta_Verda",      (0.05, 0.18, 0.08), 0.7)
+    insignia = mat("Insignia_Parc",   (0.08, 0.40, 0.15), 0.6)
+    fulla   = mat("Fulla_Insignia",   (0.93, 0.93, 0.90), 0.6)
+    negre   = mat("Prismatics",       (0.05, 0.05, 0.06), 0.4)
+    lent    = mat("Lent_Prismatics",  (0.10, 0.25, 0.40), 0.05, metal=0.5)
+    alumini = mat("Alumini_Basto",    (0.30, 0.45, 0.65), 0.3, metal=0.9)
+    goma    = mat("Puny_Basto",       (0.04, 0.04, 0.05), 0.8)
+
+    pestanyes(b)
+
+    # camisa de guarda (os body), mànegues llargues amb el puny girat, tapes de butxaca i insígnia
+    b.add("cube", "Camisa_Guarda", (0, 0, 0.60), "body", camisa, scale=(0.70, 0.548, 0.575), bevel=0.24, segs=6, size=2)
+    b.add("torus", "Camisa_Guarda_Coll", (0, 0, 1.2), "body", camisa, scale=(1, 1, 0.7),
+          major_radius=0.30, minor_radius=0.06, major_segments=48, minor_segments=12)
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        bone = "arm_L" if side < 0 else "arm_R"
+        b.add("uv_sphere", f"Mànega.{s}", (side * 0.87, 0, 0.60), bone, camisa, scale=(0.175, 0.175, 0.36),
+              rot=(0, -side * 0.385, 0), segments=32, ring_count=16)
+        b.add("torus", f"Puny_Girat.{s}", (side * 0.964, 0, 0.368), bone, tapa, rot=(0, -side * 0.385, 0),
+              major_radius=0.135, minor_radius=0.04, major_segments=32, minor_segments=8)
+        b.add("cube", f"Butxaca_Tapa.{s}", (side * 0.53, -0.56, 0.86), "body", tapa, scale=(0.12, 0.012, 0.045), bevel=0.01, size=2)
+    b.add("cylinder", "Insignia_Parc", (-0.53, -0.555, 1.02), "body", insignia, rot=(pi / 2, 0, 0), radius=0.085, depth=0.012, vertices=32)
+    b.add("uv_sphere", "Insignia_Fulla", (-0.53, -0.563, 1.02), "body", fulla, scale=(0.03, 0.004, 0.055), rot=(0, 0.6, 0),
+          segments=12, ring_count=6)
+
+    # barret d'excursió d'ala ampla (os head); l'antena ix per dalt
+    b.add("cone", "Barret_Ala", (0, 0, 2.80), "head", caqui, radius1=1.02, radius2=0.56, depth=0.08, vertices=64)
+    b.add("cylinder", "Barret_Copa", (0, 0, 2.95), "head", caqui, bevel=0.06, radius=0.52, depth=0.28, vertices=48)
+    b.add("cylinder", "Barret_Cinta", (0, 0, 2.86), "head", cinta, radius=0.535, depth=0.06, vertices=48)
+
+    # prismàtics penjant al maluc dret, amb la corretja pel costat dret
+    b.add("cube", "Prismatics_Corretja", (0.55, -0.556, 0.80), "body", negre, scale=(0.015, 0.006, 0.38), size=2)
+    for dx in (-0.075, 0.075):
+        b.add("cylinder", f"Prismatics_Tub.{'E' if dx < 0 else 'D'}", (0.55 + dx, -0.64, 0.36), "body", negre,
+              rot=(pi / 2, 0, 0), radius=0.063, depth=0.19, vertices=20)
+        b.add("cylinder", f"Prismatics_Lent.{'E' if dx < 0 else 'D'}", (0.55 + dx, -0.737, 0.36), "body", lent,
+              rot=(pi / 2, 0, 0), radius=0.05, depth=0.006, vertices=20)
+    b.add("cube", "Prismatics_Pont", (0.55, -0.64, 0.36), "body", negre, scale=(0.05, 0.04, 0.025), size=2)
+
+    # bastó de senderisme a la mà esquerra (os arm_L)
+    x, y = -1.03, -0.22
+    b.add("cylinder", "Basto", (x, y, 0.42), "arm_L", alumini, radius=0.024, depth=1.1, vertices=10)
+    b.add("cylinder", "Basto_Puny", (x, y, 0.88), "arm_L", goma, bevel=0.01, radius=0.04, depth=0.18, vertices=12)
+    b.add("cylinder", "Basto_Disc", (x, y, 0.0), "arm_L", goma, radius=0.05, depth=0.012, vertices=16)
+    b.add("cone", "Basto_Punta", (x, y, -0.15), "arm_L", goma, rot=(pi, 0, 0), radius1=0.016, radius2=0.004, depth=0.06, vertices=8)
+
+
+# --- colegi (Marta, mestra): rebeca corall, brusa amb coll rodó, ulleres de lectura penjades
+#     d'una cadeneta, pestanyes, arracades i llibres amb una poma --------------------------
+def outfit_mestra(b):
+    from math import pi
+    from mathutils import Vector
+    rebeca  = mat("Rebeca_Corall",   (0.70, 0.22, 0.16), 0.85)
+    brusa   = mat("Brusa_Mestra",    (0.94, 0.94, 0.93), 0.6)
+    botó    = mat("Botó_Mestra",     (0.95, 0.93, 0.88), 0.2)
+    daurat  = mat("Cadeneta_Daurada", (0.85, 0.62, 0.15), 0.3, metal=0.9)
+    montura = mat("Montura_Lectura", (0.25, 0.12, 0.05), 0.35)
+    perla   = mat("Arracada_Mestra", (0.95, 0.93, 0.88), 0.15)
+    llibre1 = mat("Llibre_Blau",     (0.06, 0.20, 0.55), 0.6)
+    llibre2 = mat("Llibre_Verd",     (0.08, 0.40, 0.20), 0.6)
+    pagines = mat("Pagines",         (0.95, 0.93, 0.85), 0.8)
+    poma    = mat("Poma",            (0.75, 0.04, 0.04), 0.35)
+    fulla   = mat("Fulla_Poma",      (0.15, 0.50, 0.10), 0.5)
+    rabet   = mat("Rabet_Poma",      (0.30, 0.17, 0.08), 0.6)
+
+    pestanyes(b)
+    for side in (-1, 1):
+        b.add("uv_sphere", f"Arracada.{'E' if side < 0 else 'D'}", (side * 0.98, -0.12, 1.70), "head", perla,
+              radius=0.04, segments=16, ring_count=8)
+
+    # rebeca corall oberta amb brusa blanca; coll rodó (dues mitges llunes) i botons
+    jaqueta_oberta(b, rebeca, brusa, nom="Rebeca", nom_camisa="Brusa")
+    for side in (-1, 1):
+        coll = b.mesh("cylinder", f"Brusa_Coll_Rodo.{'E' if side < 0 else 'D'}", (side * 0.12, -0.45, 1.185), brusa,
+                      rot=(0.25, 0, 0), radius=0.13, depth=0.02, vertices=32)
+        b.cut(coll, (side * 0.12, -0.32, 1.19), (0.2, 0.12, 0.1))
+        b.attach(coll, "body")
+    for i, z in enumerate((0.75, 0.55, 0.35)):
+        b.add("uv_sphere", f"Botó.{i}", (-0.40, -0.57, z), "body", botó, scale=(0.026, 0.012, 0.026), segments=12, ring_count=6)
+
+    # ulleres de lectura penjant d'una cadeneta daurada, per damunt de la senyera (os body)
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        b.add("torus", f"Ulleres_Lectura.{s}", (side * 0.085, -0.565, 0.99), "body", montura, rot=(pi / 2, 0, 0),
+              major_radius=0.06, minor_radius=0.009, major_segments=24, minor_segments=6)
+        p0, p1 = Vector((side * 0.2, -0.46, 1.175)), Vector((side * 0.145, -0.565, 1.0))
+        d = p1 - p0
+        b.add("cylinder", f"Cadeneta.{s}", (p0 + p1) / 2, "body", daurat, rot=tuple(d.to_track_quat('Z', 'Y').to_euler()),
+              radius=0.006, depth=d.length, vertices=6)
+    b.add("cube", "Ulleres_Lectura_Pont", (0, -0.565, 1.01), "body", montura, scale=(0.025, 0.006, 0.006), size=2)
+
+    # llibres amb una poma damunt, a la mà esquerra (os arm_L)
+    x, y, k = -1.08, -0.2, 1.35  # k: escala del conjunt
+    z0 = 0.42
+    def pos(dx, dy, dz):
+        return (x + dx * k, y + dy * k, z0 + dz * k)
+    b.add("cube", "Llibre_1", pos(0, 0, 0), "arm_L", llibre1, scale=(0.17 * k, 0.12 * k, 0.035 * k), bevel=0.006, size=2)
+    b.add("cube", "Llibre_1_Pagines", pos(0.01, -0.005, 0), "arm_L", pagines, scale=(0.165 * k, 0.118 * k, 0.027 * k), size=2)
+    b.add("cube", "Llibre_2", pos(0.01, -0.01, 0.065), "arm_L", llibre2, rot=(0, 0, 0.15),
+          scale=(0.15 * k, 0.11 * k, 0.03 * k), bevel=0.006, size=2)
+    b.add("cube", "Llibre_2_Pagines", pos(0.02, -0.015, 0.065), "arm_L", pagines, rot=(0, 0, 0.15),
+          scale=(0.145 * k, 0.108 * k, 0.023 * k), size=2)
+    b.add("uv_sphere", "Poma", pos(0, -0.02, 0.16), "arm_L", poma, scale=(0.07 * k, 0.07 * k, 0.065 * k), segments=24, ring_count=12)
+    b.add("cylinder", "Poma_Rabet", pos(0, -0.02, 0.235), "arm_L", rabet, radius=0.008 * k, depth=0.04 * k, vertices=6)
+    b.add("uv_sphere", "Poma_Fulla", pos(0.03, -0.02, 0.24), "arm_L", fulla, scale=(0.03 * k, 0.008 * k, 0.015 * k),
+          rot=(0, -0.4, 0), segments=10, ring_count=5)
+
+
 OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_forn, "oficina": outfit_oficina,
            "a2_identificacio": outfit_festa, "a2_casa": outfit_casa,
            "a2_activitats": outfit_gimnas,
@@ -720,7 +1476,14 @@ OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_
            "a2_servicis": outfit_botiga,
            "a2_faena": outfit_carrer,
            "a2_clima": outfit_irlanda,
-           "a2_viatges": outfit_hotel}
+           "a2_viatges": outfit_hotel,
+           "ajuntament": outfit_ajuntament, "bar": outfit_bar,
+           "taller": outfit_taller, "turisme": outfit_turisme,
+           "b1_persones": outfit_cuina, "b1_relacions": outfit_cosi,
+           "b1_vida_quotidiana": outfit_atencio_client, "b1_llocs": outfit_immobiliaria,
+           "b1_viatges": outfit_viatges, "b1_oci_esport": outfit_esport,
+           "b1_territori": outfit_erasmus, "b1_cultura": outfit_radio,
+           "b1_natura_clima": outfit_parc_natural, "colegi": outfit_mestra}
 
 
 def build(name):
