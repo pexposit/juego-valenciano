@@ -6,6 +6,7 @@ import { validationError } from '../validation.js';
 import { scenarioSchema, sessionSchema } from '../schemas.js';
 import { runPedagogicalEvaluation } from '../services/subagentRecommendation.js';
 import { waitForPendingErrorAnalysis } from '../services/pendingErrorAnalysis.js';
+import { onResourceFinished } from '../services/learningPath.js';
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : undefined);
 
@@ -204,7 +205,7 @@ sessionsRouter.post(
       // Blindatge: el session_resource ha d'existir i pertànyer a una sessió de l'usuari autenticat.
       const { data: sessionResource, error: sessionResourceError } = await client
         .from('session_resource')
-        .select('id, sesion_id, sessions!inner(id, user_id)')
+        .select('id, sesion_id, recurso_id, sessions!inner(id, user_id)')
         .eq('id', sessionResourceId)
         .eq('sesion_id', sessionId)
         .eq('sessions.user_id', req.userId)
@@ -254,6 +255,13 @@ sessionsRouter.post(
           }
         } catch (err: any) {
           console.error('[evaluator] Error:', err.message);
+        }
+
+        // Després de l'avaluació (que pot canviar el focus prioritari) s'actualitza la ruta.
+        try {
+          await onResourceFinished(client, userId, { resourceId: sessionResource.recurso_id, kind: 'chat' });
+        } catch (err: any) {
+          console.error('[learning-path] Error actualitzant la ruta:', err.message);
         }
       })();
     } catch (error) {

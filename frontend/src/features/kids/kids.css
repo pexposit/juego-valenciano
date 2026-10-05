@@ -1,0 +1,290 @@
+/* ════════════════════════════════════════════════════════════════════════
+   NIVELL 0 · MÓN D'ILLES PER A XIQUETS
+   Elements grans (tocables amb el dit), colors vius, moviment i cap text
+   imprescindible: tot es diu en veu alta.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.kids-world {
+  --island: #FFE8BA;
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--island) 55%, #fff) 0%, #FFF9ED 100%);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  padding-bottom: 24px;
+}
+.kids-sea {
+  background:
+    radial-gradient(ellipse at 20% 110%, #7DD3FC55 0 30%, transparent 31%),
+    radial-gradient(ellipse at 80% 120%, #38BDF855 0 35%, transparent 36%),
+    linear-gradient(180deg, #BAE6FD 0%, #7DD3FC 55%, #38BDF8 100%);
+}
+.kids-album { background: linear-gradient(180deg, #FDE68A 0%, #FFF9ED 60%); }
+
+.kids-bar {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.kid-round-btn, .kid-speaker, .kid-album-btn, .kid-mascot-btn {
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: #fff;
+  color: #2CA99B;
+  box-shadow: 0 6px 0 #00000014, 0 10px 24px #2637471a;
+}
+.kid-round-btn { width: 64px; height: 64px; }
+.kid-mascot-btn { width: 72px; height: 72px; }
+.kid-mascot-small { font-size: 48px; animation: kidBob 2.6s ease-in-out infinite; }
+.kid-album-btn { position: relative; width: 76px; height: 76px; color: #F97316; }
+.kid-album-count {
+  position: absolute; bottom: -6px; right: -6px;
+  border-radius: 9999px; background: #F97316; color: #fff;
+  padding: 2px 8px; font-size: 13px; font-weight: 900;
+}
+
+.kids-progress { display: flex; gap: 6px; font-size: 30px; line-height: 1; }
+.kids-progress span { color: #ffffff; text-shadow: 0 2px 0 #00000022; transition: transform .3s, color .3s; }
+.kids-progress span.now { color: #FDE68A; transform: scale(1.2); }
+.kids-progress span.on { color: #FACC15; }
+.kids-island-badge { font-size: 44px; filter: drop-shadow(0 4px 6px #0002); }
+
+/* ── Mapa d'illes ─────────────────────────────────────────────────────── */
+.kids-islands {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 210px));
+  justify-content: center;
+  gap: 28px 22px;
+  max-width: 900px;
+  margin: 8px auto 0;
+  padding: 12px 20px 40px;
+}
+.kid-island {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 46% 54% 42% 58% / 55% 45% 55% 45%;
+  background: radial-gradient(circle at 50% 46%, var(--island) 0 58%, #FDE68A 59% 70%, #FCD34D 71% 73%, transparent 74%);
+  display: grid;
+  place-items: center;
+  animation: kidFloat 4s ease-in-out infinite;
+  filter: drop-shadow(0 12px 0 #0369A133);
+}
+.kid-island:nth-child(even) { margin-top: 36px; }
+.kid-island-emoji { font-size: clamp(60px, 12vw, 92px); margin-top: -6%; }
+.kid-island-done {
+  position: absolute; top: 4%; right: 6%;
+  font-size: 34px; background: #fff; border-radius: 9999px; padding: 4px;
+  box-shadow: 0 4px 10px #0002; animation: kidPop .5s both;
+}
+
+/* ── Rondes ───────────────────────────────────────────────────────────── */
+.kid-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 6px 16px 24px;
+  animation: kidIn .4s cubic-bezier(.22,.65,.4,1) both;
+}
+.kid-speaker { width: 84px; height: 84px; color: #fff; background: #2CA99B; animation: kidPulse 2.4s ease-in-out infinite; }
+
+.kid-cards { display: grid; gap: 18px; width: 100%; justify-items: center; }
+.kid-cards-2, .kid-cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 720px; }
+.kid-cards-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 900px; }
+@media (max-width: 640px) {
+  .kid-cards-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kid-cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+}
+.kid-card {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1;
+  border-radius: 32px;
+  background: #fff;
+  border: 6px solid #fff;
+  box-shadow: 0 8px 0 #0000001a, 0 14px 28px #2637471f;
+  transition: transform .15s;
+}
+.kid-card:active { transform: scale(.95); }
+.kid-card-emoji { font-size: clamp(56px, 13vw, 110px); line-height: 1; }
+.kid-card-face { border-radius: 9999px; }
+.kid-card-swatch { width: 72%; aspect-ratio: 1; border-radius: 9999px; border: 4px solid transparent; box-shadow: inset -8px -10px 16px #00000022; }
+.kid-card-letter { font-family: Nunito, system-ui, sans-serif; font-weight: 900; font-size: clamp(64px, 15vw, 128px); line-height: 1; color: #7C3AED; }
+.kid-picture { font-size: clamp(80px, 18vw, 140px); line-height: 1; animation: kidBob 2.2s ease-in-out infinite; }
+.kid-monster-face { font-size: 90px; animation: kidBob 2.2s ease-in-out infinite; }
+
+.kid-dots { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 2px; padding: 14px; }
+.kid-dot { font-size: clamp(22px, 5vw, 36px); animation: kidPop .4s both; }
+
+/* Bambolles */
+.kid-bubble-field { position: relative; width: 100%; height: min(62vh, 520px); overflow: hidden; border-radius: 32px; background: #ffffff66; }
+.kid-bubble {
+  position: absolute;
+  bottom: -130px;
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  box-shadow: inset -8px -10px 18px #00000022, 0 6px 14px #0000001a;
+  animation-name: kidRise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* Comptar caramels */
+.kid-mascot { font-size: clamp(110px, 24vw, 170px); line-height: 1; animation: kidBob 2.4s ease-in-out infinite; }
+.kid-chomp { animation: kidChomp .35s ease-out, kidBob 2.4s ease-in-out .35s infinite; }
+.kid-count-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 760px; }
+.kid-candy {
+  width: 76px; height: 76px; border-radius: 22px; background: #fff; font-size: 44px;
+  box-shadow: 0 6px 0 #0000001a; transition: transform .25s, opacity .25s;
+}
+.kid-candy.kid-eaten { transform: translateY(-180px) scale(.2); opacity: 0; }
+.kid-count-dots { display: flex; gap: 10px; }
+.kid-count-dots span { width: 22px; height: 22px; border-radius: 9999px; background: #ffffffaa; border: 3px solid #F97316; transition: background .2s, transform .2s; }
+.kid-count-dots span.on { background: #F97316; transform: scale(1.15); }
+
+/* Arrossegar */
+.kid-scene { position: relative; width: 100%; max-width: 760px; height: min(48vh, 400px); }
+.kid-scene-monstre { max-width: 360px; height: min(54vh, 460px); }
+.kid-zone {
+  position: absolute;
+  translate: -50% -50%; /* aparte de transform: les animacions (pols) no el trepitgen */
+  display: grid;
+  place-items: center;
+  width: 92px; height: 92px;
+  border-radius: 9999px;
+  border: 4px dashed transparent;
+  transition: border-color .3s, background .3s;
+}
+.kid-zone-big { width: min(46vw, 230px); height: min(46vw, 230px); background: #ffffffaa; border-color: #ffffff; }
+.kid-scene-casa .kid-zone-big { width: min(28vw, 190px); height: min(28vw, 190px); }
+.kid-zone-emoji { font-size: clamp(80px, 18vw, 150px); }
+.kid-scene-casa .kid-zone-emoji { font-size: clamp(56px, 12vw, 110px); }
+.kid-zone-active { border-color: #F97316; background: #FFEDD5cc; animation: kidPulse 1.4s ease-in-out infinite; }
+.kid-zone-hidden { opacity: 0; }
+.kid-placed { position: absolute; font-size: 64px; line-height: 1; }
+.kid-zone-big .kid-placed:nth-child(2) { transform: translate(-30px, -20px); }
+.kid-zone-big .kid-placed:nth-child(3) { transform: translate(28px, -14px); }
+.kid-zone-big .kid-placed:nth-child(4) { transform: translate(0, 26px); }
+.kid-snap { animation: kidSnap .45s cubic-bezier(.3,1.6,.5,1) both; }
+.kid-monster-body {
+  position: absolute; inset: 14% 22% 16%;
+  border-radius: 46% 46% 40% 40% / 38% 38% 52% 52%;
+  background: radial-gradient(circle at 35% 30%, #C4B5FD, #8B5CF6);
+  box-shadow: inset -14px -18px 0 #7C3AED55, 0 12px 0 #0000001a;
+  animation: kidBob 3s ease-in-out infinite;
+}
+.kid-tray {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 14px;
+  padding: 14px; border-radius: 32px; background: #ffffffb3; max-width: 820px;
+}
+.kid-draggable {
+  width: 92px; height: 92px; border-radius: 26px; background: #fff; font-size: 56px;
+  box-shadow: 0 6px 0 #0000001a; touch-action: none; cursor: grab; transition: transform .2s, opacity .2s;
+}
+.kid-draggable.kid-lifted { opacity: .25; }
+.kid-draggable.kid-gone { opacity: 0; transform: scale(.4); pointer-events: none; }
+.kid-drag-ghost {
+  position: absolute; z-index: 30; pointer-events: none;
+  transform: translate(-50%, -50%) scale(1.2) rotate(-6deg);
+  font-size: 76px; filter: drop-shadow(0 10px 10px #0003);
+}
+
+/* Traçat */
+.kid-trace { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; }
+.kid-trace-svg {
+  width: min(84vw, 420px); height: min(84vw, 420px);
+  border-radius: 36px; background: #fff; box-shadow: 0 10px 0 #0000001a; touch-action: none;
+}
+.kid-trace-glyph { opacity: .16; }
+.kid-trace-trail { fill: none; stroke: #F472B6; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+.kid-star { font-size: 18px; fill: #A78BFA; transition: fill .2s; pointer-events: none; }
+.kid-star.on { fill: #FACC15; animation: kidStar .4s ease-out both; transform-box: fill-box; transform-origin: center; }
+.kid-trace-word { font-size: clamp(70px, 16vw, 120px); }
+
+/* Final i cromos */
+.kid-finish { position: relative; display: flex; flex-direction: column; align-items: center; gap: 30px; padding: 30px 16px; }
+.kid-cromo {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  width: 132px; aspect-ratio: 3 / 4; border-radius: 22px;
+  background: linear-gradient(160deg, #fff 0 55%, var(--island, #FDE68A) 56%);
+  border: 5px solid #fff; box-shadow: 0 8px 0 #0000001a, 0 12px 26px #2637471f;
+}
+.kid-cromo-emoji { font-size: 64px; line-height: 1; }
+.kid-cromo-name { font-weight: 900; font-size: 15px; text-align: center; padding: 0 8px; }
+.kid-cromo-win { width: 220px; animation: kidCromo 1s cubic-bezier(.3,1.5,.5,1) both; }
+.kid-cromo-win .kid-cromo-emoji { font-size: 110px; }
+.kid-cromo-win .kid-cromo-name { font-size: 20px; }
+.kid-cromo-locked { filter: grayscale(1); opacity: .45; }
+.kid-cromo-locked .kid-cromo-emoji { opacity: .4; }
+.kid-finish-actions { display: flex; gap: 18px; }
+.kid-big-btn { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 9999px; color: #fff; box-shadow: 0 8px 0 #0000002a; }
+.kid-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.kid-confetti i {
+  position: absolute; top: -20px; width: 12px; height: 18px; border-radius: 3px;
+  background: hsl(calc(var(--i, 1) * 40), 90%, 60%);
+  animation: kidConfetti 2.4s ease-in both;
+}
+.kid-confetti i:nth-child(3n) { background: #F97316; }
+.kid-confetti i:nth-child(3n+1) { background: #2CA99B; }
+.kid-confetti i:nth-child(3n+2) { background: #FACC15; }
+
+.kid-collection { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; padding: 4px 16px 18px; }
+.kid-collection .kid-cromo { width: 96px; }
+.kid-collection .kid-cromo-emoji { font-size: 48px; }
+.kid-board {
+  position: relative; margin: 0 auto; width: calc(100% - 32px); max-width: 900px; height: min(52vh, 460px);
+  border-radius: 32px; background:
+    repeating-linear-gradient(0deg, #fff 0 38px, #FDE68A55 38px 40px);
+  box-shadow: inset 0 0 0 6px #fff, 0 10px 0 #0000001a; touch-action: none; overflow: hidden;
+}
+.kid-sticker { position: absolute; font-size: 72px; line-height: 1; cursor: grab; filter: drop-shadow(0 6px 6px #0003); animation: kidPop .4s both; }
+.kid-sticker.kid-lifted { filter: drop-shadow(0 14px 12px #0004); z-index: 3; }
+.kid-bin {
+  position: absolute; right: 14px; bottom: 14px; display: grid; place-items: center;
+  width: 70px; height: 70px; border-radius: 9999px; background: #FEE2E2; color: #DC2626;
+  opacity: 0; transform: scale(.6); transition: opacity .2s, transform .2s;
+}
+.kid-bin.show { opacity: 1; transform: none; }
+
+/* ── Animacions ───────────────────────────────────────────────────────── */
+.kid-jump { animation: kidJump .7s cubic-bezier(.3,1.5,.5,1) both; }
+.kid-nope { animation: kidNope .5s ease-in-out both; }
+@keyframes kidIn { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes kidFloat { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
+@keyframes kidBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes kidPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes kidPop { from { transform: scale(0); } 70% { transform: scale(1.15); } to { transform: scale(1); } }
+@keyframes kidJump {
+  0% { transform: scale(1) rotate(0); }
+  30% { transform: scale(1.18) rotate(-8deg) translateY(-14px); }
+  55% { transform: scale(1.1) rotate(8deg); }
+  80% { transform: scale(1.05) rotate(-4deg); }
+  100% { transform: scale(1.04) rotate(0); border-color: #22C55E; }
+}
+/* Error suau: rebot, no sacseig agressiu. */
+@keyframes kidNope { 0%, 100% { transform: translateX(0) scale(1); } 25% { transform: translateX(-10px) scale(.97); } 50% { transform: translateX(8px) scale(.98); } 75% { transform: translateX(-4px); } }
+@keyframes kidRise { from { transform: translateY(0) translateX(0); } 50% { transform: translateY(calc(-1 * min(31vh, 260px) - 65px)) translateX(14px); } to { transform: translateY(calc(-1 * min(62vh, 520px) - 140px)) translateX(-10px); } }
+@keyframes kidChomp { 0% { transform: scale(1); } 40% { transform: scale(1.18, .86); } 100% { transform: scale(1); } }
+@keyframes kidSnap { from { transform: scale(1.6); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+@keyframes kidStar { from { transform: scale(2.2); } to { transform: scale(1.3); } }
+@keyframes kidCromo { from { transform: scale(.2) rotate(-200deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes kidConfetti { from { transform: translateY(0) rotate(0); opacity: 1; } to { transform: translateY(105vh) rotate(720deg); opacity: .8; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .kids-world *, .kids-world *::before, .kids-world *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .kid-bubble { animation: none; bottom: auto; top: 30%; }
+}

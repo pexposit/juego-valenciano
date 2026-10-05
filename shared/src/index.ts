@@ -4,12 +4,18 @@
  * es defineixen a la taula resources de la BDD.
  */
 
-export const LEVELS = ['principiant', 'intermedi', 'avancat'] as const;
+// 'nivell0' és el més bàsic: per a xiquets que encara no llegixen (món d'illes infantil).
+export const LEVELS = ['nivell0', 'principiant', 'intermedi', 'avancat'] as const;
 
 export type LevelKey = (typeof LEVELS)[number];
 
+/** El món infantil del Nivell 0 és per als xiquets (profiles.es_adult = false) de nivell 0. */
+export const isKidsLevel0 = (profile: { level?: string | null; es_adult?: boolean | null }) =>
+  profile.level === 'nivell0' && profile.es_adult === false;
+
 /** Nivells del MECR (els de practice_exercises i dels exàmens) de cada nivell de l'aprenent. */
 export const LEVEL_CEFR: Record<LevelKey, readonly string[]> = {
+  nivell0: [], // previ al MECR: no té exercicis del temari
   principiant: ['A1', 'A2'],
   intermedi: ['B1', 'B2'],
   avancat: ['C1', 'C2'],

@@ -1,4 +1,4 @@
-import type { Exam, Lesson, Practice, Resource, Scenario, TurnResponse, WritingEvaluation } from './types';
+import type { ActivityResult, Exam, LatestEvaluation, LearningPath, Lesson, Practice, Resource, Scenario, TurnResponse, WritingEvaluation } from './types';
 import { sanitizeHistory } from '@parlaval/shared';
 import { supabase } from './supabase';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
@@ -285,3 +285,42 @@ export const fetchTutorConversations = () =>
   authedGet<TutorConversation[]>('/api/assistant/conversations', 'No hem pogut carregar les converses');
 export const fetchTutorConversation = (id: string) =>
   authedGet<TutorMessage[]>(`/api/assistant/conversations/${encodeURIComponent(id)}/messages`, 'No hem pogut carregar la conversa');
+/* ── Ruta d'aprenentatge ──────────────────────────────────────────────── */
+const authHeaders = async (): Promise<Record<string, string>> => {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+};
+
+// Ruta activa de l'usuari. La primera vegada el backend la genera (pot tardar uns segons).
+export async function fetchLearningPath(): Promise<LearningPath> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/learning-path`, { headers: await authHeaders() });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut carregar la ruta');
+  return payload;
+}
+
+export async function regenerateLearningPath(): Promise<LearningPath> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/learning-path/regenerate`, { method: 'POST', headers: await authHeaders() });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(res.status === 429 ? 'Has generat massa rutes seguides. Espera uns minuts.' : payload?.error ?? 'No hem pogut generar una ruta nova');
+  return payload;
+}
+
+// Última avaluació pedagògica (null si encara no n'hi ha o no hi ha sessió).
+export async function fetchLatestEvaluation(): Promise<LatestEvaluation | null> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/evaluations/latest`, { headers: await authHeaders() });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// Guarda el resultat d'una pràctica o d'un examen: marca el pas de la ruta i
+// pot fer que se'n genere una de nova. No bloqueja la pantalla si falla.
+export async function saveActivityResult(kind: 'practice' | 'exam', resourceId: string, result: ActivityResult): Promise<void> {
+  const path = kind === 'practice' ? 'practice' : 'exams';
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/${path}/${encodeURIComponent(resourceId)}/results`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify(result),
+  });
+  if (!res.ok) console.warn(`[saveActivityResult] El backend ha respost amb codi ${res.status}`);
+}
