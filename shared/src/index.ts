@@ -9,9 +9,9 @@ export const LEVELS = ['nivell0', 'principiant', 'intermedi', 'avancat'] as cons
 
 export type LevelKey = (typeof LEVELS)[number];
 
-/** El món infantil del Nivell 0 és per als xiquets (profiles.es_adult = false) de nivell 0. */
-export const isKidsLevel0 = (profile: { level?: string | null; es_adult?: boolean | null }) =>
-  profile.level === 'nivell0' && profile.es_adult === false;
+/** El món infantil del Nivell 0 és per als xiquets (profiles.age_group = 'child') de nivell 0. */
+export const isKidsLevel0 = (profile: { level?: string | null; age_group?: string | null }) =>
+  profile.level === 'nivell0' && profile.age_group === 'child';
 
 /** Nivells del MECR (els de practice_exercises i dels exàmens) de cada nivell de l'aprenent. */
 export const LEVEL_CEFR: Record<LevelKey, readonly string[]> = {

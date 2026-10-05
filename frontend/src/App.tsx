@@ -156,9 +156,8 @@ export function App() {
   // false mentre es comprova la sessió i es carrega el perfil (sense Supabase, ja està).
   const [profileReady, setProfileReady] = useState(!supabase);
   const loadedProfileFor = useRef<string>();
-  const [esAdult, setEsAdult] = useState(true);
   // Xiquets de Nivell 0: en lloc del tauler i les activitats, el món d'illes.
-  const kids = isKidsLevel0({ level, es_adult: esAdult });
+  const kids = isKidsLevel0({ level, age_group: ageGroup });
 
   // Sync profile details from Supabase if logged in
   const loadProfile = async (uid: string) => {
@@ -166,7 +165,7 @@ export function App() {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, level, xp, age_group, mother_tongue, show_mother_tongue, es_adult')
+        .select('display_name, level, xp, age_group, mother_tongue, show_mother_tongue')
         .eq('id', uid)
         .single();
       if (data) {
@@ -176,7 +175,6 @@ export function App() {
         setAgeGroup(data.age_group || DEFAULT_PROFILE.ageGroup);
         setMotherTongue(data.mother_tongue ?? null);
         setShowMotherTongue(data.show_mother_tongue ?? true);
-        setEsAdult(data.es_adult !== false);
       }
     } catch (e) {
       console.error('Error carregant perfil:', e);
@@ -196,7 +194,6 @@ export function App() {
     setAgeGroup(DEFAULT_PROFILE.ageGroup);
     setMotherTongue(null);
     setShowMotherTongue(true);
-    setEsAdult(true);
     navigate(ROUTES.home, { replace: true });
   };
 
