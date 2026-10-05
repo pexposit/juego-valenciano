@@ -42,7 +42,7 @@
   color: #2CA99B;
   box-shadow: 0 6px 0 #00000014, 0 10px 24px #2637471a;
 }
-.kid-round-btn { width: 64px; height: 64px; }
+.kid-round-btn { flex: none; width: 64px; height: 64px; }
 .kid-album-btn { position: relative; width: 76px; height: 76px; color: #F97316; }
 .kid-album-count {
   position: absolute; bottom: -6px; right: -6px;
@@ -50,7 +50,8 @@
   padding: 2px 8px; font-size: 13px; font-weight: 900;
 }
 
-.kids-progress { display: flex; gap: 6px; font-size: 30px; line-height: 1; }
+/* Fins a 13 rondes: les estreles s'encongixen perquè càpien en el mòbil. */
+.kids-progress { display: flex; flex: 1; flex-wrap: wrap; justify-content: center; gap: 2px 4px; font-size: clamp(16px, 5vw, 30px); line-height: 1; }
 .kids-progress span { color: #ffffff; text-shadow: 0 2px 0 #00000022; transition: transform .3s, color .3s; }
 .kids-progress span.now { color: #FDE68A; transform: scale(1.2); }
 .kids-progress span.on { color: #FACC15; }
@@ -456,3 +457,10 @@
   .kids-world *, .kids-world *::before, .kids-world *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
   .kid-bubble { animation: none; bottom: auto; top: 30%; }
 }
+
+/* ── Subtítols en la llengua materna ──────────────────────────────────── */
+.kid-translation {
+  display: block; margin-top: 6px; padding-top: 6px; border-top: 2px dashed #0000001a;
+  font-size: .85em; font-weight: 700; font-style: italic; color: #0F47AF; line-height: 1.3;
+}
+.kid-dialog-line.right .kid-translation { text-align: right; }

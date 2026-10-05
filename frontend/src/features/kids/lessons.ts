@@ -37,10 +37,19 @@ const p = (text: string) => {
   return key;
 };
 
+// Frases que són vocabulari (el nom d'un pictograma: «El sol!»): no es tradueixen en els
+// subtítols, perquè el que s'aprén és justament la paraula en valencià.
+const VOCABULARY = new Set<string>();
+const word = (text: string) => {
+  const key = p(text);
+  VOCABULARY.add(key);
+  return key;
+};
+
 /** Un pictograma nou amb el seu nom en veu alta («El sol!») o una frase pròpia. */
-const it = (emoji: string, word: string, extra: Partial<KidsItem> & { say?: string } = {}): KidsItem => {
+const it = (emoji: string, name: string, extra: Partial<KidsItem> & { say?: string } = {}): KidsItem => {
   const { say, ...rest } = extra;
-  return { id: `${emoji}-${word}`, word, emoji, audio: p(say ?? `${capital(word)}!`), ...rest };
+  return { id: `${emoji}-${name}`, word: name, emoji, audio: say ? p(say) : word(`${capital(name)}!`), ...rest };
 };
 
 export type LessonPage =
@@ -201,8 +210,8 @@ const gossos = it('🐕', 'els gossos', { count: 3 });
 const gats = it('🐈', 'els gats', { count: 3 });
 const pomes = it('🍎', 'les pomes', { count: 3 });
 const flors = it('🌸', 'les flors', { count: 3 });
-const BIN_EL: KidsItem = { id: 'bin-el', word: 'el', emoji: '', glyph: 'EL', ink: '#2563EB', audio: p('El!') };
-const BIN_LA: KidsItem = { id: 'bin-la', word: 'la', emoji: '', glyph: 'LA', ink: '#DB2777', audio: p('La!') };
+const BIN_EL: KidsItem = { id: 'bin-el', word: 'el', emoji: '', glyph: 'EL', ink: '#2563EB', audio: word('El!') };
+const BIN_LA: KidsItem = { id: 'bin-la', word: 'la', emoji: '', glyph: 'LA', ink: '#DB2777', audio: word('La!') };
 const EL_WORDS = [animal('gos'), animal('gat'), food('pa'), sol, cotxe, llapis, llibre];
 const LA_WORDS = [food('poma'), animal('vaca'), casa, lluna, flor, pilota, taula];
 const sortElLa = p("Ajuda'm a ordenar! Si diem EL, a la caixa blava. Si diem LA, a la caixa rosa.");
@@ -241,7 +250,7 @@ const ARTICLES: Lesson = {
 const num = (n: number, emoji: string): KidsItem => ({ id: `ln-${n}-${emoji}`, word: NUMBERS[n - 1], emoji, count: n, audio: `n-${n}` });
 const TEENS = ['onze', 'dotze', 'tretze', 'catorze', 'quinze', 'setze', 'dèsset', 'díhuit', 'dènou', 'vint'];
 const INKS = ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#14B8A6', '#3B82F6', '#6366F1', '#A855F7', '#EC4899', '#0F766E'];
-const teen = (i: number): KidsItem => ({ id: `teen-${i}`, word: TEENS[i], emoji: '', glyph: `${11 + i}`, ink: INKS[i], audio: p(`${capital(TEENS[i])}!`) });
+const teen = (i: number): KidsItem => ({ id: `teen-${i}`, word: TEENS[i], emoji: '', glyph: `${11 + i}`, ink: INKS[i], audio: word(`${capital(TEENS[i])}!`) });
 const zero = it('🍽️', 'zero');
 const dits = it('🖐️', 'deu dits', { count: 2, say: 'Cinc i cinc, deu dits!' });
 const orderOneToFive = p("Toca'ls en ordre: u, dos, tres, quatre i cinc!");
@@ -457,7 +466,7 @@ const ACCIONS: Lesson = {
 const DAYS: [word: string, glyph: string][] = [
   ['dilluns', 'Dl'], ['dimarts', 'Dt'], ['dimecres', 'Dc'], ['dijous', 'Dj'], ['divendres', 'Dv'], ['dissabte', 'Ds'], ['diumenge', 'Dg'],
 ];
-const days = DAYS.map(([word, glyph], i): KidsItem => ({ id: `dia-${word}`, word, emoji: '', glyph, ink: INKS[i + 1], audio: p(`${capital(word)}!`) }));
+const days = DAYS.map(([day, glyph], i): KidsItem => ({ id: `dia-${day}`, word: day, emoji: '', glyph, ink: INKS[i + 1], audio: word(`${capital(day)}!`) }));
 const escola = it('🏫', "a l'escola");
 const capSetmana = it('🏖️', 'cap de setmana');
 const primavera = it('🌸', 'la primavera', { say: 'La primavera: ixen les flors!' });
@@ -549,7 +558,7 @@ const CONTRARIS: Lesson = {
 
 const abc = (letter: string) => ALPHABET.find(l => l.letter === letter)!;
 const vowel = (letter: string): KidsItem => ({ id: `v-${letter}`, word: letter, emoji: '', glyph: letter.toUpperCase(), ink: '#7C3AED', audio: `abc-de-${letter}` });
-const letterGlyph = (letter: string): KidsItem => ({ id: `g-${letter}`, word: abc(letter).name, emoji: '', glyph: letter.toUpperCase(), ink: '#0F766E', audio: p(`${capital(abc(letter).name)}!`) });
+const letterGlyph = (letter: string): KidsItem => ({ id: `g-${letter}`, word: abc(letter).name, emoji: '', glyph: letter.toUpperCase(), ink: '#0F766E', audio: word(`${capital(abc(letter).name)}!`) });
 const VOWEL_ITEMS = ['a', 'e', 'i', 'o', 'u'].map(vowel);
 const SOUNDS = LETTERS.map((l): KidsItem => ({ id: `so-${l.id}`, word: l.glyph, emoji: '', glyph: l.glyph, ink: '#DB2777', audio: `lletra-${l.id}` }));
 const pinya = it('🍍', 'la pinya');
@@ -616,3 +625,15 @@ Object.assign(LESSON_AUDIO, {
   'llico-medalla': 'Molt bé! Has acabat la lliçó i has guanyat una medalla!',
   'llico-fi': 'Molt bé! Has acabat la lliçó una altra vegada!',
 });
+
+// Prefixos de les frases de content.ts que són vocabulari: noms, números, lletres i sons d'animals.
+const VOCABULARY_PREFIXES = ['w-', 'n-', 'fa-', 'abc-de-', 'lletra-'];
+
+/**
+ * Les frases que es tradueixen en els subtítols: consignes, explicacions i diàlegs (no el
+ * vocabulari). Les llig backend/scripts/generate-kids-translations.ts.
+ */
+export function translatableKeys(kidsAudio: Record<string, string>): string[] {
+  return [...Object.keys(kidsAudio), ...Object.keys(LESSON_AUDIO)]
+    .filter(key => !VOCABULARY.has(key) && !VOCABULARY_PREFIXES.some(prefix => key.startsWith(prefix)));
+}

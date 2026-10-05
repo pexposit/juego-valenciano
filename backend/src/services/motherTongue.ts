@@ -6,14 +6,9 @@ const HELP_GREETING: Record<string, string> = {
   es: '¿En qué te puedo ayudar?',
   en: 'How can I help you?',
   fr: "En quoi puis-je t'aider ?",
-  ar: 'كيف يمكنني مساعدتك؟',
   ro: 'Cu ce te pot ajuta?',
   uk: 'Чим я можу тобі допомогти?',
-  ru: 'Чем я могу тебе помочь?',
-  zh: '我能帮你什么？',
   it: 'In cosa posso aiutarti?',
-  de: 'Wie kann ich dir helfen?',
-  pt: 'Em que posso ajudar-te?',
 };
 
 // Salutació del tutor: en valencià i, en una línia nova, en la llengua materna del xiquet.

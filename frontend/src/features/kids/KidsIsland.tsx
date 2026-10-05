@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Home, BookHeart, GraduationCap, RotateCcw } from 'lucide-react';
 import { islandById } from './content';
-import { RoundView } from './games/RoundView';
+import { RoundCaption, RoundView } from './games/RoundView';
 import { unlockCromo } from './progress';
 import { say, sfxFanfare, stopVoice } from './sound';
 import './kids.css';
@@ -47,7 +47,11 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
       </header>
 
       {!finished ? (
-        <RoundView key={`${session}-${index}`} round={rounds[index]} onDone={() => void next()} />
+        <>
+          {/* Amb la llengua materna activada, la consigna escrita i traduïda. */}
+          <RoundCaption key={`c-${session}-${index}`} round={rounds[index]} className="kid-lesson-caption" onlyTranslated />
+          <RoundView key={`${session}-${index}`} round={rounds[index]} onDone={() => void next()} />
+        </>
       ) : (
         <div className="kid-finish">
           <div className="kid-confetti" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ left: `${(i * 41) % 100}%`, animationDelay: `${(i % 8) * 0.12}s` }} />)}</div>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CHAT_CATEGORIES, isKidsLevel0 } from '@parlaval/shared';
+import { CHAT_CATEGORIES, isKidsLevel0, isTranslatedTongue } from '@parlaval/shared';
 import type { User } from '@supabase/supabase-js';
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
@@ -25,6 +25,7 @@ import { KidsAlbum } from './features/kids/KidsAlbum';
 import { KidsHome } from './features/kids/KidsHome';
 import { KidsIsland } from './features/kids/KidsIsland';
 import { KidsLesson } from './features/kids/KidsLessons';
+import { KidsTranslationProvider } from './features/kids/translations';
 
 type ProfileFields = { display_name?: string; level?: string; show_mother_tongue?: boolean; mother_tongue?: string };
 
@@ -295,98 +296,101 @@ export function App() {
   const goToPage = (p: Page) => navigate(ROUTES[p]);
 
   return (
-    <Routes>
-      <Route path={ROUTES.home} element={<PageTransition><HomePage setPage={goToPage} /></PageTransition>} />
-      <Route path={ROUTES.auth} element={<PageTransition><AuthPage setPage={goToPage} /></PageTransition>} />
-      <Route
-        path={ROUTES.dashboard}
-        element={<DashboardRoute name={name} ageGroup={ageGroup} showMotherTongue={showMotherTongue} profileReady={profileReady} setPage={goToPage} />}
-      />
-      <Route
-        path={KIDS_ROUTES.home}
-        element={
-          <KidsHome
-            name={name}
-            uid={user?.id}
-            onBack={() => navigate(ROUTES.dashboard)}
-            onIsland={id => navigate(`${KIDS_ROUTES.island}/${id}`)}
-            onAlbum={() => navigate(KIDS_ROUTES.album)}
-            onProfile={() => navigate(ROUTES.profile)}
-          />
-        }
-      />
-      <Route path={`${KIDS_ROUTES.island}/:id`} element={<KidsIslandRoute uid={user?.id} />} />
-      <Route path={KIDS_ROUTES.album} element={<KidsAlbum uid={user?.id} onHome={() => navigate(KIDS_ROUTES.home)} />} />
-      {/* Abans hi havia un índex de lliçons propi; ara totes són a la pàgina de lliçons. */}
-      <Route path={KIDS_ROUTES.lessons} element={<Navigate to={ROUTES.lessons} replace />} />
-      <Route path={`${KIDS_ROUTES.lesson}/:id`} element={<KidsLessonRoute uid={user?.id} />} />
-      <Route
-        path={ROUTES.learningpath}
-        element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
-          <PageTransition>
-            <LearningPath
-              onOpen={resource => {
-                const route = activityRoute(resource);
-                if (route) navigate(route);
-              }}
-              onBack={goDashboard}
-            />
-          </PageTransition>
-        )}
-      />
-      <Route
-        path={ROUTES.scenarioselect}
-        element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
-          <PageTransition>
-            <ScenarioSelect
+    // Subtítols en la llengua materna en el Nivell 0, si el perfil els té activats.
+    <KidsTranslationProvider lang={showMotherTongue && isTranslatedTongue(motherTongue) ? motherTongue : null}>
+      <Routes>
+        <Route path={ROUTES.home} element={<PageTransition><HomePage setPage={goToPage} /></PageTransition>} />
+        <Route path={ROUTES.auth} element={<PageTransition><AuthPage setPage={goToPage} /></PageTransition>} />
+        <Route
+          path={ROUTES.dashboard}
+          element={<DashboardRoute name={name} ageGroup={ageGroup} showMotherTongue={showMotherTongue} profileReady={profileReady} setPage={goToPage} />}
+        />
+        <Route
+          path={KIDS_ROUTES.home}
+          element={
+            <KidsHome
               name={name}
-              level={level}
-              onSelect={resource => {
-                const route = activityRoute(resource);
-                if (route) navigate(route);
-              }}
-              onBack={goDashboard}
+              uid={user?.id}
+              onBack={() => navigate(ROUTES.dashboard)}
+              onIsland={id => navigate(`${KIDS_ROUTES.island}/${id}`)}
+              onAlbum={() => navigate(KIDS_ROUTES.album)}
               onProfile={() => navigate(ROUTES.profile)}
-              onErrors={() => navigate(ROUTES.errors)}
             />
-          </PageTransition>
-        )}
-      />
-      <Route
-        path={ROUTES.profile}
-        element={
-          <PageTransition>
-            <Profile
-              name={name}
-              setName={updateName}
-              level={level}
-              xp={xp}
-              back={() => navigate(-1)}
-              onLogOut={logOut}
-              isDemo={!user}
-              ageGroup={ageGroup}
-              motherTongue={motherTongue}
-              setMotherTongue={updateMotherTongue}
-              showMotherTongue={showMotherTongue}
-              setShowMotherTongue={updateShowMotherTongue}
-            />
-          </PageTransition>
-        }
-      />
-      <Route
-        path={ROUTES.summary}
-        element={<PageTransition><Summary xp={xp} onMap={goDashboard} onContinue={() => navigate(ROUTES.learningpath)} /></PageTransition>}
-      />
-      <Route
-        path={`${ROUTES.chat}/:scenario`}
-        element={<ChatRoute level={level} xp={xp} onXpGained={delta => setXp(x => x + delta)} onBack={() => navigate(-1)} />}
-      />
-      <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
-      <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
-      <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
-      <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard}showHelp={showMotherTongue} /></PageTransition>} />
-      <Route path={ROUTES.lessons} element={<PageTransition><KidsLessons uid={user?.id} onBack={() => navigate(ROUTES.dashboard)} onOpenLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>} />
-      <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
-    </Routes>
+          }
+        />
+        <Route path={`${KIDS_ROUTES.island}/:id`} element={<KidsIslandRoute uid={user?.id} />} />
+        <Route path={KIDS_ROUTES.album} element={<KidsAlbum uid={user?.id} onHome={() => navigate(KIDS_ROUTES.home)} />} />
+        {/* Abans hi havia un índex de lliçons propi; ara totes són a la pàgina de lliçons. */}
+        <Route path={KIDS_ROUTES.lessons} element={<Navigate to={ROUTES.lessons} replace />} />
+        <Route path={`${KIDS_ROUTES.lesson}/:id`} element={<KidsLessonRoute uid={user?.id} />} />
+        <Route
+          path={ROUTES.learningpath}
+          element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
+            <PageTransition>
+              <LearningPath
+                onOpen={resource => {
+                  const route = activityRoute(resource);
+                  if (route) navigate(route);
+                }}
+                onBack={goDashboard}
+              />
+            </PageTransition>
+          )}
+        />
+        <Route
+          path={ROUTES.scenarioselect}
+          element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
+            <PageTransition>
+              <ScenarioSelect
+                name={name}
+                level={level}
+                onSelect={resource => {
+                  const route = activityRoute(resource);
+                  if (route) navigate(route);
+                }}
+                onBack={goDashboard}
+                onProfile={() => navigate(ROUTES.profile)}
+                onErrors={() => navigate(ROUTES.errors)}
+              />
+            </PageTransition>
+          )}
+        />
+        <Route
+          path={ROUTES.profile}
+          element={
+            <PageTransition>
+              <Profile
+                name={name}
+                setName={updateName}
+                level={level}
+                xp={xp}
+                back={() => navigate(-1)}
+                onLogOut={logOut}
+                isDemo={!user}
+                ageGroup={ageGroup}
+                motherTongue={motherTongue}
+                setMotherTongue={updateMotherTongue}
+                showMotherTongue={showMotherTongue}
+                setShowMotherTongue={updateShowMotherTongue}
+              />
+            </PageTransition>
+          }
+        />
+        <Route
+          path={ROUTES.summary}
+          element={<PageTransition><Summary xp={xp} onMap={goDashboard} onContinue={() => navigate(ROUTES.learningpath)} /></PageTransition>}
+        />
+        <Route
+          path={`${ROUTES.chat}/:scenario`}
+          element={<ChatRoute level={level} xp={xp} onXpGained={delta => setXp(x => x + delta)} onBack={() => navigate(-1)} />}
+        />
+        <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
+        <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
+        <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
+        <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard}showHelp={showMotherTongue} /></PageTransition>} />
+        <Route path={ROUTES.lessons} element={<PageTransition><KidsLessons uid={user?.id} onBack={() => navigate(ROUTES.dashboard)} onOpenLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>} />
+        <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+      </Routes>
+    </KidsTranslationProvider>
   );
 }

@@ -303,7 +303,7 @@ assistantRouter.get('/api/assistant/conversations', requireAuth, async (req: Aut
   }
 });
 
-const titleSchema = z.object({ title: z.string().trim().max(80) });
+const titleSchema = z.object({ title: z.string().trim().max(40) });
 
 // Canvia el nom d'una conversa. Un nom buit torna al títol automàtic (el resumirà el LLM).
 assistantRouter.patch('/api/assistant/conversations/:id/title', requireAuth, async (req: AuthRequest, res) => {

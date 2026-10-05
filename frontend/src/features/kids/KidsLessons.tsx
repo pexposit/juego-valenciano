@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Gamepad2, GraduationCap, RotateCcw } from 'lucide-react';
-import { itemAudio, type KidsItem, type Round } from './content';
-import { RoundView } from './games/RoundView';
+import { itemAudio, type KidsItem } from './content';
+import { RoundCaption, RoundView } from './games/RoundView';
 import { ItemFace } from './games/ItemFace';
 import { lessonById, type LessonPage } from './lessons';
 import { markLessonDone } from './progress';
 import { phraseText, say, sfxCorrect, sfxFanfare, sfxTick, stopVoice } from './sound';
+import { Translation, useKidsTranslation } from './translations';
 import './kids.css';
 
 /* ── Peces comunes ────────────────────────────────────────────────────── */
@@ -44,14 +45,21 @@ function Picto({ item, onTap, heard, size = 'md' }: { item: KidsItem; onTap: () 
   );
 }
 
-/** La Taronjeta explica: el bocadillo amb el text del que diu (per als adults) i tocar-la ho repetix. */
-function Bubble({ text, onRepeat, talking }: { text: string; onRepeat: () => void; talking: boolean }) {
+/**
+ * La Taronjeta explica: el bocadillo amb el text del que diu i, si el perfil ho té activat,
+ * la traducció a la llengua materna davall. Tocar-la ho repetix.
+ */
+function Bubble({ phrase, onRepeat, talking }: { phrase: string; onRepeat: () => void; talking: boolean }) {
+  const translate = useKidsTranslation();
   return (
     <div className="kid-lesson-bubble">
       <button onClick={onRepeat} aria-label="Escolta una altra vegada" className={`kid-lesson-mascot btn-press ${talking ? 'talking' : ''}`}>
         <span aria-hidden="true">🍊</span>
       </button>
-      <p>{text}</p>
+      <p>
+        {phraseText(phrase)}
+        <Translation text={translate(phrase)} />
+      </p>
     </div>
   );
 }
@@ -89,7 +97,7 @@ function IntroPage({ page, onReady }: PageProps<'intro'>) {
   return (
     <div className="kid-lesson-page">
       <div className="kid-lesson-hero" aria-hidden="true">{page.emoji}</div>
-      <Bubble text={phraseText(page.say)} onRepeat={play} talking={talking} />
+      <Bubble phrase={page.say} onRepeat={play} talking={talking} />
     </div>
   );
 }
@@ -99,7 +107,7 @@ function ItemsPage({ page, onReady }: PageProps<'explain' | 'summary'>) {
   const size = page.items.length <= 3 ? 'lg' : 'md';
   return (
     <div className="kid-lesson-page">
-      <Bubble text={phraseText(page.say)} onRepeat={play} talking={talking} />
+      <Bubble phrase={page.say} onRepeat={play} talking={talking} />
       <div className={`kid-picto-grid ${page.kind === 'summary' ? 'kid-summary' : ''}`}>
         {page.items.map(item => <Picto key={item.id} item={item} size={size} onTap={() => speak(item)} />)}
       </div>
@@ -120,7 +128,7 @@ function DiscoverPage({ page, onReady }: PageProps<'discover'>) {
   }, [heard, page.items.length, onReady]);
   return (
     <div className="kid-lesson-page">
-      <Bubble text={phraseText(page.say)} onRepeat={play} talking={talking} />
+      <Bubble phrase={page.say} onRepeat={play} talking={talking} />
       <div className="kid-picto-grid">
         {page.items.map(item => <Picto key={item.id} item={item} heard={heard.includes(item.id)} onTap={() => tap(item)} />)}
       </div>
@@ -135,7 +143,7 @@ function PairsPage({ page, onReady }: PageProps<'pairs'>) {
   const { talking, play } = useNarration(page.say, onReady);
   return (
     <div className="kid-lesson-page">
-      <Bubble text={phraseText(page.say)} onRepeat={play} talking={talking} />
+      <Bubble phrase={page.say} onRepeat={play} talking={talking} />
       <div className="kid-pairs">
         {page.pairs.map(([a, b]) => (
           <div key={`${a.id}-${b.id}`} className="kid-pair">
@@ -169,7 +177,7 @@ function MixPage({ page, onReady }: PageProps<'mix'>) {
   };
   return (
     <div className="kid-lesson-page">
-      <Bubble text={mixed ? phraseText(page.reveal) : phraseText(page.say)} onRepeat={mixed ? () => void say(page.reveal) : play} talking={talking} />
+      <Bubble phrase={mixed ? page.reveal : page.say} onRepeat={mixed ? () => void say(page.reveal) : play} talking={talking} />
       <div className="kid-mix">
         {[page.a, page.b].map((item, i) => (
           <button
@@ -193,6 +201,7 @@ function MixPage({ page, onReady }: PageProps<'mix'>) {
 }
 
 function DialogPage({ page, onReady }: PageProps<'dialog'>) {
+  const translate = useKidsTranslation();
   const [active, setActive] = useState(-1);
   useEffect(() => {
     let cancelled = false;
@@ -230,7 +239,10 @@ function DialogPage({ page, onReady }: PageProps<'dialog'>) {
             style={{ animationDelay: `${i * 0.15}s` }}
           >
             <span className="kid-dialog-who" aria-hidden="true">{line.who}</span>
-            <span className="kid-dialog-text">{phraseText(line.say)}</span>
+            <span className="kid-dialog-text">
+              {phraseText(line.say)}
+              <Translation text={translate(line.say)} />
+            </span>
           </button>
         ))}
       </div>
@@ -238,19 +250,11 @@ function DialogPage({ page, onReady }: PageProps<'dialog'>) {
   );
 }
 
-// El text de la consigna d'un joc, per als adults que acompanyen.
-function promptText(round: Round): string {
-  const prompt = 'prompt' in round ? round.prompt : undefined;
-  if (!prompt) return '';
-  return (Array.isArray(prompt) ? prompt : [prompt]).map(phraseText).join(' ');
-}
-
 function GamePage({ page, onDone }: PageProps<'game'>) {
   const round = useMemo(() => page.round(), [page]);
-  const text = promptText(round);
   return (
     <div className="kid-lesson-game">
-      {text && <p className="kid-lesson-caption">{text}</p>}
+      <RoundCaption round={round} className="kid-lesson-caption" />
       <RoundView round={round} onDone={onDone} />
     </div>
   );

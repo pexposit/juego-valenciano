@@ -7,7 +7,7 @@ import OpenAI from 'openai';
  */
 
 const MAX_MESSAGES = 16; // amb el principi de la conversa n'hi ha prou per a saber de què va
-const MAX_CHARS = 60;
+const MAX_CHARS = 40; // el mateix límit que el nom que posa l'usuari
 
 let client: OpenAI | null = null;
 const openai = () => {

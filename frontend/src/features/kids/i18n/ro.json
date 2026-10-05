@@ -1,0 +1,2190 @@
+{
+ "hola": {
+  "ca": "Hola! Soc la Taronjeta. Tria una illa per a jugar!",
+  "t": "Bună! Sunt Taronjeta. Alege o insulă ca să te joci!"
+ },
+ "album": {
+  "ca": "El teu àlbum de cromos! Toca un cromo per a posar-lo on vulgues.",
+  "t": "Albumul tău de abțibilduri! Atinge un abțibild ca să-l pui unde vrei."
+ },
+ "cromo-nou": {
+  "ca": "Molt bé! Has guanyat un cromo nou!",
+  "t": "Foarte bine! Ai câștigat un abțibild nou!"
+ },
+ "be-1": {
+  "ca": "Molt bé!",
+  "t": "Foarte bine!"
+ },
+ "be-2": {
+  "ca": "Fantàstic!",
+  "t": "Minunat!"
+ },
+ "be-3": {
+  "ca": "Què bé!",
+  "t": "Ce bine!"
+ },
+ "be-4": {
+  "ca": "Ho has aconseguit!",
+  "t": "Ai reușit!"
+ },
+ "torna-1": {
+  "ca": "Ups! Torna-ho a provar!",
+  "t": "Ups! Mai încearcă o dată!"
+ },
+ "torna-2": {
+  "ca": "Prova una altra vegada!",
+  "t": "Încearcă din nou!"
+ },
+ "illa-animals": {
+  "ca": "L'illa dels animals!",
+  "t": "Insula animalelor!"
+ },
+ "illa-colors": {
+  "ca": "L'illa dels colors!",
+  "t": "Insula culorilor!"
+ },
+ "illa-numeros": {
+  "ca": "L'illa dels números!",
+  "t": "Insula numerelor!"
+ },
+ "illa-menjar": {
+  "ca": "L'illa del menjar!",
+  "t": "Insula mâncării!"
+ },
+ "illa-cos": {
+  "ca": "L'illa del cos!",
+  "t": "Insula corpului!"
+ },
+ "illa-familia": {
+  "ca": "L'illa de la família!",
+  "t": "Insula familiei!"
+ },
+ "illa-lletres": {
+  "ca": "L'illa de les lletres!",
+  "t": "Insula literelor!"
+ },
+ "illa-abecedari": {
+  "ca": "L'illa de l'abecedari!",
+  "t": "Insula alfabetului!"
+ },
+ "intrus-animals": {
+  "ca": "Els animals! Quin no és un animal?",
+  "t": "Els animals (animalele)! Care nu este un animal?"
+ },
+ "intrus-fruita": {
+  "ca": "La fruita! Quina no és una fruita?",
+  "t": "La fruita (fructele)! Care nu este un fruct?"
+ },
+ "intrus-menjar": {
+  "ca": "El menjar! Quin no es pot menjar?",
+  "t": "El menjar (mâncarea)! Ce nu se poate mânca?"
+ },
+ "on-gos": {
+  "ca": "On és el gos?",
+  "t": "Unde este el gos (câinele)?"
+ },
+ "on-gat": {
+  "ca": "On és el gat?",
+  "t": "Unde este el gat (pisica)?"
+ },
+ "on-ocell": {
+  "ca": "On és l'ocell?",
+  "t": "Unde este l'ocell (pasărea)?"
+ },
+ "on-peix": {
+  "ca": "On és el peix?",
+  "t": "Unde este el peix (peștele)?"
+ },
+ "on-vaca": {
+  "ca": "On és la vaca?",
+  "t": "Unde este la vaca (vaca)?"
+ },
+ "on-cavall": {
+  "ca": "On és el cavall?",
+  "t": "Unde este el cavall (calul)?"
+ },
+ "on-porc": {
+  "ca": "On és el porc?",
+  "t": "Unde este el porc (porcul)?"
+ },
+ "on-ovella": {
+  "ca": "On és l'ovella?",
+  "t": "Unde este l'ovella (oaia)?"
+ },
+ "on-gallina": {
+  "ca": "On és la gallina?",
+  "t": "Unde este la gallina (găina)?"
+ },
+ "on-anec": {
+  "ca": "On és l'ànec?",
+  "t": "Unde este l'ànec (rața)?"
+ },
+ "on-granota": {
+  "ca": "On és la granota?",
+  "t": "Unde este la granota (broasca)?"
+ },
+ "on-lleo": {
+  "ca": "On és el lleó?",
+  "t": "Unde este el lleó (leul)?"
+ },
+ "on-elefant": {
+  "ca": "On és l'elefant?",
+  "t": "Unde este l'elefant (elefantul)?"
+ },
+ "on-mona": {
+  "ca": "On és la mona?",
+  "t": "Unde este la mona (maimuța)?"
+ },
+ "on-ratoli": {
+  "ca": "On és el ratolí?",
+  "t": "Unde este el ratolí (șoarecele)?"
+ },
+ "on-conill": {
+  "ca": "On és el conill?",
+  "t": "Unde este el conill (iepurele)?"
+ },
+ "on-poma": {
+  "ca": "On és la poma?",
+  "t": "Unde este la poma (mărul)?"
+ },
+ "on-pa": {
+  "ca": "On és el pa?",
+  "t": "Unde este el pa (pâinea)?"
+ },
+ "on-aigua": {
+  "ca": "On és l'aigua?",
+  "t": "Unde este l'aigua (apa)?"
+ },
+ "on-llet": {
+  "ca": "On és la llet?",
+  "t": "Unde este la llet (laptele)?"
+ },
+ "on-formatge": {
+  "ca": "On és el formatge?",
+  "t": "Unde este formatge (brânza)?"
+ },
+ "on-platan": {
+  "ca": "On és el plàtan?",
+  "t": "Unde este plàtan (banana)?"
+ },
+ "on-taronja": {
+  "ca": "On és la taronja?",
+  "t": "Unde este taronja (portocala)?"
+ },
+ "on-maduixa": {
+  "ca": "On és la maduixa?",
+  "t": "Unde este maduixa (căpșuna)?"
+ },
+ "on-raim": {
+  "ca": "On és el raïm?",
+  "t": "Unde este raïm (strugurii)?"
+ },
+ "on-pera": {
+  "ca": "On és la pera?",
+  "t": "Unde este pera (para)?"
+ },
+ "on-sindria": {
+  "ca": "On és la síndria?",
+  "t": "Unde este síndria (pepenele verde)?"
+ },
+ "on-ou": {
+  "ca": "On és l'ou?",
+  "t": "Unde este ou (oul)?"
+ },
+ "on-galeta": {
+  "ca": "On és la galeta?",
+  "t": "Unde este galeta (fursecul)?"
+ },
+ "on-pastanaga": {
+  "ca": "On és la pastanaga?",
+  "t": "Unde este pastanaga (morcovul)?"
+ },
+ "on-tomaca": {
+  "ca": "On és la tomaca?",
+  "t": "Unde este tomaca (roșia)?"
+ },
+ "on-gelat": {
+  "ca": "On és el gelat?",
+  "t": "Unde este gelat (înghețata)?"
+ },
+ "on-cap": {
+  "ca": "On és el cap?",
+  "t": "Unde este cap (capul)?"
+ },
+ "on-ulls": {
+  "ca": "On són els ulls?",
+  "t": "Unde sunt ulls (ochii)?"
+ },
+ "on-nas": {
+  "ca": "On és el nas?",
+  "t": "Unde este nas (nasul)?"
+ },
+ "on-boca": {
+  "ca": "On és la boca?",
+  "t": "Unde este boca (gura)?"
+ },
+ "on-braç": {
+  "ca": "On és el braç?",
+  "t": "Unde este braç (brațul)?"
+ },
+ "on-mà": {
+  "ca": "On és la mà?",
+  "t": "Unde este mà (mâna)?"
+ },
+ "on-cama": {
+  "ca": "On és la cama?",
+  "t": "Unde este cama (piciorul)?"
+ },
+ "on-peu": {
+  "ca": "On és el peu?",
+  "t": "Unde este peu (piciorul)?"
+ },
+ "on-orelles": {
+  "ca": "On són les orelles?",
+  "t": "Unde sunt orelles (urechile)?"
+ },
+ "on-dents": {
+  "ca": "On són les dents?",
+  "t": "Unde sunt dents (dinții)?"
+ },
+ "on-llengua": {
+  "ca": "On és la llengua?",
+  "t": "Unde este llengua (limba)?"
+ },
+ "on-dit": {
+  "ca": "On és el dit?",
+  "t": "Unde este dit (degetul)?"
+ },
+ "on-sabates": {
+  "ca": "On són les sabates?",
+  "t": "Unde sunt sabates (pantofii)?"
+ },
+ "on-barret": {
+  "ca": "On és el barret?",
+  "t": "Unde este barret (pălăria)?"
+ },
+ "on-samarreta": {
+  "ca": "On és la samarreta?",
+  "t": "Unde este samarreta (tricoul)?"
+ },
+ "on-pantalons": {
+  "ca": "On són els pantalons?",
+  "t": "Unde sunt pantalons (pantalonii)?"
+ },
+ "on-jaqueta": {
+  "ca": "On és la jaqueta?",
+  "t": "Unde este jaqueta (geaca)?"
+ },
+ "on-calcetins": {
+  "ca": "On són els calcetins?",
+  "t": "Unde sunt calcetins (șosetele)?"
+ },
+ "on-ulleres": {
+  "ca": "On són les ulleres?",
+  "t": "Unde sunt ulleres (ochelarii)?"
+ },
+ "on-guants": {
+  "ca": "On són els guants?",
+  "t": "Unde sunt guants (mănușile)?"
+ },
+ "on-bufanda": {
+  "ca": "On és la bufanda?",
+  "t": "Unde este bufanda (fularul)?"
+ },
+ "on-pare": {
+  "ca": "On és el pare?",
+  "t": "Unde este pare (tata)?"
+ },
+ "on-mare": {
+  "ca": "On és la mare?",
+  "t": "Unde este mare (mama)?"
+ },
+ "on-germà": {
+  "ca": "On és el germà?",
+  "t": "Unde este germà (fratele)?"
+ },
+ "on-germana": {
+  "ca": "On és la germana?",
+  "t": "Unde este germana (sora)?"
+ },
+ "on-bebe": {
+  "ca": "On és el bebé?",
+  "t": "Unde este bebé (bebelușul)?"
+ },
+ "on-iaio": {
+  "ca": "On és el iaio?",
+  "t": "Unde este iaio (bunicul)?"
+ },
+ "on-iaia": {
+  "ca": "On és la iaia?",
+  "t": "Unde este iaia (bunica)?"
+ },
+ "on-casa": {
+  "ca": "On és la casa?",
+  "t": "Unde este casa (casa)?"
+ },
+ "on-porta": {
+  "ca": "On és la porta?",
+  "t": "Unde este porta (ușa)?"
+ },
+ "on-llit": {
+  "ca": "On és el llit?",
+  "t": "Unde este llit (patul)?"
+ },
+ "on-cuina": {
+  "ca": "On és la cuina?",
+  "t": "Unde este cuina (bucătăria)?"
+ },
+ "on-sofa": {
+  "ca": "On és el sofà?",
+  "t": "Unde este sofà (canapeaua)?"
+ },
+ "on-banyera": {
+  "ca": "On és la banyera?",
+  "t": "Unde este banyera (cada)?"
+ },
+ "on-cotxe": {
+  "ca": "On és el cotxe?",
+  "t": "Unde este cotxe (mașina)?"
+ },
+ "on-pilota": {
+  "ca": "On és la pilota?",
+  "t": "Unde este pilota (mingea)?"
+ },
+ "on-llapis": {
+  "ca": "On és el llapis?",
+  "t": "Unde este llapis (creionul)?"
+ },
+ "qui-gos": {
+  "ca": "Qui fa bub, bub?",
+  "t": "Cine face bub, bub?"
+ },
+ "qui-gat": {
+  "ca": "Qui fa mèu, mèu?",
+  "t": "Cine face mèu, mèu?"
+ },
+ "qui-ocell": {
+  "ca": "Qui fa piu, piu?",
+  "t": "Cine face piu, piu?"
+ },
+ "qui-peix": {
+  "ca": "Qui fa glub, glub?",
+  "t": "Cine face glub, glub?"
+ },
+ "qui-vaca": {
+  "ca": "Qui fa muuu?",
+  "t": "Cine face muuu?"
+ },
+ "qui-cavall": {
+  "ca": "Qui fa hi, hi, hi?",
+  "t": "Cine face hi, hi, hi?"
+ },
+ "qui-porc": {
+  "ca": "Qui fa oinc, oinc?",
+  "t": "Cine face oinc, oinc?"
+ },
+ "qui-ovella": {
+  "ca": "Qui fa beee?",
+  "t": "Cine face beee?"
+ },
+ "qui-gallina": {
+  "ca": "Qui fa co, co, co?",
+  "t": "Cine face co, co, co?"
+ },
+ "qui-anec": {
+  "ca": "Qui fa cuac, cuac?",
+  "t": "Cine face cuac, cuac?"
+ },
+ "qui-granota": {
+  "ca": "Qui fa rac, rac?",
+  "t": "Cine face rac, rac?"
+ },
+ "qui-lleo": {
+  "ca": "Qui fa grrr?",
+  "t": "Cine face grrr?"
+ },
+ "qui-elefant": {
+  "ca": "Qui fa pruuu?",
+  "t": "Cine face pruuu?"
+ },
+ "qui-mona": {
+  "ca": "Qui fa uh, uh, ah, ah?",
+  "t": "Cine face uh, uh, ah, ah?"
+ },
+ "qui-ratoli": {
+  "ca": "Qui fa ii, ii?",
+  "t": "Cine face ii, ii?"
+ },
+ "qui-conill": {
+  "ca": "Qui fa nyam, nyam?",
+  "t": "Cine face nyam, nyam?"
+ },
+ "toca-roig": {
+  "ca": "Toca el roig!",
+  "t": "Atinge roig (roșu)!"
+ },
+ "bamb-roig": {
+  "ca": "Explota les bambolles de color roig!",
+  "t": "Sparge bulele de culoare roig (roșie)!"
+ },
+ "toca-blau": {
+  "ca": "Toca el blau!",
+  "t": "Atinge blau (albastru)!"
+ },
+ "bamb-blau": {
+  "ca": "Explota les bambolles de color blau!",
+  "t": "Sparge bulele de culoare blau (albastră)!"
+ },
+ "toca-groc": {
+  "ca": "Toca el groc!",
+  "t": "Atinge groc (galben)!"
+ },
+ "bamb-groc": {
+  "ca": "Explota les bambolles de color groc!",
+  "t": "Sparge bulele de culoare groc (galbenă)!"
+ },
+ "toca-verd": {
+  "ca": "Toca el verd!",
+  "t": "Atinge verd (verde)!"
+ },
+ "bamb-verd": {
+  "ca": "Explota les bambolles de color verd!",
+  "t": "Sparge bulele de culoare verd (verde)!"
+ },
+ "toca-taronja-color": {
+  "ca": "Toca el taronja!",
+  "t": "Atinge taronja (portocaliu)!"
+ },
+ "bamb-taronja-color": {
+  "ca": "Explota les bambolles de color taronja!",
+  "t": "Sparge bulele de culoare taronja (portocalie)!"
+ },
+ "toca-negre": {
+  "ca": "Toca el negre!",
+  "t": "Atinge negre (negru)!"
+ },
+ "bamb-negre": {
+  "ca": "Explota les bambolles de color negre!",
+  "t": "Sparge bulele de culoare negre (neagră)!"
+ },
+ "toca-blanc": {
+  "ca": "Toca el blanc!",
+  "t": "Atinge blanc (alb)!"
+ },
+ "bamb-blanc": {
+  "ca": "Explota les bambolles de color blanc!",
+  "t": "Sparge bulele de culoare blanc (albă)!"
+ },
+ "toca-rosa": {
+  "ca": "Toca el rosa!",
+  "t": "Atinge rosa (roz)!"
+ },
+ "bamb-rosa": {
+  "ca": "Explota les bambolles de color rosa!",
+  "t": "Sparge bulele de culoare rosa (roz)!"
+ },
+ "toca-morat": {
+  "ca": "Toca el morat!",
+  "t": "Atinge morat (movul)!"
+ },
+ "bamb-morat": {
+  "ca": "Explota les bambolles de color morat!",
+  "t": "Sparge bulele de culoare morat (mov)!"
+ },
+ "toca-marro": {
+  "ca": "Toca el marró!",
+  "t": "Atinge marró (maroul)!"
+ },
+ "bamb-marro": {
+  "ca": "Explota les bambolles de color marró!",
+  "t": "Sparge bulele de culoare marró (maro)!"
+ },
+ "toca-gris": {
+  "ca": "Toca el gris!",
+  "t": "Atinge gris (griul)!"
+ },
+ "bamb-gris": {
+  "ca": "Explota les bambolles de color gris!",
+  "t": "Sparge bulele de culoare gris (gri)!"
+ },
+ "dequin-poma": {
+  "ca": "De quin color és la poma?",
+  "t": "Ce culoare are poma (mărul)?"
+ },
+ "dequin-platan": {
+  "ca": "De quin color és el plàtan?",
+  "t": "Ce culoare are plàtan (banana)?"
+ },
+ "dequin-granota": {
+  "ca": "De quin color és la granota?",
+  "t": "Ce culoare are granota (broasca)?"
+ },
+ "dequin-taronja": {
+  "ca": "De quin color és la taronja?",
+  "t": "Ce culoare are taronja (portocala)?"
+ },
+ "dequin-raim": {
+  "ca": "De quin color és el raïm?",
+  "t": "Ce culoare are raïm (strugurii)?"
+ },
+ "dequin-porc": {
+  "ca": "De quin color és el porc?",
+  "t": "Ce culoare are porc (porcul)?"
+ },
+ "dequin-elefant": {
+  "ca": "De quin color és l'elefant?",
+  "t": "Ce culoare are elefant (elefantul)?"
+ },
+ "dequin-os": {
+  "ca": "De quin color és l'ós?",
+  "t": "Ce culoare are ós (ursul)?"
+ },
+ "dequin-balena": {
+  "ca": "De quin color és la balena?",
+  "t": "Ce culoare are balena (balena)?"
+ },
+ "dequin-nuvol": {
+  "ca": "De quin color és el núvol?",
+  "t": "Ce culoare are núvol (norul)?"
+ },
+ "emo-feliç": {
+  "ca": "Està feliç!",
+  "t": "Este feliç (fericită)!"
+ },
+ "emo-trist": {
+  "ca": "Està trist!",
+  "t": "Este trist (tristă)!"
+ },
+ "emo-enfadat": {
+  "ca": "Està enfadat!",
+  "t": "Este enfadat (supărată)!"
+ },
+ "emo-espantat": {
+  "ca": "Té por!",
+  "t": "Îi este por (frică)!"
+ },
+ "emo-sorpres": {
+  "ca": "Està sorprès!",
+  "t": "Este sorprès (surprinsă)!"
+ },
+ "emo-adormit": {
+  "ca": "Té son!",
+  "t": "Îi este son (somn)!"
+ },
+ "dona-1": {
+  "ca": "Dona-li un caramel a la Taronjeta!",
+  "t": "Dă-i Taronjetei un (unu) caramel!"
+ },
+ "onhiha-1": {
+  "ca": "On n'hi ha un?",
+  "t": "Unde este un (unu)?"
+ },
+ "dona-2": {
+  "ca": "Dona-li dos caramels a la Taronjeta!",
+  "t": "Dă-i Taronjetei dos (două) bomboane!"
+ },
+ "onhiha-2": {
+  "ca": "On n'hi ha dos?",
+  "t": "Unde sunt dos (două)?"
+ },
+ "dona-3": {
+  "ca": "Dona-li tres caramels a la Taronjeta!",
+  "t": "Dă-i Taronjetei tres (trei) bomboane!"
+ },
+ "onhiha-3": {
+  "ca": "On n'hi ha tres?",
+  "t": "Unde sunt tres (trei)?"
+ },
+ "dona-4": {
+  "ca": "Dona-li quatre caramels a la Taronjeta!",
+  "t": "Dă-i Taronjetei quatre (patru) bomboane!"
+ },
+ "onhiha-4": {
+  "ca": "On n'hi ha quatre?",
+  "t": "Unde sunt quatre (patru)?"
+ },
+ "dona-5": {
+  "ca": "Dona-li cinc caramels a la Taronjeta!",
+  "t": "Dă-i Taronjetei cinc (cinci) bomboane!"
+ },
+ "onhiha-5": {
+  "ca": "On n'hi ha cinc?",
+  "t": "Unde sunt cinc (cinci)?"
+ },
+ "dona-6": {
+  "ca": "Dona-li sis caramels a la Taronjeta!",
+  "t": "Dă-i Taronjetei sis (șase) bomboane!"
+ },
+ "onhiha-6": {
+  "ca": "On n'hi ha sis?",
+  "t": "Unde sunt sis (șase)?"
+ },
+ "dona-7": {
+  "ca": "Dona-li set caramels a la Taronjeta!",
+  "t": "Dă-i Taronjetei set (șapte) bomboane!"
+ },
+ "onhiha-7": {
+  "ca": "On n'hi ha set?",
+  "t": "Unde sunt set (șapte)?"
+ },
+ "dona-8": {
+  "ca": "Dona-li huit caramels a la Taronjeta!",
+  "t": "Dă-i Taronjetei huit (opt) bomboane!"
+ },
+ "onhiha-8": {
+  "ca": "On n'hi ha huit?",
+  "t": "Unde sunt huit (opt)?"
+ },
+ "dona-9": {
+  "ca": "Dona-li nou caramels a la Taronjeta!",
+  "t": "Dă-i Taronjetei nou (nouă) bomboane!"
+ },
+ "onhiha-9": {
+  "ca": "On n'hi ha nou?",
+  "t": "Unde sunt nouă (nou)?"
+ },
+ "dona-10": {
+  "ca": "Dona-li deu caramels a la Taronjeta!",
+  "t": "Dă-i Taronjetei zece (deu) bomboane!"
+ },
+ "onhiha-10": {
+  "ca": "On n'hi ha deu?",
+  "t": "Unde sunt zece (deu)?"
+ },
+ "plat-poma": {
+  "ca": "Posa la poma al plat!",
+  "t": "Pune poma (mărul) în farfurie!"
+ },
+ "plat-pa": {
+  "ca": "Posa el pa al plat!",
+  "t": "Pune pa (pâinea) în farfurie!"
+ },
+ "plat-aigua": {
+  "ca": "Posa l'aigua al plat!",
+  "t": "Pune aigua (apa) în farfurie!"
+ },
+ "plat-llet": {
+  "ca": "Posa la llet al plat!",
+  "t": "Pune llet (laptele) în farfurie!"
+ },
+ "plat-formatge": {
+  "ca": "Posa el formatge al plat!",
+  "t": "Pune formatge (brânza) în farfurie!"
+ },
+ "plat-platan": {
+  "ca": "Posa el plàtan al plat!",
+  "t": "Pune plàtan (banana) în farfurie!"
+ },
+ "plat-taronja": {
+  "ca": "Posa la taronja al plat!",
+  "t": "Pune taronja (portocala) în farfurie!"
+ },
+ "plat-maduixa": {
+  "ca": "Posa la maduixa al plat!",
+  "t": "Pune maduixa (căpșuna) în farfurie!"
+ },
+ "plat-raim": {
+  "ca": "Posa el raïm al plat!",
+  "t": "Pune raïm (strugurii) în farfurie!"
+ },
+ "plat-pera": {
+  "ca": "Posa la pera al plat!",
+  "t": "Pune pera (para) în farfurie!"
+ },
+ "plat-sindria": {
+  "ca": "Posa la síndria al plat!",
+  "t": "Pune síndria (pepenele verde) în farfurie!"
+ },
+ "plat-ou": {
+  "ca": "Posa l'ou al plat!",
+  "t": "Pune ou (oul) în farfurie!"
+ },
+ "plat-galeta": {
+  "ca": "Posa la galeta al plat!",
+  "t": "Pune galeta (biscuitul) în farfurie!"
+ },
+ "plat-pastanaga": {
+  "ca": "Posa la pastanaga al plat!",
+  "t": "Pune pastanaga (morcovul) în farfurie!"
+ },
+ "plat-tomaca": {
+  "ca": "Posa la tomaca al plat!",
+  "t": "Pune tomaca (roșia) în farfurie!"
+ },
+ "plat-gelat": {
+  "ca": "Posa el gelat al plat!",
+  "t": "Pune gelat (înghețata) în farfurie!"
+ },
+ "motxilla-poma": {
+  "ca": "Posa la poma a la motxilla!",
+  "t": "Pune poma (mărul) în rucsac!"
+ },
+ "motxilla-pa": {
+  "ca": "Posa el pa a la motxilla!",
+  "t": "Pune pa (pâinea) în rucsac!"
+ },
+ "motxilla-aigua": {
+  "ca": "Posa l'aigua a la motxilla!",
+  "t": "Pune aigua (apa) în rucsac!"
+ },
+ "motxilla-llet": {
+  "ca": "Posa la llet a la motxilla!",
+  "t": "Pune llet (laptele) în rucsac!"
+ },
+ "motxilla-formatge": {
+  "ca": "Posa el formatge a la motxilla!",
+  "t": "Pune formatge (brânza) în rucsac!"
+ },
+ "motxilla-platan": {
+  "ca": "Posa el plàtan a la motxilla!",
+  "t": "Pune plàtan (banana) în rucsac!"
+ },
+ "motxilla-taronja": {
+  "ca": "Posa la taronja a la motxilla!",
+  "t": "Pune taronja (portocala) în rucsac!"
+ },
+ "motxilla-maduixa": {
+  "ca": "Posa la maduixa a la motxilla!",
+  "t": "Pune maduixa (căpșuna) în rucsac!"
+ },
+ "motxilla-raim": {
+  "ca": "Posa el raïm a la motxilla!",
+  "t": "Pune raïm (strugurii) în rucsac!"
+ },
+ "motxilla-pera": {
+  "ca": "Posa la pera a la motxilla!",
+  "t": "Pune pera (para) în rucsac!"
+ },
+ "motxilla-sindria": {
+  "ca": "Posa la síndria a la motxilla!",
+  "t": "Pune síndria (pepenele verde) în rucsac!"
+ },
+ "motxilla-ou": {
+  "ca": "Posa l'ou a la motxilla!",
+  "t": "Pune ou (oul) în rucsac!"
+ },
+ "motxilla-galeta": {
+  "ca": "Posa la galeta a la motxilla!",
+  "t": "Pune galeta (biscuitul) în rucsac!"
+ },
+ "motxilla-pastanaga": {
+  "ca": "Posa la pastanaga a la motxilla!",
+  "t": "Pune pastanaga (morcovul) în rucsac!"
+ },
+ "motxilla-tomaca": {
+  "ca": "Posa la tomaca a la motxilla!",
+  "t": "Pune tomaca (roșia) în rucsac!"
+ },
+ "motxilla-gelat": {
+  "ca": "Posa el gelat a la motxilla!",
+  "t": "Pune gelat (înghețata) în rucsac!"
+ },
+ "posali-cap": {
+  "ca": "Posa-li el cap!",
+  "t": "Pune-i capul (cap)!"
+ },
+ "posali-ulls": {
+  "ca": "Posa-li els ulls!",
+  "t": "Pune-i ochii (ulls)!"
+ },
+ "posali-nas": {
+  "ca": "Posa-li el nas!",
+  "t": "Pune-i nasul (nas)!"
+ },
+ "posali-boca": {
+  "ca": "Posa-li la boca!",
+  "t": "Pune-i gura (boca)!"
+ },
+ "posali-braç": {
+  "ca": "Posa-li el braç!",
+  "t": "Pune-i brațul (braç)!"
+ },
+ "posali-mà": {
+  "ca": "Posa-li la mà!",
+  "t": "Pune-i „la mà” (mâna)!"
+ },
+ "posali-cama": {
+  "ca": "Posa-li la cama!",
+  "t": "Pune-i „la cama” (piciorul)!"
+ },
+ "posali-peu": {
+  "ca": "Posa-li el peu!",
+  "t": "Pune-i „el peu” (laba piciorului)!"
+ },
+ "posali-sabates": {
+  "ca": "Posa-li les sabates!",
+  "t": "Pune-i „les sabates” (pantofii)!"
+ },
+ "posali-barret": {
+  "ca": "Posa-li el barret!",
+  "t": "Pune-i „el barret” (pălăria)!"
+ },
+ "posali-samarreta": {
+  "ca": "Posa-li la samarreta!",
+  "t": "Pune-i „la samarreta” (tricoul)!"
+ },
+ "porta-pare-casa": {
+  "ca": "Porta el pare a la casa!",
+  "t": "Du-l pe „el pare” (tata) în „la casa” (casă)!"
+ },
+ "porta-pare-porta": {
+  "ca": "Porta el pare a la porta!",
+  "t": "Du-l pe „el pare” (tata) la „la porta” (ușă)!"
+ },
+ "porta-pare-llit": {
+  "ca": "Porta el pare al llit!",
+  "t": "Du-l pe „el pare” (tata) în „el llit” (pat)!"
+ },
+ "porta-pare-cuina": {
+  "ca": "Porta el pare a la cuina!",
+  "t": "Du-l pe „el pare” (tata) în „la cuina” (bucătărie)!"
+ },
+ "porta-pare-sofa": {
+  "ca": "Porta el pare al sofà!",
+  "t": "Du-l pe „el pare” (tata) pe „el sofà” (canapea)!"
+ },
+ "porta-pare-banyera": {
+  "ca": "Porta el pare a la banyera!",
+  "t": "Du-l pe „el pare” (tata) în „la banyera” (cadă)!"
+ },
+ "porta-mare-casa": {
+  "ca": "Porta la mare a la casa!",
+  "t": "Du-o pe „la mare” (mama) în „la casa” (casă)!"
+ },
+ "porta-mare-porta": {
+  "ca": "Porta la mare a la porta!",
+  "t": "Du-o pe „la mare” (mama) la „la porta” (ușă)!"
+ },
+ "porta-mare-llit": {
+  "ca": "Porta la mare al llit!",
+  "t": "Du-o pe „la mare” (mama) în „el llit” (pat)!"
+ },
+ "porta-mare-cuina": {
+  "ca": "Porta la mare a la cuina!",
+  "t": "Du-o pe „la mare” (mama) în „la cuina” (bucătărie)!"
+ },
+ "porta-mare-sofa": {
+  "ca": "Porta la mare al sofà!",
+  "t": "Du-o pe „la mare” (mama) pe „el sofà” (canapea)!"
+ },
+ "porta-mare-banyera": {
+  "ca": "Porta la mare a la banyera!",
+  "t": "Du-o pe „la mare” (mama) în „la banyera” (cadă)!"
+ },
+ "porta-germà-casa": {
+  "ca": "Porta el germà a la casa!",
+  "t": "Du-l pe „el germà” (fratele) în „la casa” (casă)!"
+ },
+ "porta-germà-porta": {
+  "ca": "Porta el germà a la porta!",
+  "t": "Du-l pe „el germà” (fratele) la „la porta” (ușă)!"
+ },
+ "porta-germà-llit": {
+  "ca": "Porta el germà al llit!",
+  "t": "Du-l pe „el germà” (fratele) în „el llit” (pat)!"
+ },
+ "porta-germà-cuina": {
+  "ca": "Porta el germà a la cuina!",
+  "t": "Du-l pe „el germà” (fratele) în „la cuina” (bucătărie)!"
+ },
+ "porta-germà-sofa": {
+  "ca": "Porta el germà al sofà!",
+  "t": "Du-l pe „el germà” (fratele) pe „el sofà” (canapea)!"
+ },
+ "porta-germà-banyera": {
+  "ca": "Porta el germà a la banyera!",
+  "t": "Du-l pe „el germà” (fratele) în „la banyera” (cadă)!"
+ },
+ "porta-germana-casa": {
+  "ca": "Porta la germana a la casa!",
+  "t": "Du-o pe „la germana” (sora) în „la casa” (casă)!"
+ },
+ "porta-germana-porta": {
+  "ca": "Porta la germana a la porta!",
+  "t": "Du-o pe „la germana” (sora) la „la porta” (ușă)!"
+ },
+ "porta-germana-llit": {
+  "ca": "Porta la germana al llit!",
+  "t": "Du-o pe „la germana” (sora) în „el llit” (pat)!"
+ },
+ "porta-germana-cuina": {
+  "ca": "Porta la germana a la cuina!",
+  "t": "Du-o pe „la germana” (sora) în „la cuina” (bucătărie)!"
+ },
+ "porta-germana-sofa": {
+  "ca": "Porta la germana al sofà!",
+  "t": "Du-o pe „la germana” (sora) pe „el sofà” (canapea)!"
+ },
+ "porta-germana-banyera": {
+  "ca": "Porta la germana a la banyera!",
+  "t": "Du-o pe „la germana” (sora) în „la banyera” (cadă)!"
+ },
+ "porta-bebe-casa": {
+  "ca": "Porta el bebé a la casa!",
+  "t": "Du-l pe „el bebé” (bebelușul) în „la casa” (casă)!"
+ },
+ "porta-bebe-porta": {
+  "ca": "Porta el bebé a la porta!",
+  "t": "Du-l pe „el bebé” (bebelușul) la „la porta” (ușă)!"
+ },
+ "porta-bebe-llit": {
+  "ca": "Porta el bebé al llit!",
+  "t": "Du-l pe „el bebé” (bebelușul) în „el llit” (pat)!"
+ },
+ "porta-bebe-cuina": {
+  "ca": "Porta el bebé a la cuina!",
+  "t": "Du-l pe „el bebé” (bebelușul) în „la cuina” (bucătărie)!"
+ },
+ "porta-bebe-sofa": {
+  "ca": "Porta el bebé al sofà!",
+  "t": "Du-l pe „el bebé” (bebelușul) pe „el sofà” (canapea)!"
+ },
+ "porta-bebe-banyera": {
+  "ca": "Porta el bebé a la banyera!",
+  "t": "Du-l pe „el bebé” (bebelușul) în „la banyera” (cadă)!"
+ },
+ "porta-iaio-casa": {
+  "ca": "Porta el iaio a la casa!",
+  "t": "Du-l pe „el iaio” (bunicul) în „la casa” (casă)!"
+ },
+ "porta-iaio-porta": {
+  "ca": "Porta el iaio a la porta!",
+  "t": "Du-l pe „el iaio” (bunicul) la „la porta” (ușă)!"
+ },
+ "porta-iaio-llit": {
+  "ca": "Porta el iaio al llit!",
+  "t": "Du-l pe „el iaio” (bunicul) în „el llit” (pat)!"
+ },
+ "porta-iaio-cuina": {
+  "ca": "Porta el iaio a la cuina!",
+  "t": "Du-l pe „el iaio” (bunicul) în „la cuina” (bucătărie)!"
+ },
+ "porta-iaio-sofa": {
+  "ca": "Porta el iaio al sofà!",
+  "t": "Du-l pe bunicul la canapea!"
+ },
+ "porta-iaio-banyera": {
+  "ca": "Porta el iaio a la banyera!",
+  "t": "Du-l pe bunicul în cadă!"
+ },
+ "porta-iaia-casa": {
+  "ca": "Porta la iaia a la casa!",
+  "t": "Du-o pe bunica în casă!"
+ },
+ "porta-iaia-porta": {
+  "ca": "Porta la iaia a la porta!",
+  "t": "Du-o pe bunica la ușă!"
+ },
+ "porta-iaia-llit": {
+  "ca": "Porta la iaia al llit!",
+  "t": "Du-o pe bunica în pat!"
+ },
+ "porta-iaia-cuina": {
+  "ca": "Porta la iaia a la cuina!",
+  "t": "Du-o pe bunica în bucătărie!"
+ },
+ "porta-iaia-sofa": {
+  "ca": "Porta la iaia al sofà!",
+  "t": "Du-o pe bunica la canapea!"
+ },
+ "porta-iaia-banyera": {
+  "ca": "Porta la iaia a la banyera!",
+  "t": "Du-o pe bunica în cadă!"
+ },
+ "on-abc-a": {
+  "ca": "On és la a?",
+  "t": "Unde este «la a»?"
+ },
+ "comenca-a": {
+  "ca": "L'abella! Amb quina lletra comença?",
+  "t": "L'abella (albina)! Cu ce literă începe?"
+ },
+ "on-abc-b": {
+  "ca": "On és la be?",
+  "t": "Unde este «la be»?"
+ },
+ "comenca-b": {
+  "ca": "La balena! Amb quina lletra comença?",
+  "t": "La balena (balena)! Cu ce literă începe?"
+ },
+ "on-abc-c": {
+  "ca": "On és la ce?",
+  "t": "Unde este «la ce»?"
+ },
+ "comenca-c": {
+  "ca": "La casa! Amb quina lletra comença?",
+  "t": "La casa (casa)! Cu ce literă începe?"
+ },
+ "on-abc-d": {
+  "ca": "On és la de?",
+  "t": "Unde este «la de»?"
+ },
+ "comenca-d": {
+  "ca": "El dofí! Amb quina lletra comença?",
+  "t": "El dofí (delfinul)! Cu ce literă începe?"
+ },
+ "on-abc-e": {
+  "ca": "On és la e?",
+  "t": "Unde este «la e»?"
+ },
+ "comenca-e": {
+  "ca": "L'elefant! Amb quina lletra comença?",
+  "t": "L'elefant (elefantul)! Cu ce literă începe?"
+ },
+ "on-abc-f": {
+  "ca": "On és la efe?",
+  "t": "Unde este «la efe»?"
+ },
+ "comenca-f": {
+  "ca": "La flor! Amb quina lletra comença?",
+  "t": "La flor (floarea)! Cu ce literă începe?"
+ },
+ "on-abc-g": {
+  "ca": "On és la ge?",
+  "t": "Unde este «la ge»?"
+ },
+ "comenca-g": {
+  "ca": "El gat! Amb quina lletra comença?",
+  "t": "El gat (pisica)! Cu ce literă începe?"
+ },
+ "on-abc-h": {
+  "ca": "On és la hac?",
+  "t": "Unde este «la hac»?"
+ },
+ "comenca-h": {
+  "ca": "L'helicòpter! Amb quina lletra comença?",
+  "t": "L'helicòpter (elicopterul)! Cu ce literă începe?"
+ },
+ "on-abc-i": {
+  "ca": "On és la i?",
+  "t": "Unde este «la i»?"
+ },
+ "comenca-i": {
+  "ca": "L'illa! Amb quina lletra comença?",
+  "t": "L'illa (insula)! Cu ce literă începe?"
+ },
+ "on-abc-j": {
+  "ca": "On és la jota?",
+  "t": "Unde este «la jota»?"
+ },
+ "comenca-j": {
+  "ca": "La jirafa! Amb quina lletra comença?",
+  "t": "La jirafa (girafa)! Cu ce literă începe?"
+ },
+ "on-abc-k": {
+  "ca": "On és la ka?",
+  "t": "Unde este «la ka»?"
+ },
+ "comenca-k": {
+  "ca": "El koala! Amb quina lletra comença?",
+  "t": "El koala (koala)! Cu ce literă începe?"
+ },
+ "on-abc-l": {
+  "ca": "On és la ela?",
+  "t": "Unde este «la ela»?"
+ },
+ "comenca-l": {
+  "ca": "La lluna! Amb quina lletra comença?",
+  "t": "La lluna (luna)! Cu ce literă începe?"
+ },
+ "on-abc-m": {
+  "ca": "On és la ema?",
+  "t": "Unde este «la ema»?"
+ },
+ "comenca-m": {
+  "ca": "La maduixa! Amb quina lletra comença?",
+  "t": "La maduixa (căpșuna)! Cu ce literă începe?"
+ },
+ "on-abc-n": {
+  "ca": "On és la ena?",
+  "t": "Unde este «la ena»?"
+ },
+ "comenca-n": {
+  "ca": "El núvol! Amb quina lletra comença?",
+  "t": "El núvol (norul)! Cu ce literă începe?"
+ },
+ "on-abc-o": {
+  "ca": "On és la o?",
+  "t": "Unde este «la o»?"
+ },
+ "comenca-o": {
+  "ca": "L'ovella! Amb quina lletra comença?",
+  "t": "L'ovella (oaia)! Cu ce literă începe?"
+ },
+ "on-abc-p": {
+  "ca": "On és la pe?",
+  "t": "Unde este «la pe»?"
+ },
+ "comenca-p": {
+  "ca": "La poma! Amb quina lletra comença?",
+  "t": "La poma (mărul)! Cu ce literă începe?"
+ },
+ "on-abc-q": {
+  "ca": "On és la cu?",
+  "t": "Unde este litera „cu”?"
+ },
+ "comenca-q": {
+  "ca": "El quatre! Amb quina lletra comença?",
+  "t": "Quatre (patru)! Cu ce literă începe?"
+ },
+ "on-abc-r": {
+  "ca": "On és la erre?",
+  "t": "Unde este litera „erre”?"
+ },
+ "comenca-r": {
+  "ca": "El ratolí! Amb quina lletra comença?",
+  "t": "Ratolí (șoarece)! Cu ce literă începe?"
+ },
+ "on-abc-s": {
+  "ca": "On és la essa?",
+  "t": "Unde este litera „essa”?"
+ },
+ "comenca-s": {
+  "ca": "El sol! Amb quina lletra comença?",
+  "t": "Sol (soare)! Cu ce literă începe?"
+ },
+ "on-abc-t": {
+  "ca": "On és la te?",
+  "t": "Unde este litera „te”?"
+ },
+ "comenca-t": {
+  "ca": "La tortuga! Amb quina lletra comença?",
+  "t": "Tortuga (broască țestoasă)! Cu ce literă începe?"
+ },
+ "on-abc-u": {
+  "ca": "On és la u?",
+  "t": "Unde este litera „u”?"
+ },
+ "comenca-u": {
+  "ca": "L'unicorn! Amb quina lletra comença?",
+  "t": "Unicorn (unicorn)! Cu ce literă începe?"
+ },
+ "on-abc-v": {
+  "ca": "On és la ve?",
+  "t": "Unde este litera „ve”?"
+ },
+ "comenca-v": {
+  "ca": "La vaca! Amb quina lletra comença?",
+  "t": "Vaca (vacă)! Cu ce literă începe?"
+ },
+ "on-abc-x": {
+  "ca": "On és la xeix?",
+  "t": "Unde este litera „xeix”?"
+ },
+ "comenca-x": {
+  "ca": "La xocolata! Amb quina lletra comença?",
+  "t": "Xocolata (ciocolată)! Cu ce literă începe?"
+ },
+ "on-abc-z": {
+  "ca": "On és la zeta?",
+  "t": "Unde este litera „zeta”?"
+ },
+ "comenca-z": {
+  "ca": "La zebra! Amb quina lletra comença?",
+  "t": "Zebra (zebră)! Cu ce literă începe?"
+ },
+ "illa-accions": {
+  "ca": "L'illa de les accions!",
+  "t": "Insula acțiunilor!"
+ },
+ "illa-contraris": {
+  "ca": "L'illa dels contraris!",
+  "t": "Insula contrariilor!"
+ },
+ "parelles": {
+  "ca": "Busca les parelles! Gira dues cartes iguals.",
+  "t": "Caută perechile! Întoarce două cărți la fel."
+ },
+ "primer": {
+  "ca": "Primer, toca...",
+  "t": "Mai întâi, atinge..."
+ },
+ "despres": {
+  "ca": "I després...",
+  "t": "Apoi..."
+ },
+ "ordre-numeros": {
+  "ca": "Toca'ls en ordre, de menys a més!",
+  "t": "Atinge-le în ordine, de la cel mai mic la cel mai mare!"
+ },
+ "ordre-vocals": {
+  "ca": "Toca les vocals en ordre: a, e, i, o, u!",
+  "t": "Atinge vocalele în ordine: a, e, i, o, u!"
+ },
+ "mes": {
+  "ca": "On n'hi ha més?",
+  "t": "Unde sunt mai multe?"
+ },
+ "menys": {
+  "ca": "On n'hi ha menys?",
+  "t": "Unde sunt mai puține?"
+ },
+ "sort-habitat": {
+  "ca": "On viu? Al cel, a l'aigua o a la terra?",
+  "t": "Unde trăiește? În cer, în apă sau pe uscat?"
+ },
+ "sort-fruita": {
+  "ca": "La fruita, a un costat! La verdura, a l'altre!",
+  "t": "Fructele, într-o parte! Legumele, în cealaltă!"
+ },
+ "sort-calent": {
+  "ca": "Les coses calentes, al foc! Les coses fredes, al gel!",
+  "t": "Lucrurile calde, la foc! Cele reci, la gheață!"
+ },
+ "quin-gran": {
+  "ca": "Quin és gran?",
+  "t": "Care e mare?"
+ },
+ "quin-xicotet": {
+  "ca": "Quin és xicotet?",
+  "t": "Care e mic?"
+ },
+ "qui-acc-menjar": {
+  "ca": "Qui menja?",
+  "t": "Cine mănâncă?"
+ },
+ "qui-acc-beure": {
+  "ca": "Qui beu?",
+  "t": "Cine bea?"
+ },
+ "qui-acc-dormir": {
+  "ca": "Qui dorm?",
+  "t": "Cine doarme?"
+ },
+ "qui-acc-correr": {
+  "ca": "Qui corre?",
+  "t": "Cine aleargă?"
+ },
+ "qui-acc-saltar": {
+  "ca": "Qui salta?",
+  "t": "Cine sare?"
+ },
+ "qui-acc-nadar": {
+  "ca": "Qui nada?",
+  "t": "Cine înoată?"
+ },
+ "qui-acc-ballar": {
+  "ca": "Qui balla?",
+  "t": "Cine dansează?"
+ },
+ "qui-acc-cantar": {
+  "ca": "Qui canta?",
+  "t": "Cine cântă?"
+ },
+ "qui-acc-pintar": {
+  "ca": "Qui pinta?",
+  "t": "Cine pictează?"
+ },
+ "qui-acc-llegir": {
+  "ca": "Qui llig?",
+  "t": "Cine citește?"
+ },
+ "qui-acc-plorar": {
+  "ca": "Qui plora?",
+  "t": "Cine plânge (plora)?"
+ },
+ "qui-acc-riure": {
+  "ca": "Qui riu?",
+  "t": "Cine râde (riu)?"
+ },
+ "ask-op-dia": {
+  "ca": "On és el dia?",
+  "t": "Unde este ziua (dia)?"
+ },
+ "ask-op-nit": {
+  "ca": "On és la nit?",
+  "t": "Unde este noaptea (nit)?"
+ },
+ "ask-op-calent": {
+  "ca": "Què està calent?",
+  "t": "Ce este cald (calent)?"
+ },
+ "ask-op-fred": {
+  "ca": "Què està fred?",
+  "t": "Ce este rece (fred)?"
+ },
+ "ask-op-rapid": {
+  "ca": "Qui és ràpid?",
+  "t": "Cine este rapid (ràpid)?"
+ },
+ "ask-op-lent": {
+  "ca": "Qui és lent?",
+  "t": "Cine este lent (lent)?"
+ },
+ "ask-op-alt": {
+  "ca": "Qui és alt?",
+  "t": "Cine este înalt (alt)?"
+ },
+ "ask-op-baix": {
+  "ca": "Qui és baix?",
+  "t": "Cine este scund (baix)?"
+ },
+ "ask-op-obert": {
+  "ca": "Quin llibre està obert?",
+  "t": "Care carte este deschisă (obert)?"
+ },
+ "ask-op-tancat": {
+  "ca": "Quin llibre està tancat?",
+  "t": "Care carte este închisă (tancat)?"
+ },
+ "ask-op-content": {
+  "ca": "Qui està content?",
+  "t": "Cine este vesel (content)?"
+ },
+ "ask-op-trist": {
+  "ca": "Qui està trist?",
+  "t": "Cine este trist (trist)?"
+ },
+ "ll-z0r06y": {
+  "ca": "Hola i adéu!",
+  "t": "Hola (Bună) și adéu (la revedere)!"
+ },
+ "ll-2vojlv": {
+  "ca": "Hola! Hui aprendrem a saludar i a dir adéu. Escolta bé i toca els dibuixos!",
+  "t": "Hola (Bună)! Astăzi vom învăța să salutăm și să ne luăm rămas-bun. Ascultă cu atenție și atinge desenele!"
+ },
+ "ll-1ilzsq3": {
+  "ca": "Quan veiem algú, el saludem i diem: Hola!",
+  "t": "Când vedem pe cineva, îl salutăm și spunem: Hola (Bună)!"
+ },
+ "ll-wknal9": {
+  "ca": "Pel matí, quan ix el sol, diem: Bon dia!",
+  "t": "Dimineața, când răsare soarele, spunem: Bon dia (Bună dimineața)!"
+ },
+ "ll-3lyhha": {
+  "ca": "Per la vesprada, després de dinar, diem: Bona vesprada!",
+  "t": "După-amiaza, după ce luăm prânzul, spunem: Bona vesprada (Bună ziua)!"
+ },
+ "ll-1d5mdi6": {
+  "ca": "Per la nit, quan ens n'anem a dormir, diem: Bona nit!",
+  "t": "Noaptea, când mergem la culcare, spunem: Bona nit (Noapte bună)!"
+ },
+ "ll-rb1drv": {
+  "ca": "I quan ens n'anem, diem: Adéu! O també: Fins demà!",
+  "t": "Iar când plecăm, spunem: Adéu (La revedere)! Sau și: Fins demà (Pe mâine)!"
+ },
+ "ll-bi462r": {
+  "ca": "Ara toca tots els dibuixos i repeteix amb mi!",
+  "t": "Acum atinge toate desenele și repetă împreună cu mine!"
+ },
+ "ll-tizire": {
+  "ca": "Bon dia, Pep!",
+  "t": "Bon dia (Bună dimineața), Pep!"
+ },
+ "ll-h3q1ox": {
+  "ca": "Bon dia, Taronjeta!",
+  "t": "Bon dia (Bună dimineața), Taronjeta!"
+ },
+ "ll-stl6g0": {
+  "ca": "Me'n vaig a l'escola. Adéu!",
+  "t": "Merg la școală. Adéu (La revedere)!"
+ },
+ "ll-ollic0": {
+  "ca": "Adéu! Fins demà!",
+  "t": "Adéu (La revedere)! Fins demà (Pe mâine)!"
+ },
+ "ll-12t0u2e": {
+  "ca": "Arribes a l'escola pel matí. Què dius?",
+  "t": "Ajungi dimineața la școală. Ce spui?"
+ },
+ "ll-4luti2": {
+  "ca": "És de nit i te'n vas a dormir. Què dius?",
+  "t": "E noapte și mergi la culcare. Ce spui?"
+ },
+ "ll-17v8ge6": {
+  "ca": "També hi ha paraules màgiques! Són xicotetes, però posen molt contenta la gent.",
+  "t": "Mai există și cuvinte magice! Sunt mici, dar îi fac pe oameni foarte fericiți."
+ },
+ "ll-1bnebsi": {
+  "ca": "Quan vols alguna cosa, la demanes per favor: Em dones una galeta, per favor?",
+  "t": "Când vrei ceva, ceri cu per favor (te rog): Em dones una galeta, per favor? (Îmi dai un biscuit, te rog?)"
+ },
+ "ll-105rxo7": {
+  "ca": "Quan algú et dona alguna cosa, dius: Gràcies! I l'altra persona contesta: De res!",
+  "t": "Când cineva îți dă ceva, spui: Gràcies (Mulțumesc)! Iar celălalt răspunde: De res (Cu plăcere)!"
+ },
+ "ll-gj7nfl": {
+  "ca": "I si fas mal a algú sense voler, dius: Perdó!",
+  "t": "Iar dacă rănești pe cineva din greșeală, spui: Perdó (Iartă-mă)!"
+ },
+ "ll-k5xnfc": {
+  "ca": "Toca les paraules màgiques i digues-les amb mi!",
+  "t": "Atinge cuvintele magice și spune-le împreună cu mine!"
+ },
+ "ll-12fa6v1": {
+  "ca": "La iaia et dona un regal. Què dius?",
+  "t": "Bunica îți dă un cadou. Ce spui?"
+ },
+ "ll-it7cx3": {
+  "ca": "Sense voler, trepitges el peu d'un amic. Què dius?",
+  "t": "Din greșeală, calci pe piciorul unui prieten. Ce spui?"
+ },
+ "ll-1s2lisn": {
+  "ca": "Tens set i vols aigua. Com la demanes?",
+  "t": "Ți-e sete și vrei apă. Cum o ceri?"
+ },
+ "ll-imomim": {
+  "ca": "Molt bé! Ja saps saludar: hola, bon dia, bona vesprada i bona nit. I saps dir adéu. I recorda les paraules màgiques: per favor, gràcies, de res i perdó!",
+  "t": "Foarte bine! Acum știi să saluți: hola (bună), bon dia (bună dimineața), bona vesprada (bună ziua) și bona nit (noapte bună). Și știi să-ți iei rămas-bun. Și nu uita cuvintele magice: per favor (te rog), gràcies (mulțumesc), de res (cu plăcere) și perdó (iartă-mă)!"
+ },
+ "ll-wj43p3": {
+  "ca": "Com et dius?",
+  "t": "Cum te cheamă?"
+ },
+ "ll-ozu10d": {
+  "ca": "Quants anys tens?",
+  "t": "Câți ani ai?"
+ },
+ "ll-583kpy": {
+  "ca": "On vius?",
+  "t": "Unde locuiești?"
+ },
+ "ll-1ndzqaq": {
+  "ca": "Encantat! Encantada!",
+  "t": "Încântat! Încântată!"
+ },
+ "ll-il88pp": {
+  "ca": "Qui soc jo?",
+  "t": "Cine sunt eu?"
+ },
+ "ll-wl9pkt": {
+  "ca": "Hola! Hui aprendràs a presentar-te. Així podràs fer amics nous!",
+  "t": "Bună! Astăzi vei învăța să te prezinți. Așa îți vei putea face prieteni noi!"
+ },
+ "ll-gz4o4k": {
+  "ca": "Per a dir el teu nom, diem: Em dic... Jo em dic Taronjeta! I tu, com et dius?",
+  "t": "Ca să-ți spui numele, zicem: Em dic... (Mă numesc...) Eu mă numesc Taronjeta! Dar tu, cum te numești?"
+ },
+ "ll-t35exx": {
+  "ca": "Per a preguntar-li el nom a un amic, diem: Com et dius?",
+  "t": "Ca să-l întrebi pe un prieten cum îl cheamă, zicem: Com et dius? (Cum te numești?)"
+ },
+ "ll-9zmjwf": {
+  "ca": "Un xiquet diu: Soc un xiquet. Una xiqueta diu: Soc una xiqueta.",
+  "t": "Un băiat spune: Soc un xiquet (Sunt un băiat). O fetiță spune: Soc una xiqueta (Sunt o fetiță)."
+ },
+ "ll-1g7kv0e": {
+  "ca": "Per a dir quants anys tens, diem: Tinc... anys. Mira les espelmes: jo tinc cinc anys!",
+  "t": "Ca să spui câți ani ai, zicem: Tinc... anys (Am... ani). Uită-te la lumânări: eu am cinc (cinci) ani!"
+ },
+ "ll-2audwg": {
+  "ca": "Toca les espelmes i escolta quants anys són!",
+  "t": "Atinge lumânările și ascultă câți ani sunt!"
+ },
+ "ll-3ce6cb": {
+  "ca": "Per a preguntar l'edat, diem: Quants anys tens?",
+  "t": "Ca să întrebi câți ani are cineva, zicem: Quants anys tens? (Câți ani ai?)"
+ },
+ "ll-11v40ry": {
+  "ca": "I per a saber on viu algú, preguntem: On vius? I contestem: Visc a València!",
+  "t": "Iar ca să afli unde locuiește cineva, întrebăm: On vius? (Unde locuiești?) Și răspundem: Visc a València! (Locuiesc în València!)"
+ },
+ "ll-195ndfw": {
+  "ca": "Quan coneixes algú, dius: Encantat! I si ets una xiqueta: Encantada!",
+  "t": "Când cunoști pe cineva, spui: Encantat! (Încântat!) Iar dacă ești o fetiță: Encantada! (Încântată!)"
+ },
+ "ll-1mce8zw": {
+  "ca": "Hola! Com et dius?",
+  "t": "Bună! Com et dius? (Cum te numești?)"
+ },
+ "ll-5ehyaf": {
+  "ca": "Em dic Pep. I tu?",
+  "t": "Em dic Pep (Mă numesc Pep). Dar tu?"
+ },
+ "ll-126f55g": {
+  "ca": "Jo em dic Taronjeta. Quants anys tens?",
+  "t": "Eu mă numesc Taronjeta. Quants anys tens? (Câți ani ai?)"
+ },
+ "ll-1nhcki2": {
+  "ca": "Jo, cinc. Encantada, Pep!",
+  "t": "Eu am cinc (cinci) ani. Encantada, Pep! (Încântată, Pep!)"
+ },
+ "ll-135gpde": {
+  "ca": "Encantat, Taronjeta!",
+  "t": "Encantat, Taronjeta! (Încântat, Taronjeta!)"
+ },
+ "ll-qw13s": {
+  "ca": "Qui té tres anys? Compta les espelmes!",
+  "t": "Cine are tres (trei) ani? Numără lumânările!"
+ },
+ "ll-38j3s2": {
+  "ca": "Vols saber el nom d'una amiga. Què li preguntes?",
+  "t": "Vrei să afli cum o cheamă pe o prietenă. Ce o întrebi?"
+ },
+ "ll-lbypks": {
+  "ca": "Vols saber quants anys té el teu amic. Què li preguntes?",
+  "t": "Vrei să afli câți ani are prietenul tău. Ce îl întrebi?"
+ },
+ "ll-1mrgg9w": {
+  "ca": "Fantàstic! Ja et saps presentar: em dic..., tinc... anys, visc a... I saps preguntar: com et dius?, quants anys tens? i on vius?",
+  "t": "Minunat! Acum știi să te prezinți: em dic... (mă numesc...), tinc... anys (am... ani), visc a... (locuiesc în...). Și știi să întrebi: com et dius? (cum te numești?), quants anys tens? (câți ani ai?) și on vius? (unde locuiești?)"
+ },
+ "ll-12pwr4o": {
+  "ca": "Ajuda'm a ordenar! Si diem EL, a la caixa blava. Si diem LA, a la caixa rosa.",
+  "t": "Ajută-mă să le sortez! Dacă zicem EL, pune în cutia albastră. Dacă zicem LA, pune în cutia roz."
+ },
+ "ll-1d4gej": {
+  "ca": "El, la, els i les!",
+  "t": "El, la, els și les!"
+ },
+ "ll-1qu7m5c": {
+  "ca": "Hola! Hui descobrirem unes paraules molt xicotetes que van davant de les coses: el, la, l', els i les!",
+  "t": "Bună! Astăzi vom descoperi câteva cuvinte foarte mici, care stau înaintea lucrurilor: el, la, l', els și les!"
+ },
+ "ll-1lad7fx": {
+  "ca": "Moltes paraules van amb EL: el gos, el pa, el sol.",
+  "t": "Multe cuvinte se folosesc cu EL: el gos (câinele), el pa (pâinea), el sol (soarele)."
+ },
+ "ll-1tp0js1": {
+  "ca": "Toca-les i escolta: totes van amb EL!",
+  "t": "Atinge-le și ascultă: toate se folosesc cu EL!"
+ },
+ "ll-141ipf3": {
+  "ca": "Altres paraules van amb LA: la poma, la casa, la lluna.",
+  "t": "Alte cuvinte se folosesc cu LA: la poma (mărul), la casa (casa), la lluna (luna)."
+ },
+ "ll-eak73j": {
+  "ca": "Toca-les i escolta: totes van amb LA!",
+  "t": "Atinge-le și ascultă: toate se folosesc cu LA!"
+ },
+ "ll-1xkja3g": {
+  "ca": "Escolta! Quan la paraula comença per a, e, i, o, u, l'EL i el LA es fan curtets i diem L': l'ocell, l'abella, l'aigua.",
+  "t": "Ascultă! Când cuvântul începe cu a, e, i, o, u, EL și LA se scurtează și zicem L': l'ocell (pasărea), l'abella (albina), l'aigua (apa)."
+ },
+ "ll-1slcj1b": {
+  "ca": "Toca-les i escolta la L' del principi!",
+  "t": "Atinge-le și ascultă L' de la început!"
+ },
+ "ll-531xas": {
+  "ca": "I quan n'hi ha molts? EL es fa ELS: el gos, els gossos. El gat, els gats.",
+  "t": "Și când sunt mai multe? EL devine ELS: el gos (câinele), els gossos (câinii). El gat (pisica), els gats (pisicile)."
+ },
+ "ll-b7qayk": {
+  "ca": "I LA es fa LES: la poma, les pomes. La flor, les flors.",
+  "t": "Iar LA devine LES: la poma (mărul), les pomes (merele). La flor (floarea), les flors (florile)."
+ },
+ "ll-1qh8mt1": {
+  "ca": "On són els gossos?",
+  "t": "Unde sunt els gossos (câinii)?"
+ },
+ "ll-1oqirh3": {
+  "ca": "On és la poma?",
+  "t": "Unde este la poma (mărul)?"
+ },
+ "ll-3xpayx": {
+  "ca": "On són les flors?",
+  "t": "Unde sunt les flors (florile)?"
+ },
+ "ll-kd3qcn": {
+  "ca": "Molt bé! Recorda: el gos, la poma. Si la paraula comença per vocal, L': l'ocell. I si n'hi ha molts: els gossos, les pomes!",
+  "t": "Foarte bine! Ține minte: el gos (câinele), la poma (mărul). Dacă cuvântul începe cu o vocală, folosim L': l'ocell (pasărea). Iar dacă sunt mai multe: els gossos (câinii), les pomes (merele)!"
+ },
+ "ll-w1dzpz": {
+  "ca": "Cinc i cinc, deu dits!",
+  "t": "Cinci și cinci, zece degete!"
+ },
+ "ll-n3cyqx": {
+  "ca": "Toca'ls en ordre: u, dos, tres, quatre i cinc!",
+  "t": "Atinge-le în ordine: u (unu), dos (doi), tres (trei), quatre (patru) și cinc (cinci)!"
+ },
+ "ll-yf1z5f": {
+  "ca": "Comptem!",
+  "t": "Numărăm!"
+ },
+ "ll-1f5qlm8": {
+  "ca": "Hola! Anem a comptar! Els números ens diuen quantes coses hi ha.",
+  "t": "Bună! Hai să numărăm! Numerele ne spun câte lucruri sunt."
+ },
+ "ll-1wi1aiy": {
+  "ca": "Toca cada grup i compta amb mi, de l'u al cinc!",
+  "t": "Atinge fiecare grup și numără cu mine de la u (unu) la cinc (cinci)!"
+ },
+ "ll-qa3k6r": {
+  "ca": "Ara, del sis al deu! Toca i compta.",
+  "t": "Acum, de la sis (șase) la deu (zece)! Atinge și numără."
+ },
+ "ll-1bpi9g3": {
+  "ca": "Mira les teues mans: tens cinc dits en cada mà. Cinc i cinc, deu dits!",
+  "t": "Privește-ți mâinile: ai cinc dits (cinci degete) la fiecare mână. Cinc (cinci) și cinc (cinci), zece degete!"
+ },
+ "ll-5o5h42": {
+  "ca": "I quan no hi ha res de res? Diem: zero! Mira, el plat està buit: zero galetes.",
+  "t": "Și când nu e nimic, nimic? Spunem: zero! Uite, farfuria e goală: zero galetes (zero biscuiți)."
+ },
+ "ll-7rcfkl": {
+  "ca": "Després del deu, venen més números: onze, dotze, tretze, catorze, quinze, setze, dèsset, díhuit, dènou i vint! Toca-los.",
+  "t": "După deu (zece), urmează și alte numere: onze (unsprezece), dotze (doisprezece), tretze (treisprezece), catorze (paisprezece), quinze (cincisprezece), setze (șaisprezece), dèsset (șaptesprezece), díhuit (optsprezece), dènou (nouăsprezece) și vint (douăzeci)! Atinge-le."
+ },
+ "ll-m7h2se": {
+  "ca": "Atenció! L'u i el dos canvien una miqueta: un gos, però una poma. Dos gossos, però dues pomes!",
+  "t": "Atenție! L'u (unu) și el dos (doi) se schimbă puțin: un gos (un câine), dar una poma (un măr). Dos gossos (doi câini), dar dues pomes (două mere)!"
+ },
+ "ll-1d1lc6v": {
+  "ca": "Toca on hi ha una poma!",
+  "t": "Atinge locul unde e o poma (un măr)!"
+ },
+ "ll-12t5mfa": {
+  "ca": "Molt bé! Ja saps comptar fins a vint! I recorda: un gos, una poma; dos gossos, dues pomes.",
+  "t": "Foarte bine! Știi deja să numeri până la vint (douăzeci)! Și nu uita: un gos (un câine), una poma (un măr); dos gossos (doi câini), dues pomes (două mere)."
+ },
+ "ll-1x87fvm": {
+  "ca": "Els colors!",
+  "t": "Culorile!"
+ },
+ "ll-1wdjyu6": {
+  "ca": "Hola! El món està ple de colors! Anem a conéixer-los tots.",
+  "t": "Bună! Lumea e plină de culori! Hai să le cunoaștem pe toate."
+ },
+ "ll-50pcjt": {
+  "ca": "Toca cada color i escolta el seu nom!",
+  "t": "Atinge fiecare culoare și ascultă cum se numește!"
+ },
+ "ll-seufkt": {
+  "ca": "Encara n'hi ha més! Toca'ls.",
+  "t": "Mai sunt și altele! Atinge-le."
+ },
+ "ll-e1afip": {
+  "ca": "Cada cosa té el seu color: el plàtan és groc, la granota és verda i el núvol és blanc.",
+  "t": "Fiecare lucru are culoarea lui: el plàtan (banana) este groc (galben), la granota (broasca) este verda (verde), iar el núvol (norul) este blanc (alb)."
+ },
+ "ll-1nkatdl": {
+  "ca": "Mira què passa! Amb EL diem roig, però amb LA diem roja: el cotxe roig, la poma roja. I el pollet groc, però la flor groga!",
+  "t": "Uite ce se întâmplă! Cu EL spunem roig (roșu), dar cu LA spunem roja (roșie): el cotxe roig (mașina roșie), la poma roja (mărul roșu). Iar el pollet groc (puiul galben), dar la flor groga (floarea galbenă)!"
+ },
+ "ll-17gk2i9": {
+  "ca": "Passa amb molts colors: negre i negra, blanc i blanca, blau i blava!",
+  "t": "Așa se întâmplă cu multe culori: negre (negru) și negra (neagră), blanc (alb) și blanca (albă), blau (albastru) și blava (albastră)!"
+ },
+ "ll-1dt4zxc": {
+  "ca": "Ara farem màgia! Barregem el groc i el blau. Toca els dos pots!",
+  "t": "Acum facem magie! Amestecăm el groc (galbenul) și el blau (albastrul). Atinge cele două borcănașe!"
+ },
+ "ll-13m78gf": {
+  "ca": "Ix el verd!",
+  "t": "Apare el verd (verde)!"
+ },
+ "ll-fhm0tq": {
+  "ca": "Ara, el roig i el groc. Toca els pots!",
+  "t": "Acum, el roig (roșu) și el groc (galben). Atinge borcănașele!"
+ },
+ "ll-1lfp3kx": {
+  "ca": "Ix el taronja!",
+  "t": "Apare el taronja (portocaliu)!"
+ },
+ "ll-d8xo9o": {
+  "ca": "I si barregem el roig i el blau?",
+  "t": "Și dacă amestecăm el roig (roșu) și el blau (albastru)?"
+ },
+ "ll-vn0vbx": {
+  "ca": "Ix el morat!",
+  "t": "Apare el morat (mov)!"
+ },
+ "ll-1ukjino": {
+  "ca": "I el roig amb el blanc?",
+  "t": "Și el roig (roșu) cu el blanc (alb)?"
+ },
+ "ll-iufm8z": {
+  "ca": "Ix el rosa!",
+  "t": "Apare el rosa (roz)!"
+ },
+ "ll-1c7an58": {
+  "ca": "El groc i el blau, junts, fan...",
+  "t": "El groc (galbenul) și el blau (albastrul), împreună, fac..."
+ },
+ "ll-1g2cxj6": {
+  "ca": "Molt bé! Ja coneixes els colors i saps fer-ne de nous. I recorda: el cotxe roig, la poma roja!",
+  "t": "Foarte bine! Cunoști deja culorile și știi să creezi altele noi. Și nu uita: el cotxe roig (mașina roșie), la poma roja (mărul roșu)!"
+ },
+ "ll-1cc41b9": {
+  "ca": "El meu cos!",
+  "t": "El meu cos (corpul meu)!"
+ },
+ "ll-1fzilnv": {
+  "ca": "Hola! Hui coneixerem el nostre cos. Toca cada part i, si vols, assenyala-la en el teu cos!",
+  "t": "Bună! Astăzi ne vom cunoaște corpul. Atinge fiecare parte și, dacă vrei, arată-o pe corpul tău!"
+ },
+ "ll-17egwpk": {
+  "ca": "Primer, el cap i la cara! Toca i escolta.",
+  "t": "Mai întâi, el cap (capul) și la cara (fața)! Atinge și ascultă."
+ },
+ "ll-pke0rf": {
+  "ca": "Ara, la resta del cos! Toca i escolta.",
+  "t": "Acum, restul corpului: la resta del cos (restul corpului)! Atinge și ascultă."
+ },
+ "ll-18f7n0": {
+  "ca": "Amb el cos descobrim el món! Toca i escolta què fem amb cada part.",
+  "t": "Cu el cos (corpul) descoperim lumea! Atinge și ascultă ce facem cu fiecare parte."
+ },
+ "ll-k8ituw": {
+  "ca": "Comptem! Tenim un nas i una boca. Però tenim dos ulls, dues orelles i dues mans, amb deu dits!",
+  "t": "Să numărăm! Avem un nas (un nas) și una boca (o gură). Dar avem dos ulls (doi ochi), dues orelles (două urechi) și dues mans (două mâini), cu deu dits (zece degete)!"
+ },
+ "ll-vu9de0": {
+  "ca": "Amb què escoltes la música?",
+  "t": "Cu ce asculți muzica?"
+ },
+ "ll-1kmyx5b": {
+  "ca": "Amb què olores una flor?",
+  "t": "Cu ce miroși o floare?"
+ },
+ "ll-sp4xhh": {
+  "ca": "Amb què xutes la pilota?",
+  "t": "Cu ce lovești mingea?"
+ },
+ "ll-dzl4wl": {
+  "ca": "Amb què mires els dibuixos?",
+  "t": "Cu ce te uiți la desene?"
+ },
+ "ll-1utinfz": {
+  "ca": "Amb què mossegues la poma?",
+  "t": "Cu ce muști din măr?"
+ },
+ "ll-wotfbb": {
+  "ca": "Molt bé! Ja coneixes el teu cos: el cap, els ulls, el nas, la boca, els braços, les mans, les cames i els peus!",
+  "t": "Foarte bine! Îți cunoști deja corpul: el cap (capul), els ulls (ochii), el nas (nasul), la boca (gura), els braços (brațele), les mans (mâinile), les cames (picioarele) și els peus (labele picioarelor)!"
+ },
+ "ll-1sgpuqs": {
+  "ca": "La meua família!",
+  "t": "La meua família (familia mea)!"
+ },
+ "ll-imjqxs": {
+  "ca": "Hola! Vols conéixer la meua família? Anem a aprendre com es diu cada persona!",
+  "t": "Bună! Vrei să-mi cunoști familia? Hai să învățăm cum se numește fiecare!"
+ },
+ "ll-1d9jslh": {
+  "ca": "Este és el pare, i esta és la mare.",
+  "t": "Acesta este el pare (tatăl), iar aceasta este la mare (mama)."
+ },
+ "ll-1m25uns": {
+  "ca": "Els altres fills dels teus pares són els teus germans: el germà, la germana... i el bebé, que és molt xicotet!",
+  "t": "Ceilalți copii ai părinților tăi sunt frații tăi: el germà (fratele), la germana (sora)... și el bebé (bebelușul), care este foarte mic!"
+ },
+ "ll-6b4cj3": {
+  "ca": "Els pares del teu pare i de la teua mare són els teus iaios: el iaio i la iaia.",
+  "t": "Părinții tatălui și ai mamei tale sunt bunicii tăi: el iaio (bunicul) și la iaia (bunica)."
+ },
+ "ll-s25diu": {
+  "ca": "El germà de la mare o del pare és l'oncle. I la germana, la tia.",
+  "t": "Fratele mamei sau al tatălui este l'oncle (unchiul). Iar sora este la tia (mătușa)."
+ },
+ "ll-1561d5r": {
+  "ca": "I els fills dels oncles són els teus cosins: el cosí i la cosina!",
+  "t": "Iar copiii unchilor sunt verii tăi: el cosí (vărul) și la cosina (verișoara)!"
+ },
+ "ll-wobnwr": {
+  "ca": "Toca tota la família i escolta!",
+  "t": "Atinge toată familia și ascultă!"
+ },
+ "ll-1smop6m": {
+  "ca": "Quan parlem de la nostra família, diem: el meu pare, la meua mare. El meu germà, la meua germana!",
+  "t": "Când vorbim despre familia noastră, spunem: el meu pare (tatăl meu), la meua mare (mama mea). El meu germà (fratele meu), la meua germana (sora mea)!"
+ },
+ "ll-3yyw9n": {
+  "ca": "Qui és la mare de la teua mare?",
+  "t": "Cine este la mare (mama) mamei tale?"
+ },
+ "ll-nlo65w": {
+  "ca": "Qui és el germà del teu pare?",
+  "t": "Cine este el germà (fratele) tatălui tău?"
+ },
+ "ll-7pred8": {
+  "ca": "Qui és el més xicotet de tots?",
+  "t": "Cine este cel mai xicotet (mic) dintre toți?"
+ },
+ "ll-16lw226": {
+  "ca": "Molt bé! Ja coneixes tota la família: el pare, la mare, els germans, els iaios, els oncles i els cosins!",
+  "t": "Foarte bine! Acum cunoști toată familia: el pare (tatăl), la mare (mama), els germans (frații), els iaios (bunicii), els oncles (unchii) și els cosins (verii)!"
+ },
+ "ll-13nn1p4": {
+  "ca": "Com estàs?",
+  "t": "Cum te simți?"
+ },
+ "ll-hjwl3z": {
+  "ca": "Hola! Com estàs hui? Anem a aprendre a dir com ens sentim.",
+  "t": "Bună! Cum te simți astăzi? Hai să învățăm cum spunem ce simțim."
+ },
+ "ll-1iajzak": {
+  "ca": "Quan tot va bé i tenim ganes de riure, diem: Estic feliç!",
+  "t": "Când totul merge bine și avem chef să râdem, spunem: Estic feliç (Sunt fericit/fericită)!"
+ },
+ "ll-18hd99x": {
+  "ca": "Quan alguna cosa no ens agrada i tenim ganes de plorar, diem: Estic trist.",
+  "t": "Când nu ne place ceva și avem chef să plângem, spunem: Estic trist (Sunt trist/tristă)."
+ },
+ "ll-1p2mohh": {
+  "ca": "I quan algú ens pren la joguina, a vegades diem: Estic enfadat!",
+  "t": "Iar când cineva ne ia jucăria, uneori spunem: Estic enfadat (Sunt supărat/supărată)!"
+ },
+ "ll-1lwzh2": {
+  "ca": "Diem ESTIC per a dir com estem. Toca les cares i escolta!",
+  "t": "Spunem ESTIC (SUNT) ca să spunem cum ne simțim. Atinge fețele și ascultă!"
+ },
+ "ll-1mtaes3": {
+  "ca": "Atenció! Un xiquet diu: estic cansat. Una xiqueta diu: estic cansada!",
+  "t": "Atenție! Un băiețel spune: estic cansat (sunt obosit). O fetiță spune: estic cansada (sunt obosită)!"
+ },
+ "ll-fim9pf": {
+  "ca": "A vegades diem TINC: tinc son, quan se'ns tanquen els ulls. Tinc fam, quan volem menjar!",
+  "t": "Uneori spunem TINC (AM): tinc son (mi-e somn), când ni se închid ochii. Tinc fam (mi-e foame), când vrem să mâncăm!"
+ },
+ "ll-1ukg0ft": {
+  "ca": "Toca i escolta: tinc por, tinc son, tinc fam, tinc set, tinc fred i tinc calor!",
+  "t": "Atinge și ascultă: tinc por (mi-e frică), tinc son (mi-e somn), tinc fam (mi-e foame), tinc set (mi-e sete), tinc fred (mi-e frig) și tinc calor (mi-e cald)!"
+ },
+ "ll-mdej54": {
+  "ca": "Hola, Pep! Com estàs?",
+  "t": "Bună, Pep! Cum te simți?"
+ },
+ "ll-1xvez2a": {
+  "ca": "Estic molt bé! I tu?",
+  "t": "Estic molt bé (Sunt foarte bine)! I tu (dar tu)?"
+ },
+ "ll-1b5baj1": {
+  "ca": "Jo estic una miqueta cansada... i tinc fam!",
+  "t": "Estic una miqueta cansada (Sunt puțin obosită)... și tinc fam (mi-e foame)!"
+ },
+ "ll-11v7gi5": {
+  "ca": "Vols una poma?",
+  "t": "Vrei un măr?"
+ },
+ "ll-1w1vk17": {
+  "ca": "Sí, per favor! Gràcies!",
+  "t": "Sí (Da), per favor (te rog)! Gràcies (mulțumesc)!"
+ },
+ "ll-hz9sle": {
+  "ca": "Fa molt de temps que no menges. Què tens?",
+  "t": "N-ai mâncat de mult. Ce simți?"
+ },
+ "ll-1tv54sq": {
+  "ca": "Neva i no portes jaqueta. Què tens?",
+  "t": "Ninge și nu ai geacă. Ce simți?"
+ },
+ "ll-j05qu5": {
+  "ca": "S'ha trencat la teua joguina preferida. Com estàs?",
+  "t": "Jucăria ta preferată s-a stricat. Cum te simți?"
+ },
+ "ll-es4hez": {
+  "ca": "És molt tard i se't tanquen els ulls. Què tens?",
+  "t": "E foarte târziu și ți se închid ochii. Ce simți?"
+ },
+ "ll-1ek7uuz": {
+  "ca": "Et fan una festa sorpresa! Com estàs?",
+  "t": "Ți se face o petrecere-surpriză! Cum te simți?"
+ },
+ "ll-131vzkv": {
+  "ca": "Molt bé! Diem ESTIC per a feliç, trist, enfadat o cansat. I diem TINC per a por, son, fam, set, fred i calor.",
+  "t": "Foarte bine! Spunem ESTIC ca să zicem feliç (fericit), trist, enfadat (supărat) sau cansat (obosit). Iar TINC îl folosim pentru por (frică), son (somn), fam (foame), set (sete), fred (frig) și calor (căldură)."
+ },
+ "ll-obcbm2": {
+  "ca": "Què fem?",
+  "t": "Ce facem?"
+ },
+ "ll-69azbw": {
+  "ca": "Hola! Hui aprendrem les accions: són les coses que fem, com córrer, menjar o dormir!",
+  "t": "Bună! Astăzi vom învăța acțiunile: sunt lucrurile pe care le facem, cum ar fi să alergăm, să mâncăm sau să dormim!"
+ },
+ "ll-1umrb8u": {
+  "ca": "Toca cada dibuix i escolta què fa!",
+  "t": "Atinge fiecare desen și ascultă ce face!"
+ },
+ "ll-1tjuhgp": {
+  "ca": "Encara n'hi ha més! Toca i escolta.",
+  "t": "Mai sunt și altele! Atinge și ascultă."
+ },
+ "ll-9tvhee": {
+  "ca": "Quan ho fas tu, la paraula canvia! Menjar: jo menge. Beure: jo bec. Dormir: jo dorm. Jugar: jo jugue.",
+  "t": "Când faci tu acțiunea, cuvântul se schimbă! Menjar (a mânca): jo menge (eu mănânc). Beure (a bea): jo bec (eu beau). Dormir (a dormi): jo dorm (eu dorm). Jugar (a se juca): jo jugue (eu mă joc)."
+ },
+ "ll-1vlbv08": {
+  "ca": "I quan ho fa un altre, també canvia: el gat dorm, el peix nada, l'ocell canta i la granota salta!",
+  "t": "Iar când o face altcineva, se schimbă și atunci: el gat dorm (pisica doarme), el peix nada (peștele înoată), l'ocell canta (pasărea cântă) și la granota salta (broasca sare)!"
+ },
+ "ll-g50awu": {
+  "ca": "Tens set. Què fas?",
+  "t": "Tens set (Ți-e sete). Ce faci?"
+ },
+ "ll-aup31b": {
+  "ca": "Abans de menjar, què has de fer?",
+  "t": "Înainte de menjar (a mânca), ce trebuie să faci?"
+ },
+ "ll-1n62339": {
+  "ca": "Què fa el peix en l'aigua?",
+  "t": "Ce face el peix (peștele) în apă?"
+ },
+ "ll-1806eyl": {
+  "ca": "Molt bé! Ja coneixes moltes accions. I recorda: jo menge, jo bec, jo dorm i jo jugue!",
+  "t": "Foarte bine! Acum cunoști multe acțiuni. Și ține minte: jo menge (eu mănânc), jo bec (eu beau), jo dorm (eu dorm) și jo jugue (eu mă joc)!"
+ },
+ "ll-1viybiw": {
+  "ca": "La primavera: ixen les flors!",
+  "t": "La primavera (primăvara): ixen les flors (apar florile)!"
+ },
+ "ll-1r5wrd5": {
+  "ca": "L'estiu: fa calor i anem a la platja!",
+  "t": "L'estiu (vara): fa calor (e cald) și mergem la plajă!"
+ },
+ "ll-t32lrj": {
+  "ca": "La tardor: cauen les fulles dels arbres!",
+  "t": "La tardor (toamna): cad frunzele din copaci!"
+ },
+ "ll-sq2lam": {
+  "ca": "L'hivern: fa fred i, a vegades, neva!",
+  "t": "L'hivern (iarna): fa fred (e frig) și uneori ninge!"
+ },
+ "ll-1gnsc3z": {
+  "ca": "On va cada dia? A l'escola o al cap de setmana?",
+  "t": "Unde merge în fiecare zi? La școală sau în weekend?"
+ },
+ "ll-181u2z2": {
+  "ca": "Els dies i el temps!",
+  "t": "Zilele și vremea!"
+ },
+ "ll-73o6yg": {
+  "ca": "Hola! Hui aprendrem els dies de la setmana, les estacions i el temps que fa.",
+  "t": "Salut! Astăzi vom învăța zilele săptămânii, anotimpurile și cum e vremea."
+ },
+ "ll-i69ujx": {
+  "ca": "La setmana té set dies. Toca-los i escolta: dilluns, dimarts, dimecres, dijous, divendres, dissabte i diumenge!",
+  "t": "Săptămâna are șapte zile. Atinge-le și ascultă: dilluns (luni), dimarts (marți), dimecres (miercuri), dijous (joi), divendres (vineri), dissabte (sâmbătă) și diumenge (duminică)!"
+ },
+ "ll-1tpzk7q": {
+  "ca": "De dilluns a divendres anem a l'escola. I dissabte i diumenge és cap de setmana: a jugar i a descansar!",
+  "t": "De dilluns (luni) până la divendres (vineri) mergem la școală. Iar dissabte (sâmbătă) și diumenge (duminică) e weekendul: ne jucăm și ne odihnim!"
+ },
+ "ll-qmllux": {
+  "ca": "L'any té quatre estacions. Toca-les i escolta!",
+  "t": "Anul are patru anotimpuri. Atinge-le și ascultă!"
+ },
+ "ll-6qft90": {
+  "ca": "I quin temps fa hui? Toca i escolta!",
+  "t": "Și cum e vremea astăzi? Atinge și ascultă!"
+ },
+ "ll-1rwo8af": {
+  "ca": "Plou molt! Què necessites?",
+  "t": "Plou molt (plouă tare)! De ce ai nevoie?"
+ },
+ "ll-1nkwjv7": {
+  "ca": "Fa molta calor i anem a la platja. Quina estació és?",
+  "t": "Fa molta calor (e foarte cald) și mergem la plajă. Ce anotimp e?"
+ },
+ "ll-1lhczwc": {
+  "ca": "Cauen les fulles dels arbres. Quina estació és?",
+  "t": "Cad frunzele din copaci. Ce anotimp e?"
+ },
+ "ll-18gbap5": {
+  "ca": "Neva i fem un ninot de neu. Quina estació és?",
+  "t": "Neva (ninge) și facem un om de zăpadă. Ce anotimp e?"
+ },
+ "ll-1gq3r0y": {
+  "ca": "Molt bé! Ja saps els set dies de la setmana i les quatre estacions: la primavera, l'estiu, la tardor i l'hivern!",
+  "t": "Foarte bine! Acum știi cele șapte zile ale săptămânii și cele patru anotimpuri: la primavera (primăvara), l'estiu (vara), la tardor (toamna) și l'hivern (iarna)!"
+ },
+ "ll-1inrz1l": {
+  "ca": "El gat és dins de la caixa!",
+  "t": "Pisica este „dins” (înăuntru), în cutie!"
+ },
+ "ll-pw7fbn": {
+  "ca": "El gat és fora de la caixa!",
+  "t": "Pisica este „fora” (afară), în afara cutiei!"
+ },
+ "ll-iwozx8": {
+  "ca": "El gat és damunt de la caixa!",
+  "t": "Pisica este „damunt” (deasupra), pe cutie!"
+ },
+ "ll-ymbd8v": {
+  "ca": "El gat és davall de la caixa!",
+  "t": "Pisica este „davall” (dedesubt), sub cutie!"
+ },
+ "ll-1u9b5il": {
+  "ca": "El gat és davant de la caixa!",
+  "t": "Pisica este „davant” (în față), în fața cutiei!"
+ },
+ "ll-1ycue4k": {
+  "ca": "El gat és darrere de la caixa!",
+  "t": "Pisica este „darrere” (în spate), în spatele cutiei!"
+ },
+ "ll-13flt30": {
+  "ca": "El gat és al costat de la caixa!",
+  "t": "Pisica este „al costat” (lângă), lângă cutie!"
+ },
+ "ll-1q091oi": {
+  "ca": "On és el gat?",
+  "t": "Unde este pisica?"
+ },
+ "ll-1f053s5": {
+  "ca": "Hola! Este és el gat Pelut. És molt juganer i sempre s'amaga. Anem a aprendre a dir on és!",
+  "t": "Salut! Acesta este motanul Pelut. E foarte jucăuș și se ascunde mereu. Hai să învățăm să spunem unde este!"
+ },
+ "ll-psjdhm": {
+  "ca": "Mira! El gat és dins de la caixa.",
+  "t": "Uite! Pisica este „dins” (înăuntru), în cutie."
+ },
+ "ll-ge11j3": {
+  "ca": "Ara ha eixit: el gat és fora de la caixa!",
+  "t": "Acum a ieșit: pisica este „fora” (afară), în afara cutiei!"
+ },
+ "ll-e18f63": {
+  "ca": "Ara puja: el gat és damunt de la caixa! I ara s'amaga baix: el gat és davall de la caixa.",
+  "t": "Acum se urcă: pisica este „damunt” (deasupra), pe cutie! Iar acum se ascunde jos: pisica este „davall” (dedesubt), sub cutie."
+ },
+ "ll-bv1h5x": {
+  "ca": "El gat és davant de la caixa: el veiem molt bé! I ara, darrere de la caixa: quasi no el veiem!",
+  "t": "Pisica este „davant” (în față), în fața cutiei: o vedem foarte bine! Iar acum este „darrere” (în spate), în spatele cutiei: aproape că nu o vedem!"
+ },
+ "ll-1250rey": {
+  "ca": "I ara, el gat és al costat de la caixa.",
+  "t": "Iar acum pisica este „al costat” (lângă), lângă cutie."
+ },
+ "ll-18aivqf": {
+  "ca": "Toca cada dibuix i digues on és el gat!",
+  "t": "Atinge fiecare desen și spune unde este pisica!"
+ },
+ "ll-gk9wyo": {
+  "ca": "Són contraris! Damunt i davall. Davant i darrere. Dins i fora.",
+  "t": "Sunt contrarii! Damunt (deasupra) și davall (dedesubt). Davant (în față) și darrere (în spate). Dins (înăuntru) și fora (afară)."
+ },
+ "ll-1mly38w": {
+  "ca": "Toca el gat que és damunt de la caixa!",
+  "t": "Atinge pisica aflată „damunt” (deasupra), pe cutie!"
+ },
+ "ll-heprcl": {
+  "ca": "Toca el gat que és dins de la caixa!",
+  "t": "Atinge pisica aflată „dins” (înăuntru), în cutie!"
+ },
+ "ll-1vwq2a8": {
+  "ca": "Toca el gat que és darrere de la caixa!",
+  "t": "Atinge pisica aflată „darrere” (în spate), în spatele cutiei!"
+ },
+ "ll-3ngou3": {
+  "ca": "Toca el gat que és davall de la caixa!",
+  "t": "Atinge pisica aflată „davall” (dedesubt), sub cutie!"
+ },
+ "ll-bbd1dc": {
+  "ca": "Toca el gat que és al costat de la caixa!",
+  "t": "Atinge pisica aflată „al costat” (lângă), lângă cutie!"
+ },
+ "ll-175iawt": {
+  "ca": "Molt bé! Ja saps dir on són les coses: dins, fora, damunt, davall, davant, darrere i al costat!",
+  "t": "Foarte bine! Acum știi să spui unde sunt lucrurile: dins (înăuntru), fora (afară), damunt (deasupra), davall (dedesubt), davant (în față), darrere (în spate) și al costat (lângă)!"
+ },
+ "ll-1vwnk6v": {
+  "ca": "Els contraris!",
+  "t": "Contrariile!"
+ },
+ "ll-xsl1pu": {
+  "ca": "Hola! Hui jugarem amb els contraris: paraules ben diferents, com el dia i la nit!",
+  "t": "Salut! Astăzi ne vom juca cu contrariile: cuvinte foarte diferite, precum ziua și noaptea!"
+ },
+ "ll-5m6scu": {
+  "ca": "Toca i escolta: gran i xicotet. El dia i la nit. Calent i fred.",
+  "t": "Atinge și ascultă: gran (mare) și xicotet (mic). El dia (ziua) și la nit (noaptea). Calent (cald) și fred (rece)."
+ },
+ "ll-1ocvafz": {
+  "ca": "Més contraris! El conill és ràpid i la tortuga és lenta. La girafa és alta i el pingüí és baix.",
+  "t": "Și mai multe cuvinte opuse! Iepurele (el conill) este rapid (ràpid), iar țestoasa (la tortuga) este lentă (lenta). Girafa (la girafa) este înaltă (alta), iar pinguinul (el pingüí) este scund (baix)."
+ },
+ "ll-kpscfk": {
+  "ca": "I encara més: el llibre obert i el llibre tancat. Content i trist!",
+  "t": "Și încă mai multe: cartea deschisă (el llibre obert) și cartea închisă (el llibre tancat). Content (fericit) și trist (trist)!"
+ },
+ "ll-1nux3te": {
+  "ca": "Molt bé! Ja coneixes molts contraris: gran i xicotet, calent i fred, ràpid i lent, alt i baix, obert i tancat!",
+  "t": "Foarte bine! Acum cunoști multe cuvinte opuse: gran (mare) și xicotet (mic), calent (cald) și fred (rece), ràpid (rapid) și lent (lent), alt (înalt) și baix (scund), obert (deschis) și tancat (închis)!"
+ },
+ "ll-1r39ubz": {
+  "ca": "Les lletres i els sons!",
+  "t": "Literele și sunetele!"
+ },
+ "ll-9kyrg8": {
+  "ca": "Hola! Les paraules estan fetes de sons, i els sons s'escriuen amb lletres. Escoltem-les!",
+  "t": "Bună! Cuvintele sunt alcătuite din sunete, iar sunetele se scriu cu litere. Hai să le ascultăm!"
+ },
+ "ll-1djy76x": {
+  "ca": "Hi ha cinc lletres molt especials: les vocals! A, e, i, o, u. Sonen fort i clar.",
+  "t": "Există cinci litere foarte speciale: vocalele! A, e, i, o, u. Se aud tare și clar."
+ },
+ "ll-1xh56uz": {
+  "ca": "Toca cada vocal i escolta una paraula que comença així!",
+  "t": "Atinge fiecare vocală și ascultă un cuvânt care începe cu ea!"
+ },
+ "ll-z29jme": {
+  "ca": "Més paraules que comencen per vocal: l'avió, l'elefant, l'illa, l'ou i l'ull! Toca-les.",
+  "t": "Mai multe cuvinte care încep cu o vocală: l'avió (avionul), l'elefant (elefantul), l'illa (insula), l'ou (oul) și l'ull (ochiul)! Atinge-le."
+ },
+ "ll-ghh5jw": {
+  "ca": "Les altres lletres es diuen consonants. Si ajuntem lletres, fem paraules: la pe i la a fan... pa!",
+  "t": "Celelalte litere se numesc consoane. Dacă unim litere, formăm cuvinte: pe și a fac... pa!"
+ },
+ "ll-1vkrp4s": {
+  "ca": "En valencià tenim sons molt especials! Toca-los i escolta.",
+  "t": "În valenciană avem sunete foarte speciale! Atinge-le și ascultă."
+ },
+ "ll-ribv0m": {
+  "ca": "Quina paraula té el so nya, nye, nyi?",
+  "t": "Care cuvânt are sunetul nya, nye, nyi?"
+ },
+ "ll-10trlbu": {
+  "ca": "Quina paraula té la ce trencada?",
+  "t": "Care cuvânt are ce trencada (litera ce cu sedilă)?"
+ },
+ "ll-wjxr20": {
+  "ca": "Molt bé! Ja coneixes les vocals, a, e, i, o, u, i els sons especials del valencià!",
+  "t": "Foarte bine! Acum cunoști vocalele, a, e, i, o, u, și sunetele speciale din valenciană!"
+ },
+ "ll-1oc7uc4": {
+  "ca": "El gos xicotet és el gosset!",
+  "t": "Cățelușul este el gosset!"
+ },
+ "ll-1455lj9": {
+  "ca": "El gat xicotet és el gatet!",
+  "t": "Pisicuța este el gatet!"
+ },
+ "ll-1vwnxwp": {
+  "ca": "La gallina té pollets!",
+  "t": "Găina (la gallina) are puișori (pollets)!"
+ },
+ "ll-17ggmor": {
+  "ca": "Els animals!",
+  "t": "Animalele!"
+ },
+ "ll-cdhbgb": {
+  "ca": "Hola! Hui coneixerem els animals. Cada animal fa un so diferent: escolta bé!",
+  "t": "Bună! Astăzi vom cunoaște animalele. Fiecare animal scoate un sunet diferit: ascultă cu atenție!"
+ },
+ "ll-1lpvv7i": {
+  "ca": "Primer, els animals de casa. Toca cada un i escolta quin so fa!",
+  "t": "Mai întâi, animalele de acasă. Atinge fiecare animal și ascultă ce sunet scoate!"
+ },
+ "ll-6wri1f": {
+  "ca": "Ara, els animals de la granja. Toca i escolta!",
+  "t": "Acum, animalele de la fermă. Atinge și ascultă!"
+ },
+ "ll-1echmxp": {
+  "ca": "I estos viuen lluny, a la selva o a la bassa. Toca i escolta!",
+  "t": "Iar acestea trăiesc departe, în junglă sau în iaz. Atinge și ascultă!"
+ },
+ "ll-1v99d5b": {
+  "ca": "Els animals xicotets tenen un nom molt dolç: el gosset, el gatet, el pollet.",
+  "t": "Animalele mici au nume tare drăgălașe: el gosset (căţelușul), el gatet (pisicuța), el pollet (puișorul)."
+ },
+ "ll-1jkk7e": {
+  "ca": "Uns animals volen pel cel, uns altres naden en l'aigua, i molts caminen per la terra.",
+  "t": "Unele animale zboară pe cer, altele înoată în apă, iar multe merg pe uscat."
+ },
+ "ll-9ansg3": {
+  "ca": "Molt bé! Ja coneixes molts animals i els seus sons. Recorda: el gos fa bub, bub, i el gat fa mèu, mèu!",
+  "t": "Foarte bine! Acum cunoști multe animale și sunetele lor. Ține minte: el gos (câinele) face bub, bub, iar el gat (pisica) face mèu, mèu!"
+ },
+ "llicons": {
+  "ca": "Les lliçons de la Taronjeta! Tria una lliçó i aprendrem moltes coses noves.",
+  "t": "Lecțiile Taronjetei! Alege o lecție și vom învăța multe lucruri noi."
+ },
+ "llico-medalla": {
+  "ca": "Molt bé! Has acabat la lliçó i has guanyat una medalla!",
+  "t": "Foarte bine! Ai terminat lecția și ai câștigat o medalie!"
+ },
+ "llico-fi": {
+  "ca": "Molt bé! Has acabat la lliçó una altra vegada!",
+  "t": "Foarte bine! Ai terminat lecția încă o dată!"
+ }
+}

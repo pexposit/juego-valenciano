@@ -7,6 +7,9 @@ import { fetchTutorConversation, fetchTutorConversations, renameTutorConversatio
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleString('ca', { dateStyle: 'medium', timeStyle: 'short' });
 
+// Màxim de caràcters del nom (el mateix límit que el backend).
+const TITLE_MAX = 40;
+
 // El nom d'una conversa, amb un llapis per a canviar-lo. Intro o ✓ guarda; Esc o ✕ cancel·la.
 // Deixar-lo buit torna al títol automàtic (el resumix el LLM).
 function ConversationTitle({ conversation, onRenamed }: { conversation: TutorConversation; onRenamed: (c: TutorConversation) => void }) {
@@ -47,7 +50,7 @@ function ConversationTitle({ conversation, onRenamed }: { conversation: TutorCon
   if (!editing) {
     return (
       <div className="mb-3 flex items-start gap-2">
-        <h2 className="flex-1 text-3xl font-black leading-tight">{conversation.title}</h2>
+        <h2 className="line-clamp-2 min-w-0 flex-1 break-words text-3xl font-black leading-tight" title={conversation.title}>{conversation.title}</h2>
         <button
           onClick={start}
           aria-label="Canvia el nom de la conversa"
@@ -71,7 +74,7 @@ function ConversationTitle({ conversation, onRenamed }: { conversation: TutorCon
         <input
           ref={input}
           value={draft}
-          maxLength={80}
+          maxLength={TITLE_MAX}
           disabled={saving}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => e.key === 'Escape' && setEditing(false)}
