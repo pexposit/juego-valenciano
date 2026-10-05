@@ -1,4 +1,4 @@
-import { LayoutGrid, MessageCircle, Target } from 'lucide-react';
+import { BookOpen, LayoutGrid, MessageCircle, Target } from 'lucide-react';
 import { ChildAssistant } from '../components/ChildAssistant';
 import { Logo, ProfileButton } from '../components/ui';
 import type { Page } from '../data/content';
@@ -38,6 +38,17 @@ export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name:
               >
                 <Target size={18} />
                 Errors
+              </button>
+            )}
+            {isChild && (
+              <button
+                aria-label="Lliçons de valencià"
+                title="Lliçons de valencià"
+                onClick={() => setPage('lessons')}
+                className="btn-press shadow-md ring-2 ring-white flex h-10 items-center gap-1.5 rounded-full bg-orange px-3 py-2 text-xl font-black text-white hover:bg-orange/90"
+              >
+                <BookOpen size={18} />
+                Lliçons
               </button>
             )}
             {isChild && (

@@ -17,6 +17,7 @@ import { Exam } from './pages/Exam';
 import { Practice } from './pages/Practice';
 import { ErrorPractice } from './pages/ErrorPractice';
 import { TutorHistory } from './pages/TutorHistory';
+import { Lessons } from './pages/Lessons';
 import { Summary } from './pages/Summary';
 import { Profile } from './pages/Profile';
 
@@ -312,7 +313,8 @@ export function App() {
       <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
       <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
       <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
-      <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard}showHelp={showMotherTongue} /></PageTransition>} />
+      <Route path={ROUTES.lessons} element={<PageTransition><Lessons onBack={() => navigate(-1)} motherTongue={motherTongue} showHelp={showMotherTongue} /></PageTransition>} />
+      <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard} showHelp={showMotherTongue} /></PageTransition>} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );
