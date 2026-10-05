@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Headphones, Lightbulb, RotateCcw } from 'luc
 import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type PracticeArea } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
-import { evaluatePracticeExercise } from '../lib/api';
+import { evaluatePracticeExercise, recordPracticeAnswers } from '../lib/api';
 import type { ExamQuestion, Practice as PracticeResource, PracticeExercise, PracticePassage, WritingEvaluation } from '../lib/types';
 
 type Progress = {
@@ -124,6 +124,15 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
   const answer = (id: string, value: string) =>
     setProgress(p => ({ ...p, answers: { ...p.answers, [id]: value } }));
   const check = () => {
+    // Les respostes es guarden al backend perquè els errors isquen a la pestanya «Errors».
+    // Les preguntes tancades guarden la clau de l'opció: s'envia el text.
+    const sent = gradable.flatMap(e => {
+      const value = progress.answers[e.id];
+      if (!value?.trim()) return [];
+      const text = e.kind === 'choice' ? questions[e.id]?.options?.find(o => o.key === value)?.text : value;
+      return text ? [{ exercise_id: e.id, answer: text }] : [];
+    });
+    recordPracticeAnswers(sent).catch(error => console.error('Error enviant les respostes:', error));
     setProgress(p => ({ ...p, checked: true }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

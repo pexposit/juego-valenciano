@@ -15,6 +15,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
 import { Practice } from './pages/Practice';
+import { ErrorPractice } from './pages/ErrorPractice';
 import { Summary } from './pages/Summary';
 import { Profile } from './pages/Profile';
 
@@ -254,6 +255,7 @@ export function App() {
               }}
               onBack={goDashboard}
               onProfile={() => navigate(ROUTES.profile)}
+              onErrors={() => navigate(ROUTES.errors)}
             />
           </PageTransition>
         }
@@ -284,6 +286,7 @@ export function App() {
       />
       <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
       <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
+      <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );

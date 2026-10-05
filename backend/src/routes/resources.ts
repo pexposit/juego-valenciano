@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { getAdmin, requireAuth } from '../middleware/auth.js';
+import { getAdmin, requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
 import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing } from '../services/examWritingEvaluator.js';
 import { characterOf, isScenarioPlayable } from '../services/scenarios.js';
 import { CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
+import { saveWritingErrors } from './errors.js';
 
 export const resourcesRouter = Router();
 
@@ -281,7 +282,7 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
 
 // Avaluació amb LLM d'una redacció (`writing`) o d'un formulari (`form`) de
 // l'àrea d'Expressió escrita. La consigna i els camps es lligen de la BDD.
-resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLimit(EVALUATE_RATE_LIMIT), async (req, res) => {
+resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLimit(EVALUATE_RATE_LIMIT), async (req: AuthRequest, res) => {
   const parsedBody = evaluateSchema.safeParse(req.body);
   if (!parsedBody.success) return validationError(res, parsedBody.error);
   if (!z.string().uuid().safeParse(req.params.id).success) return res.status(404).json({ error: "L'exercici no existix" });
@@ -290,7 +291,7 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
   if (!client) return res.status(503).json({ error: "El catàleg no està disponible" });
   const { data: exercise, error } = await client
     .from('practice_exercises')
-    .select('kind, prompt, task')
+    .select('kind, prompt, task, resource_id, resources(name)')
     .eq('id', req.params.id)
     .maybeSingle();
   if (error) {
@@ -321,7 +322,11 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
   }
 
   try {
-    res.json(await evaluate());
+    const evaluation = await evaluate();
+    // Els errors que assenyala el LLM es guarden perquè es puguen practicar a la pestanya «Errors».
+    const written = exercise.kind === 'form' ? Object.values(parsedBody.data.answers ?? {}).join(' · ') : parsedBody.data.text ?? '';
+    await saveWritingErrors(req.userId, exercise, evaluation, written);
+    res.json(evaluation);
   } catch (err) {
     console.error('[practice] Error avaluant l’exercici:', err);
     res.status(503).json({ error: 'No hem pogut avaluar l’exercici. Torna-ho a provar.' });

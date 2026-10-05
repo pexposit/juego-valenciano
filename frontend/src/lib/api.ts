@@ -206,3 +206,33 @@ export async function startSessionResource(sessionId: string, scenario: Scenario
   if (!res.ok) throw new Error("No s'ha pogut vincular l'escenari a la sessió");
   return res.json();
 }
+
+// Errors sense resoldre de l'usuari (detectats al xat), per a la pestanya de pràctica d'errors.
+export type UserError = { id: string; error_text: string; correction: string; category: string; explanation: string; message: string | null; scenario: string | null; source: 'chat' | 'practice' | 'writing'; options: string[] | null };
+export async function fetchUserErrors(): Promise<UserError[]> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/errors`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error('No hem pogut carregar els errors');
+  return res.json();
+}
+// Marca un error com a resolt després de corregir-lo bé en la pràctica.
+export async function resolveUserError(id: string): Promise<void> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/errors/${encodeURIComponent(id)}/resolve`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error("No s'ha pogut desar el progrés");
+}
+// Envia les respostes d'una tanda d'exercicis de pràctica: el backend guarda els errors a la pestanya «Errors».
+export async function recordPracticeAnswers(answers: { exercise_id: string; answer: string }[]): Promise<void> {
+  if (answers.length === 0) return;
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/errors/practice`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ answers }),
+  });
+}

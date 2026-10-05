@@ -1,7 +1,7 @@
 import { CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
 import type { Resource, Scenario } from '../lib/types';
 
-export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'summary' | 'profile';
+export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'errors' | 'summary' | 'profile';
 
 /* Rutes URL de cada pàgina. La de xat porta l'escenari com a paràmetre de ruta
  * (/xat/:scenario): l'entrada `chat` és només un valor per defecte, no s'hi
@@ -14,6 +14,7 @@ export const ROUTES: Record<Page, string> = {
   chat: '/xat',
   exam: '/examen',
   practice: '/practica',
+  errors: '/errors',
   summary: '/resum',
   profile: '/perfil',
 };

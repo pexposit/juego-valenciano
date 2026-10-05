@@ -33,7 +33,7 @@ export function ProfileButton({ name, onClick }: { name: string; onClick: () => 
       title="El teu perfil"
       onClick={onClick}
       className="avatar-ring grid h-11 w-11 place-items-center rounded-full font-black text-lg text-white"
-      style={{ background: '#FF3B3B' }}
+      style={{ background: '#0F47AF' }}
     >
       {name[0]}
     </button>

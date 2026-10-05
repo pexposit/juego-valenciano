@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Target } from 'lucide-react';
 import { CONVERSATION_AREAS, PRACTICE_AREAS } from '@parlaval/shared';
 import { Logo, ProfileButton } from './ui';
 import { LessonModal } from './LessonModal';
@@ -66,12 +66,14 @@ export function ScenarioSelect({
   onSelect,
   onBack,
   onProfile,
+  onErrors,
 }: {
   name: string;
   level: string;
   onSelect: (resource: Resource) => void;
   onBack: () => void;
   onProfile: () => void;
+  onErrors: () => void;
 }) {
   const [resources, setResources] = useState<Resource[] | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -116,7 +118,18 @@ export function ScenarioSelect({
             ← Tornar
           </button>
           <Logo onDark />
-          <ProfileButton name={name} onClick={onProfile} />
+          <div className="flex items-center gap-5">
+            <button
+              aria-label="Practica els teus errors"
+              title="Practica els teus errors"
+              onClick={onErrors}
+              className="btn-press flex h-10 items-center gap-1.5 rounded-full bg-orange px-3 py-2 text-xl font-black text-white hover:bg-orange/90"
+            >
+              <Target size={18} />
+              Errors
+            </button>
+            <ProfileButton name={name} onClick={onProfile} />
+          </div>
         </div>
       </header>
 

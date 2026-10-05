@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, Target } from 'lucide-react';
 import { Logo, ProfileButton } from '../components/ui';
 import type { Page } from '../data/content';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
@@ -37,6 +37,15 @@ export function Dashboard({ name, setPage }: { name: string; setPage: (p: Page) 
             >
               <LayoutGrid size={18} />
               Activitats
+            </button>
+            <button
+              aria-label="Practica els teus errors"
+              title="Practica els teus errors"
+              onClick={() => setPage('errors')}
+              className="btn-press shadow-md ring-2 ring-white flex h-10 items-center gap-1.5 rounded-full bg-orange px-3 py-2 text-xl font-black text-white hover:bg-orange/90"
+            >
+              <Target size={18} />
+              Errors
             </button>
             <ProfileButton name={name} onClick={() => setPage('profile')} />
           </div>

@@ -203,6 +203,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
           if (!detectedErrors || detectedErrors.length === 0) return;
 
           const records = detectedErrors.map((item) => ({
+            user_id: req.userId,
+            source: 'chat',
             message_id: targetMessageId,
             session_resource_id: data.session_resource_id,
             error_text: item.error_text,
