@@ -5,6 +5,7 @@ import { ttsRouter } from './routes/tts.js';
 import { sessionsRouter } from './routes/sessions.js';
 import { turnRouter } from './routes/turn.js';
 import { resourcesRouter } from './routes/resources.js';
+import { learningPathRouter } from './routes/learningPath.js';
 
 const app = express();
 
@@ -28,6 +29,6 @@ app.use(cors({
 app.use(express.json({ limit: '12mb' }));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
-app.use(resourcesRouter, ttsRouter, sessionsRouter, turnRouter);
+app.use(resourcesRouter, learningPathRouter, ttsRouter, sessionsRouter, turnRouter);
 
 app.listen(Number(process.env.PORT) || 3001, () => console.log('ParlaVal agent listening'));

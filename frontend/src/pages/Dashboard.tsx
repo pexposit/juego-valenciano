@@ -61,7 +61,7 @@ export function Dashboard({ name, setPage }: { name: string; setPage: (p: Page) 
             <p>Començem la classe</p>
             <button
               id="dashboard-start-btn"
-              onClick={() => {}}
+              onClick={() => setPage('learningpath')}
               className="text-xl btn-press w-full max-w-[220px] rounded-xl bg-teal px-4 py-2 text-sm font-black text-white hover:bg-teal/90"
             >
               Començem

@@ -1,7 +1,7 @@
 import { CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
 import type { Resource, Scenario } from '../lib/types';
 
-export type Page = 'home' | 'auth' | 'dashboard' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'summary' | 'profile';
+export type Page = 'home' | 'auth' | 'dashboard' | 'learningpath' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'summary' | 'profile';
 
 /* Rutes URL de cada pàgina. La de xat porta l'escenari com a paràmetre de ruta
  * (/xat/:scenario): l'entrada `chat` és només un valor per defecte, no s'hi
@@ -10,6 +10,7 @@ export const ROUTES: Record<Page, string> = {
   home: '/',
   auth: '/auth',
   dashboard: '/dashboard',
+  learningpath: '/ruta',
   scenarioselect: '/scenaris',
   chat: '/xat',
   exam: '/examen',
@@ -25,7 +26,7 @@ export const practiceRoute = (resourceId: string) => `/practica/${resourceId}`;
 // Pantalla de joc de cada categoria de resources: els escenaris i l'Expressió oral s'obrin al xat
 // (per `type`), els exàmens al visor de l'examen i els continguts de les àrees
 // del temari a la pantalla d'exercicis (per `id`).
-export const activityRoute = (resource: Resource): string | null => {
+export const activityRoute = (resource: Pick<Resource, 'id' | 'type' | 'category'>): string | null => {
   if (CHAT_CATEGORIES.includes(resource.category)) return chatRoute(resource.type);
   switch (resource.category) {
     case 'examen': return examRoute(resource.id);

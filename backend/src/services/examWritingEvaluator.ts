@@ -508,6 +508,7 @@ Rebràs la consigna exacta a la qual respon l'aspirant. L'objectiu de la tasca s
   - Un punt es considera tractat si el text en parla de manera identificable, encara que siga breument i amb paraules pròpies: no cal que en repetisca la formulació ni que el desenvolupe en profunditat.
   - Només si falta del tot algun punt, o el text no respon a la situació, l'ítem «objectiu» NO es complix. Abans de decidir-ho, repassa el text punt per punt.
 - **Exercici 7 (text a partir d'un enunciat):** l'objectiu es complix si el text respon a la situació i a totes les demandes de l'enunciat (gènere textual, destinatari, registre i continguts que es demanen). Quan l'enunciat demana tindre en compte una imatge, rebràs la transcripció del seu contingut: el text ha d'aprofitar-ne la informació (per exemple, incorporant alguns dels consells o dades, amb paraules pròpies i integrats en el discurs, no copiats com una llista). Si no n'aprofita res, l'ítem «objectiu» de l'Adequació NO es complix; si només copia la infografia sense elaboració, no pot tindre 10 en Adequació.
+- **Tasques de pràctica amb text de referència:** de vegades rebràs també un text o la transcripció d'un àudio (un passatge per parafrasejar, una conferència de la qual cal prendre apunts...). L'objectiu inclou recollir-ne fidelment la informació essencial que demana l'enunciat; en una paràfrasi és correcte reaprofitar paraules del text original reorganitzades, i en uns apunts són acceptables les frases curtes i els punts, sempre que l'enunciat ho permeta.
 - Indica en la justificació de l'Adequació quins punts o demandes de la consigna s'han tractat i quins no.
 
 # EXTENSIÓ
@@ -583,6 +584,7 @@ export async function evaluateB1Writing(args: {
   instructions: string;
   choice?: { key: string; text: string; points?: string[] };
   imageText?: string; // contingut de la imatge de suport (exercici 7)
+  sourceText?: string; // text o transcripció de l'àudio de referència (pràctica)
   text: string;
   minWords: number;
   maxWords: number;
@@ -607,6 +609,7 @@ export async function evaluateB1Writing(args: {
         `## CONSIGNA QUE HA DE COMPLIR L'ASPIRANT (exercici ${args.exerciseN})`,
         `Enunciat:\n${args.instructions}`,
         ...(args.imageText ? [`Contingut de la imatge de suport:\n${args.imageText}`] : []),
+        ...(args.sourceText ? [`Text de referència de la tasca:\n${args.sourceText}`] : []),
       ];
 
   const userContent = [

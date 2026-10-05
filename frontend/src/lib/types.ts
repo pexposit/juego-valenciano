@@ -126,3 +126,23 @@ export type B1WritingEvaluation = {
   retorn_pedagogic: string;
 };
 export type WritingEvaluation = A1WritingEvaluation | A2WritingEvaluation | B1WritingEvaluation;
+
+// Ruta d'aprenentatge personalitzada (GET /api/learning-path): passos que el LLM
+// tria del catàleg del nivell de l'usuari a partir de les seues avaluacions.
+export type LearningStage = 'aprendre' | 'practicar' | 'aplicar' | 'comprovar';
+export type LearningPathStep = {
+  id: string;
+  position: number;
+  stage: LearningStage;
+  reason: string;
+  status: 'pending' | 'done' | 'skipped';
+  completed_at: string | null;
+  resource: Pick<Resource, 'id' | 'name' | 'type' | 'category' | 'content' | 'icon' | 'color' | 'section_name' | 'has_lesson'>;
+};
+export type LearningPath = { id: string; level: string; focus: string[]; rationale: string; created_at: string; steps: LearningPathStep[] };
+
+// Última avaluació pedagògica d'un xat (user_evaluations).
+export type LatestEvaluation = { summary: string; weaknesses: string[]; priority_focus: string; created_at: string };
+
+// Resultat d'una pràctica o d'un examen per a la ruta d'aprenentatge.
+export type ActivityResult = { level?: string | null; score?: number | null; total?: number | null; details?: Record<string, unknown> };

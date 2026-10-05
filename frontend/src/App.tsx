@@ -11,6 +11,7 @@ import { activityRoute, DEFAULT_PROFILE, ROUTES, type Page } from './data/conten
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
+import { LearningPath } from './pages/LearningPath';
 import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
 import { Practice } from './pages/Practice';
@@ -219,6 +220,20 @@ export function App() {
       <Route path={ROUTES.auth} element={<PageTransition><AuthPage setPage={goToPage} /></PageTransition>} />
       <Route path={ROUTES.dashboard} element={<PageTransition><Dashboard name={name} setPage={goToPage} /></PageTransition>} />
       <Route
+        path={ROUTES.learningpath}
+        element={
+          <PageTransition>
+            <LearningPath
+              onOpen={resource => {
+                const route = activityRoute(resource);
+                if (route) navigate(route);
+              }}
+              onBack={goDashboard}
+            />
+          </PageTransition>
+        }
+      />
+      <Route
         path={ROUTES.scenarioselect}
         element={
           <PageTransition>
@@ -253,7 +268,7 @@ export function App() {
       />
       <Route
         path={ROUTES.summary}
-        element={<PageTransition><Summary xp={xp} onMap={goDashboard} onContinue={() => navigate(ROUTES.scenarioselect)} /></PageTransition>}
+        element={<PageTransition><Summary xp={xp} onMap={goDashboard} onContinue={() => navigate(ROUTES.learningpath)} /></PageTransition>}
       />
       <Route
         path={`${ROUTES.chat}/:scenario`}

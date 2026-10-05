@@ -26,7 +26,7 @@ const categoryRank = (c: string) => {
 };
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
-const categoryLabel = (c: string) => CATEGORY_LABELS[c] ?? capitalize(c);
+export const categoryLabel = (c: string) => CATEGORY_LABELS[c] ?? capitalize(c);
 
 type Section = { type: string; resources: Resource[] };
 type Category = { id: string; sections: Section[] };

@@ -95,10 +95,18 @@ export function Chat({
 
   // Tanca el recurs (no la sessió, que es tanca en fer logout) i el backend
   // llança l'avaluació pedagògica d'aquest escenari en segon pla.
-  const handleExit = () => {
+  const finishActivity = () => {
     const opened = openedActivity.current;
     if (opened) void finishSessionResource(opened.sessionId, opened.sessionResourceId);
+  };
+  const handleExit = () => {
+    finishActivity();
     onBack();
+  };
+  // «Acabar conversa» també tanca el recurs: així sempre s'avalua i s'actualitza la ruta.
+  const handleEnd = () => {
+    finishActivity();
+    onEnd();
   };
 
   const replayCharacter = () => {
@@ -292,7 +300,7 @@ export function Chat({
       <div className="absolute inset-x-4 bottom-5 z-20">
         <VoiceInput onSend={submit} disabled={loading} voiceOnly={isVoiceOnlyCategory(category)} />
         <button
-          onClick={onEnd}
+          onClick={handleEnd}
           id="chat-end-btn"
           className="btn-press mx-auto mt-3 block rounded-full bg-white/80 px-4 py-2 text-xs font-extrabold backdrop-blur-sm hover:bg-white transition-colors"
         >

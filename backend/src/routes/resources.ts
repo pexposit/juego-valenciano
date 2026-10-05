@@ -4,41 +4,14 @@ import { getAdmin, requireAuth } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
 import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing } from '../services/examWritingEvaluator.js';
-import { isScenarioPlayable } from '../services/scenarios.js';
-import { CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
+import { EXAM_CATEGORY, hasExam, isPlayable, type Metadata, type ResourceRow } from '../services/catalog.js';
+import { isPracticeArea } from '@parlaval/shared';
 
 export const resourcesRouter = Router();
-
-type Metadata = Record<string, unknown> | null;
-// `practice_exercises` és el recompte embegut ([{ count }]) dels exercicis del recurs.
-type ResourceRow = { category: string; url: string | null; metadata: Metadata; practice_exercises?: { count: number }[] };
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value : null);
 const textList = (value: unknown) =>
   Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && v.trim() !== '') : [];
-
-export const EXAM_CATEGORY = 'examen';
-
-// Cada categoria té la seua pantalla de joc i decidix si una fila té les dades
-// que necessita. Les categories sense pantalla es mostren com a "Pròximament".
-const PLAYABLE_BY_CATEGORY: Record<string, (row: ResourceRow) => boolean> = {
-  // Xat amb un personatge: els escenaris i les àrees de conversa (Expressió oral).
-  ...Object.fromEntries(CHAT_CATEGORIES.map(c => [c, (row: ResourceRow) => isScenarioPlayable(row.metadata)])),
-  // Examen interactiu: contingut a metadata.exam i, opcionalment, l'àudio de comprensió oral a `url`.
-  [EXAM_CATEGORY]: row => hasExam(row.metadata),
-};
-
-function hasExam(metadata: Metadata) {
-  const exam = metadata?.exam as { areas?: unknown } | undefined;
-  return Array.isArray(exam?.areas) && exam.areas.length > 0;
-}
-
-// Les àrees del temari (PRACTICE_AREAS) comparteixen la pantalla d'exercicis: un
-// contingut és jugable si té algun exercici a practice_exercises.
-const hasExercises = (row: ResourceRow) => (row.practice_exercises?.[0]?.count ?? 0) > 0;
-
-const isPlayable = (row: ResourceRow) =>
-  isPracticeArea(row.category) ? hasExercises(row) : PLAYABLE_BY_CATEGORY[row.category]?.(row) ?? false;
 
 // Lliçó fixa del contingut (metadata.lesson), per al botó «Aprendre lliçó»: teoria
 // adaptada al nivell a partir de les gramàtiques de l'AVL (fonts en assets-src/avl).
@@ -287,13 +260,20 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
   if (!client) return res.status(503).json({ error: "El catàleg no està disponible" });
   const { data: exercise, error } = await client
     .from('practice_exercises')
-    .select('kind, prompt, task')
+    .select('kind, level, prompt, task, practice_passages(title, lines)')
     .eq('id', req.params.id)
     .maybeSingle();
   if (error) {
     console.error("[practice] Error carregant l'exercici:", error);
     return res.status(500).json({ error: "No hem pogut carregar l'exercici" });
   }
+  // Del B1 amunt s'avalua amb la rúbrica del B1 i, si la tasca parteix d'un text
+  // o d'un àudio (paràfrasi, apunts...), l'avaluador en rep la transcripció.
+  const intermediate = exercise && !['A1', 'A2'].includes(exercise.level);
+  const passage = exercise?.practice_passages as { title: string | null; lines: { text: string; speaker?: string }[] } | null;
+  const sourceText = passage
+    ? [passage.title, ...passage.lines.map(l => (l.speaker ? `${l.speaker}: ${l.text}` : l.text))].filter(Boolean).join('\n')
+    : undefined;
 
   let evaluate: () => Promise<unknown>;
   if (exercise?.kind === 'form') {
@@ -305,14 +285,23 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
     const text = parsedBody.data.text?.trim();
     if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
     const task = exercise.task as { min_words: number; max_words: number; words?: string[]; min_words_used?: number };
-    evaluate = () => evaluateA2Writing({
-      instructions: exercise.prompt,
-      text,
-      minWords: task.min_words,
-      maxWords: task.max_words,
-      words: task.words ?? [],
-      minWordsUsed: task.min_words_used ?? 0,
-    });
+    evaluate = () => intermediate
+      ? evaluateB1Writing({
+          exerciseN: 7,
+          instructions: exercise.prompt,
+          sourceText,
+          text,
+          minWords: task.min_words,
+          maxWords: task.max_words,
+        })
+      : evaluateA2Writing({
+          instructions: exercise.prompt,
+          text,
+          minWords: task.min_words,
+          maxWords: task.max_words,
+          words: task.words ?? [],
+          minWordsUsed: task.min_words_used ?? 0,
+        });
   } else {
     return res.status(404).json({ error: "Este exercici no es pot avaluar" });
   }
