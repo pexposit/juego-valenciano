@@ -14,6 +14,7 @@ import { replyFromAgent } from '../services/agent.js';
 import { getScenario } from '../services/scenarios.js';
 import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
+import { assistantLevelInstructions } from '../services/assistantLevel.js';
 import { stt, tts } from '../services/voice.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
 import { beginErrorAnalysis } from '../services/pendingErrorAnalysis.js';
@@ -99,20 +100,25 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       history = sanitizeHistory(data.history as HistoryMessage[]);
     }
 
-    // El tutor infantil té en compte la llengua materna del xiquet (profiles.mother_tongue).
+    // El tutor del tauler té en compte la llengua materna, el nivell i el públic (xiquet o adult) de l'usuari.
     let extraInstructions: string | undefined;
+    let levelInstructions: string | undefined;
+    let level = data.level;
     if (client && scenario.category === ASSISTANT_CATEGORY) {
-      const { data: profile } = await client.from('profiles').select('mother_tongue').eq('id', req.userId!).maybeSingle();
+      const { data: profile } = await client.from('profiles').select('mother_tongue, level, age_group').eq('id', req.userId!).maybeSingle();
       extraInstructions = motherTongueInstructions(profile?.mother_tongue);
+      levelInstructions = assistantLevelInstructions(profile?.level, profile?.age_group);
+      level = profile?.level ?? level;
     }
 
     const agentStart = Date.now();
     const reply = await replyFromAgent({
       scenario,
-      level: data.level,
+      level,
       message: text,
       history,
       extraInstructions,
+      levelInstructions,
     });
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);

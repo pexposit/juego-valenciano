@@ -17,7 +17,7 @@ const TTS_ATTEMPTS = 2;
 // Xat del tauler infantil: el xiquet pregunta al professor dubtes de valencià, escrivint o parlant.
 // Reutilitza el xat de les activitats (/api/turn): els missatges es guarden a la BDD i la
 // conversa continua entre visites. El professor també respon en veu alta.
-export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
+export function ChildAssistant({ showHelp, level }: { showHelp: boolean; level: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [ready, setReady] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
@@ -153,7 +153,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         >
           {openFailed && <p className="text-center text-lg font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-lg font-bold opacity-60">Un moment...</p>}
-          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} showHelp={showHelp} />)}
+          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} showHelp={showHelp} onlyHelp={showHelp && level === 'nivell0'} />)}
           {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-xl font-bold opacity-60">...</p>}
         </div>
 

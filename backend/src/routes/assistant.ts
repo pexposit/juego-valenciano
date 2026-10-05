@@ -5,11 +5,11 @@ import { getAdmin, requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { bilingualGreeting } from '../services/motherTongue.js';
+import { assistantGreeting, assistantGreetingIsTranslated } from '../services/assistantLevel.js';
 
 export const assistantRouter = Router();
 
 const HISTORY_LIMIT = 40;
-const FALLBACK_GREETING = 'En què et puc ajudar?';
 
 type Message = { role: 'user' | 'character'; text: string };
 
@@ -39,16 +39,13 @@ const openConversation = (restart: boolean) => async (req: AuthRequest, res: Res
     console.error('[assistant] Recurs del tutor no trobat:', resourceError);
     return res.status(404).json({ error: 'El tutor no està disponible' });
   }
-  const greetingValue = (resource.metadata as Record<string, unknown> | null)?.initial_prompt;
-  const greeting = typeof greetingValue === 'string' && greetingValue.trim() ? greetingValue.trim() : FALLBACK_GREETING;
-
   const client = db(req.userId);
   // Mode demo (sense BD): no es guarda res, només la salutació.
   if (!client || !req.userId) {
     return res.json({
       session_id: parsed.data.session_id,
       session_resource_id: crypto.randomUUID(),
-      messages: [{ role: 'character', text: greeting }] satisfies Message[],
+      messages: [{ role: 'character', text: assistantGreeting('principiant') }] satisfies Message[],
     });
   }
 
@@ -111,10 +108,11 @@ const openConversation = (restart: boolean) => async (req: AuthRequest, res: Res
       .map((m: { role: 'user' | 'character'; content_text: string }) => ({ role: m.role, text: m.content_text }));
 
     // Conversa nova (o sense cap missatge perquè la salutació no es va poder guardar): es guarda ara,
-    // en valencià i en la llengua materna del xiquet.
+    // en valencià (segons el nivell de l'usuari) i en la seua llengua materna.
     if (messages.length === 0) {
-      const { data: profile } = await client.from('profiles').select('mother_tongue').eq('id', req.userId).maybeSingle();
-      const text = bilingualGreeting(greeting, profile?.mother_tongue);
+      const { data: profile } = await client.from('profiles').select('mother_tongue, level').eq('id', req.userId).maybeSingle();
+      const greeting = assistantGreeting(profile?.level);
+      const text = assistantGreetingIsTranslated(profile?.level) ? bilingualGreeting(greeting, profile?.mother_tongue) : greeting;
       const { error: greetingError } = await client
         .from('conversation_messages')
         .insert({ session_resource_id: sessionResourceId, role: 'character', content_text: text, input_mode: 'text' });

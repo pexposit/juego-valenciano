@@ -3,7 +3,7 @@ import { ChildAssistant } from '../components/ChildAssistant';
 import { Logo, ProfileButton } from '../components/ui';
 import type { Page } from '../data/content';
 
-export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name: string; ageGroup: string; showMotherTongue: boolean; setPage: (p: Page) => void }) {
+export function Dashboard({ name, ageGroup, level, showMotherTongue, setPage }: { name: string; ageGroup: string; level: string; showMotherTongue: boolean; setPage: (p: Page) => void }) {
   const isChild = ageGroup === 'child';
   return (
     <main className="fade-up relative min-h-screen">
@@ -63,8 +63,20 @@ export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name:
         </div>
       </header>
 
-      {/* Mateix tauler per a tots: el professor al centre i el xat a sota. */}
-      <ChildAssistant showHelp={showMotherTongue} />
+      {/* Mateix tauler per a tots: el professor i el xat. */}
+      <ChildAssistant showHelp={showMotherTongue} level={level} />
+
+      {!isChild && (
+        <div className="relative z-20 flex justify-center px-5 pb-10">
+          <button
+            id="dashboard-start-btn"
+            onClick={() => {}}
+            className="btn-press rounded-full bg-teal px-8 py-3 text-2xl font-black text-white shadow-lg ring-2 ring-white hover:bg-teal/90"
+          >
+            Començar classe
+          </button>
+        </div>
+      )}
     </main>
   );
 }
