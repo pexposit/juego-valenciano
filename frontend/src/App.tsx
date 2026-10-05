@@ -312,7 +312,7 @@ export function App() {
       <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
       <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
       <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
-      <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} showHelp={showMotherTongue} /></PageTransition>} />
+      <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard}showHelp={showMotherTongue} /></PageTransition>} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );

@@ -270,6 +270,17 @@ async function authedGet<T>(path: string, errorMessage: string): Promise<T> {
   if (!res.ok) throw new Error(errorMessage);
   return res.json();
 }
+// Reobri una conversa anterior com a l'actual; en tornar al tauler el professor la continua.
+export async function resumeTutorConversation(id: string): Promise<void> {
+  const sessionId = await ensureSession('principiant');
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/resume`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ session_id: sessionId, session_resource_id: id }),
+  });
+  if (!res.ok) throw new Error("No s'ha pogut reprendre la conversa");
+}
 export const fetchTutorConversations = () =>
   authedGet<TutorConversation[]>('/api/assistant/conversations', 'No hem pogut carregar les converses');
 export const fetchTutorConversation = (id: string) =>

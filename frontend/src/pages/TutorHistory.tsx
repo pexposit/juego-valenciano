@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, MessageCircle } from 'lucide-react';
 import { ChatBubble } from '../components/ChatBubble';
 import { Logo } from '../components/ui';
-import { fetchTutorConversation, fetchTutorConversations, type TutorConversation, type TutorMessage } from '../lib/api';
+import { fetchTutorConversation, fetchTutorConversations, resumeTutorConversation, type TutorConversation, type TutorMessage } from '../lib/api';
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleString('ca', { dateStyle: 'medium', timeStyle: 'short' });
 
 // Converses anteriors del xiquet amb el professor: una llista i, en triar-ne una, els seus missatges (només lectura).
-export function TutorHistory({ onBack, showHelp }: { onBack: () => void; showHelp: boolean }) {
+export function TutorHistory({ onBack, onResume, showHelp }: { onBack: () => void; onResume: () => void; showHelp: boolean }) {
+  const [resuming, setResuming] = useState(false);
+  const [resumeFailed, setResumeFailed] = useState(false);
   // undefined = carregant; null = error de càrrega.
   const [conversations, setConversations] = useState<TutorConversation[] | null>();
   const [selected, setSelected] = useState<TutorConversation>();
@@ -34,6 +36,20 @@ export function TutorHistory({ onBack, showHelp }: { onBack: () => void; showHel
         console.error('Error carregant la conversa:', error);
         setMessages(null);
       });
+  };
+
+  const resume = async () => {
+    if (!selected || resuming) return;
+    setResuming(true);
+    setResumeFailed(false);
+    try {
+      await resumeTutorConversation(selected.id);
+      onResume();
+    } catch (error) {
+      console.error('Error reprenent la conversa:', error);
+      setResumeFailed(true);
+      setResuming(false);
+    }
   };
 
   const list = () => {
@@ -76,6 +92,14 @@ export function TutorHistory({ onBack, showHelp }: { onBack: () => void; showHel
         <ChevronLeft size={20} /> Totes les converses
       </button>
       <p className="mb-3 text-sm font-extrabold uppercase tracking-wider opacity-55">{selected && formatDate(selected.started_at)}</p>
+      <button
+        onClick={resume}
+        disabled={resuming || !messages}
+        className="btn-press mb-4 flex items-center gap-2 rounded-full bg-teal px-5 py-3 text-lg font-extrabold text-white shadow-lg disabled:opacity-40"
+      >
+        <MessageCircle size={20} /> Continua esta conversa
+      </button>
+      {resumeFailed && <p className="mb-3 text-lg font-bold text-orange">No hem pogut reprendre la conversa. Torna-ho a provar.</p>}
       <div className="flex flex-col gap-3 rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white">
         {messages === undefined && <p className="text-center text-lg font-bold opacity-60">Carregant…</p>}
         {messages === null && <p className="text-center text-lg font-bold text-orange">No hem pogut carregar la conversa.</p>}

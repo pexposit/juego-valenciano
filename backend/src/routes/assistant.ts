@@ -132,6 +132,59 @@ const openConversation = (restart: boolean) => async (req: AuthRequest, res: Res
 assistantRouter.post('/api/assistant/open', requireAuth, openConversation(false));
 assistantRouter.post('/api/assistant/restart', requireAuth, openConversation(true));
 
+const resumeSchema = z.object({ session_id: z.string().uuid(), session_resource_id: z.string().uuid() });
+
+// Torna a una conversa anterior: tanca l'oberta, reobri la triada i la mou a la sessió actual
+// perquè /api/assistant/open (que només reprén les de la sessió actual) la trobe en carregar el tauler.
+assistantRouter.post('/api/assistant/resume', requireAuth, async (req: AuthRequest, res) => {
+  const parsed = resumeSchema.safeParse(req.body);
+  if (!parsed.success) return validationError(res, parsed.error);
+
+  const client = db(req.userId);
+  const resourceId = await tutorResourceId();
+  if (!client || !req.userId || !resourceId) return res.status(503).json({ error: 'El servei no està disponible' });
+
+  try {
+    const { data: session, error: sessionError } = await client
+      .from('sessions')
+      .select('id')
+      .eq('id', parsed.data.session_id)
+      .eq('user_id', req.userId)
+      .maybeSingle();
+    if (sessionError) throw sessionError;
+    if (!session) return res.status(404).json({ error: 'Sessió no trobada o no autoritzada' });
+
+    const { data: owned, error: ownedError } = await client
+      .from('session_resource')
+      .select('id, sessions!inner(user_id)')
+      .eq('id', parsed.data.session_resource_id)
+      .eq('recurso_id', resourceId)
+      .eq('sessions.user_id', req.userId)
+      .maybeSingle();
+    if (ownedError) throw ownedError;
+    if (!owned) return res.status(404).json({ error: 'Conversa no trobada' });
+
+    const { error: closeError } = await client
+      .from('session_resource')
+      .update({ resolved: true })
+      .eq('recurso_id', resourceId)
+      .neq('id', owned.id)
+      .or('resolved.is.null,resolved.eq.false');
+    if (closeError) throw closeError;
+
+    const { error: reopenError } = await client
+      .from('session_resource')
+      .update({ resolved: false, sesion_id: parsed.data.session_id })
+      .eq('id', owned.id);
+    if (reopenError) throw reopenError;
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('[assistant] Error reprenent la conversa:', error);
+    res.status(500).json({ error: "No s'ha pogut reprendre la conversa" });
+  }
+});
+
 type PastConversation = {
   id: string;
   started_at: string;
