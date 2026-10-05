@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Clock, ExternalLink, Headphones, Mic, PenLine, RotateCcw } from 'lucide-react';
 import { Logo } from '../components/ui';
 import { B1_PASS_MARK, BinaryExercise, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
-import { evaluateExamWriting } from '../lib/api';
+import { evaluateExamWriting, saveActivityResult } from '../lib/api';
 import type { Exam as ExamResource, ExamArea, ExamExercise, ExamQuestion, ExamScoring, WritingEvaluation } from '../lib/types';
 
 const AREA_ICONS = [Headphones, BookOpen, PenLine, Mic];
@@ -100,6 +100,14 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
     setProgress(p => ({ ...p, answers: { ...p.answers, [n]: key } }));
   const check = () => {
     setProgress(p => ({ ...p, checked: [...p.checked, area.n] }));
+    // Resultat de l'àrea per a la ruta d'aprenentatge: punts de la JQCV o encerts.
+    const total = area.scoring?.max_points ?? areaQuestions.length;
+    const points = area.scoring ? areaPoints(area) : score(areaQuestions);
+    if (total > 0) {
+      void saveActivityResult('exam', resource.id, {
+        level: exam.level, score: Math.min(points, total), total, details: { area: area.n, title: area.title },
+      });
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const reset = () =>

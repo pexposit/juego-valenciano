@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Headphones, Lightbulb, RotateCcw } from 'luc
 import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type PracticeArea } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
-import { evaluatePracticeExercise, recordPracticeAnswers } from '../lib/api';
+import { evaluatePracticeExercise, recordPracticeAnswers, saveActivityResult } from '../lib/api';
 import type { ExamQuestion, Practice as PracticeResource, PracticeExercise, PracticePassage, WritingEvaluation } from '../lib/types';
 
 type Progress = {
@@ -40,6 +40,15 @@ const KEYS = 'abcdefgh';
 const asQuestion = (e: Extract<PracticeExercise, { kind: 'choice' }>, n: number): ExamQuestion => {
   const options = shuffled(e.id, e.options).map((text, i) => ({ key: KEYS[i], text }));
   return { n, prompt: e.prompt, options, answer: options.find(o => o.text === e.answers[0])!.key };
+};
+
+// Nota d'una redacció o d'un formulari avaluat, per a la ruta d'aprenentatge.
+const writingMark = (evaluation: WritingEvaluation) => {
+  switch (evaluation.rubrica) {
+    case 'a2_redaccio': return { score: evaluation.mitjana_ponderada_base_10, total: 10 };
+    case 'b1_redaccio': return { score: evaluation.mitjana_base_10, total: 10 };
+    default: return { score: evaluation.puntuacio_global, total: 15 };
+  }
 };
 
 const isCorrect = (e: Gradable, question: ExamQuestion | undefined, answer: string | undefined) => {
@@ -134,6 +143,8 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
     });
     recordPracticeAnswers(sent).catch(error => console.error('Error enviant les respostes:', error));
     setProgress(p => ({ ...p, checked: true }));
+    // El resultat alimenta la ruta d'aprenentatge personalitzada.
+    void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const reset = () => {
@@ -153,6 +164,7 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
     try {
       const evaluation = await evaluatePracticeExercise(e.id, evaluationBody(e));
       setProgress(p => ({ ...p, evaluations: { ...p.evaluations, [e.id]: evaluation } }));
+      void saveActivityResult('practice', practice.id, { level, ...writingMark(evaluation), details: { exercise_id: e.id, rubrica: evaluation.rubrica ?? 'a1_formulari' } });
     } catch (error) {
       setEvaluationError({ id: e.id, message: error instanceof Error ? error.message : "No hem pogut avaluar l'exercici" });
     } finally {

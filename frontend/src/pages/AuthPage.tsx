@@ -57,8 +57,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
     }
     if (supabase && !ageGroup) return setNotice('Indica si el compte és per a un xiquet o per a una persona adulta.');
     if (supabase && !motherTongue) return setNotice('Tria la teua llengua materna.');
-    // Només les persones adultes trien nivell; els xiquets comencen en principiant.
-    const startLevel = ageGroup === 'adult' ? level : 'principiant';
+    // Només les persones adultes trien nivell; els xiquets comencen en el Nivell 0.
+    const startLevel = ageGroup === 'child' ? 'nivell0' : level;
     return withAuth(async client => {
       const { error } = await client.auth.signUp({
         email,
@@ -161,7 +161,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
                   id="auth-level"
                   className={`${INPUT_CLASS} bg-white`}
                 >
-                  {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {/* El Nivell 0 és per a perfils infantils: no s'ofereix en el registre d'adults. */}
+                  {LEVEL_OPTIONS.filter(o => o.value !== 'nivell0').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </>
             )}
