@@ -7,14 +7,19 @@ import { SpeakerButton } from './SpeakerButton';
 type Props<K extends Round['kind']> = { round: Extract<Round, { kind: K }>; onDone: () => void };
 
 // Targeta il·lustrada gran. `state` anima l'encert (bot) o l'error (rebot suau).
-function Card({ item, state, onTap, face }: { item: KidsItem; state?: 'ok' | 'no'; onTap: () => void; face?: boolean }) {
+// Els colors es mostren com una taca del color (no amb emojis, que no n'hi ha de tots).
+function Card({ item, state, onTap, face, letter }: { item: KidsItem; state?: 'ok' | 'no'; onTap: () => void; face?: boolean; letter?: boolean }) {
   return (
     <button
       onClick={onTap}
       aria-label={item.word}
       className={`kid-card ${face ? 'kid-card-face' : ''} ${state === 'ok' ? 'kid-jump' : state === 'no' ? 'kid-nope' : ''}`}
     >
-      <span className="kid-card-emoji" aria-hidden="true">{item.emoji}</span>
+      {item.color ? (
+        <span className="kid-card-swatch" aria-hidden="true" style={{ background: item.color, borderColor: item.id === 'blanc' ? '#CBD5E1' : 'transparent' }} />
+      ) : (
+        <span className={letter ? 'kid-card-letter' : 'kid-card-emoji'} aria-hidden="true">{item.emoji}</span>
+      )}
     </button>
   );
 }
@@ -25,6 +30,8 @@ export function ChoiceGame({ round, onDone }: Props<'tap' | 'odd'>) {
   const [states, setStates] = useState<Record<string, 'ok' | 'no'>>({});
   const react = round.kind === 'tap' ? round.react : undefined;
   const faces = round.kind === 'tap' && round.style === 'faces';
+  const letters = round.kind === 'tap' && round.style === 'letters';
+  const picture = round.kind === 'tap' ? round.picture : undefined;
 
   const tap = (item: KidsItem) => {
     if (locked) return;
@@ -42,8 +49,9 @@ export function ChoiceGame({ round, onDone }: Props<'tap' | 'odd'>) {
   return (
     <div className="kid-stage">
       <SpeakerButton onClick={repeat} />
+      {picture && <div className="kid-picture" aria-hidden="true">{picture}</div>}
       <div className={`kid-cards kid-cards-${round.options.length}`}>
-        {round.options.map(item => <Card key={item.id} item={item} state={states[item.id]} onTap={() => tap(item)} face={faces} />)}
+        {round.options.map(item => <Card key={item.id} item={item} state={states[item.id]} onTap={() => tap(item)} face={faces} letter={letters} />)}
       </div>
       {faces && <div className="kid-monster-face" aria-hidden="true">👾</div>}
     </div>

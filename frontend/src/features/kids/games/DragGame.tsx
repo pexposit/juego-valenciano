@@ -18,15 +18,23 @@ const MONSTER_ZONES: Zone[] = [
   { id: 'mà', style: { left: '88%', top: '52%' } },
   { id: 'cama', style: { left: '36%', top: '80%' } },
   { id: 'peu', style: { left: '64%', top: '80%' } },
+  { id: 'samarreta', style: { left: '50%', top: '62%' } },
   { id: 'sabates', style: { left: '50%', top: '95%' } },
 ];
 
-function sceneZones(scene: DragRound['scene']): Zone[] {
-  switch (scene) {
+// En la casa es veuen tres llocs: els que demanen les tasques i, si en falten, altres.
+function casaPlaces(round: DragRound) {
+  const needed = [...new Set(round.tasks.map(t => t.zone))];
+  const extra = HOME_PLACES.filter(h => !needed.includes(h.id)).sort(() => Math.random() - 0.5).slice(0, Math.max(0, 3 - needed.length));
+  return HOME_PLACES.filter(h => needed.includes(h.id) || extra.includes(h)).sort(() => Math.random() - 0.5);
+}
+
+function sceneZones(round: DragRound): Zone[] {
+  switch (round.scene) {
     case 'plat': return [{ id: 'plat', emoji: '🍽️', style: { left: '50%', top: '45%' }, className: 'kid-zone-big' }];
     case 'motxilla': return [{ id: 'motxilla', emoji: '🎒', style: { left: '50%', top: '45%' }, className: 'kid-zone-big' }];
     case 'monstre': return MONSTER_ZONES;
-    case 'casa': return HOME_PLACES.map((h, i) => ({ id: h.id, emoji: h.emoji, style: { left: `${18 + i * 32}%`, top: '45%' }, className: 'kid-zone-big' }));
+    case 'casa': return casaPlaces(round).map((h, i) => ({ id: h.id, emoji: h.emoji, style: { left: `${18 + i * 32}%`, top: '45%' }, className: 'kid-zone-big' }));
   }
 }
 
@@ -44,7 +52,7 @@ export function DragGame({ round, onDone }: { round: DragRound; onDone: () => vo
   const [step, setStep] = useState(0);
   const task = round.tasks[step];
   const { locked, repeat, win, miss } = useRound(task?.key, onDone);
-  const zones = useMemo(() => sceneZones(round.scene), [round.scene]);
+  const zones = useMemo(() => sceneZones(round), [round]);
   const items = useMemo(() => sceneItems(round), [round]);
   const [placed, setPlaced] = useState<{ item: KidsItem; zone: string }[]>([]);
   const [drag, setDrag] = useState<{ item: KidsItem; x: number; y: number }>();
