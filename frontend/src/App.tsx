@@ -12,6 +12,7 @@ import { activityRoute, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from '
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
+import { KidsLessons as KidsCardLessons } from './pages/KidsLessons';
 import { LearningPath } from './pages/LearningPath';
 import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
@@ -299,7 +300,7 @@ export function App() {
       <Route path={ROUTES.auth} element={<PageTransition><AuthPage setPage={goToPage} /></PageTransition>} />
       <Route
         path={ROUTES.dashboard}
-        element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : <DashboardRoute name={name} ageGroup={ageGroup} showMotherTongue={showMotherTongue} profileReady={profileReady} setPage={goToPage} />}
+        element={<DashboardRoute name={name} ageGroup={ageGroup} showMotherTongue={showMotherTongue} profileReady={profileReady} setPage={goToPage} />}
       />
       <Route
         path={KIDS_ROUTES.home}
@@ -386,6 +387,7 @@ export function App() {
       <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
       <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
       <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard}showHelp={showMotherTongue} /></PageTransition>} />
+      <Route path={ROUTES.lessons} element={<PageTransition><KidsCardLessons onBack={() => navigate(-1)} /></PageTransition>} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );
