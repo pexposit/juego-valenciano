@@ -8,7 +8,7 @@ const formatDate = (iso: string) =>
   new Date(iso).toLocaleString('ca', { dateStyle: 'medium', timeStyle: 'short' });
 
 // Converses anteriors del xiquet amb el professor: una llista i, en triar-ne una, els seus missatges (només lectura).
-export function TutorHistory({ onBack, onResume, showHelp, level }: { onBack: () => void; onResume: () => void; showHelp: boolean; level: string }) {
+export function TutorHistory({ onBack, onResume, showHelp }: { onBack: () => void; onResume: () => void; showHelp: boolean }) {
   const [resuming, setResuming] = useState(false);
   const [resumeFailed, setResumeFailed] = useState(false);
   // undefined = carregant; null = error de càrrega.
@@ -103,7 +103,7 @@ export function TutorHistory({ onBack, onResume, showHelp, level }: { onBack: ()
       <div className="flex flex-col gap-3 rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white">
         {messages === undefined && <p className="text-center text-lg font-bold opacity-60">Carregant…</p>}
         {messages === null && <p className="text-center text-lg font-bold text-orange">No hem pogut carregar la conversa.</p>}
-        {messages?.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} showHelp={showHelp} onlyHelp={showHelp && level === 'nivell0'} />)}
+        {messages?.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} showHelp={showHelp} />)}
       </div>
     </div>
   );

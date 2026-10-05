@@ -44,7 +44,7 @@ export function RobotSceneArt({
         talking={talking}
         {...robotAssets(scenario)}
         label="Robot que conversa amb tu"
-        className="robot-avatar-chat absolute left-1/2 top-[22%] aspect-square h-[52%] max-w-[96vw] -translate-x-1/2"
+        className="robot-avatar-chat absolute left-1/2 top-[22%] aspect-square h-[52%] [@media(max-width:1023px)_and_(orientation:portrait)]:top-[30%] [@media(max-width:1023px)_and_(orientation:portrait)]:h-[36%] [@media(max-height:500px)_and_(orientation:landscape)]:left-[74%] [@media(max-height:500px)_and_(orientation:landscape)]:top-[14%] [@media(max-height:500px)_and_(orientation:landscape)]:h-[56%] max-w-[96vw] -translate-x-1/2"
       />
     </div>
   );

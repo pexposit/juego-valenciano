@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BookOpen, Target } from 'lucide-react';
+import { ArrowLeft, BookOpen, Target } from 'lucide-react';
 import { CONVERSATION_AREAS, PRACTICE_AREAS } from '@parlaval/shared';
 import { Logo, ProfileButton } from './ui';
 import { LessonModal } from './LessonModal';
@@ -113,9 +113,12 @@ export function ScenarioSelect({
         <div className="relative isolate flex items-center justify-between px-5 p-4">
           <button
             onClick={onBack}
-            className="text-xl btn-press rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-teal shadow hover:bg-white transition-colors"
+            aria-label="Tornar"
+            title="Tornar"
+            className="text-xl btn-press flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-2 text-sm font-extrabold text-teal shadow hover:bg-white transition-colors sm:px-4"
           >
-            ← Tornar
+            <ArrowLeft size={20} />
+            <span className="hidden sm:inline">Tornar</span>
           </button>
           <Logo onDark />
           <div className="flex items-center gap-5">
@@ -126,7 +129,7 @@ export function ScenarioSelect({
               className="btn-press flex h-10 items-center gap-1.5 rounded-full bg-orange px-3 py-2 text-xl font-black text-white hover:bg-orange/90"
             >
               <Target size={18} />
-              Errors
+              <span className="hidden sm:inline">Errors</span>
             </button>
             <ProfileButton name={name} onClick={onProfile} />
           </div>

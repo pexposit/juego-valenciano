@@ -5,6 +5,11 @@
 
 * { box-sizing: border-box; }
 
+/* Lletra més menuda en tauletes i mòbils: tot el text i els espais en rem s'escalen amb l'arrel. */
+html { -webkit-text-size-adjust: 100%; }
+@media (max-width: 1023px) { html { font-size: 15px; } }
+@media (max-width: 639px) { html { font-size: 13.5px; } }
+
 body {
   margin: 0;
   background: #FAFAF9;
@@ -116,6 +121,16 @@ button { cursor: pointer; }
   right: 24px;
   bottom: -38px;
   border-width: 38px 0 0 64px;
+}
+/* Mòbil en horitzontal: la bombolla va a l'esquerra i el robot a la dreta, amb la cua apuntant cap a ell. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .bubble-to-avatar:after {
+    left: auto;
+    right: -15px;
+    bottom: 22px;
+    border-width: 12px 0 12px 16px;
+    border-color: transparent transparent transparent white;
+  }
 }
 .user-bubble:after {
   left: auto;

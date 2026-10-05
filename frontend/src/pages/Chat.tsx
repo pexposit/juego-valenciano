@@ -46,7 +46,7 @@ export function Chat({
   const [history, setHistory] = useState<Msg[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   // En pantalles estretes el quadre tapa la bombolla del personatge: comença tancat.
-  const [showObjectives, setShowObjectives] = useState(() => window.matchMedia('(min-width: 768px)').matches);
+  const [showObjectives, setShowObjectives] = useState(() => window.matchMedia('(min-width: 768px) and (min-height: 501px)').matches);
   const hasObjectives = Boolean(summary) || objectives.length > 0;
   const [bubbleKey, setBubbleKey] = useState(0);
   const [audioSource, setAudioSource] = useState<string>();
@@ -194,7 +194,7 @@ export function Chat({
       {/* Nom i rol de l'actor, davall seu (resources.metadata.character). */}
       {actor && (
         <div
-          className="absolute left-1/2 top-[76%] z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1.5 text-xl font-black uppercase tracking-wider text-slate-800 shadow-md backdrop-blur-sm"
+          className="absolute left-1/2 top-[76%] z-10 [@media(max-height:500px)_and_(orientation:landscape)]:hidden max-w-[90vw] -translate-x-1/2 truncate rounded-full px-3 py-1 text-sm font-black uppercase tracking-wide [@media(max-width:1023px)_and_(orientation:portrait)]:top-[68%] sm:px-4 sm:py-1.5 sm:text-base sm:tracking-wider lg:text-xl text-slate-800 shadow-md backdrop-blur-sm"
           style={{ background: 'rgba(255,255,255,0.92)' }}
         >
           {actor}
@@ -212,14 +212,14 @@ export function Chat({
             ← Eixir
           </button>
           <span
-            className="rounded-full px-3.5 py-1.5 text-xs font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm"
+            className="max-w-[26vw] truncate rounded-full px-3.5 py-1.5 text-xs font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm sm:max-w-none"
             style={{ background: 'rgba(255,255,255,0.92)' }}
           >
             {title}
           </span>
         </div>
         <div
-          className="absolute left-1/2 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-black shadow backdrop-blur-sm"
+          className="absolute left-1/2 hidden -translate-x-1/2 rounded-full px-4 py-2 text-sm font-black shadow backdrop-blur-sm sm:block"
           style={{ background: 'rgba(255,255,255,0.9)' }}
         >
           ⚡ {xp} XP
@@ -250,7 +250,7 @@ export function Chat({
       {hasObjectives && showObjectives && (
         <aside
           id="chat-objectives"
-          className="absolute right-5 top-20 z-20 w-[min(calc(100%-2.5rem),320px)] rounded-3xl bg-white/95 p-5 shadow-xl backdrop-blur-sm"
+          className="absolute right-5 top-20 z-20 max-h-[calc(100dvh-11rem)] w-[min(calc(100%-2.5rem),320px)] overflow-y-auto rounded-3xl bg-white/95 p-5 shadow-xl backdrop-blur-sm [@media(max-height:500px)_and_(orientation:landscape)]:inset-x-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-8.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:w-auto [@media(max-height:500px)_and_(orientation:landscape)]:p-3"
         >
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider" style={{ color: '#0F47AF' }}>
@@ -270,7 +270,8 @@ export function Chat({
       )}
 
       {/* Character bubble with entrance animation */}
-      <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] z-10 max-w-[min(72%,440px)] rounded-3xl bg-white p-5 font-bold shadow-xl text-base">
+      <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] z-10 max-w-[min(72%,440px)] rounded-3xl bg-white p-5 font-bold shadow-xl text-base [@media(max-height:500px)_and_(orientation:landscape)]:left-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:p-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm">
+        <div className="[@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-10.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:overflow-y-auto">
         <p className="leading-relaxed">
           {loading ? <span className="opacity-50">El personatge està escrivint…</span> : character}
         </p>
@@ -295,13 +296,14 @@ export function Chat({
             )}
           </>
         )}
+              </div>
       </section>
 
       {/* User bubble with entrance animation */}
       {user && (
         <div
           key={`user-${bubbleKey}`}
-          className="user-bubble-enter user-bubble absolute bottom-36 right-5 z-10 max-w-[70%] rounded-3xl p-4 font-bold text-white shadow-lg"
+          className="user-bubble-enter user-bubble absolute bottom-36 right-5 z-10 max-w-[70%] [@media(max-height:500px)_and_(orientation:landscape)]:bottom-24 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[40%] [@media(max-height:500px)_and_(orientation:landscape)]:p-2 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm rounded-3xl p-4 font-bold text-white shadow-lg"
           style={{ background: '#0F47AF' }}
         >
           <p>{user}</p>

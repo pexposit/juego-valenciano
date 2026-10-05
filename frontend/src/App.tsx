@@ -86,10 +86,10 @@ function ChatRoute({
 }
 
 // Tauler: no es mostra fins que hi ha el perfil i els recursos (fons, bombolla, robot).
-function DashboardRoute({ name, ageGroup, level, showMotherTongue, profileReady, setPage }: { name: string; ageGroup: string; level: string; showMotherTongue: boolean; profileReady: boolean; setPage: (p: Page) => void }) {
+function DashboardRoute({ name, ageGroup, showMotherTongue, profileReady, setPage }: { name: string; ageGroup: string; showMotherTongue: boolean; profileReady: boolean; setPage: (p: Page) => void }) {
   const ready = useDashboardAssets(profileReady);
   if (!ready) return <SceneLoading />;
-  return <PageTransition><Dashboard name={name} ageGroup={ageGroup} level={level} showMotherTongue={showMotherTongue} setPage={setPage} /></PageTransition>;
+  return <PageTransition><Dashboard name={name} ageGroup={ageGroup} showMotherTongue={showMotherTongue} setPage={setPage} /></PageTransition>;
 }
 
 // Examen interactiu (/examen/:id): el contingut ve de resources.metadata.exam.
@@ -277,7 +277,7 @@ export function App() {
       <Route path={ROUTES.auth} element={<PageTransition><AuthPage setPage={goToPage} /></PageTransition>} />
       <Route
         path={ROUTES.dashboard}
-        element={<DashboardRoute name={name} ageGroup={ageGroup} level={level} showMotherTongue={showMotherTongue} profileReady={profileReady} setPage={goToPage} />}
+        element={<DashboardRoute name={name} ageGroup={ageGroup} showMotherTongue={showMotherTongue} profileReady={profileReady} setPage={goToPage} />}
       />
       <Route
         path={KIDS_ROUTES.home}
@@ -358,7 +358,7 @@ export function App() {
       <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
       <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
       <Route path={ROUTES.lessons} element={<PageTransition><Lessons onBack={() => navigate(-1)} motherTongue={motherTongue} showHelp={showMotherTongue} /></PageTransition>} />
-      <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard} showHelp={showMotherTongue} level={level} /></PageTransition>} />
+      <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard} showHelp={showMotherTongue} /></PageTransition>} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );

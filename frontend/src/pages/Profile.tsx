@@ -25,6 +25,8 @@ export function Profile({
   setShowMotherTongue: (v: boolean) => void;
 }) {
   const isChild = ageGroup === 'child';
+  // La llengua materna i l'ajuda amb la traducció són per als xiquets i per a qui està en el Nivell 0.
+  const hasHelp = isChild || level === 'nivell0';
   // El nom (i, en els comptes infantils, la llengua materna) són editables, però no directament:
   // cal prémer el llapis primer, i el canvi no es desa a la BD fins que es confirma (botó del check).
   const [editing, setEditing] = useState(false);
@@ -40,12 +42,12 @@ export function Profile({
   const confirmEditing = () => {
     const trimmed = draftName.trim();
     if (trimmed && trimmed !== name) setName(trimmed);
-    if (isChild && draftTongue && draftTongue !== motherTongue) setMotherTongue(draftTongue);
+    if (hasHelp && draftTongue && draftTongue !== motherTongue) setMotherTongue(draftTongue);
     setEditing(false);
   };
 
-  // L'ajuda en la llengua materna només té sentit per als xiquets amb una llengua materna que no siga el valencià.
-  const helpLanguage = isChild && motherTongue && motherTongue !== 'ca' && motherTongue !== 'other'
+  // L'ajuda en la llengua materna només té sentit amb una llengua materna que no siga el valencià.
+  const helpLanguage = hasHelp && motherTongue && motherTongue !== 'ca' && motherTongue !== 'other'
     ? motherTongueLabel(motherTongue)
     : undefined;
 
@@ -102,7 +104,7 @@ export function Profile({
             <span id="profile-level" className="mt-1 block p-3 text-2xl font-normal">{isChild ? 'Xiquet' : levelLabel(level)}</span>
           </div>
 
-          {isChild && (
+          {hasHelp && (
             editing ? (
               <label className="block font-extrabold text-xl">
                 Llengua materna
