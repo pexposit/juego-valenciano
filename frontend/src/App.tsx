@@ -12,7 +12,7 @@ import { activityRoute, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from '
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
-import { KidsLessons as KidsCardLessons } from './pages/KidsLessons';
+import { KidsLessons } from './pages/KidsLessons';
 import { LearningPath } from './pages/LearningPath';
 import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
@@ -24,7 +24,7 @@ import { Profile } from './pages/Profile';
 import { KidsAlbum } from './features/kids/KidsAlbum';
 import { KidsHome } from './features/kids/KidsHome';
 import { KidsIsland } from './features/kids/KidsIsland';
-import { KidsLesson, KidsLessons } from './features/kids/KidsLessons';
+import { KidsLesson } from './features/kids/KidsLessons';
 
 type ProfileFields = { display_name?: string; level?: string; show_mother_tongue?: boolean; mother_tongue?: string };
 
@@ -162,7 +162,7 @@ function KidsLessonRoute({ uid }: { uid: string | undefined }) {
       key={id}
       id={id}
       uid={uid}
-      onLessons={() => navigate(KIDS_ROUTES.lessons)}
+      onLessons={() => navigate(ROUTES.lessons)}
       onIsland={island => navigate(`${KIDS_ROUTES.island}/${island}`)}
     />
   );
@@ -308,19 +308,17 @@ export function App() {
           <KidsHome
             name={name}
             uid={user?.id}
+            onBack={() => navigate(ROUTES.dashboard)}
             onIsland={id => navigate(`${KIDS_ROUTES.island}/${id}`)}
             onAlbum={() => navigate(KIDS_ROUTES.album)}
-            onLessons={() => navigate(KIDS_ROUTES.lessons)}
             onProfile={() => navigate(ROUTES.profile)}
           />
         }
       />
       <Route path={`${KIDS_ROUTES.island}/:id`} element={<KidsIslandRoute uid={user?.id} />} />
       <Route path={KIDS_ROUTES.album} element={<KidsAlbum uid={user?.id} onHome={() => navigate(KIDS_ROUTES.home)} />} />
-      <Route
-        path={KIDS_ROUTES.lessons}
-        element={<KidsLessons uid={user?.id} onHome={() => navigate(KIDS_ROUTES.home)} onLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} />}
-      />
+      {/* Abans hi havia un índex de lliçons propi; ara totes són a la pàgina de lliçons. */}
+      <Route path={KIDS_ROUTES.lessons} element={<Navigate to={ROUTES.lessons} replace />} />
       <Route path={`${KIDS_ROUTES.lesson}/:id`} element={<KidsLessonRoute uid={user?.id} />} />
       <Route
         path={ROUTES.learningpath}
@@ -387,7 +385,7 @@ export function App() {
       <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
       <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
       <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard}showHelp={showMotherTongue} /></PageTransition>} />
-      <Route path={ROUTES.lessons} element={<PageTransition><KidsCardLessons onBack={() => navigate(-1)} /></PageTransition>} />
+      <Route path={ROUTES.lessons} element={<PageTransition><KidsLessons uid={user?.id} onBack={() => navigate(ROUTES.dashboard)} onOpenLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>} />
       <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
     </Routes>
   );

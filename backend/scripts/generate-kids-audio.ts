@@ -7,6 +7,8 @@
  *   npx tsx scripts/generate-kids-audio.ts --force   # tots
  *
  * El TTS no suporta bé peticions simultànies: les frases es demanen d'una en una.
+ * De tant en tant el servidor respon 500 a una frase que després genera bé: cada
+ * frase es reintenta i, si continua fallant, es deixa per a la pròxima execució.
  */
 import 'dotenv/config';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -24,16 +26,34 @@ async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
   const entries = Object.entries({ ...KIDS_AUDIO, ...LESSON_AUDIO });
   let made = 0;
+  const failed: string[] = [];
   for (const [key, text] of entries) {
     const file = resolve(OUT_DIR, `${key}.wav`);
     if (existsSync(file) && !force) continue;
-    const audio = await tts.synthesize(text, VOICE);
-    if (!audio) throw new Error(`El TTS no ha pogut generar «${text}»`);
+    const audio = await synthesizeWithRetry(text);
+    if (!audio) {
+      failed.push(key);
+      console.error(`! ${key}.wav  «${text}» (el TTS ha fallat)`);
+      continue;
+    }
     writeFileSync(file, audio.audio);
     made++;
     console.log(`+ ${key}.wav  «${text}»`);
   }
   console.log(`${made} àudios nous, ${entries.length} en total.`);
+  if (failed.length) {
+    console.error(`${failed.length} frases no s'han pogut generar: torna a executar el script per a reintentar-les.`);
+    process.exitCode = 1;
+  }
+}
+
+async function synthesizeWithRetry(text: string, attempts = 4) {
+  for (let i = 0; i < attempts; i++) {
+    const audio = await tts.synthesize(text, VOICE);
+    if (audio) return audio;
+    await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+  }
+  return null;
 }
 
 main().catch(error => {

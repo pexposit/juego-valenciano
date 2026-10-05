@@ -14,7 +14,7 @@
  * en carregar el mòdul (no dins de les funcions dels jocs), perquè el script les veja.
  */
 import {
-  ACTIONS, ALPHABET, ANIMALS, BODY, capital, COLORS, EXTRA_ANIMALS, FAMILY, FOOD, HOME_PLACES, hotColdRound,
+  ACTIONS, ALPHABET, ANIMALS, BODY, capital, COLORS, EXTRA_ANIMALS, FAMILY, FOOD, habitatRound, HOME_PLACES, hotColdRound,
   INTRUDERS, LETTERS, memoryRound, moreRound, NUMBERS, OPPOSITES, orderRound, pick, shuffle, sizeItem, sortRound,
   thenRound, type KidsItem, type Pos, type Round,
 } from './content';
@@ -65,6 +65,7 @@ export type Lesson = {
   emoji: string;
   color: string;
   say: string; // el títol en veu alta
+  summary: string; // una línia del que s'aprén (en la llista de lliçons)
   island?: string; // l'illa on es practica
   pages: LessonPage[];
 };
@@ -111,7 +112,7 @@ const deRes = it('😊', 'de res');
 const perdo = it('🙇', 'perdó');
 
 const SALUTACIONS: Lesson = {
-  id: 'salutacions', title: 'Hola i adéu', emoji: '👋', color: '#FFE8BA', say: p('Hola i adéu!'),
+  id: 'salutacions', title: 'Hola i adéu', summary: "Saludar segons l'hora i les paraules màgiques.", emoji: '👋', color: '#FFE8BA', say: p('Hola i adéu!'),
   pages: [
     intro('👋', 'Hola! Hui aprendrem a saludar i a dir adéu. Escolta bé i toca els dibuixos!'),
     explain('Quan veiem algú, el saludem i diem: Hola!', [hola]),
@@ -156,7 +157,7 @@ const visc = it('🏡', 'visc a València');
 const encantat = it('🤝', 'encantat, encantada', { say: 'Encantat! Encantada!' });
 
 const PRESENTAR: Lesson = {
-  id: 'presentar', title: 'Qui soc jo?', emoji: '🙋', color: '#FFE3E3', say: p('Qui soc jo?'),
+  id: 'presentar', title: 'Qui soc jo?', summary: "Dir el nom, l'edat i on vius.", emoji: '🙋', color: '#FFE3E3', say: p('Qui soc jo?'),
   pages: [
     intro('🙋', 'Hola! Hui aprendràs a presentar-te. Així podràs fer amics nous!'),
     explain('Per a dir el teu nom, diem: Em dic... Jo em dic Taronjeta! I tu, com et dius?', [emDic]),
@@ -194,18 +195,20 @@ const cotxe = byId(INTRUDERS, 'cotxe');
 const llapis = byId(INTRUDERS, 'llapis');
 const pilota = byId(INTRUDERS, 'pilota');
 const casa = byId(HOME_PLACES, 'casa');
+const llibre = it('📖', 'el llibre');
+const taula = it('🪑', 'la taula');
 const gossos = it('🐕', 'els gossos', { count: 3 });
 const gats = it('🐈', 'els gats', { count: 3 });
 const pomes = it('🍎', 'les pomes', { count: 3 });
 const flors = it('🌸', 'les flors', { count: 3 });
 const BIN_EL: KidsItem = { id: 'bin-el', word: 'el', emoji: '', glyph: 'EL', ink: '#2563EB', audio: p('El!') };
 const BIN_LA: KidsItem = { id: 'bin-la', word: 'la', emoji: '', glyph: 'LA', ink: '#DB2777', audio: p('La!') };
-const EL_WORDS = [animal('gos'), animal('gat'), food('pa'), sol, cotxe, llapis];
-const LA_WORDS = [food('poma'), animal('vaca'), casa, lluna, flor, pilota];
+const EL_WORDS = [animal('gos'), animal('gat'), food('pa'), sol, cotxe, llapis, llibre];
+const LA_WORDS = [food('poma'), animal('vaca'), casa, lluna, flor, pilota, taula];
 const sortElLa = p("Ajuda'm a ordenar! Si diem EL, a la caixa blava. Si diem LA, a la caixa rosa.");
 
 const ARTICLES: Lesson = {
-  id: 'articles', title: "El, la, l', els, les", emoji: '🔤', color: '#D0EBFF', say: p('El, la, els i les!'), island: 'animals',
+  id: 'articles', title: "El, la, l', els, les", summary: 'Les paraules xicotetes que van davant de les coses.', emoji: '🔤', color: '#D0EBFF', say: p('El, la, els i les!'), island: 'animals',
   pages: [
     intro('📚', "Hola! Hui descobrirem unes paraules molt xicotetes que van davant de les coses: el, la, l', els i les!"),
     explain('Moltes paraules van amb EL: el gos, el pa, el sol.', [animal('gos'), food('pa'), sol]),
@@ -248,7 +251,7 @@ const dosGossos = it('🐕', 'dos gossos', { count: 2 });
 const duesPomes = it('🍎', 'dues pomes', { count: 2 });
 
 const NUMEROS: Lesson = {
-  id: 'numeros', title: 'Comptem!', emoji: '🔢', color: '#E5DBFF', say: p('Comptem!'), island: 'numeros',
+  id: 'numeros', title: 'Comptem!', summary: 'Del zero al vint, un i una, més i menys.', emoji: '🔢', color: '#E5DBFF', say: p('Comptem!'), island: 'numeros',
   pages: [
     intro('🔢', 'Hola! Anem a comptar! Els números ens diuen quantes coses hi ha.'),
     discover("Toca cada grup i compta amb mi, de l'u al cinc!", [1, 2, 3, 4, 5].map(n => num(n, '🍎'))),
@@ -285,7 +288,7 @@ const marBlau = it('🌊', 'el mar blau');
 const balenaBlava = it('🐳', 'la balena blava');
 
 const COLORS_LESSON: Lesson = {
-  id: 'colors', title: 'Els colors', emoji: '🎨', color: '#C5F6FA', say: p('Els colors!'), island: 'colors',
+  id: 'colors', title: 'Els colors', summary: 'Els colors, roig i roja, i barreges de pintura.', emoji: '🎨', color: '#C5F6FA', say: p('Els colors!'), island: 'colors',
   pages: [
     intro('🎨', 'Hola! El món està ple de colors! Anem a conéixer-los tots.'),
     discover('Toca cada color i escolta el seu nom!', COLORS.slice(0, 6)),
@@ -323,7 +326,7 @@ const duesMans = it('✋', 'dues mans', { count: 2 });
 const deuDits = it('☝️', 'deu dits', { count: 10 });
 
 const COS: Lesson = {
-  id: 'cos', title: 'El meu cos', emoji: '🧒', color: '#D3F9D8', say: p('El meu cos!'), island: 'cos',
+  id: 'cos', title: 'El meu cos', summary: 'Les parts del cos i els cinc sentits.', emoji: '🧒', color: '#D3F9D8', say: p('El meu cos!'), island: 'cos',
   pages: [
     intro('🧒', 'Hola! Hui coneixerem el nostre cos. Toca cada part i, si vols, assenyala-la en el teu cos!'),
     discover('Primer, el cap i la cara! Toca i escolta.', [cap, body('ulls'), body('orelles'), body('nas'), body('boca'), body('dents'), body('llengua')]),
@@ -352,7 +355,7 @@ const meuGerma = it('👦', 'el meu germà');
 const meuaGermana = it('👧', 'la meua germana');
 
 const FAMILIA: Lesson = {
-  id: 'familia', title: 'La meua família', emoji: '👨‍👩‍👧', color: '#FFF3BF', say: p('La meua família!'), island: 'familia',
+  id: 'familia', title: 'La meua família', summary: 'Pares, germans, iaios, oncles i cosins.', emoji: '👨‍👩‍👧', color: '#FFF3BF', say: p('La meua família!'), island: 'familia',
   pages: [
     intro('👨‍👩‍👧‍👦', 'Hola! Vols conéixer la meua família? Anem a aprendre com es diu cada persona!'),
     explain('Este és el pare, i esta és la mare.', [family('pare'), family('mare')]),
@@ -388,7 +391,7 @@ const fred = it('🥶', 'tinc fred');
 const calor = it('🥵', 'tinc calor');
 
 const EMOCIONS: Lesson = {
-  id: 'emocions', title: 'Com estàs?', emoji: '😀', color: '#FCE7F3', say: p('Com estàs?'), island: 'cos',
+  id: 'emocions', title: 'Com estàs?', summary: 'Estic feliç, tinc fam: com ens sentim.', emoji: '😀', color: '#FCE7F3', say: p('Com estàs?'), island: 'cos',
   pages: [
     intro('😀', 'Hola! Com estàs hui? Anem a aprendre a dir com ens sentim.'),
     explain('Quan tot va bé i tenim ganes de riure, diem: Estic feliç!', [felic]),
@@ -429,7 +432,7 @@ const granotaSalta = it('🐸', 'la granota salta');
 const rentarMans = it('🧼', 'rentar-se les mans');
 
 const ACCIONS: Lesson = {
-  id: 'accions', title: 'Què fem?', emoji: '🏃', color: '#FFEDD5', say: p('Què fem?'), island: 'accions',
+  id: 'accions', title: 'Què fem?', summary: 'Menjar, dormir, jugar... i jo menge, jo dorm.', emoji: '🏃', color: '#FFEDD5', say: p('Què fem?'), island: 'accions',
   pages: [
     intro('🏃', 'Hola! Hui aprendrem les accions: són les coses que fem, com córrer, menjar o dormir!'),
     discover('Toca cada dibuix i escolta què fa!', ACTIONS.slice(0, 6)),
@@ -470,7 +473,7 @@ const ulleresSol = it('🕶️', 'les ulleres de sol');
 const banyador = it('🩱', 'el banyador');
 
 const TEMPS: Lesson = {
-  id: 'temps', title: 'Els dies i el temps', emoji: '📅', color: '#E0E7FF', say: p('Els dies i el temps!'),
+  id: 'temps', title: 'Els dies i el temps', summary: 'La setmana, les estacions i el temps que fa.', emoji: '📅', color: '#E0E7FF', say: p('Els dies i el temps!'),
   pages: [
     intro('📅', 'Hola! Hui aprendrem els dies de la setmana, les estacions i el temps que fa.'),
     discover('La setmana té set dies. Toca-los i escolta: dilluns, dimarts, dimecres, dijous, divendres, dissabte i diumenge!', days),
@@ -502,7 +505,7 @@ const costat = where('costat', 'al costat de la caixa');
 const touchCat = (word: string) => p(`Toca el gat que és ${word}!`);
 
 const LLOCS: Lesson = {
-  id: 'llocs', title: 'On és el gat?', emoji: '📦', color: '#FFE8BA', say: p('On és el gat?'),
+  id: 'llocs', title: 'On és el gat?', summary: 'Dins, fora, damunt, davall, davant i darrere.', emoji: '📦', color: '#FFE8BA', say: p('On és el gat?'),
   pages: [
     intro('🐈', "Hola! Este és el gat Pelut. És molt juganer i sempre s'amaga. Anem a aprendre a dir on és!"),
     explain('Mira! El gat és dins de la caixa.', [dins]),
@@ -527,7 +530,7 @@ const gran = sizeItem('🐘', true);
 const xicotet = sizeItem('🐘', false);
 
 const CONTRARIS: Lesson = {
-  id: 'contraris', title: 'Els contraris', emoji: '🌗', color: '#E5DBFF', say: p('Els contraris!'), island: 'contraris',
+  id: 'contraris', title: 'Els contraris', summary: 'Gran i xicotet, calent i fred, ràpid i lent.', emoji: '🌗', color: '#E5DBFF', say: p('Els contraris!'), island: 'contraris',
   pages: [
     intro('🌗', 'Hola! Hui jugarem amb els contraris: paraules ben diferents, com el dia i la nit!'),
     pairs('Toca i escolta: gran i xicotet. El dia i la nit. Calent i fred.', [[gran, xicotet], [opposite('dia'), opposite('nit')], [opposite('calent'), opposite('fred')]]),
@@ -550,15 +553,17 @@ const letterGlyph = (letter: string): KidsItem => ({ id: `g-${letter}`, word: ab
 const VOWEL_ITEMS = ['a', 'e', 'i', 'o', 'u'].map(vowel);
 const SOUNDS = LETTERS.map((l): KidsItem => ({ id: `so-${l.id}`, word: l.glyph, emoji: '', glyph: l.glyph, ink: '#DB2777', audio: `lletra-${l.id}` }));
 const pinya = it('🍍', 'la pinya');
+const VOWEL_WORDS = [it('✈️', "l'avió"), animal('elefant'), it('🏝️', "l'illa"), food('ou'), it('👁️', "l'ull")];
 const startsWith = (letter: string, others: string[]) =>
   quiz(`comenca-${letter}`, abc(letter).card, others.map(o => abc(o).card), { picture: abc(letter).emoji, style: 'letters' });
 
 const SONS: Lesson = {
-  id: 'sons', title: 'Les lletres i els sons', emoji: '🔤', color: '#C5F6FA', say: p('Les lletres i els sons!'), island: 'abecedari',
+  id: 'sons', title: 'Les lletres i els sons', summary: 'Les vocals i els sons especials del valencià.', emoji: '🔤', color: '#C5F6FA', say: p('Les lletres i els sons!'), island: 'abecedari',
   pages: [
     intro('🔤', "Hola! Les paraules estan fetes de sons, i els sons s'escriuen amb lletres. Escoltem-les!"),
     explain('Hi ha cinc lletres molt especials: les vocals! A, e, i, o, u. Sonen fort i clar.', VOWEL_ITEMS),
     discover('Toca cada vocal i escolta una paraula que comença així!', VOWEL_ITEMS),
+    discover('Més paraules que comencen per vocal: l\'avió, l\'elefant, l\'illa, l\'ou i l\'ull! Toca-les.', VOWEL_WORDS),
     game(() => orderRound('ordre-vocals', ['a', 'e', 'i', 'o', 'u'].map(v => abc(v).card), 'letters')),
     explain('Les altres lletres es diuen consonants. Si ajuntem lletres, fem paraules: la pe i la a fan... pa!', [letterGlyph('p'), vowel('a'), food('pa')]),
     discover('En valencià tenim sons molt especials! Toca-los i escolta.', SOUNDS),
@@ -570,8 +575,38 @@ const SONS: Lesson = {
   ],
 };
 
+/* ── 14. Els animals ──────────────────────────────────────────────────── */
+
+// Cada animal diu el seu so: «El gos fa bub, bub!» (els mateixos àudios que l'illa).
+const withSound = (a: KidsItem): KidsItem => ({ ...a, audio: `fa-${a.id}` });
+const FARM = ['vaca', 'porc', 'ovella', 'gallina', 'cavall', 'anec'].map(animal).map(withSound);
+const HOME_PETS = ['gos', 'gat', 'peix', 'ocell', 'conill', 'ratoli'].map(animal).map(withSound);
+const WILD = ['lleo', 'elefant', 'mona', 'granota'].map(animal).map(withSound);
+const gosset = it('🐶', 'el gosset', { say: 'El gos xicotet és el gosset!' });
+const gatet = it('🐱', 'el gatet', { say: 'El gat xicotet és el gatet!' });
+const pollet = it('🐤', 'el pollet', { say: 'La gallina té pollets!' });
+
+const ANIMALS_LESSON: Lesson = {
+  id: 'animals', title: 'Els animals', summary: 'Com es diuen i quin so fan els animals.', emoji: '🐶', color: '#FFD8A8', say: p('Els animals!'), island: 'animals',
+  pages: [
+    intro('🐶', 'Hola! Hui coneixerem els animals. Cada animal fa un so diferent: escolta bé!'),
+    discover('Primer, els animals de casa. Toca cada un i escolta quin so fa!', HOME_PETS),
+    discover('Ara, els animals de la granja. Toca i escolta!', FARM),
+    discover('I estos viuen lluny, a la selva o a la bassa. Toca i escolta!', WILD),
+    quiz('qui-gos', animal('gos'), [animal('gat'), animal('vaca')]),
+    quiz('qui-vaca', animal('vaca'), [animal('porc'), animal('ovella')]),
+    quiz('qui-gallina', animal('gallina'), [animal('anec'), animal('ocell')]),
+    quiz('qui-lleo', animal('lleo'), [animal('elefant'), animal('mona')]),
+    explain('Els animals xicotets tenen un nom molt dolç: el gosset, el gatet, el pollet.', [gosset, gatet, pollet]),
+    explain('Uns animals volen pel cel, uns altres naden en l\'aigua, i molts caminen per la terra.', [animal('ocell'), animal('peix'), animal('cavall')]),
+    game(() => habitatRound()),
+    game(() => memoryRound(ANIMALS, 3)),
+    summary('Molt bé! Ja coneixes molts animals i els seus sons. Recorda: el gos fa bub, bub, i el gat fa mèu, mèu!', [...HOME_PETS, ...FARM, ...WILD]),
+  ],
+};
+
 export const LESSONS: Lesson[] = [
-  SALUTACIONS, PRESENTAR, ARTICLES, NUMEROS, COLORS_LESSON, COS, FAMILIA, EMOCIONS, ACCIONS, TEMPS, LLOCS, CONTRARIS, SONS,
+  SALUTACIONS, PRESENTAR, ARTICLES, NUMEROS, COLORS_LESSON, ANIMALS_LESSON, COS, FAMILIA, EMOCIONS, ACCIONS, TEMPS, LLOCS, CONTRARIS, SONS,
 ];
 
 export const lessonById = (id: string | undefined) => LESSONS.find(l => l.id === id);
@@ -580,108 +615,4 @@ Object.assign(LESSON_AUDIO, {
   'llicons': 'Les lliçons de la Taronjeta! Tria una lliçó i aprendrem moltes coses noves.',
   'llico-medalla': 'Molt bé! Has acabat la lliçó i has guanyat una medalla!',
   'llico-fi': 'Molt bé! Has acabat la lliçó una altra vegada!',
-  'llicons-boto': 'Les lliçons!',
 });
-
-/* ── Lliçons de targetes (pàgina /llicons) ────────────────────────────── */
-
-/**
- * Lliçons bàsiques de valencià per a xiquets (pestanya «Lliçons»).
- * Cada lliçó és una llista de targetes: es toca una targeta i se sent la paraula.
- */
-export type LessonCard = { text: string; emoji: string; note?: string; color?: string; say?: string };
-export type CardLesson = { id: string; title: string; emoji: string; intro: string; cards: LessonCard[] };
-
-const fromItems = (items: { word: string; emoji: string; color?: string }[]): LessonCard[] =>
-  items.map(({ word, emoji, color }) => ({ text: word, emoji, color }));
-
-export const KIDS_LESSONS: CardLesson[] = [
-  {
-    id: 'salutacions',
-    title: 'Salutacions',
-    emoji: '👋',
-    intro: 'Així es saluda en valencià.',
-    cards: [
-      { text: 'Hola', emoji: '👋', note: 'Per a saludar' },
-      { text: 'Bon dia', emoji: '☀️', note: 'Pel matí' },
-      { text: 'Bona vesprada', emoji: '🌤️', note: 'Per la vesprada' },
-      { text: 'Bona nit', emoji: '🌙', note: 'Per la nit' },
-      { text: 'Adéu', emoji: '🙋', note: 'Per a acomiadar-se' },
-      { text: 'Gràcies', emoji: '🙏', note: 'Quan algú t’ajuda' },
-      { text: 'Per favor', emoji: '🥺', note: 'Per a demanar bé' },
-      { text: 'Perdó', emoji: '😅', note: 'Quan et confons' },
-    ],
-  },
-  {
-    id: 'vocals',
-    title: 'Les vocals',
-    emoji: '🔤',
-    intro: 'Al valencià hi ha cinc vocals: a, e, i, o, u.',
-    cards: [
-      { text: 'A d’avió', emoji: '✈️', say: 'A, d’avió' },
-      { text: 'E d’elefant', emoji: '🐘', say: 'E, d’elefant' },
-      { text: 'I d’illa', emoji: '🏝️', say: 'I, d’illa' },
-      { text: 'O d’ou', emoji: '🥚', say: 'O, d’ou' },
-      { text: 'U d’ull', emoji: '👁️', say: 'U, d’ull' },
-    ],
-  },
-  {
-    id: 'numeros',
-    title: 'Els números',
-    emoji: '🔢',
-    intro: 'Comptem del u al deu.',
-    cards: NUMBERS.map((n, i) => ({ text: n, emoji: String(i + 1), say: n })),
-  },
-  {
-    id: 'colors',
-    title: 'Els colors',
-    emoji: '🎨',
-    intro: 'De quin color és?',
-    cards: fromItems(COLORS),
-  },
-  {
-    id: 'animals',
-    title: 'Els animals',
-    emoji: '🐶',
-    intro: 'Cada animal fa un so diferent.',
-    cards: ANIMALS.map(a => ({ text: a.word, emoji: a.emoji, note: a.noise, say: a.sound })),
-  },
-  {
-    id: 'familia',
-    title: 'La família',
-    emoji: '👨‍👩‍👧',
-    intro: 'Qui hi ha a casa?',
-    cards: fromItems(FAMILY),
-  },
-  {
-    id: 'setmana',
-    title: 'Els dies de la setmana',
-    emoji: '📅',
-    intro: 'Set dies, una setmana.',
-    cards: [
-      { text: 'dilluns', emoji: '1️⃣' },
-      { text: 'dimarts', emoji: '2️⃣' },
-      { text: 'dimecres', emoji: '3️⃣' },
-      { text: 'dijous', emoji: '4️⃣' },
-      { text: 'divendres', emoji: '5️⃣' },
-      { text: 'dissabte', emoji: '🎈', note: 'Cap de setmana' },
-      { text: 'diumenge', emoji: '🌞', note: 'Cap de setmana' },
-    ],
-  },
-  {
-    id: 'articles',
-    title: 'El i la',
-    emoji: '🧩',
-    intro: 'Les paraules van amb «el» (masculí) o «la» (femení).',
-    cards: [
-      { text: 'el gos', emoji: '🐕' },
-      { text: 'el sol', emoji: '☀️' },
-      { text: 'el llibre', emoji: '📖' },
-      { text: 'la lluna', emoji: '🌙' },
-      { text: 'la casa', emoji: '🏠' },
-      { text: 'la taula', emoji: '🪑' },
-      { text: 'l’ou', emoji: '🥚', note: 'Davant de vocal: l’' },
-      { text: 'l’ocell', emoji: '🐦', note: 'Davant de vocal: l’' },
-    ],
-  },
-];

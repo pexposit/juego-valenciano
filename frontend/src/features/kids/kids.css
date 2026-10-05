@@ -34,7 +34,7 @@
   padding: 14px 16px;
 }
 
-.kid-round-btn, .kid-speaker, .kid-album-btn, .kid-mascot-btn {
+.kid-round-btn, .kid-speaker, .kid-album-btn {
   display: grid;
   place-items: center;
   border-radius: 9999px;
@@ -43,8 +43,6 @@
   box-shadow: 0 6px 0 #00000014, 0 10px 24px #2637471a;
 }
 .kid-round-btn { width: 64px; height: 64px; }
-.kid-mascot-btn { width: 72px; height: 72px; }
-.kid-mascot-small { font-size: 48px; animation: kidBob 2.6s ease-in-out infinite; }
 .kid-album-btn { position: relative; width: 76px; height: 76px; color: #F97316; }
 .kid-album-count {
   position: absolute; bottom: -6px; right: -6px;
@@ -316,38 +314,6 @@
 .kid-sort-bin-label .kid-card-emoji { font-size: clamp(48px, 11vw, 84px); }
 .kid-sort-bin-label .kid-face-stack { font-size: clamp(26px, 6vw, 44px); }
 .kid-sort-bin-items { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-size: clamp(26px, 6vw, 40px); font-weight: 900; line-height: 1; }
-
-/* ── Botó de lliçons en el mapa ───────────────────────────────────────── */
-.kid-lessons-btn {
-  position: relative; display: flex; align-items: center; gap: 8px; height: 76px; padding: 0 20px 0 16px;
-  border-radius: 9999px; background: #7C3AED; color: #fff; font-weight: 900; font-size: 20px;
-  box-shadow: 0 6px 0 #5B21B6, 0 10px 24px #2637471a; animation: kidPulse 2.8s ease-in-out infinite;
-}
-.kid-lessons-btn .kid-album-count { bottom: -8px; right: -4px; }
-@media (max-width: 480px) { .kid-lessons-btn-text { display: none; } .kid-lessons-btn { padding: 0 18px; } }
-
-/* ── Índex de lliçons ─────────────────────────────────────────────────── */
-.kids-lessons { background: linear-gradient(180deg, #DDD6FE 0%, #FFF9ED 70%); }
-.kid-lessons-title { display: flex; align-items: center; gap: 8px; color: #5B21B6; font-weight: 900; font-size: 26px; }
-.kid-lessons-count { position: static; font-size: 16px; padding: 6px 12px; background: #7C3AED; }
-.kid-lessons-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px;
-  max-width: 980px; margin: 0 auto; padding: 8px 16px 40px;
-}
-.kid-lesson-card {
-  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  min-height: 180px; padding: 18px 10px 14px; border-radius: 30px;
-  background: linear-gradient(180deg, #fff 0 52%, var(--island) 52%);
-  border: 5px solid #fff; box-shadow: 0 8px 0 #0000001a, 0 14px 26px #2637471a; animation: kidIn .4s both;
-}
-.kid-lesson-card.next { border-color: #FACC15; box-shadow: 0 8px 0 #CA8A04, 0 0 0 6px #FDE68A88; }
-.kid-lesson-num {
-  position: absolute; top: -12px; left: -8px; display: grid; place-items: center; width: 40px; height: 40px;
-  border-radius: 9999px; background: #7C3AED; color: #fff; font-weight: 900; font-size: 18px; box-shadow: 0 4px 0 #5B21B6;
-}
-.kid-lesson-emoji { font-size: 64px; line-height: 1; }
-.kid-lesson-name { font-weight: 900; font-size: 16px; color: #1A2140; text-align: center; line-height: 1.15; }
-.kid-lesson-done { position: absolute; top: -10px; right: -6px; font-size: 38px; animation: kidPop .5s both; }
 
 /* ── Lliçó ────────────────────────────────────────────────────────────── */
 .kids-lesson { padding-bottom: 120px; }

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Gamepad2, GraduationCap, Home, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gamepad2, GraduationCap, RotateCcw } from 'lucide-react';
 import { itemAudio, type KidsItem, type Round } from './content';
 import { RoundView } from './games/RoundView';
 import { ItemFace } from './games/ItemFace';
-import { lessonById, LESSONS, type Lesson, type LessonPage } from './lessons';
-import { loadLessonsDone, markLessonDone } from './progress';
+import { lessonById, type LessonPage } from './lessons';
+import { markLessonDone } from './progress';
 import { phraseText, say, sfxCorrect, sfxFanfare, sfxTick, stopVoice } from './sound';
 import './kids.css';
 
@@ -362,60 +362,6 @@ export function KidsLesson({ id, uid, onLessons, onIsland }: {
           </div>
         </div>
       )}
-    </main>
-  );
-}
-
-/* ── Índex de lliçons ─────────────────────────────────────────────────── */
-
-export function KidsLessons({ uid, onHome, onLesson }: { uid: string | undefined; onHome: () => void; onLesson: (id: string) => void }) {
-  const [done, setDone] = useState<string[]>([]);
-  const [opening, setOpening] = useState<string>();
-
-  useEffect(() => {
-    let cancelled = false;
-    void loadLessonsDone(uid).then(d => { if (!cancelled) setDone(d); });
-    const timer = window.setTimeout(() => void say('llicons'), 400);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-      stopVoice();
-    };
-  }, [uid]);
-
-  const open = async (lesson: Lesson) => {
-    if (opening) return;
-    setOpening(lesson.id);
-    await say(lesson.say);
-    onLesson(lesson.id);
-  };
-
-  // La següent lliçó per fer es destaca (sense bloquejar les altres).
-  const nextId = LESSONS.find(l => !done.includes(l.id))?.id;
-
-  return (
-    <main className="kids-world kids-lessons">
-      <header className="kids-bar">
-        <button onClick={onHome} aria-label="Tornar a les illes" className="kid-round-btn btn-press"><Home className="h-8 w-8" /></button>
-        <span className="kid-lessons-title"><GraduationCap className="h-8 w-8" /> Lliçons</span>
-        <span className="kid-album-count kid-lessons-count">{done.length}/{LESSONS.length}</span>
-      </header>
-      <div className="kid-lessons-grid">
-        {LESSONS.map((lesson, i) => (
-          <button
-            key={lesson.id}
-            onClick={() => void open(lesson)}
-            aria-label={lesson.title}
-            className={`kid-lesson-card btn-press ${opening === lesson.id ? 'kid-jump' : ''} ${lesson.id === nextId ? 'next' : ''}`}
-            style={{ ['--island' as string]: lesson.color, animationDelay: `${i * 0.05}s` }}
-          >
-            <span className="kid-lesson-num">{i + 1}</span>
-            <span className="kid-lesson-emoji" aria-hidden="true">{lesson.emoji}</span>
-            <span className="kid-lesson-name">{lesson.title}</span>
-            {done.includes(lesson.id) && <span className="kid-lesson-done" aria-hidden="true">🏅</span>}
-          </button>
-        ))}
-      </div>
     </main>
   );
 }

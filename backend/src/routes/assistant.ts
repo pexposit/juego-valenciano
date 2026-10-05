@@ -4,6 +4,7 @@ import { ASSISTANT_CATEGORY, KID_ASSISTANT_TYPE } from '@parlaval/shared';
 import { getAdmin, requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
+import { summarizeConversationTitle } from '../services/conversationTitle.js';
 import { bilingualGreeting } from '../services/motherTongue.js';
 
 export const assistantRouter = Router();
@@ -189,9 +190,26 @@ type PastConversation = {
   id: string;
   started_at: string;
   message_count: number;
+  title: string; // el que ha posat l'usuari, el resum del LLM o, si no n'hi ha, el primer missatge
+  title_edited: boolean; // true si l'ha escrit l'usuari
   preview: string;
   current: boolean;
 };
+
+type OwnedConversation = {
+  id: string;
+  resolved: boolean | null;
+  title: string | null;
+  title_source: 'user' | 'auto' | null;
+  title_message_count: number | null;
+};
+
+// Títols automàtics: es generen en llistar les converses que encara no en tenen (com a molt
+// TITLES_PER_REQUEST per petició, perquè la llista no tarde) i es tornen a generar quan la
+// conversa ha crescut almenys TITLE_REFRESH_AFTER missatges des de l'últim resum.
+const TITLES_PER_REQUEST = 6;
+const TITLE_REFRESH_AFTER = 8;
+const PREVIEW_CHARS = 80;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CONVERSATIONS_LIMIT = 50;
@@ -220,7 +238,7 @@ assistantRouter.get('/api/assistant/conversations', requireAuth, async (req: Aut
   try {
     const { data: owned, error: ownedError } = await client
       .from('session_resource')
-      .select('id, resolved, sessions!inner(user_id)')
+      .select('id, resolved, title, title_source, title_message_count, sessions!inner(user_id)')
       .eq('recurso_id', resourceId)
       .eq('sessions.user_id', req.userId);
     if (ownedError) throw ownedError;
@@ -240,24 +258,85 @@ assistantRouter.get('/api/assistant/conversations', requireAuth, async (req: Aut
       byConversation.set(row.session_resource_id, list);
     }
 
-    const conversations: PastConversation[] = [];
-    for (const o of owned as { id: string; resolved: boolean | null }[]) {
+    const conversations: (PastConversation & { needsTitle: boolean })[] = [];
+    for (const o of owned as OwnedConversation[]) {
       const messages = byConversation.get(o.id) ?? [];
       const firstUserMessage = messages.find(m => m.role === 'user');
       if (!firstUserMessage) continue;
+      const preview = firstUserMessage.content_text.length > PREVIEW_CHARS
+        ? `${firstUserMessage.content_text.slice(0, PREVIEW_CHARS - 1).trimEnd()}…`
+        : firstUserMessage.content_text;
+      const edited = o.title_source === 'user' && !!o.title;
+      const stale = o.title_source === 'auto' && messages.length >= (o.title_message_count ?? 0) + TITLE_REFRESH_AFTER;
       conversations.push({
         id: o.id,
         started_at: messages[0].created_at,
         message_count: messages.length,
-        preview: firstUserMessage.content_text,
+        title: o.title ?? preview,
+        title_edited: edited,
+        preview,
         current: !o.resolved,
+        needsTitle: !edited && (!o.title || stale),
       });
     }
     conversations.sort((a, b) => b.started_at.localeCompare(a.started_at));
-    res.json(conversations.slice(0, CONVERSATIONS_LIMIT));
+    const page = conversations.slice(0, CONVERSATIONS_LIMIT);
+
+    // Resumix amb el LLM les que no tenen títol (o el tenen antic), les més noves primer.
+    await Promise.all(page.filter(c => c.needsTitle).slice(0, TITLES_PER_REQUEST).map(async c => {
+      const messages = byConversation.get(c.id) ?? [];
+      const title = await summarizeConversationTitle(messages);
+      if (!title) return;
+      c.title = title;
+      const { error } = await client
+        .from('session_resource')
+        .update({ title, title_source: 'auto', title_message_count: messages.length })
+        .eq('id', c.id)
+        .or('title_source.is.null,title_source.eq.auto'); // si mentrestant l'ha editat l'usuari, es respecta
+      if (error) console.error('[assistant] Error guardant el títol:', error.message);
+    }));
+
+    res.json(page.map(({ needsTitle: _needsTitle, ...c }) => c));
   } catch (error) {
     console.error('[assistant] Error llistant les converses:', error);
     res.status(500).json({ error: "No hem pogut carregar les converses" });
+  }
+});
+
+const titleSchema = z.object({ title: z.string().trim().max(80) });
+
+// Canvia el nom d'una conversa. Un nom buit torna al títol automàtic (el resumirà el LLM).
+assistantRouter.patch('/api/assistant/conversations/:id/title', requireAuth, async (req: AuthRequest, res) => {
+  const id = req.params.id as string;
+  if (!UUID.test(id)) return res.status(400).json({ error: 'Identificador no vàlid' });
+  const parsed = titleSchema.safeParse(req.body);
+  if (!parsed.success) return validationError(res, parsed.error);
+
+  const client = db(req.userId);
+  const resourceId = await tutorResourceId();
+  if (!client || !req.userId || !resourceId) return res.status(503).json({ error: 'El servei no està disponible' });
+
+  try {
+    const { data: owned, error: ownedError } = await client
+      .from('session_resource')
+      .select('id, sessions!inner(user_id)')
+      .eq('id', id)
+      .eq('recurso_id', resourceId)
+      .eq('sessions.user_id', req.userId)
+      .maybeSingle();
+    if (ownedError) throw ownedError;
+    if (!owned) return res.status(404).json({ error: 'Conversa no trobada' });
+
+    const title = parsed.data.title.replace(/\s+/g, ' ');
+    const fields = title
+      ? { title, title_source: 'user', title_message_count: null }
+      : { title: null, title_source: null, title_message_count: null };
+    const { error } = await client.from('session_resource').update(fields).eq('id', id);
+    if (error) throw error;
+    res.json({ title: title || null, title_edited: !!title });
+  } catch (error) {
+    console.error('[assistant] Error canviant el nom de la conversa:', error);
+    res.status(500).json({ error: "No s'ha pogut canviar el nom de la conversa" });
   }
 });
 

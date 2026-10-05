@@ -260,7 +260,8 @@ export const openAssistant = (sessionId: string) => callAssistant('open', sessio
 export const restartAssistant = (sessionId: string) => callAssistant('restart', sessionId);
 
 // Converses anteriors del xiquet amb el tutor (pestanya «Converses» del tauler infantil).
-export type TutorConversation = { id: string; started_at: string; message_count: number; preview: string; current: boolean };
+// `title`: el nom que ha posat l'usuari (title_edited) o el resum del LLM; si encara no n'hi ha, el primer missatge.
+export type TutorConversation = { id: string; started_at: string; message_count: number; title: string; title_edited: boolean; preview: string; current: boolean };
 export type TutorMessage = { role: 'user' | 'character'; text: string; created_at: string };
 async function authedGet<T>(path: string, errorMessage: string): Promise<T> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -283,6 +284,16 @@ export async function resumeTutorConversation(id: string): Promise<void> {
 }
 export const fetchTutorConversations = () =>
   authedGet<TutorConversation[]>('/api/assistant/conversations', 'No hem pogut carregar les converses');
+// Canvia el nom d'una conversa; amb un nom buit torna al títol automàtic.
+export async function renameTutorConversation(id: string, title: string): Promise<{ title: string | null; title_edited: boolean }> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/conversations/${encodeURIComponent(id)}/title`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) throw new Error("No s'ha pogut canviar el nom de la conversa");
+  return res.json();
+}
 export const fetchTutorConversation = (id: string) =>
   authedGet<TutorMessage[]>(`/api/assistant/conversations/${encodeURIComponent(id)}/messages`, 'No hem pogut carregar la conversa');
 /* ── Ruta d'aprenentatge ──────────────────────────────────────────────── */

@@ -512,7 +512,7 @@ export const moreRound = (more: boolean): Round => {
 };
 const numbersInOrder = (n: number) => pick(NUM_ITEMS.slice(0, 8), n).sort((a, b) => a.count! - b.count!);
 
-const habitatRound = (): Round => sortRound('sort-habitat', HABITAT_BINS,
+export const habitatRound = (): Round => sortRound('sort-habitat', HABITAT_BINS,
   HABITAT_BINS.flatMap(bin => pick(HABITAT[bin.id], 2).map(id => ({ item: animalById(id), bin: bin.id }))));
 
 const fruitVegRound = (): Round => sortRound('sort-fruita', FOOD_BINS, [
