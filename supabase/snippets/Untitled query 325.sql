@@ -1,1 +1,1 @@
-Select * from practice_exercises;
+Select * from profiles;

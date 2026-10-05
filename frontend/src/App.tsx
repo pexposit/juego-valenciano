@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CHAT_CATEGORIES } from '@parlaval/shared';
+import { CHAT_CATEGORIES, isKidsLevel0 } from '@parlaval/shared';
 import type { User } from '@supabase/supabase-js';
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
@@ -7,7 +7,7 @@ import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
 import { endSession, fetchExam, fetchPractice, fetchResources } from './lib/api';
 import type { Exam as ExamResource, Practice as PracticeResource, Resource } from './lib/types';
-import { activityRoute, DEFAULT_PROFILE, ROUTES, type Page } from './data/content';
+import { activityRoute, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
@@ -17,6 +17,9 @@ import { Exam } from './pages/Exam';
 import { Practice } from './pages/Practice';
 import { Summary } from './pages/Summary';
 import { Profile } from './pages/Profile';
+import { KidsAlbum } from './features/kids/KidsAlbum';
+import { KidsHome } from './features/kids/KidsHome';
+import { KidsIsland } from './features/kids/KidsIsland';
 
 type ProfileFields = { display_name?: string; level?: string };
 
@@ -120,12 +123,22 @@ function PracticeRoute({ level, onBack }: { level: string; onBack: () => void })
   return <PageTransition><Practice practice={practice} userLevel={level} onBack={onBack} /></PageTransition>;
 }
 
+// Illa del Nivell 0 (/xiquets/illa/:id).
+function KidsIslandRoute({ uid }: { uid: string | undefined }) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  return <KidsIsland id={id} uid={uid} onHome={() => navigate(KIDS_ROUTES.home)} onAlbum={() => navigate(KIDS_ROUTES.album)} />;
+}
+
 export function App() {
   const navigate = useNavigate();
   const [xp, setXp] = useState(DEFAULT_PROFILE.xp);
   const [level, setLevel] = useState(DEFAULT_PROFILE.level);
   const [name, setName] = useState(DEFAULT_PROFILE.name);
+  const [esAdult, setEsAdult] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  // Xiquets de Nivell 0: en lloc del tauler i les activitats, el món d'illes.
+  const kids = isKidsLevel0({ level, es_adult: esAdult });
 
   // Sync profile details from Supabase if logged in
   const loadProfile = async (uid: string) => {
@@ -133,13 +146,14 @@ export function App() {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, level, xp')
+        .select('display_name, level, xp, es_adult')
         .eq('id', uid)
         .single();
       if (data) {
         setName(data.display_name || DEFAULT_PROFILE.name);
         setLevel(data.level || DEFAULT_PROFILE.level);
         setXp(data.xp || 0);
+        setEsAdult(data.es_adult !== false);
       }
     } catch (e) {
       console.error('Error carregant perfil:', e);
@@ -151,6 +165,7 @@ export function App() {
     setName(DEFAULT_PROFILE.name);
     setLevel(DEFAULT_PROFILE.level);
     setXp(DEFAULT_PROFILE.xp);
+    setEsAdult(true);
     navigate(ROUTES.home, { replace: true });
   };
 
@@ -218,10 +233,27 @@ export function App() {
     <Routes>
       <Route path={ROUTES.home} element={<PageTransition><HomePage setPage={goToPage} /></PageTransition>} />
       <Route path={ROUTES.auth} element={<PageTransition><AuthPage setPage={goToPage} /></PageTransition>} />
-      <Route path={ROUTES.dashboard} element={<PageTransition><Dashboard name={name} setPage={goToPage} /></PageTransition>} />
+      <Route
+        path={ROUTES.dashboard}
+        element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : <PageTransition><Dashboard name={name} setPage={goToPage} /></PageTransition>}
+      />
+      <Route
+        path={KIDS_ROUTES.home}
+        element={
+          <KidsHome
+            name={name}
+            uid={user?.id}
+            onIsland={id => navigate(`${KIDS_ROUTES.island}/${id}`)}
+            onAlbum={() => navigate(KIDS_ROUTES.album)}
+            onProfile={() => navigate(ROUTES.profile)}
+          />
+        }
+      />
+      <Route path={`${KIDS_ROUTES.island}/:id`} element={<KidsIslandRoute uid={user?.id} />} />
+      <Route path={KIDS_ROUTES.album} element={<KidsAlbum uid={user?.id} onHome={() => navigate(KIDS_ROUTES.home)} />} />
       <Route
         path={ROUTES.learningpath}
-        element={
+        element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
           <PageTransition>
             <LearningPath
               onOpen={resource => {
@@ -231,11 +263,11 @@ export function App() {
               onBack={goDashboard}
             />
           </PageTransition>
-        }
+        )}
       />
       <Route
         path={ROUTES.scenarioselect}
-        element={
+        element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
           <PageTransition>
             <ScenarioSelect
               name={name}
@@ -248,7 +280,7 @@ export function App() {
               onProfile={() => navigate(ROUTES.profile)}
             />
           </PageTransition>
-        }
+        )}
       />
       <Route
         path={ROUTES.profile}

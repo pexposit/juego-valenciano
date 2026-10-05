@@ -19,6 +19,9 @@ export const ROUTES: Record<Page, string> = {
   profile: '/perfil',
 };
 
+// Món d'illes del Nivell 0 (xiquets): el tauler i les activitats hi redirigixen.
+export const KIDS_ROUTES = { home: '/xiquets', island: '/xiquets/illa', album: '/xiquets/album' };
+
 export const chatRoute = (scenario: Scenario) => `/xat/${scenario}`;
 export const examRoute = (resourceId: string) => `/examen/${resourceId}`;
 export const practiceRoute = (resourceId: string) => `/practica/${resourceId}`;
@@ -46,6 +49,7 @@ export const GREETING_BY_VOICE: Record<string, string> = {
 };
 
 export const LEVEL_OPTIONS = [
+  { value: 'nivell0', label: 'Nivell 0' },
   { value: 'principiant', label: 'Principiant' },
   { value: 'intermedi', label: 'Intermedi' },
   { value: 'avancat', label: 'Avançat' },
