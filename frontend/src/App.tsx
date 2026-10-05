@@ -23,6 +23,7 @@ import { Profile } from './pages/Profile';
 import { KidsAlbum } from './features/kids/KidsAlbum';
 import { KidsHome } from './features/kids/KidsHome';
 import { KidsIsland } from './features/kids/KidsIsland';
+import { KidsLesson, KidsLessons } from './features/kids/KidsLessons';
 
 type ProfileFields = { display_name?: string; level?: string; show_mother_tongue?: boolean; mother_tongue?: string };
 
@@ -141,7 +142,29 @@ function PracticeRoute({ level, onBack }: { level: string; onBack: () => void })
 function KidsIslandRoute({ uid }: { uid: string | undefined }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  return <KidsIsland id={id} uid={uid} onHome={() => navigate(KIDS_ROUTES.home)} onAlbum={() => navigate(KIDS_ROUTES.album)} />;
+  return (
+    <KidsIsland
+      id={id}
+      uid={uid}
+      onHome={() => navigate(KIDS_ROUTES.home)}
+      onAlbum={() => navigate(KIDS_ROUTES.album)}
+      onLesson={lesson => navigate(`${KIDS_ROUTES.lesson}/${lesson}`)}
+    />
+  );
+}
+
+function KidsLessonRoute({ uid }: { uid: string | undefined }) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  return (
+    <KidsLesson
+      key={id}
+      id={id}
+      uid={uid}
+      onLessons={() => navigate(KIDS_ROUTES.lessons)}
+      onIsland={island => navigate(`${KIDS_ROUTES.island}/${island}`)}
+    />
+  );
 }
 
 export function App() {
@@ -286,12 +309,18 @@ export function App() {
             uid={user?.id}
             onIsland={id => navigate(`${KIDS_ROUTES.island}/${id}`)}
             onAlbum={() => navigate(KIDS_ROUTES.album)}
+            onLessons={() => navigate(KIDS_ROUTES.lessons)}
             onProfile={() => navigate(ROUTES.profile)}
           />
         }
       />
       <Route path={`${KIDS_ROUTES.island}/:id`} element={<KidsIslandRoute uid={user?.id} />} />
       <Route path={KIDS_ROUTES.album} element={<KidsAlbum uid={user?.id} onHome={() => navigate(KIDS_ROUTES.home)} />} />
+      <Route
+        path={KIDS_ROUTES.lessons}
+        element={<KidsLessons uid={user?.id} onHome={() => navigate(KIDS_ROUTES.home)} onLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} />}
+      />
+      <Route path={`${KIDS_ROUTES.lesson}/:id`} element={<KidsLessonRoute uid={user?.id} />} />
       <Route
         path={ROUTES.learningpath}
         element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (

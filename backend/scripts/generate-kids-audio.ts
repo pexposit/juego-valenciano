@@ -1,6 +1,6 @@
 /**
- * Genera els àudios estàtics del Nivell 0 infantil (frontend/src/features/kids/content.ts):
- * una frase de KIDS_AUDIO per fitxer, amb el TTS (matxa, servidor DeepLab de la UJI),
+ * Genera els àudios estàtics del Nivell 0 infantil (frontend/src/features/kids/content.ts
+ * i lessons.ts): una frase de KIDS_AUDIO o de LESSON_AUDIO per fitxer, amb el TTS (matxa, servidor DeepLab de la UJI),
  * a frontend/public/audio/kids/<clau>.wav. Els xiquets no llegixen: tot s'escolta.
  *
  *   npx tsx scripts/generate-kids-audio.ts           # només els que falten
@@ -14,6 +14,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tts } from '../src/services/voice.js';
 import { KIDS_AUDIO } from '../../frontend/src/features/kids/content.js';
+import { LESSON_AUDIO } from '../../frontend/src/features/kids/lessons.js';
 
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../frontend/public/audio/kids');
 const VOICE = 'gina';
@@ -21,7 +22,7 @@ const force = process.argv.includes('--force');
 
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
-  const entries = Object.entries(KIDS_AUDIO);
+  const entries = Object.entries({ ...KIDS_AUDIO, ...LESSON_AUDIO });
   let made = 0;
   for (const [key, text] of entries) {
     const file = resolve(OUT_DIR, `${key}.wav`);

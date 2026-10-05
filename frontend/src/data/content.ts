@@ -22,7 +22,7 @@ export const ROUTES: Record<Page, string> = {
 };
 
 // Món d'illes del Nivell 0 (xiquets): el tauler i les activitats hi redirigixen.
-export const KIDS_ROUTES = { home: '/xiquets', island: '/xiquets/illa', album: '/xiquets/album' };
+export const KIDS_ROUTES = { home: '/xiquets', island: '/xiquets/illa', album: '/xiquets/album', lessons: '/xiquets/llicons', lesson: '/xiquets/llico' };
 
 export const chatRoute = (scenario: Scenario) => `/xat/${scenario}`;
 export const examRoute = (resourceId: string) => `/examen/${resourceId}`;

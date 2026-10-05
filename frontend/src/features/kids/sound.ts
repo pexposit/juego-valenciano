@@ -1,4 +1,5 @@
 import { KIDS_AUDIO } from './content';
+import { LESSON_AUDIO } from './lessons';
 
 /**
  * So del Nivell 0: frases pregenerades amb el TTS (/audio/kids/<clau>.wav) i
@@ -7,28 +8,44 @@ import { KIDS_AUDIO } from './content';
  */
 
 let current: HTMLAudioElement | null = null;
+let token = 0; // canvia cada vegada que comença una frase nova o es para la veu
 
-/** Diu una frase. Para la que sonava. Es resol quan acaba (o si falla). */
-export function say(key: string): Promise<void> {
+/** El text d'una frase (per als subtítols de les lliçons i la veu de respatller). */
+export const phraseText = (key: string) => KIDS_AUDIO[key] ?? LESSON_AUDIO[key] ?? '';
+
+/**
+ * Diu una frase. Para la que sonava. Es resol quan acaba (o si falla) amb true
+ * si ningú l'ha interrompuda.
+ */
+export function say(key: string): Promise<boolean> {
   current?.pause();
   window.speechSynthesis?.cancel();
+  const mine = ++token;
   return new Promise(resolve => {
     const audio = new Audio(`/audio/kids/${encodeURIComponent(key)}.wav`);
     current = audio;
-    audio.onended = () => resolve();
-    audio.onerror = () => fallback(key).then(resolve);
-    audio.play().catch(() => fallback(key).then(resolve));
+    const done = () => resolve(mine === token);
+    audio.onended = done;
+    audio.onerror = () => fallback(key).then(done);
+    audio.play().catch(() => fallback(key).then(done));
   });
 }
 
+/** Diu diverses frases seguides; s'atura si se'n diu una altra o es para la veu. */
+export async function sayAll(keys: readonly string[]): Promise<boolean> {
+  for (const key of keys) if (!(await say(key))) return false;
+  return true;
+}
+
 export const stopVoice = () => {
+  token++;
   current?.pause();
   window.speechSynthesis?.cancel();
 };
 
 // Si el fitxer no hi és, la veu del navegador (en català, si n'hi ha).
 function fallback(key: string): Promise<void> {
-  const text = KIDS_AUDIO[key];
+  const text = phraseText(key);
   if (!text || !window.speechSynthesis) return Promise.resolve();
   return new Promise(resolve => {
     const utterance = new SpeechSynthesisUtterance(text);

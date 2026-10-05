@@ -1,25 +1,22 @@
-import { useMemo, useState } from 'react';
-import type { KidsItem, Round } from '../content';
+import { useMemo, useState, type ReactNode } from 'react';
+import { itemAudio, type KidsItem, type Round } from '../content';
 import { say, sfxPop } from '../sound';
 import { useRound } from '../useRound';
+import { ItemFace } from './ItemFace';
 import { SpeakerButton } from './SpeakerButton';
 
 type Props<K extends Round['kind']> = { round: Extract<Round, { kind: K }>; onDone: () => void };
 
 // Targeta il·lustrada gran. `state` anima l'encert (bot) o l'error (rebot suau).
-// Els colors es mostren com una taca del color (no amb emojis, que no n'hi ha de tots).
-function Card({ item, state, onTap, face, letter }: { item: KidsItem; state?: 'ok' | 'no'; onTap: () => void; face?: boolean; letter?: boolean }) {
+export function Card({ item, state, onTap, face, letter, children }: { item: KidsItem; state?: 'ok' | 'no'; onTap: () => void; face?: boolean; letter?: boolean; children?: ReactNode }) {
   return (
     <button
       onClick={onTap}
       aria-label={item.word}
       className={`kid-card ${face ? 'kid-card-face' : ''} ${state === 'ok' ? 'kid-jump' : state === 'no' ? 'kid-nope' : ''}`}
     >
-      {item.color ? (
-        <span className="kid-card-swatch" aria-hidden="true" style={{ background: item.color, borderColor: item.id === 'blanc' ? '#CBD5E1' : 'transparent' }} />
-      ) : (
-        <span className={letter ? 'kid-card-letter' : 'kid-card-emoji'} aria-hidden="true">{item.emoji}</span>
-      )}
+      <ItemFace item={item} letter={letter} />
+      {children}
     </button>
   );
 }
@@ -38,7 +35,7 @@ export function ChoiceGame({ round, onDone }: Props<'tap' | 'odd'>) {
     if (item.id === round.target.id) {
       setStates(s => ({ ...s, [item.id]: 'ok' }));
       // En «Toca i escolta» es repetix la paraula (o l'onomatopeia de l'animal).
-      void win(round.kind === 'odd' ? `w-${item.id}` : react ?? (faces ? undefined : `w-${item.id}`));
+      void win(round.kind === 'odd' ? itemAudio(item) : react ?? (faces ? undefined : itemAudio(item)));
     } else {
       setStates(s => ({ ...s, [item.id]: 'no' }));
       window.setTimeout(() => setStates(({ [item.id]: _removed, ...rest }) => rest), 600);
