@@ -1571,6 +1571,71 @@ def outfit_mag(b):
     b.attach(b.star("Vareta_Estrela", (x - 0.135, y, 0.83), or_, size=0.09, depth=0.025), "arm_L")
 
 
+# --- n0_zoo (Carme, la cuidadora del zoo, per als xiquets): peto verd amb petjada, samarreta
+#     taronja, barret de pescador, pestanyes, plàtan a la butxaca i galleda amb peixos ------
+def outfit_zoo(b):
+    from math import pi
+    peto     = mat("Peto_Verd",       (0.10, 0.35, 0.12), 0.8)
+    samarreta = mat("Samarreta_Taronja_Zoo", (0.90, 0.40, 0.05), 0.7)
+    botó     = mat("Botó_Groc",       (0.95, 0.80, 0.10), 0.4)
+    caqui    = mat("Barret_Pescador", (0.55, 0.45, 0.25), 0.9)
+    petjada  = mat("Petjada",         (0.40, 0.22, 0.08), 0.6)
+    pegat    = mat("Pegat_Petjada",   (0.95, 0.90, 0.75), 0.7)
+    platan   = mat("Platan",          (0.95, 0.80, 0.10), 0.5)
+    galleda  = mat("Galleda",         (0.20, 0.45, 0.75), 0.4, metal=0.3)
+    peix     = mat("Peix",            (0.60, 0.65, 0.72), 0.3, metal=0.4)
+    nansa    = mat("Nansa_Galleda",   (0.70, 0.72, 0.75), 0.25, metal=1.0)
+
+    pestanyes(b)
+
+    # samarreta taronja amb mànegues curtes (os body)
+    b.add("cube", "Samarreta", (0, 0, 0.60), "body", samarreta, scale=(0.70, 0.545, 0.575), bevel=0.24, segs=6, size=2)
+    b.add("torus", "Samarreta_Coll", (0, 0, 1.2), "body", samarreta, scale=(1, 1, 0.7),
+          major_radius=0.29, minor_radius=0.05, major_segments=48, minor_segments=12)
+    for side in (-1, 1):
+        b.add("uv_sphere", f"Samarreta_Mànega.{'E' if side < 0 else 'D'}", (side * 0.806, 0, 0.758),
+              "arm_L" if side < 0 else "arm_R", samarreta, scale=(0.19, 0.19, 0.2), rot=(0, -side * 0.385, 0),
+              segments=32, ring_count=16)
+
+    # peto verd: pantaló fins a la cintura i pitet per darrere de la insígnia, amb tirants i botons
+    b.add("cube", "Peto_Pantalo", (0, 0, 0.22), "body", peto, scale=(0.706, 0.552, 0.235), bevel=0.2, segs=6, size=2)
+    b.add("cube", "Peto_Pitet", (0, -0.551, 0.70), "body", peto, scale=(0.37, 0.004, 0.26), bevel=0.003, size=2)
+    for side in (-1, 1):
+        s = 'E' if side < 0 else 'D'
+        b.add("cube", f"Peto_Tirant.{s}", (side * 0.31, -0.553, 1.06), "body", peto, scale=(0.04, 0.006, 0.12), size=2)
+        b.add("cube", f"Peto_Tirant_Dalt.{s}", (side * 0.31, 0.0, 1.183), "body", peto, scale=(0.04, 0.555, 0.008), size=2)
+        b.add("cylinder", f"Peto_Botó.{s}", (side * 0.31, -0.562, 0.94), "body", botó, rot=(pi / 2, 0, 0),
+              radius=0.032, depth=0.012, vertices=16)
+    # pegat amb una petjada al pantaló
+    b.add("cylinder", "Pegat_Petjada", (-0.33, -0.556, 0.22), "body", pegat, rot=(pi / 2, 0, 0), radius=0.12, depth=0.01, vertices=32)
+    b.add("uv_sphere", "Petjada_Coixi", (-0.33, -0.563, 0.19), "body", petjada, scale=(0.055, 0.006, 0.045), segments=16, ring_count=8)
+    for k, (dx, dz) in enumerate(((-0.06, 0.04), (-0.022, 0.075), (0.022, 0.075), (0.06, 0.04))):
+        b.add("uv_sphere", f"Petjada_Dit.{k}", (-0.33 + dx, -0.563, 0.21 + dz), "body", petjada, scale=(0.02, 0.006, 0.025),
+              segments=12, ring_count=6)
+    # plàtan que ix de la butxaca del costat dret
+    pl = b.mesh("torus", "Platan", (0.62, -0.50, 0.40), platan, rot=(pi / 2, 0, 0.3), scale=(1, 1, 1),
+                major_radius=0.12, minor_radius=0.03, major_segments=32, minor_segments=10)
+    b.cut(pl, (0.62, -0.50, 0.30), (0.25, 0.2, 0.13))
+    b.attach(pl, "body")
+    b.add("cube", "Butxaca_Costat", (0.60, -0.556, 0.30), "body", peto, scale=(0.09, 0.008, 0.08), bevel=0.01, size=2)
+
+    # barret de pescador caqui (os head): copa i ala que baixa al voltant; l'antena ix per dalt
+    b.add("cylinder", "Barret_Pescador_Copa", (0, 0, 2.90), "head", caqui, bevel=0.06, radius=0.55, depth=0.26, vertices=48)
+    b.add("cone", "Barret_Pescador_Ala", (0, 0, 2.76), "head", caqui, radius1=1.08, radius2=0.56, depth=0.16, vertices=64,
+          end_fill_type='NOTHING')
+
+    # galleda amb peixos penjant de la mà esquerra (os arm_L)
+    x, y = -1.10, -0.18
+    b.add("torus", "Galleda_Nansa", (x, y, 0.22), "arm_L", nansa, rot=(pi / 2, 0, 0), scale=(1, 1, 1.1),
+          major_radius=0.17, minor_radius=0.012, major_segments=32, minor_segments=6)
+    b.add("cone", "Galleda", (x, y, 0.0), "arm_L", galleda, radius1=0.14, radius2=0.18, depth=0.26, vertices=32)
+    for k, (dx, ang) in enumerate(((-0.07, 0.45), (0.06, -0.35), (0.0, 0.05))):
+        b.add("uv_sphere", f"Peix_Cos.{k}", (x + dx, y - 0.03, 0.15), "arm_L", peix, scale=(0.035, 0.03, 0.07), rot=(0, ang, 0),
+              segments=16, ring_count=8)
+        b.add("cone", f"Peix_Cua.{k}", (x + dx * 1.6, y - 0.03, 0.25), "arm_L", peix, scale=(0.055, 0.012, 0.045),
+              rot=(pi, ang, 0), radius1=1, depth=2, vertices=3)
+
+
 OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_forn, "oficina": outfit_oficina,
            "a2_identificacio": outfit_festa, "a2_casa": outfit_casa,
            "a2_activitats": outfit_gimnas,
@@ -1586,7 +1651,7 @@ OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_
            "b1_viatges": outfit_viatges, "b1_oci_esport": outfit_esport,
            "b1_territori": outfit_erasmus, "b1_cultura": outfit_radio,
            "b1_natura_clima": outfit_parc_natural, "colegi": outfit_mestra,
-           "n0_pocio": outfit_mag}
+           "n0_pocio": outfit_mag, "n0_zoo": outfit_zoo}
 
 
 def build(name):

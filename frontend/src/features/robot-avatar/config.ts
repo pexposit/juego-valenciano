@@ -126,6 +126,10 @@ export const ROBOT_AVATAR = {
       modelUrl: '/avatar-robot/robot-n0_pocio.glb',
       fallbackUrl: '/avatar-robot/robot-n0_pocio.webp',
     },
+    n0_zoo: { // Carme, la cuidadora del zoo (xiquets): peto verd amb petjada, barret de pescador, plàtan i galleda amb peixos
+      modelUrl: '/avatar-robot/robot-n0_zoo.glb',
+      fallbackUrl: '/avatar-robot/robot-n0_zoo.webp',
+    },
   } as Record<string, { modelUrl: string; fallbackUrl: string }>,
 } as const;
 
