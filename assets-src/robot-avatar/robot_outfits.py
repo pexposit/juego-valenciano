@@ -1636,6 +1636,50 @@ def outfit_zoo(b):
               rot=(pi, ang, 0), radius1=1, depth=2, vertices=3)
 
 
+# --- n0_pati (Laia, una xiqueta de la classe, a l'hora del pati): samarreta rosa amb una
+#     estrela, faldilla texana, pestanyes i una pilota de futbol ------------
+def outfit_pati(b):
+    from math import pi, sin, cos, radians
+    from mathutils import Vector
+    rosa    = mat("Samarreta_Rosa",  (0.72, 0.08, 0.35), 0.7)
+    estrela = mat("Estrela_Groga",   (0.98, 0.80, 0.10), 0.5)
+    texa    = mat("Faldilla_Texana", (0.10, 0.25, 0.55), 0.85)
+    blanc   = mat("Pilota_Blanca",   (0.95, 0.95, 0.95), 0.4)
+    negre   = mat("Pilota_Negra",    (0.05, 0.05, 0.05), 0.4)
+
+    pestanyes(b)
+
+    # samarreta rosa (os body) amb mànegues curtes i una estrela groga; la senyera com a estampat
+    b.add("cube", "Samarreta", (0, 0, 0.76), "body", rosa, scale=(0.70, 0.548, 0.42), bevel=0.24, segs=6, size=2)
+    b.add("torus", "Samarreta_Coll", (0, 0, 1.2), "body", rosa, scale=(1, 1, 0.7),
+          major_radius=0.29, minor_radius=0.05, major_segments=48, minor_segments=12)
+    for side in (-1, 1):
+        b.add("uv_sphere", f"Samarreta_Mànega.{'E' if side < 0 else 'D'}", (side * 0.806, 0, 0.758),
+              "arm_L" if side < 0 else "arm_R", rosa, scale=(0.19, 0.19, 0.2), rot=(0, -side * 0.385, 0),
+              segments=32, ring_count=16)
+    b.attach(b.star("Samarreta_Estrela", (0.50, -0.556, 0.95), estrela, size=0.08, depth=0.01), "body")
+
+    # faldilla texana amb vol i una butxaca (la unió queda per davall de la insígnia)
+    falda = b.mesh("cube", "Faldilla", (0, 0, 0.21), texa, scale=(0.706, 0.554, 0.21), bevel=0.15, segs=6, size=2)
+    for v in falda.data.vertices:
+        if v.co.z < 0:
+            v.co.x *= 1.18; v.co.y *= 1.18
+    b.attach(falda, "body")
+    b.add("cube", "Faldilla_Cintura", (0, 0, 0.405), "body", texa, scale=(0.712, 0.56, 0.02), bevel=0.2, segs=6, size=2)
+    b.add("cube", "Faldilla_Butxaca", (0.33, -0.60, 0.22), "body", texa, rot=(-0.25, 0, 0),
+          scale=(0.11, 0.008, 0.09), bevel=0.01, size=2)
+
+    # pilota de futbol a la mà esquerra (os arm_L): blanca amb pentàgons negres
+    c = Vector((-1.04, -0.26, 0.30))
+    r = 0.17
+    b.add("uv_sphere", "Pilota", c, "arm_L", blanc, radius=r, segments=32, ring_count=16)
+    for k, (lon, lat) in enumerate(((-90, 0), (-90 - 60, 25), (-90 + 60, 25), (-90 - 50, -40), (-90 + 50, -40), (-90, 70))):
+        lo, la = radians(lon), radians(lat)
+        n = Vector((cos(la) * cos(lo), cos(la) * sin(lo), sin(la)))
+        b.add("cylinder", f"Pilota_Pentagon.{k}", c + n * (r - 0.004), "arm_L", negre,
+              rot=tuple(n.to_track_quat('Z', 'Y').to_euler()), radius=0.055, depth=0.012, vertices=5)
+
+
 OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_forn, "oficina": outfit_oficina,
            "a2_identificacio": outfit_festa, "a2_casa": outfit_casa,
            "a2_activitats": outfit_gimnas,
@@ -1651,7 +1695,8 @@ OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_
            "b1_viatges": outfit_viatges, "b1_oci_esport": outfit_esport,
            "b1_territori": outfit_erasmus, "b1_cultura": outfit_radio,
            "b1_natura_clima": outfit_parc_natural, "colegi": outfit_mestra,
-           "n0_pocio": outfit_mag, "n0_zoo": outfit_zoo}
+           "n0_pocio": outfit_mag, "n0_zoo": outfit_zoo,
+           "n0_pati": outfit_pati}
 
 
 def build(name):

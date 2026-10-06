@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Logo } from '../components/ui';
-import { LESSONS, PRE_A1_LESSONS, type Lesson } from '../features/kids/lessons';
+import { LESSONS, PICTOGRAM_LESSONS, PRE_A1_LESSONS, type Lesson } from '../features/kids/lessons';
 import { loadLessonsDone } from '../features/kids/progress';
 import { say, sayBriefly, stopVoice } from '../features/kids/sound';
 
@@ -9,7 +9,7 @@ import { say, sayBriefly, stopVoice } from '../features/kids/sound';
 // Com que encara no llegixen, en entrar se sent la benvinguda i, en tocar una lliçó, el seu
 // títol; després s'obri a pantalla completa, amb veu i jocs.
 const CATEGORIES: { id: string; title: string; subtitle: string; lessons: Lesson[] }[] = [
-  { id: 'taronjeta', title: '🍊 Aprén amb la Taronjeta', subtitle: 'Les primeres paraules i frases, pas a pas.', lessons: LESSONS },
+  { id: 'taronjeta', title: '🍊 Aprén amb la Taronjeta', subtitle: 'Les primeres paraules i frases, pas a pas.', lessons: [...LESSONS, ...PICTOGRAM_LESSONS] },
   {
     id: 'preA1',
     title: '🎓 Guia Pre-A1',
@@ -53,25 +53,25 @@ export function KidsLessons({ uid, onBack, onOpenLesson }: { uid: string | undef
           <span className="w-24" aria-hidden="true" />
         </div>
       </header>
-      <div className="mx-auto max-w-3xl px-5 pt-6 pb-24">
+      <div className="mx-auto max-w-7xl px-5 pt-6 pb-24">
         <h1 className="mb-6 text-center text-4xl font-black uppercase tracking-wider opacity-55">Lliçons</h1>
         {CATEGORIES.map(category => (
           <section key={category.id} className="mb-10" aria-labelledby={`cat-${category.id}`}>
             <h2 id={`cat-${category.id}`} className="text-2xl font-black opacity-80">{category.title}</h2>
             <p className="mb-4 mt-1 text-base font-bold opacity-55">{category.subtitle}</p>
-            <ul className="grid gap-4 sm:grid-cols-2">
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
               {category.lessons.map(l => (
                 <li key={l.id}>
                   <button
                     onClick={() => void open(l)}
-                    className={`btn-press flex h-full w-full items-center gap-4 rounded-3xl bg-white p-5 text-left shadow-lg ring-2 ring-white hover:bg-white/90 ${opening === l.id ? 'scale-95' : ''}`}
+                    className={`btn-press flex h-full w-full items-center gap-4 lg:flex-col lg:text-center rounded-3xl bg-white p-5 text-left shadow-lg ring-2 ring-white hover:bg-white/90 ${opening === l.id ? 'scale-95' : ''}`}
                   >
                     <span className="text-5xl leading-none" aria-hidden="true">{l.emoji}</span>
                     <span className="flex-1">
                       <span className="block text-2xl font-black">{l.title}</span>
                       <span className="block text-base font-bold opacity-60">{l.summary}</span>
                     </span>
-                    {done.includes(l.id) && <span className="text-4xl leading-none" title="Lliçó acabada">🏅</span>}
+                    {done.includes(l.id) && l.category !== 'pictogrames' && <span className="text-4xl leading-none" title="Lliçó acabada">🏅</span>}
                   </button>
                 </li>
               ))}

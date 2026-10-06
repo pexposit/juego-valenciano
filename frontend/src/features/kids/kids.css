@@ -153,6 +153,19 @@
 }
 .kid-card:active { transform: scale(.95); }
 .kid-card-emoji { font-size: clamp(56px, 13vw, 110px); line-height: 1; }
+/* Pictograma d'ARASAAC en lloc de l'emoji. */
+.kid-card-img { width: 88%; height: 88%; object-fit: contain; border-radius: 12px; background: #fff; pointer-events: none; }
+/* Frases amb pictogrames: una fila per frase (pictogrames + text). */
+.kid-sentences { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 760px; }
+.kid-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 14px; border-radius: 24px; background: #fff; border: 4px solid transparent; box-shadow: 0 6px 0 #0000000f; text-align: left; cursor: pointer; animation: kidIn .35s both; }
+.kid-sentence.now { border-color: #FACC15; background: #FFFBEB; }
+.kid-sentence-chips { display: flex; gap: 8px; }
+.kid-sentence-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; width: clamp(68px, 18vw, 96px); }
+.kid-sentence-chip img { width: 100%; aspect-ratio: 1; object-fit: contain; }
+.kid-sentence-chip span { font-size: clamp(11px, 2.4vw, 14px); font-weight: 800; color: #475569; }
+.kid-sentence-text { flex: 1 1 160px; font-weight: 900; font-size: clamp(20px, 3.6vw, 30px); color: #1A2140; }
+.kid-credit { margin: 6px 0 0; max-width: 760px; font-size: 12px; font-weight: 700; color: #64748B; text-align: center; }
+
 .kid-card-face { border-radius: 9999px; }
 .kid-card-swatch { width: 72%; aspect-ratio: 1; border-radius: 9999px; border: 4px solid transparent; box-shadow: inset -8px -10px 16px #00000022; }
 .kid-card-letter { font-family: Nunito, system-ui, sans-serif; font-weight: 900; font-size: clamp(64px, 15vw, 128px); line-height: 1; color: #7C3AED; }

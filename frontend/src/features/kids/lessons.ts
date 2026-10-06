@@ -28,6 +28,7 @@ import {
   oneOf, oneRight, opposite, p, pairs, pic, play, LESSON_AUDIO, quiz, simonSays, spelling, summary, trueFalse, word,
   type Activity, type Lesson,
 } from './lessonKit';
+import { PICTOGRAM_LESSONS } from './pictogramLessons';
 import { NAME_CHIPS, PRE_A1_LESSONS } from './preA1';
 
 // Es re-exporten perquè els llegien d'ací (sound.ts, els scripts de l'àudio i les traduccions).
@@ -1190,8 +1191,8 @@ export const LESSONS: Lesson[] = [
 ];
 
 // Totes: les de la Taronjeta i les de la guia Pre-A1 (categoria pròpia en la pàgina de lliçons).
-export const ALL_LESSONS: Lesson[] = [...LESSONS, ...PRE_A1_LESSONS];
-export { PRE_A1_LESSONS };
+export const ALL_LESSONS: Lesson[] = [...LESSONS, ...PRE_A1_LESSONS, ...PICTOGRAM_LESSONS];
+export { PICTOGRAM_LESSONS, PRE_A1_LESSONS };
 
 export const lessonById = (id: string | undefined) => ALL_LESSONS.find(l => l.id === id);
 

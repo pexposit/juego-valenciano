@@ -58,6 +58,9 @@ export type LessonPage =
   | { kind: 'summary'; say: string; items: KidsItem[] }
   // Conte en vinyetes: cada vinyeta (una escena d'emojis) es narra per ordre.
   | { kind: 'story'; panels: { scene: string; say: string }[] }
+  // Frases amb pictogrames: cada frase és una fila de pictogrames (paraules) i el seu text; se
+  // narren per ordre i es poden tocar per a tornar-les a escoltar.
+  | { kind: 'sentences'; say: string; sentences: { say: string; chips: { word: string; image: string }[] }[] }
   // Cançó o rodolí: les línies s'il·luminen mentre la Taronjeta les canta.
   | { kind: 'chant'; lines: { emoji: string; say: string }[] };
 
@@ -69,7 +72,7 @@ export type Lesson = {
   say: string; // el títol en veu alta
   summary: string; // una línia del que s'aprén (en la llista de lliçons)
   island?: string; // l'illa on es practica
-  category?: 'preA1'; // la guia Pre-A1 (a l'estil de Cambridge Pre A1 Starters)
+  category?: 'preA1' | 'pictogrames'; // la guia Pre-A1 (a l'estil de Cambridge Pre A1 Starters) o les frases amb pictogrames
   pages: LessonPage[];
 };
 
@@ -85,6 +88,11 @@ export const story = (panels: [scene: string, text: string][]): LessonPage =>
   ({ kind: 'story', panels: panels.map(([scene, text]) => ({ scene, say: p(text) })) });
 export const chant = (lines: [emoji: string, text: string][]): LessonPage =>
   ({ kind: 'chant', lines: lines.map(([emoji, text]) => ({ emoji, say: p(text) })) });
+export const sentences = (text: string, list: [text: string, chips: [word: string, image: string][]][]): LessonPage => ({
+  kind: 'sentences',
+  say: p(text),
+  sentences: list.map(([say, chips]) => ({ say: p(say), chips: chips.map(([word, image]) => ({ word, image })) })),
+});
 export const mix = (text: string, a: KidsItem, b: KidsItem, result: KidsItem, reveal: string): LessonPage =>
   ({ kind: 'mix', say: p(text), a, b, result, reveal: p(reveal) });
 

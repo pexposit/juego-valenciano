@@ -48,6 +48,7 @@ export function ItemFace({ item, letter }: { item: KidsItem; letter?: boolean })
     const long = item.glyph.length > 3 ? { fontSize: `clamp(20px, ${item.glyph.length > 5 ? 4 : 5}vw, ${item.glyph.length > 5 ? 34 : 42}px)` } : undefined;
     return <span className="kid-face-glyph" aria-hidden="true" style={{ color: item.ink, ...long }}>{item.glyph}</span>;
   }
+  if (item.image) return <img className="kid-card-img" src={item.image} alt="" aria-hidden="true" draggable={false} />;
   if (letter) return <span className="kid-card-letter" aria-hidden="true">{item.emoji}</span>;
   return (
     <span

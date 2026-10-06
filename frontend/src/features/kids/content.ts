@@ -26,6 +26,7 @@ export type KidsItem = {
   glyph?: string; // text gran en lloc d'emoji (lletres, dies)
   ink?: string; // color del glyph
   pos?: Pos; // escena del gat i la caixa (dins, damunt...)
+  image?: string; // pictograma (imatge de public/) en lloc de l'emoji
   stack?: boolean; // emoji compost de diversos dibuixos (calaixos de classificar)
 };
 

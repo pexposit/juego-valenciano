@@ -130,6 +130,10 @@ export const ROBOT_AVATAR = {
       modelUrl: '/avatar-robot/robot-n0_zoo.glb',
       fallbackUrl: '/avatar-robot/robot-n0_zoo.webp',
     },
+    n0_pati: { // Laia, xiqueta de la classe (xiquets): samarreta rosa, faldilla texana i pilota de futbol
+      modelUrl: '/avatar-robot/robot-n0_pati.glb',
+      fallbackUrl: '/avatar-robot/robot-n0_pati.webp',
+    },
   } as Record<string, { modelUrl: string; fallbackUrl: string }>,
 } as const;
 

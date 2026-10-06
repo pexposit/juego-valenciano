@@ -5,6 +5,7 @@ import { RoundCaption, RoundView } from './games/RoundView';
 import { ItemFace } from './games/ItemFace';
 import { lessonById, type LessonPage } from './lessons';
 import { markLessonDone } from './progress';
+import { PICTOGRAM_CREDIT } from './pictograms';
 import { phraseText, say, sfxCorrect, sfxFanfare, sfxTick, stopVoice } from './sound';
 import { Translation, useKidsTranslation } from './translations';
 import './kids.css';
@@ -282,6 +283,37 @@ function useSequence(keys: string[], onReady: () => void) {
   return { active, replay };
 }
 
+/** Frases amb pictogrames: es narra cada frase per ordre; la que sona s'il·lumina i es pot tocar. */
+function SentencesPage({ page, onReady }: PageProps<'sentences'>) {
+  const translate = useKidsTranslation();
+  const { talking, play } = useNarration(page.say);
+  const { active, replay } = useSequence(page.sentences.map(s => s.say), onReady);
+  return (
+    <div className="kid-lesson-page">
+      <Bubble phrase={page.say} onRepeat={play} talking={talking} />
+      <div className="kid-sentences">
+        {page.sentences.map((sentence, i) => (
+          <button key={sentence.say} onClick={() => replay(i)} className={`kid-sentence ${active === i ? 'now' : ''}`} style={{ animationDelay: `${i * 0.12}s` }}>
+            <span className="kid-sentence-chips" aria-hidden="true">
+              {sentence.chips.map(chip => (
+                <span key={chip.word} className="kid-sentence-chip">
+                  <img src={chip.image} alt="" draggable={false} />
+                  <span>{chip.word}</span>
+                </span>
+              ))}
+            </span>
+            <span className="kid-sentence-text">
+              {phraseText(sentence.say)}
+              <Translation text={translate(sentence.say)} />
+            </span>
+          </button>
+        ))}
+      </div>
+      <p className="kid-credit">{PICTOGRAM_CREDIT}</p>
+    </div>
+  );
+}
+
 /** Conte en vinyetes: es narra cada vinyeta per ordre; la que sona s'il·lumina. */
 function StoryPage({ page, onReady }: PageProps<'story'>) {
   const translate = useKidsTranslation();
@@ -349,6 +381,7 @@ function PageView(props: { page: LessonPage; onReady: () => void; onDone: () => 
     case 'mix': return <MixPage {...props} page={page} />;
     case 'dialog': return <DialogPage {...props} page={page} />;
     case 'game': return <GamePage {...props} page={page} />;
+    case 'sentences': return <SentencesPage {...props} page={page} />;
     case 'story': return <StoryPage {...props} page={page} />;
     case 'chant': return <ChantPage {...props} page={page} />;
   }
