@@ -10,7 +10,7 @@ const levelLabel = (value: string) => LEVEL_OPTIONS.find(o => o.value === value)
 
 export function Profile({
   name, setName, level, xp, back, onLogOut, isDemo, ageGroup, motherTongue, setMotherTongue, showMotherTongue, setShowMotherTongue,
-  onProgress, onClasses,
+  onProgress, onClasses, isTeacher,
 }: {
   name: string;
   setName: (v: string) => void;
@@ -26,6 +26,7 @@ export function Profile({
   setShowMotherTongue: (v: boolean) => void;
   onProgress: () => void;
   onClasses: () => void;
+  isTeacher: boolean;
 }) {
   const isChild = ageGroup === 'child';
   // La llengua materna i l'ajuda amb la traducció són per als xiquets i per a qui està en el Nivell 0.
@@ -161,7 +162,7 @@ export function Profile({
             >
               <BarChart3 size={20} /> Seguiment per a la família
             </button>
-          ) : !isDemo && (
+          ) : isTeacher && (
             <button
               onClick={onClasses}
               id="profile-classes-btn"

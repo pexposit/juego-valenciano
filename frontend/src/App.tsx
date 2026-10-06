@@ -15,6 +15,8 @@ import { Dashboard } from './pages/Dashboard';
 import { KidsProgress } from './pages/KidsProgress';
 import { TeacherClasses } from './pages/TeacherClasses';
 import { LearningPath } from './pages/LearningPath';
+import { MyPaths } from './pages/MyPaths';
+import { loadTeacher } from './lib/paths';
 import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
 import { Practice } from './pages/Practice';
@@ -185,6 +187,7 @@ export function App() {
   const [ageGroup, setAgeGroup] = useState(DEFAULT_PROFILE.ageGroup);
   const [motherTongue, setMotherTongue] = useState<string | null>(null);
   const [showMotherTongue, setShowMotherTongue] = useState(true);
+  const [isTeacher, setIsTeacher] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   // false mentre es comprova la sessió i es carrega el perfil (sense Supabase, ja està).
   const [profileReady, setProfileReady] = useState(!supabase);
@@ -209,6 +212,7 @@ export function App() {
         setMotherTongue(data.mother_tongue ?? null);
         setShowMotherTongue(data.show_mother_tongue ?? true);
       }
+      setIsTeacher(!!(await loadTeacher(uid).catch(() => null)));
     } catch (e) {
       console.error('Error carregant perfil:', e);
     } finally {
@@ -227,6 +231,7 @@ export function App() {
     setAgeGroup(DEFAULT_PROFILE.ageGroup);
     setMotherTongue(null);
     setShowMotherTongue(true);
+    setIsTeacher(false);
     navigate(ROUTES.home, { replace: true });
   };
 
@@ -325,6 +330,7 @@ export function App() {
                 const route = activityRoute(resource);
                 if (route) navigate(route);
               }}
+              onRoute={route => navigate(route)}
               onAlbum={() => navigate(KIDS_ROUTES.album)}
               onProfile={() => navigate(ROUTES.profile)}
             />
@@ -386,6 +392,7 @@ export function App() {
                 setShowMotherTongue={updateShowMotherTongue}
                 onProgress={() => navigate(ROUTES.progress)}
                 onClasses={() => navigate(ROUTES.classes)}
+                isTeacher={isTeacher}
               />
             </PageTransition>
           }
@@ -406,6 +413,20 @@ export function App() {
         <Route
           path={ROUTES.progress}
           element={<PageTransition><KidsProgress uid={user?.id} name={name} onBack={() => navigate(-1)} onLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>}
+        />
+        <Route
+          path={ROUTES.paths}
+          element={
+            <PageTransition>
+              <MyPaths
+                uid={user?.id}
+                ageGroup={ageGroup}
+                onOpen={route => navigate(route)}
+                onAiPath={() => navigate(ROUTES.learningpath)}
+                onBack={goDashboard}
+              />
+            </PageTransition>
+          }
         />
         <Route path={ROUTES.classes} element={<PageTransition><TeacherClasses uid={user?.id} onBack={() => navigate(-1)} /></PageTransition>} />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />

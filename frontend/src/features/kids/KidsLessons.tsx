@@ -5,6 +5,7 @@ import { RoundCaption, RoundView } from './games/RoundView';
 import { ItemFace } from './games/ItemFace';
 import { lessonById, type LessonPage } from './lessons';
 import { markLessonDone } from './progress';
+import { saveLessonDone } from './tracking';
 import { phraseText, say, sfxCorrect, sfxFanfare, sfxTick, stopVoice } from './sound';
 import { Translation, useKidsTranslation } from './translations';
 import './kids.css';
@@ -386,6 +387,8 @@ export function KidsLesson({ id, uid, onLessons, onIsland }: {
   const finish = async () => {
     stopVoice();
     setFinished(true);
+    // La medalla (una vegada) i, cada vegada, la lliçó acabada amb data (per als deures i el seguiment).
+    void saveLessonDone(uid, lesson.id);
     const isNew = await markLessonDone(uid, lesson.id);
     sfxFanfare();
     await new Promise(r => window.setTimeout(r, 500));

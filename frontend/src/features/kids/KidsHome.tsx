@@ -6,6 +6,7 @@ import { ROBOT_AVATAR } from '../robot-avatar';
 import { fetchResources } from '../../lib/api';
 import type { Resource } from '../../lib/types';
 import { ISLANDS } from './lessons';
+import { KidsPathStrip } from '../paths/KidsPathStrip';
 import { loadCromos, loadStages, stagesDone } from './progress';
 import { say, sayBriefly, stopVoice } from './sound';
 import './kids.css';
@@ -13,14 +14,16 @@ import './kids.css';
 /**
  * Mapa d'illes del Nivell 0. Tot es diu en veu alta: tocar una illa diu el seu nom i hi entra.
  * Cada illa a mig fer mostra les seues etapes (estrelles); les acabades, el seu cromo.
- * A dalt, en una franja pròpia, els escenaris de conversa del Nivell 0 (p. ex. el mag Merlí).
+ * A dalt, en una franja pròpia, els escenaris de conversa del Nivell 0 (p. ex. el mag Merlí) i,
+ * si la mestra n'ha assignat una, la ruta amb el següent pas.
  */
-export function KidsHome({ name, uid, onBack, onIsland, onScenario, onAlbum, onProfile }: {
+export function KidsHome({ name, uid, onBack, onIsland, onScenario, onRoute, onAlbum, onProfile }: {
   name: string;
   uid: string | undefined;
   onBack: () => void;
   onIsland: (id: string) => void;
   onScenario: (resource: Resource) => void;
+  onRoute: (route: string) => void;
   onAlbum: () => void;
   onProfile: () => void;
 }) {
@@ -28,13 +31,14 @@ export function KidsHome({ name, uid, onBack, onIsland, onScenario, onAlbum, onP
   const [stages, setStages] = useState<string[]>([]);
   const [opening, setOpening] = useState<string>();
   // Escenaris de conversa del Nivell 0 (resources amb category 'escenari' i difficulty 'nivell0').
-  const [scenarios, setScenarios] = useState<Resource[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const scenarios = resources.filter(r => r.category === 'escenari' && r.difficulty === 'nivell0');
 
   useEffect(() => {
     let cancelled = false;
     fetchResources()
       .then(data => {
-        if (!cancelled) setScenarios(data.filter(r => r.category === 'escenari' && r.difficulty === 'nivell0'));
+        if (!cancelled) setResources(data);
       })
       .catch(error => console.error('Error carregant els escenaris:', error));
     return () => { cancelled = true; };
@@ -72,6 +76,8 @@ export function KidsHome({ name, uid, onBack, onIsland, onScenario, onAlbum, onP
         {/* Per als adults: perfil i tancar la sessió. */}
         <ProfileButton name={name} onClick={onProfile} />
       </header>
+
+      <KidsPathStrip uid={uid} resources={resources} onRoute={onRoute} />
 
       {/* Els escenaris de conversa, en una franja a dalt, a banda de les illes. */}
       {scenarios.length > 0 && (

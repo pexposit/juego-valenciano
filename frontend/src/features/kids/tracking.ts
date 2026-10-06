@@ -33,7 +33,9 @@ export type ConversationRow = {
   seconds: number;
   created_at: string;
 };
-export type ChildData = { name: string; badges: string[]; sessions: SessionRow[]; words: WordRow[]; conversations: ConversationRow[] };
+// Una lliçó acabada (kids_lesson_sessions): per a saber què ha fet cada setmana.
+export type LessonRow = { lesson: string; created_at: string };
+export type ChildData = { name: string; ageGroup?: string; badges: string[]; sessions: SessionRow[]; words: WordRow[]; conversations: ConversationRow[]; lessons?: LessonRow[] };
 
 const localKey = (uid: string | undefined) => `parlaval:kids:seguiment:${uid ?? 'demo'}`;
 type LocalData = { sessions: SessionRow[]; words: Record<string, WordRow> };
@@ -85,6 +87,13 @@ export async function saveSessionReport(uid: string | undefined, report: Session
   if (error) console.error('Error guardant el seguiment de la partida:', error);
 }
 
+/** Guarda una lliçó acabada (amb data). Com les partides, mai falla cap amunt. */
+export async function saveLessonDone(uid: string | undefined, lesson: string) {
+  if (!supabase || !uid) return;
+  const { error } = await supabase.rpc('kids_finish_lesson', { p_lesson: lesson });
+  if (error) console.error('Error guardant la lliçó acabada:', error);
+}
+
 /** Tot el seguiment d'un xiquet: el seu (família) o el d'un alumne (professorat, gràcies a RLS). */
 export async function loadChildData(uid: string | undefined): Promise<ChildData> {
   if (!supabase || !uid) {
@@ -100,22 +109,26 @@ export async function loadChildData(uid: string | undefined): Promise<ChildData>
     return { name: '', badges, sessions: data.sessions, words: Object.values(data.words), conversations: [] };
   }
   const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
-  const [profile, sessions, words, conversations] = await Promise.all([
-    supabase.from('profiles').select('display_name, badges').eq('id', uid).single(),
+  const [profile, sessions, words, conversations, lessons] = await Promise.all([
+    supabase.from('profiles').select('display_name, age_group, badges').eq('id', uid).single(),
     supabase.from('kids_sessions').select('island, stage, rounds, first_try, misses, easy, seconds, created_at')
       .eq('user_id', uid).gte('created_at', since).order('created_at', { ascending: false }).limit(500),
     supabase.from('kids_word_stats').select('item_id, word, emoji, island, attempts, misses, last_seen').eq('user_id', uid),
     supabase.from('kids_scenario_reviews').select('session_resource_id, resource_id, scenario_name, objectives, turns, seconds, created_at')
       .eq('user_id', uid).gte('created_at', since).order('created_at', { ascending: false }).limit(200),
+    supabase.from('kids_lesson_sessions').select('lesson, created_at')
+      .eq('user_id', uid).gte('created_at', since).order('created_at', { ascending: false }).limit(300),
   ]);
-  const error = profile.error ?? sessions.error ?? words.error ?? conversations.error;
+  const error = profile.error ?? sessions.error ?? words.error ?? conversations.error ?? lessons.error;
   if (error) throw error;
   return {
     name: profile.data?.display_name ?? '',
+    ageGroup: profile.data?.age_group ?? undefined,
     badges: (profile.data?.badges as string[] | undefined) ?? [],
     sessions: (sessions.data ?? []) as SessionRow[],
     words: (words.data ?? []) as WordRow[],
     conversations: (conversations.data ?? []) as ConversationRow[],
+    lessons: (lessons.data ?? []) as LessonRow[],
   };
 }
 

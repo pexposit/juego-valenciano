@@ -1,4 +1,4 @@
-import { BookOpen, LayoutGrid, MessageCircle, Target } from 'lucide-react';
+import { BookOpen, Compass, LayoutGrid, MessageCircle, Target } from 'lucide-react';
 import { ChildAssistant } from '../components/ChildAssistant';
 import { Logo, ProfileButton } from '../components/ui';
 import type { Page } from '../data/content';
@@ -50,6 +50,15 @@ export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name:
               </button>
             )}
             <button
+              aria-label="Les meues rutes"
+              title="Les meues rutes"
+              onClick={() => setPage('paths')}
+              className="btn-press shadow-md ring-2 ring-white flex h-10 items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xl font-black text-teal hover:bg-white/90"
+            >
+              <Compass size={18} />
+              <span className="hidden sm:inline">Rutes</span>
+            </button>
+            <button
               aria-label="Les meues converses amb el professor"
               title="Les meues converses amb el professor"
               onClick={() => setPage('tutorhistory')}
@@ -70,7 +79,7 @@ export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name:
         <div className="relative z-20 flex justify-center px-5 pb-10">
           <button
             id="dashboard-start-btn"
-            onClick={() => {}}
+            onClick={() => setPage('paths')}
             className="btn-press rounded-full bg-teal px-6 py-2 text-xl md:px-8 md:py-3 md:text-2xl font-black text-white shadow-lg ring-2 ring-white hover:bg-teal/90"
           >
             Començar classe

@@ -32,6 +32,19 @@ El frontend queda en `http://localhost:5173` y la API en `http://localhost:3001`
 - `backend/src/services/voice.ts`: interfaces STT/TTS para conectar Whisper/Google y ElevenLabs/Google/Azure sin tocar la ruta.
 - `supabase/migrations/`: tablas, RLS, trigger de perfil y función transaccional de XP/desbloqueos.
 
+## Professorat i rutes
+
+Las rutas predefinidas (`study_paths`) las crea el profesorado en **Perfil → Les meues classes → Rutes**, eligiendo actividades del catálogo (recursos de la BD y lecciones/islas del Nivell 0), y las asigna a sus clases. El alumnado las ve en `/rutes`, y los niños del Nivell 0 también en el mapa de islas. Los adultos se unen a una clase con el código desde `/rutes`.
+
+Ser docente no se puede activar desde la app. Se hace desde el SQL Editor o Studio:
+
+```sql
+INSERT INTO public.teachers (user_id, can_publish)
+SELECT id, false FROM auth.users WHERE email = 'docent@exemple.com';
+```
+
+Con `can_publish = true`, la persona docente puede marcar rutas como **públicas**, y cualquier aprendiz de ese público puede elegirlas. Son las rutas "oficiales".
+
 ## Rendimiento
 
 El backend registra por turno los tiempos de cada etapa (`[turn] stt=…ms agente=…ms tts=…ms db=…ms total=…ms`) para localizar cuellos de botella. Ajustes disponibles:
