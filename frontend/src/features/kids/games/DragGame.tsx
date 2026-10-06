@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
-import { FAMILY, FOOD, HOME_PLACES, type KidsItem, type Round } from '../content';
+import { FAMILY, FOOD, HOME_PLACES, itemAudio, type KidsItem, type Round } from '../content';
 import { say, sfxCorrect, sfxTick } from '../sound';
 import { useRound } from '../useRound';
 import { SpeakerButton } from './SpeakerButton';
@@ -83,7 +83,7 @@ export function DragGame({ round, onDone }: { round: DragRound; onDone: () => vo
       .map(el => (el as HTMLElement).dataset?.zone)
       .find(Boolean);
     if (!zone) return; // l'ha deixat fora: torna al seu lloc, sense penalitzar
-    if (!task || item.id !== task.item.id || zone !== task.zone) return miss();
+    if (!task || item.id !== task.item.id || zone !== task.zone) return miss(itemAudio(item), task?.item);
 
     // Encaix amb efecte d'imant i repetició del nom de l'objecte.
     setPlaced(p => [...p.filter(x => round.scene !== 'casa' || x.item.id !== item.id), { item, zone }]);

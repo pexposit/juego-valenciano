@@ -107,7 +107,7 @@ export const ask = (prompt: string, answer: KidsItem, wrong: KidsItem[], extra: 
 /** Pregunta de comprovació: es toca la resposta bona entre 2 o 3. */
 export const quiz = (...args: Parameters<typeof ask>): LessonPage => game(ask(...args));
 
-const LISTEN = p('Escolta i toca!');
+export const LISTEN = p('Escolta i toca!');
 /** Escolta i toca: la Taronjeta diu un dels elements del grup i es busca entre `size`. */
 export const listen = (pool: KidsItem[], size = 3, style?: 'letters'): Activity => () => {
   const [target, ...others] = pick(pool, size);

@@ -79,6 +79,12 @@
 }
 .kid-island:nth-child(even) { margin-top: 36px; }
 .kid-island-emoji { font-size: clamp(60px, 12vw, 92px); margin-top: -6%; }
+.kid-island-stages {
+  position: absolute; bottom: 10%; left: 50%; translate: -50% 0; display: flex; gap: 2px; padding: 2px 8px;
+  border-radius: 9999px; background: #fff; box-shadow: 0 4px 10px #0002; font-size: 18px; line-height: 1.2;
+}
+.kid-island-stages i { font-style: normal; color: #E2E8F0; }
+.kid-island-stages i.on { color: #FACC15; }
 .kid-island-done {
   position: absolute; top: 4%; right: 6%;
   font-size: 34px; background: #fff; border-radius: 9999px; padding: 4px;
@@ -100,6 +106,14 @@
 .kid-speaker { width: 84px; height: 84px; color: #fff; background: #2CA99B; animation: kidPulse 2.4s ease-in-out infinite; }
 
 .kid-cards { display: grid; gap: 18px; width: 100%; justify-items: center; }
+/* Targetes i calaixos de text (no es poden llegir): un altaveu xicotet en diu el nom. */
+.kid-card-wrap { position: relative; width: 100%; max-width: 200px; }
+.kid-sort-bin-wrap { max-width: none; display: grid; }
+.kid-hear {
+  position: absolute; top: -10px; right: -10px; z-index: 2; display: grid; place-items: center;
+  width: 48px; height: 48px; border-radius: 9999px; color: #fff; background: #2CA99B;
+  border: 3px solid #fff; box-shadow: 0 4px 0 #0000001f;
+}
 .kid-cards-2, .kid-cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 720px; }
 .kid-cards-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 900px; }
 @media (max-width: 640px) {
@@ -229,7 +243,11 @@
 .kid-cromo-win .kid-cromo-name { font-size: 20px; }
 .kid-cromo-locked { filter: grayscale(1); opacity: .45; }
 .kid-cromo-locked .kid-cromo-emoji { opacity: .4; }
-.kid-finish-actions { display: flex; gap: 18px; }
+.kid-finish-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
+/* Etapa d'una illa acabada: una estrela per etapa. */
+.kid-stage-stars { display: flex; gap: 10px; font-size: clamp(64px, 14vw, 110px); line-height: 1; filter: drop-shadow(0 6px 0 #0000001a); }
+.kid-stage-stars span { color: #ffffffb3; animation: kidPop .5s both; }
+.kid-stage-stars span.on { color: #FACC15; }
 .kid-big-btn { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 9999px; color: #fff; box-shadow: 0 8px 0 #0000002a; }
 .kid-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .kid-confetti i {

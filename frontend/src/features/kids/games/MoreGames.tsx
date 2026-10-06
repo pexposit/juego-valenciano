@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { itemAudio, type KidsItem, type Round } from '../content';
 import { say, sayAll, sfxTick, stopVoice } from '../sound';
 import { useRound } from '../useRound';
-import { Card } from './ChoiceGames';
+import { Card, HearButton } from './ChoiceGames';
 import { ItemFace } from './ItemFace';
 import { SpeakerButton } from './SpeakerButton';
 
@@ -87,7 +87,7 @@ export function SeqGame({ round, onDone }: Props<'seq'>) {
     } else {
       setWrong(item.id);
       window.setTimeout(() => setWrong(undefined), 600);
-      miss();
+      miss(itemAudio(item), round.targets[step]);
     }
   };
 
@@ -117,26 +117,44 @@ export function SortGame({ round, onDone }: Props<'sort'>) {
   const [inBins, setInBins] = useState<Record<string, KidsItem[]>>({});
   const [wrong, setWrong] = useState<string>();
   const [fly, setFly] = useState(false);
+  const [showing, setShowing] = useState<string>(); // el calaix que s'està presentant
   const first = useRef(true);
   const current = round.items[step];
 
+  // La primera vegada, la consigna i la presentació de cada calaix (bota mentre se'n diu
+  // el nom: n'hi ha que només tenen text, com EL i LA); després, el nom de cada element.
   useEffect(() => {
     if (!current) return;
-    const keys = first.current ? [round.prompt, itemAudio(current.item)] : [itemAudio(current.item)];
+    const intro = first.current;
     first.current = false;
-    const timer = window.setTimeout(() => void sayAll(keys), 350);
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      if (intro) {
+        if (!(await say(round.prompt))) return;
+        for (const bin of round.bins) {
+          if (cancelled) return;
+          setShowing(bin.id);
+          const heard = await say(itemAudio(bin));
+          setShowing(undefined);
+          if (!heard) return;
+        }
+      }
+      if (!cancelled) void say(itemAudio(current.item));
+    }, 350);
     return () => {
+      cancelled = true;
+      setShowing(undefined);
       window.clearTimeout(timer);
       stopVoice();
     };
-  }, [current, round.prompt]);
+  }, [current, round.prompt, round.bins]);
 
   const drop = (bin: KidsItem) => {
     if (locked || fly || !current) return;
     if (bin.id !== current.bin) {
       setWrong(bin.id);
       window.setTimeout(() => setWrong(undefined), 600);
-      return miss();
+      return miss(itemAudio(bin), current.item);
     }
     setInBins(b => ({ ...b, [bin.id]: [...(b[bin.id] ?? []), current.item] }));
     if (step === round.items.length - 1) {
@@ -168,18 +186,20 @@ export function SortGame({ round, onDone }: Props<'sort'>) {
       </div>
       <div className={`kid-sort-bins kid-sort-bins-${round.bins.length}`}>
         {round.bins.map(bin => (
-          <button
-            key={bin.id}
-            onClick={() => drop(bin)}
-            aria-label={bin.word}
-            className={`kid-sort-bin ${wrong === bin.id ? 'kid-nope' : ''}`}
-            style={bin.ink ? { background: `${bin.ink}1f`, borderColor: bin.ink } : undefined}
-          >
-            <span className="kid-sort-bin-label"><ItemFace item={bin} /></span>
-            <span className="kid-sort-bin-items" aria-hidden="true">
-              {(inBins[bin.id] ?? []).map(item => <span key={item.id} className="kid-snap" style={item.ink ? { color: item.ink } : undefined}>{item.glyph ?? item.emoji}</span>)}
-            </span>
-          </button>
+          <div key={bin.id} className="kid-card-wrap kid-sort-bin-wrap">
+            <button
+              onClick={() => drop(bin)}
+              aria-label={bin.word}
+              className={`kid-sort-bin ${wrong === bin.id ? 'kid-nope' : ''} ${showing === bin.id ? 'kid-jump' : ''}`}
+              style={bin.ink ? { background: `${bin.ink}1f`, borderColor: bin.ink } : undefined}
+            >
+              <span className="kid-sort-bin-label"><ItemFace item={bin} /></span>
+              <span className="kid-sort-bin-items" aria-hidden="true">
+                {(inBins[bin.id] ?? []).map(item => <span key={item.id} className="kid-snap" style={item.ink ? { color: item.ink } : undefined}>{item.glyph ?? item.emoji}</span>)}
+              </span>
+            </button>
+            <HearButton item={bin} />
+          </div>
         ))}
       </div>
     </div>

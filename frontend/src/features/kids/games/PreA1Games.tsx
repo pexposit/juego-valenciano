@@ -80,7 +80,7 @@ export function PaintGame({ round, onDone }: Props<'paint'>) {
     }
     setWrong(item.id);
     window.setTimeout(() => setWrong(undefined), 600);
-    miss();
+    miss(itemAudio(item));
   };
 
   return (
@@ -160,7 +160,7 @@ export function LinesGame({ round, onDone }: Props<'lines'>) {
     }
     setWrong(item.id);
     window.setTimeout(() => setWrong(undefined), 600);
-    miss();
+    miss(itemAudio(item));
   };
 
   return (
@@ -258,7 +258,7 @@ export function PlaceGame({ round, onDone }: Props<'place'>) {
     }
     setWrong(zone);
     window.setTimeout(() => setWrong(undefined), 600);
-    miss();
+    miss(label);
   };
 
   return (
@@ -333,7 +333,7 @@ export function SpellGame({ round, onDone }: Props<'spell'>) {
     }
     setWrong(tile.i);
     window.setTimeout(() => setWrong(undefined), 600);
-    miss();
+    miss(letterAudio(tile.letter));
   };
 
   return (
@@ -379,7 +379,7 @@ export function DiffGame({ round, onDone }: Props<'diff'>) {
     }
     setWrong(i);
     window.setTimeout(() => setWrong(undefined), 600);
-    miss();
+    miss(itemAudio(round.b[i]));
   };
 
   return (
@@ -427,7 +427,8 @@ export function SimonGame({ round, onDone }: Props<'simon'>) {
       return next();
     }
     flash(item.id, 'no');
-    miss();
+    // Si la Taronjeta ho havia dit, però era una altra cosa, es diu què s'ha tocat.
+    miss(command.simon ? itemAudio(item) : undefined);
     // Ha fet una cosa que la Taronjeta no havia dit: s'explica per què no valia.
     if (!command.simon) window.setTimeout(() => void sayAll(['simon-no', command.key]), 400);
   };

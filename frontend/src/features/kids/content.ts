@@ -348,6 +348,9 @@ export const KIDS_AUDIO: Record<string, string> = {
   'illa-emocions': "L'illa de com estàs!",
   'illa-temps': "L'illa dels dies i el temps!",
   'illa-llocs': "L'illa del gat Pelut!",
+  // Etapes de les illes i repàs del que ha costat
+  'etapa-feta': "Molt bé! Has acabat un tros de l'illa. Continuem?",
+  'repas': 'Repassem una cosa que abans ha costat una miqueta!',
   'illa-abecedari': "L'illa de l'abecedari!",
   // L'intrús
   'intrus-animals': 'Els animals! Quin no és un animal?',

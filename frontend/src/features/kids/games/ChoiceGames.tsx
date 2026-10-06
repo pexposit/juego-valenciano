@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { Volume2 } from 'lucide-react';
 import { itemAudio, type KidsItem, type Round } from '../content';
 import { say, sfxPop } from '../sound';
 import { useRound } from '../useRound';
@@ -7,9 +8,21 @@ import { SpeakerButton } from './SpeakerButton';
 
 type Props<K extends Round['kind']> = { round: Extract<Round, { kind: K }>; onDone: () => void };
 
+/**
+ * Altaveu xicotet que diu el nom d'una targeta o d'un calaix sense respondre: per a les
+ * que només són text (lletres, dies, números, EL/LA...), que els xiquets no saben llegir.
+ */
+export function HearButton({ item }: { item: KidsItem }) {
+  return (
+    <button onClick={() => void say(itemAudio(item))} aria-label={`Escolta: ${item.word}`} className="kid-hear btn-press">
+      <Volume2 className="h-6 w-6" />
+    </button>
+  );
+}
+
 // Targeta il·lustrada gran. `state` anima l'encert (bot) o l'error (rebot suau).
 export function Card({ item, state, onTap, face, letter, children }: { item: KidsItem; state?: 'ok' | 'no'; onTap: () => void; face?: boolean; letter?: boolean; children?: ReactNode }) {
-  return (
+  const card = (
     <button
       onClick={onTap}
       aria-label={item.word}
@@ -19,6 +32,8 @@ export function Card({ item, state, onTap, face, letter, children }: { item: Kid
       {children}
     </button>
   );
+  if (!item.glyph && !letter) return card;
+  return <div className="kid-card-wrap">{card}<HearButton item={item} /></div>;
 }
 
 /** A. Toca i escolta, C. L'intrús visual i E. Canvi d'emoció: tocar la il·lustració que es demana. */
@@ -39,7 +54,8 @@ export function ChoiceGame({ round, onDone }: Props<'tap' | 'odd'>) {
     } else {
       setStates(s => ({ ...s, [item.id]: 'no' }));
       window.setTimeout(() => setStates(({ [item.id]: _removed, ...rest }) => rest), 600);
-      miss();
+      // Les cares del monstre no tenen nom propi: es diu com està («Està trist!»).
+      miss(faces ? `emo-${item.id}` : itemAudio(item), faces ? undefined : round.target);
     }
   };
 
@@ -73,7 +89,7 @@ export function DotsGame({ round, onDone }: Props<'dots'>) {
               else {
                 setWrong(n);
                 window.setTimeout(() => setWrong(undefined), 600);
-                miss();
+                miss(`n-${n}`);
               }
             }}
             className={`kid-card kid-dots ${wrong === n ? 'kid-nope' : ''}`}
@@ -120,7 +136,7 @@ export function BubbleGame({ round, onDone }: Props<'bubbles'>) {
               } else {
                 setWobble(b.key);
                 window.setTimeout(() => setWobble(undefined), 600);
-                miss();
+                miss(`w-${b.color.id}`, round.color);
               }
             }}
             className={`kid-bubble ${wobble === b.key ? 'kid-nope' : ''}`}

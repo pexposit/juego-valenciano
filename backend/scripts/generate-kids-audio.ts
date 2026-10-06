@@ -5,6 +5,7 @@
  *
  *   npx tsx scripts/generate-kids-audio.ts           # només els que falten
  *   npx tsx scripts/generate-kids-audio.ts --force   # tots
+ *   npx tsx scripts/generate-kids-audio.ts --check   # només comprova que no en falte cap (ix amb error si en falten)
  *
  * El TTS no suporta bé peticions simultànies: les frases es demanen d'una en una.
  * De tant en tant el servidor respon 500 a una frase que després genera bé: cada
@@ -21,10 +22,18 @@ import { LESSON_AUDIO } from '../../frontend/src/features/kids/lessons.js';
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../frontend/public/audio/kids');
 const VOICE = 'gina';
 const force = process.argv.includes('--force');
+const check = process.argv.includes('--check');
 
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
   const entries = Object.entries({ ...KIDS_AUDIO, ...LESSON_AUDIO });
+  if (check) {
+    const missing = entries.filter(([key]) => !existsSync(resolve(OUT_DIR, `${key}.wav`)));
+    for (const [key, text] of missing) console.error(`- ${key}.wav  «${text}»`);
+    console.log(missing.length ? `Falten ${missing.length} àudios de ${entries.length}.` : `Hi són tots els àudios (${entries.length}).`);
+    if (missing.length) process.exitCode = 1;
+    return;
+  }
   let made = 0;
   const failed: string[] = [];
   for (const [key, text] of entries) {

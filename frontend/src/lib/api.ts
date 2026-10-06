@@ -96,6 +96,20 @@ export async function fetchTts(text:string,scenario:Scenario):Promise<string>{
   return `data:${payload.mime_type};base64,${payload.audio_base64}`;
 }
 
+// Veu de la Taronjeta (Nivell 0) per a una frase que no té el seu fitxer pregenerat:
+// la mateixa veu del TTS que fa servir scripts/generate-kids-audio.ts.
+export async function fetchKidsVoice(text: string): Promise<string> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ text, voice: 'gina' }),
+  });
+  if (!res.ok) throw new Error(`tts ${res.status}`);
+  const payload = await res.json() as { audio_base64: string; mime_type: string };
+  return `data:${payload.mime_type};base64,${payload.audio_base64}`;
+}
+
 // La sessió es crea en iniciar sessió (login), no en triar escenari.
 // Es pot passar el token directament per a no tornar a consultar supabase.auth
 // des de dins d'onAuthStateChange (evita bloquejos del lock intern).

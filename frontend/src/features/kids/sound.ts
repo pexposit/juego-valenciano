@@ -1,8 +1,10 @@
+import { fetchKidsVoice } from '../../lib/api';
 import { KIDS_AUDIO } from './content';
 import { LESSON_AUDIO } from './lessons';
 
 /**
- * So del Nivell 0: frases pregenerades amb el TTS (/audio/kids/<clau>.wav) i
+ * So del Nivell 0: frases pregenerades amb el TTS (/audio/kids/<clau>.wav; si en falta
+ * alguna, la demana al servidor en el moment) i
  * efectes sintetitzats amb Web Audio (sense fitxers): arpa i campanetes quan
  * s'encerta, un «boing» suau quan no, i sons curts per a bambolles i comptes.
  */
@@ -24,31 +26,43 @@ function release() {
 /** El text d'una frase (per als subtítols de les lliçons i la veu de respatller). */
 export const phraseText = (key: string) => KIDS_AUDIO[key] ?? LESSON_AUDIO[key] ?? '';
 
+/** Reprodueix un àudio. Es resol amb true quan acaba i amb false si falla (una sola vegada). */
+function play(src: string): Promise<boolean> {
+  return new Promise(resolve => {
+    const audio = new Audio(src);
+    current = audio;
+    // Si falla, onerror i el rebuig de play() arriben tots dos: només compta el primer.
+    let settled = false;
+    const end = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      resolve(ok);
+    };
+    audio.onended = () => end(true);
+    audio.onerror = () => end(false);
+    audio.play().catch(() => end(false));
+  });
+}
+
 /**
  * Diu una frase. Para la que sonava. Es resol quan acaba (o si falla) amb true
- * si ningú l'ha interrompuda.
+ * si ningú l'ha interrompuda. Els xiquets no llegixen: si falta el fitxer, la frase
+ * es demana al TTS del servidor i, si tampoc respon, la diu la veu del navegador.
  */
 export function say(key: string): Promise<boolean> {
   release();
   window.speechSynthesis?.cancel();
   const mine = ++token;
-  return new Promise(resolve => {
-    const audio = new Audio(`/audio/kids/${encodeURIComponent(key)}.wav`);
-    current = audio;
-    const done = () => resolve(mine === token);
-    // Si el fitxer falla, onerror i el rebuig de play() arriben tots dos: la veu de
-    // respatller només es diu una vegada, i no si mentrestant ja sona una altra frase.
-    let failed = false;
-    const fail = () => {
-      if (failed) return;
-      failed = true;
-      if (mine !== token) return done();
-      void fallback(key).then(done);
-    };
-    audio.onended = done;
-    audio.onerror = fail;
-    audio.play().catch(fail);
-  });
+  const live = () => mine === token;
+  return (async () => {
+    if (await play(`/audio/kids/${encodeURIComponent(key)}.wav`)) return live();
+    if (!live()) return false;
+    const text = phraseText(key);
+    const url = text ? await serverVoice(key, text) : null;
+    if (url && live() && (await play(url))) return live();
+    if (live()) await browserVoice(text);
+    return live();
+  })();
 }
 
 /** Diu una frase però no espera més de `ms`: per a no bloquejar la navegació si l'àudio s'encalla. */
@@ -67,13 +81,26 @@ export const stopVoice = () => {
   window.speechSynthesis?.cancel();
 };
 
-// Si el fitxer no hi és, la veu del navegador (en català, si n'hi ha).
-function fallback(key: string): Promise<void> {
-  const text = phraseText(key);
+// Les frases que s'han hagut de demanar al servidor, per a no tornar-les a demanar.
+const fromServer = new Map<string, Promise<string | null>>();
+const serverVoice = (key: string, text: string) => {
+  if (!fromServer.has(key)) {
+    console.warn(`Falta l'àudio /audio/kids/${key}.wav («${text}»): executeu scripts/generate-kids-audio.ts`);
+    fromServer.set(key, fetchKidsVoice(text).catch(() => null));
+  }
+  return fromServer.get(key)!;
+};
+
+// L'última opció: la veu del navegador, en català si n'hi ha i, si no, en castellà
+// (pronuncia el valencià prou millor que el silenci o una veu anglesa).
+function browserVoice(text: string): Promise<void> {
   if (!text || !window.speechSynthesis) return Promise.resolve();
   return new Promise(resolve => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ca-ES';
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => /^(ca|va)\b/i.test(v.lang)) ?? voices.find(v => /^es\b/i.test(v.lang));
+    utterance.lang = voice?.lang ?? 'ca-ES';
+    if (voice) utterance.voice = voice;
     // Hi ha navegadors sense veu que mai avisen que han acabat: no es queda esperant.
     const timer = window.setTimeout(resolve, 1500 + text.length * 90);
     const end = () => {
