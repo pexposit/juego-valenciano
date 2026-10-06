@@ -1,6 +1,6 @@
 import { STAGE_PASS, stageCount } from './islandSession';
 import { ALL_LESSONS, ISLANDS } from './lessons';
-import type { ChildData, SessionRow } from './tracking';
+import type { ChildData, ConversationRow, SessionRow } from './tracking';
 
 /**
  * El resum del seguiment d'un xiquet per a les persones adultes (família i professorat):
@@ -62,12 +62,44 @@ export type Report = {
   practicar: IslandSummary[];
   domina: IslandSummary[];
   recent: (SessionRow & { name: string; emoji: string })[];
+  conversations: ScenarioSummary[];
 };
 
-const ratio = (part: number, whole: number) => (whole > 0 ? part / whole : null);
-const minutes = (sessions: SessionRow[]) => Math.round(sessions.reduce((s, x) => s + x.seconds, 0) / 60);
+/** Les converses amb un personatge: quantes, l'última (amb els seus objectius) i el millor resultat. */
+export type ScenarioSummary = {
+  id: string;
+  name: string;
+  count: number;
+  minutes: number;
+  latest: ConversationRow;
+  all: ConversationRow[]; // de més nova a més antiga
+  best: number; // màxim d'objectius complits en una conversa
+  total: number;
+};
 
-export function summarize({ badges, sessions }: ChildData, now = Date.now()): Report {
+const metCount = (c: ConversationRow) => c.objectives.filter(o => o.met).length;
+
+function summarizeConversations(conversations: ConversationRow[]): ScenarioSummary[] {
+  const byScenario = new Map<string, ConversationRow[]>();
+  for (const c of conversations) byScenario.set(c.resource_id, [...(byScenario.get(c.resource_id) ?? []), c]);
+  return [...byScenario.entries()]
+    .map(([id, list]) => ({
+      id,
+      name: list[0].scenario_name,
+      count: list.length,
+      minutes: minutes(list),
+      latest: list[0],
+      all: list,
+      best: Math.max(...list.map(metCount)),
+      total: list[0].objectives.length,
+    }))
+    .sort((a, b) => Date.parse(b.latest.created_at) - Date.parse(a.latest.created_at));
+}
+
+const ratio = (part: number, whole: number) => (whole > 0 ? part / whole : null);
+const minutes = (rows: { seconds: number }[]) => Math.round(rows.reduce((s, x) => s + x.seconds, 0) / 60);
+
+export function summarize({ badges, sessions, conversations = [] }: ChildData, now = Date.now()): Report {
   const week = sessions.filter(s => now - Date.parse(s.created_at) < 7 * DAY);
   const cromos = badges.filter(b => b.startsWith('cromo:')).map(b => b.slice(6));
   const stages = badges.filter(b => b.startsWith('etapa:')).map(b => b.slice(6));
@@ -109,6 +141,7 @@ export function summarize({ badges, sessions }: ChildData, now = Date.now()): Re
       const island = ISLANDS.find(i => i.id === s.island);
       return { ...s, name: island?.name ?? s.island, emoji: island?.emoji ?? '🏝️' };
     }),
+    conversations: summarizeConversations(conversations),
   };
 }
 

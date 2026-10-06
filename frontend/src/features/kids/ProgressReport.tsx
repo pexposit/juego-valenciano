@@ -1,14 +1,21 @@
 import type { ReactNode } from 'react';
-import { BookOpen } from 'lucide-react';
-import { ago, percent, stageNote, summarize, type IslandSummary } from './report';
-import type { ChildData } from './tracking';
+import { BookOpen, MessageCircle } from 'lucide-react';
+import { ago, percent, stageNote, summarize, type IslandSummary, type Report } from './report';
+import type { ChildData, ConversationRow } from './tracking';
 
 /**
  * Informe del seguiment d'un xiquet del Nivell 0, per a persones adultes (la família en
  * el seu perfil i el professorat en la fitxa de cada alumne): temps de joc, encerts i les
- * illes agrupades per encerts a la primera: li costa, a practicar i ho domina.
+ * illes agrupades per encerts a la primera: li costa, a practicar i ho domina. A banda,
+ * les converses amb personatges, amb els objectius que ha complit (sense errors).
  */
-export function ProgressReport({ data, name, onLesson }: { data: ChildData; name: string; onLesson?: (lesson: string) => void }) {
+export function ProgressReport({ data, name, onLesson, onOpenConversation }: {
+  data: ChildData;
+  name: string;
+  onLesson?: (lesson: string) => void;
+  // Si hi és, cada conversa es pot obrir per a llegir-la (la família, en el compte del xiquet).
+  onOpenConversation?: (conversation: ConversationRow) => void;
+}) {
   const report = summarize(data);
   const who = name || 'el xiquet o la xiqueta';
 
@@ -52,6 +59,8 @@ export function ProgressReport({ data, name, onLesson }: { data: ChildData; name
         islands={report.domina}
       />
 
+      <Conversations report={report} onOpen={onOpenConversation} />
+
       {report.recent.length > 0 && (
         <Card>
           <h3 className="text-2xl font-black">Últimes partides</h3>
@@ -83,6 +92,79 @@ function Tile({ label, value, detail }: { label: string; value: string; detail: 
       <span className="mt-1 block text-3xl font-black">{value}</span>
       <span className="block text-sm opacity-60">{detail}</span>
     </div>
+  );
+}
+
+/** Les converses amb personatges: no es corregixen errors, es mira quins objectius ha complit. */
+function Conversations({ report, onOpen }: { report: Report; onOpen?: (conversation: ConversationRow) => void }) {
+  return (
+    <Card>
+      <h3 className="text-2xl font-black">Converses</h3>
+      <p className="mt-1 text-base opacity-60">
+        Parla amb personatges, com el mag Merlí. Ací no es corregixen errors: es mira quins objectius de la conversa ha complit en valencià.
+      </p>
+      {report.conversations.length ? (
+        <ul className="mt-3 divide-y divide-gray-100">
+          {report.conversations.map(c => {
+            const met = c.latest.objectives.filter(o => o.met).length;
+            const reviewed = c.latest.objectives.some(o => o.met !== null);
+            return (
+              <li key={c.id} className="py-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#EDE7F6] text-2xl" aria-hidden="true">💬</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-lg font-extrabold">{c.name}</span>
+                    <span className="block text-base opacity-60">
+                      {plural(c.count, 'conversa', 'converses')} · {c.minutes} min · {ago(c.latest.created_at)}
+                      {c.count > 1 && reviewed && ` · millor: ${c.best} de ${c.total}`}
+                    </span>
+                  </span>
+                  {reviewed && (
+                    <span className={`shrink-0 rounded-full px-3 py-1 text-lg font-black ${met === c.total ? TONES.teal : met === 0 ? TONES.coral : TONES.amber}`}>
+                      {met}/{c.total}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-2 text-sm font-extrabold uppercase tracking-wide opacity-50">L'última conversa</p>
+                <ul className="mt-1 space-y-1 text-base">
+                  {c.latest.objectives.map(o => (
+                    <li key={o.text} className="flex items-start gap-2">
+                      <span aria-hidden="true" className={o.met ? 'text-teal' : 'text-gray-300'}>{o.met === null ? '·' : o.met ? '✓' : '○'}</span>
+                      <span className={o.met ? '' : 'opacity-60'}>{o.text}</span>
+                    </li>
+                  ))}
+                </ul>
+                {!reviewed && <p className="mt-1 text-sm opacity-60">Encara no s'ha pogut revisar esta conversa.</p>}
+                {onOpen && (
+                  <ul className="mt-3 space-y-2">
+                    {c.all.slice(0, 6).map(conversation => (
+                      <li key={conversation.session_resource_id}>
+                        <button
+                          onClick={() => onOpen(conversation)}
+                          className="btn-press flex w-full items-center gap-3 rounded-2xl bg-gray-50 px-4 py-2 text-left text-base hover:bg-gray-100"
+                        >
+                          <MessageCircle size={18} className="shrink-0 text-[#7C3AED]" />
+                          <span className="flex-1">
+                            <b>{ago(conversation.created_at)}</b>
+                            <span className="opacity-60"> · {plural(conversation.turns, 'resposta', 'respostes')} · {Math.max(1, Math.round(conversation.seconds / 60))} min</span>
+                          </span>
+                          {conversation.objectives.some(o => o.met !== null) && (
+                            <span className="font-extrabold opacity-70">{conversation.objectives.filter(o => o.met).length}/{conversation.objectives.length}</span>
+                          )}
+                          <span className="font-extrabold text-[#7C3AED]">Llig-la</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="mt-3 text-lg">Encara no ha parlat amb cap personatge.</p>
+      )}
+    </Card>
   );
 }
 

@@ -104,16 +104,21 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     let extraInstructions: string | undefined;
     let levelInstructions: string | undefined;
     let level = data.level;
+    // Nivell 0 (xiquets): no es busquen ni es guarden errors gramaticals de la conversa; en acabar-la
+    // només es revisen els objectius de l'escenari (services/kidsObjectives.ts).
+    let levelZero = false;
     if (client && scenario.category === ASSISTANT_CATEGORY) {
       const { data: profile } = await client.from('profiles').select('mother_tongue, level, age_group').eq('id', req.userId!).maybeSingle();
       extraInstructions = motherTongueInstructions(profile?.mother_tongue);
       levelInstructions = assistantLevelInstructions(profile?.level, profile?.age_group);
       level = profile?.level ?? level;
+      levelZero = profile?.level === 'nivell0';
     } else if (client) {
       // Escenaris del Nivell 0: si el xiquet té activada la llengua materna, el personatge hi afig
       // la traducció de cada resposta (segona línia), que el xat mostra com a subtítol.
       const { data: profile } = await client.from('profiles').select('mother_tongue, level, show_mother_tongue').eq('id', req.userId!).maybeSingle();
-      if (profile?.level === 'nivell0' && profile.show_mother_tongue !== false) {
+      levelZero = profile?.level === 'nivell0';
+      if (levelZero && profile?.show_mother_tongue !== false) {
         extraInstructions = motherTongueInstructions(profile.mother_tongue);
       }
     }
@@ -203,8 +208,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       `[turn] tts=${wantsAudio ? Date.now() - ttsStart : 0}ms total=${Date.now() - startedAt}ms`,
     );
 
-    // 4. Anàlisi asíncrona segura
-    if (client && req.userId) {
+    // 4. Anàlisi asíncrona segura (no en el Nivell 0)
+    if (client && req.userId && !levelZero) {
       const currentText = text;
 
       analysisStarted = true;

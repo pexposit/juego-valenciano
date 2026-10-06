@@ -7,6 +7,7 @@ import { scenarioSchema, sessionSchema } from '../schemas.js';
 import { runPedagogicalEvaluation } from '../services/subagentRecommendation.js';
 import { waitForPendingErrorAnalysis } from '../services/pendingErrorAnalysis.js';
 import { onResourceFinished } from '../services/learningPath.js';
+import { reviewKidsConversation } from '../services/kidsObjectives.js';
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : undefined);
 
@@ -234,6 +235,13 @@ sessionsRouter.post(
       res.json({ ok: true });
 
       const userId = req.userId;
+      const { data: profile } = await client.from('profiles').select('level').eq('id', userId).maybeSingle();
+      // Nivell 0: sense errors ni avaluació pedagògica; només quins objectius de l'escenari ha complit.
+      if (profile?.level === 'nivell0') {
+        void reviewKidsConversation(client, userId, sessionResourceId, sessionResource.recurso_id)
+          .catch((err: Error) => console.error('[kids-objectives] Error:', err.message));
+        return;
+      }
       void (async () => {
         try {
           // Esperem que acaben totes les anàlisis d'errors (LLM) encara en curs

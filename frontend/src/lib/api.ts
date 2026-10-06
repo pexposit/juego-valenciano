@@ -285,6 +285,9 @@ async function authedGet<T>(path: string, errorMessage: string): Promise<T> {
   if (!res.ok) throw new Error(errorMessage);
   return res.json();
 }
+// Una conversa del Nivell 0 (escenari) per al seguiment de la família: els missatges, en ordre.
+export const fetchKidsConversation = (id: string) =>
+  authedGet<TutorMessage[]>(`/api/kids/conversations/${encodeURIComponent(id)}/messages`, 'No hem pogut carregar la conversa');
 // Reobri una conversa anterior com a l'actual; en tornar al tauler el professor la continua.
 export async function resumeTutorConversation(id: string): Promise<void> {
   const sessionId = await ensureSession('principiant');

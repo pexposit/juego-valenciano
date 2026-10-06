@@ -3,9 +3,10 @@ import { Copy, Plus, Trash2, UserMinus } from 'lucide-react';
 import { OrangeHeader } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { ProgressReport } from '../features/kids/ProgressReport';
+import { ConversationView } from '../features/kids/ConversationView';
 import { ago, groupStruggles, percent, summarize } from '../features/kids/report';
 import {
-  createClass, deleteClass, loadMyClasses, loadStudents, removeStudent, type KidsClass, type Student,
+  createClass, deleteClass, loadMyClasses, loadStudents, removeStudent, type ConversationRow, type KidsClass, type Student,
 } from '../features/kids/tracking';
 
 const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-xl font-normal outline-none focus:border-[#0F47AF] transition-colors';
@@ -13,13 +14,15 @@ const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-xl fon
 /**
  * Les classes del professorat (Nivell 0). La docent crea una classe i rep un codi; les
  * famílies l'escriuen en el seguiment del perfil del xiquet. Per a cada classe: la taula
- * de l'alumnat, les paraules que costen al grup i la fitxa de seguiment de cada alumne.
+ * de l'alumnat, les illes que costen al grup i la fitxa de seguiment de cada alumne (amb
+ * les seues converses amb personatges, que també pot llegir).
  */
 export function TeacherClasses({ uid, onBack }: { uid: string | undefined; onBack: () => void }) {
   const [classes, setClasses] = useState<KidsClass[]>();
   const [selected, setSelected] = useState<KidsClass>();
   const [students, setStudents] = useState<Student[]>();
   const [student, setStudent] = useState<Student>();
+  const [conversation, setConversation] = useState<ConversationRow>();
   const [newName, setNewName] = useState('');
   const [error, setError] = useState<string>();
   const [copied, setCopied] = useState(false);
@@ -103,7 +106,8 @@ export function TeacherClasses({ uid, onBack }: { uid: string | undefined; onBac
           <>
             <h1 className="text-4xl font-black">{student.data.name || 'Alumne'}</h1>
             <p className="mt-1 mb-5 text-lg opacity-70">{selected?.name} · a la classe des de {new Date(student.joined_at).toLocaleDateString('ca-ES')}</p>
-            <ProgressReport data={student.data} name={student.data.name} />
+            <ProgressReport data={student.data} name={student.data.name} onOpenConversation={setConversation} />
+            {conversation && <ConversationView conversation={conversation} name={student.data.name} onClose={() => setConversation(undefined)} />}
           </>
         ) : selected ? (
           <ClassView
@@ -186,7 +190,7 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
         <>
           <section className="mt-5 overflow-x-auto rounded-3xl bg-white p-5 shadow-sm">
             <h3 className="text-2xl font-black">L'alumnat</h3>
-            <table className="mt-3 w-full min-w-[640px] text-left text-lg">
+            <table className="mt-3 w-full min-w-[720px] text-left text-lg">
               <thead className="text-sm font-extrabold uppercase tracking-wide opacity-50">
                 <tr>
                   <th className="py-2">Nom</th>
@@ -195,6 +199,7 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
                   <th>Encerts</th>
                   <th>Cromos</th>
                   <th>Li costa</th>
+                  <th>Converses</th>
                   <th />
                 </tr>
               </thead>
@@ -209,6 +214,11 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
                       <td>{percent(r.accuracy)}</td>
                       <td>{r.cromos}/{r.islands.length}</td>
                       <td title={r.costa.map(i => i.name).join(', ')}>{r.costa.slice(0, 4).map(i => i.emoji).join(' ') || '—'}</td>
+                      <td title="Objectius complits en l'última conversa de cada escenari">
+                        {r.conversations.length
+                          ? r.conversations.map(c => `${c.latest.objectives.filter(o => o.met).length}/${c.total}`).join(' · ')
+                          : '—'}
+                      </td>
                       <td className="text-right">
                         <button
                           onClick={e => { e.stopPropagation(); onKick(s); }}
