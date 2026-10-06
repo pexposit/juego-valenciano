@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Home, BookHeart, GraduationCap, RotateCcw } from 'lucide-react';
-import { islandById } from './content';
+import { islandById } from './lessons';
 import { RoundCaption, RoundView } from './games/RoundView';
 import { unlockCromo } from './progress';
 import { say, sfxFanfare, stopVoice } from './sound';
 import './kids.css';
 
-/** Una illa: sessió d'unes 12 rondes de jocs variats; en acabar, el cromo de l'illa per a l'àlbum. */
+/** Una illa: sessió d'unes 15 rondes de jocs variats; en acabar, el cromo de l'illa per a l'àlbum. */
 export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string | undefined; uid: string | undefined; onHome: () => void; onAlbum: () => void; onLesson: (id: string) => void }) {
   const island = islandById(id);
   const [session, setSession] = useState(0);

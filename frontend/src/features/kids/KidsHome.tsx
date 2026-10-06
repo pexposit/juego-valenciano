@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BookHeart, ChevronLeft } from 'lucide-react';
 import { ProfileButton } from '../../components/ui';
-import { ISLANDS } from './content';
+import { ISLANDS } from './lessons';
 import { loadCromos } from './progress';
 import { say, sayBriefly, stopVoice } from './sound';
 import './kids.css';

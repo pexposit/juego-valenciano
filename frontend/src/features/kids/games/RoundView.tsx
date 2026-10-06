@@ -4,6 +4,7 @@ import { Translation, useKidsTranslation } from '../translations';
 import { BubbleGame, ChoiceGame, CountGame, DotsGame } from './ChoiceGames';
 import { DragGame } from './DragGame';
 import { MemoryGame, SeqGame, SortGame } from './MoreGames';
+import { DiffGame, LinesGame, PaintGame, PlaceGame, SimonGame, SpellGame, YesNoGame } from './PreA1Games';
 import { TraceGame } from './TraceGame';
 
 /** El joc de cada tipus de ronda (en les illes i en la pràctica de les lliçons). */
@@ -19,6 +20,13 @@ export function RoundView({ round, onDone }: { round: Round; onDone: () => void 
     case 'memory': return <MemoryGame round={round} onDone={onDone} />;
     case 'seq': return <SeqGame round={round} onDone={onDone} />;
     case 'sort': return <SortGame round={round} onDone={onDone} />;
+    case 'paint': return <PaintGame round={round} onDone={onDone} />;
+    case 'lines': return <LinesGame round={round} onDone={onDone} />;
+    case 'yesno': return <YesNoGame round={round} onDone={onDone} />;
+    case 'place': return <PlaceGame round={round} onDone={onDone} />;
+    case 'spell': return <SpellGame round={round} onDone={onDone} />;
+    case 'diff': return <DiffGame round={round} onDone={onDone} />;
+    case 'simon': return <SimonGame round={round} onDone={onDone} />;
   }
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Home, Trash2 } from 'lucide-react';
-import { ISLANDS } from './content';
+import { ISLANDS } from './lessons';
 import { loadBoard, loadCromos, saveBoard, type Sticker } from './progress';
 import { say, sfxPop, sfxTick, stopVoice } from './sound';
 import './kids.css';
