@@ -12,11 +12,24 @@ const DAY = 86_400_000;
 
 /**
  * Com va una illa, segons els encerts a la primera: li costa (50 % o menys), ho domina
- * (més del 80 %) o a practicar (entre l'un i l'altre, o encara no hi ha jugat).
+ * (més del 80 % i totes les etapes fetes) o a practicar (la resta: entre el 50 % i el 80 %,
+ * més del 80 % però amb etapes per fer, o encara no hi ha jugat).
  */
 export type Mastery = 'costa' | 'practicar' | 'domina';
-export const masteryOf = (accuracy: number | null): Mastery =>
-  accuracy === null ? 'practicar' : accuracy <= 0.5 ? 'costa' : accuracy > 0.8 ? 'domina' : 'practicar';
+export const masteryOf = (accuracy: number | null, complete: boolean): Mastery =>
+  accuracy === null ? 'practicar' : accuracy <= 0.5 ? 'costa' : accuracy > 0.8 && complete ? 'domina' : 'practicar';
+
+const COUNT = ['una', 'dues', 'tres', 'quatre', 'cinc'];
+/**
+ * Per a les illes que va molt bé però que encara no ha acabat: «Domina la primera etapa,
+ * però encara li'n falten dues.» Res si no és el cas.
+ */
+export function stageNote(island: IslandSummary): string | null {
+  if (island.cromo || island.accuracy === null || island.accuracy <= 0.8 || !island.stagesDone) return null;
+  const left = island.stages - island.stagesDone;
+  const done = island.stagesDone === 1 ? 'la primera etapa' : `les ${COUNT[island.stagesDone - 1]} primeres etapes`;
+  return `Domina ${done}, però encara li'n ${left === 1 ? 'falta una' : `falten ${COUNT[left - 1]}`}.`;
+}
 
 export type IslandSummary = {
   id: string;
@@ -62,17 +75,18 @@ export function summarize({ badges, sessions }: ChildData, now = Date.now()): Re
     const played = sessions.filter(s => s.island === island.id);
     const cromo = cromos.includes(island.id);
     const total = stageCount(island);
+    const stagesDone = cromo ? total : Math.min(total, stages.filter(s => s.startsWith(`${island.id}:`)).length);
     const accuracy = ratio(played.reduce((s, x) => s + x.first_try, 0), played.reduce((s, x) => s + x.rounds, 0));
     return {
       id: island.id, name: island.name, emoji: island.emoji, color: island.color, lesson: island.lesson,
       stages: total,
-      stagesDone: cromo ? total : Math.min(total, stages.filter(s => s.startsWith(`${island.id}:`)).length),
+      stagesDone,
       cromo,
       sessions: played.length,
       accuracy,
       lastPlayed: played[0]?.created_at ?? null,
       easy: played[0]?.easy ?? false,
-      mastery: masteryOf(accuracy),
+      mastery: masteryOf(accuracy, cromo || stagesDone >= total),
     };
   });
   const byAccuracy = (a: IslandSummary, b: IslandSummary) => (a.accuracy ?? 2) - (b.accuracy ?? 2);

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { BookOpen } from 'lucide-react';
-import { ago, percent, summarize, type IslandSummary } from './report';
+import { ago, percent, stageNote, summarize, type IslandSummary } from './report';
 import type { ChildData } from './tracking';
 
 /**
@@ -40,7 +40,7 @@ export function ProgressReport({ data, name, onLesson }: { data: ChildData; name
       />
       <Group
         title="A practicar"
-        hint="Illes amb entre el 50 % i el 80 % d'encerts, i les que encara no ha jugat."
+        hint="Illes amb entre el 50 % i el 80 % d'encerts, les que van bé però encara no ha acabat i les que encara no ha jugat."
         empty="Cap: totes les illes jugades van molt bé o costen."
         tone="amber"
         islands={report.practicar}
@@ -48,7 +48,7 @@ export function ProgressReport({ data, name, onLesson }: { data: ChildData; name
       />
       <Group
         title="Ho domina"
-        hint="Illes on encerta a la primera més del 80 % de les rondes."
+        hint="Illes acabades (totes les etapes) on encerta a la primera més del 80 % de les rondes."
         empty="Encara cap: cal jugar-hi unes quantes vegades."
         tone="teal"
         islands={report.domina}
@@ -122,6 +122,7 @@ function Group({ title, hint, empty, tone, islands, onLesson }: {
                     {i.cromo ? '🏆' : Array.from({ length: i.stages }, (_, s) => <span key={s} className={s < i.stagesDone ? 'text-amber-400' : 'text-gray-300'}>★</span>)}
                   </span>
                 </span>
+                {stageNote(i) && <span className="mt-0.5 block text-base font-bold text-teal">{stageNote(i)}</span>}
               </span>
               {i.accuracy !== null && <span className={`shrink-0 rounded-full px-3 py-1 text-lg font-black ${TONES[tone]}`}>{percent(i.accuracy)}</span>}
               {/* La lliçó, per a repassar les illes jugades que encara no domina (a les no jugades no cal). */}
