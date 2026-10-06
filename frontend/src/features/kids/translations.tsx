@@ -37,6 +37,9 @@ export function KidsTranslationProvider({ lang, children }: { lang: string | nul
   return <TranslationContext.Provider value={{ translate, lang }}>{children}</TranslationContext.Provider>;
 }
 
+/** La llengua materna dels subtítols, o null si no estan activats. */
+export const useKidsTranslationLang = () => useContext(TranslationContext).lang;
+
 /** Torna la traducció d'una frase (per clau d'àudio), o undefined. */
 export const useKidsTranslation = () => useContext(TranslationContext).translate;
 

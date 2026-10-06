@@ -109,6 +109,13 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       extraInstructions = motherTongueInstructions(profile?.mother_tongue);
       levelInstructions = assistantLevelInstructions(profile?.level, profile?.age_group);
       level = profile?.level ?? level;
+    } else if (client) {
+      // Escenaris del Nivell 0: si el xiquet té activada la llengua materna, el personatge hi afig
+      // la traducció de cada resposta (segona línia), que el xat mostra com a subtítol.
+      const { data: profile } = await client.from('profiles').select('mother_tongue, level, show_mother_tongue').eq('id', req.userId!).maybeSingle();
+      if (profile?.level === 'nivell0' && profile.show_mother_tongue !== false) {
+        extraInstructions = motherTongueInstructions(profile.mother_tongue);
+      }
     }
 
     const agentStart = Date.now();
@@ -133,7 +140,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     const wantsAudio = data.include_audio;
     const ttsStart = Date.now();
     const audioPromise = wantsAudio
-      ? tts.synthesize(reply.reply_text, scenario.voice)
+      ? tts.synthesize(reply.reply_text.split('\n')[0], scenario.voice)
       : Promise.resolve(null);
 
     // 3. Persistència de missatges i XP

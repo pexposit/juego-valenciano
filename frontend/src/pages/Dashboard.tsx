@@ -33,7 +33,7 @@ export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name:
                 aria-label="Lliçons de valencià"
                 title="Lliçons de valencià"
                 onClick={() => setPage('lessons')}
-                className="btn-press shadow-md ring-2 ring-white flex h-10 items-center gap-1.5 rounded-full bg-orange px-3 py-2 text-xl font-black text-white hover:bg-orange/90"
+                className="btn-press shadow-md ring-2 ring-white flex h-10 items-center gap-1.5 rounded-full bg-yellow-400 px-3 py-2 text-xl font-black text-gray-900 hover:bg-yellow-400/90"
               >
                 <BookOpen size={18} />
                 <span className="hidden sm:inline">Lliçons</span>

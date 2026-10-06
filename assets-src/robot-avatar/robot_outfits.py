@@ -114,6 +114,27 @@ class Builder:
         o.data.materials.append(m)
         return o
 
+    def star(self, name, loc, m, size=0.06, depth=0.015, rot=(0, 0, 0)):
+        """Estrella de cinc puntes, plana i amb gruix, de cara a -Y (cap a la càmera)."""
+        from math import pi, sin, cos
+        pts = []
+        for i in range(10):
+            r = size if i % 2 == 0 else size * 0.45
+            a = pi / 2 + i * pi / 5
+            pts.append((r * cos(a), r * sin(a)))
+        verts = [(x, -depth / 2, z) for x, z in pts] + [(x, depth / 2, z) for x, z in pts]
+        faces = [tuple(range(10)), tuple(range(19, 9, -1))] + [(i, (i + 1) % 10, 10 + (i + 1) % 10, 10 + i) for i in range(10)]
+        me = bpy.data.meshes.new(name)
+        me.from_pydata(verts, [], faces)
+        me.update()
+        o = bpy.data.objects.new(name, me)
+        self.rig.users_collection[0].objects.link(o)
+        o.location = loc
+        o.rotation_euler = rot
+        bpy.context.view_layer.update()
+        o.data.materials.append(m)
+        return o
+
     def attach(self, o, bone):
         bpy.context.view_layer.objects.active = o
         o.select_set(True)
@@ -1469,6 +1490,87 @@ def outfit_mestra(b):
           rot=(0, -0.4, 0), segments=10, ring_count=5)
 
 
+# --- n0_pocio (Merlí, el mag, per als xiquets): barret punxegut amb estrelles, barba blanca,
+#     túnica amb estrelles i mànegues amples, cinturó amb una poció i vareta màgica ---------
+def outfit_mag(b):
+    from math import pi, sin, cos
+    from mathutils import Vector
+    tunica  = mat("Tunica_Mag",     (0.12, 0.05, 0.40), 0.6)
+    or_     = mat("Or_Mag",         (0.95, 0.72, 0.15), 0.3, metal=0.8)
+    barba   = mat("Barba_Blanca",   (0.95, 0.95, 0.95), 0.9)
+    pocio   = mat("Pocio_Verda",    (0.20, 0.90, 0.30), 0.2, emit=1.2)
+    vidre   = mat("Vidre_Pocio",    (0.85, 0.95, 1.00), 0.05)
+    suro    = mat("Suro",           (0.55, 0.38, 0.20), 0.8)
+    fusta   = mat("Vareta_Fusta",   (0.20, 0.10, 0.05), 0.5)
+    gb = next(n for n in vidre.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
+    gb.inputs["Alpha"].default_value = 0.3
+    for attr, val in (("surface_render_method", 'BLENDED'), ("blend_method", 'BLEND')):
+        try: setattr(vidre, attr, val)
+        except (AttributeError, TypeError): pass
+
+    # barret punxegut (os head), inclinat cap arrere perquè l'antena isca per davant
+    tilt = -0.62
+    eix = Vector((0, -sin(tilt), cos(tilt)))
+    base = Vector((0, 0.16, 2.80))
+    alt, radi = 1.3, 0.56
+    b.add("cone", "Barret_Mag_Ala", (0, 0.05, 2.80), "head", tunica, radius1=1.0, radius2=0.6, depth=0.06, vertices=64)
+    b.add("cone", "Barret_Mag", base + eix * (alt / 2), "head", tunica, rot=(tilt, 0, 0),
+          radius1=radi, radius2=0.0, depth=alt, vertices=48)
+    b.add("cylinder", "Barret_Mag_Cinta", base + eix * 0.05, "head", or_, rot=(tilt, 0, 0),
+          radius=radi * 0.97, depth=0.06, vertices=48)
+    for k, (h, ang, sz) in enumerate(((0.35, -100, 0.07), (0.62, -60, 0.05), (0.85, -120, 0.045), (0.30, -40, 0.05))):
+        r = radi * (1 - h / alt) + 0.01
+        a = ang * pi / 180
+        local = Vector((r * cos(a), r * sin(a), h))
+        rot_m = Vector((0, 0, 0))
+        from mathutils import Matrix
+        p = base + Matrix.Rotation(tilt, 3, 'X') @ local
+        b.attach(b.star(f"Barret_Estrela.{k}", p, or_, size=sz, rot=(0, 0, a + pi / 2 + pi / 2)), "head")
+
+    # barba blanca i espessa per davall de la pantalla (os head): no tapa el somriure ni la senyera
+    for k, (x, y, z, sx, sy, sz) in enumerate(((0, -0.80, 1.40, 0.40, 0.12, 0.16), (-0.18, -0.78, 1.24, 0.17, 0.11, 0.15),
+                                               (0.18, -0.78, 1.24, 0.17, 0.11, 0.15), (0, -0.80, 1.18, 0.2, 0.12, 0.17),
+                                               (0, -0.77, 1.02, 0.11, 0.09, 0.1))):
+        b.add("uv_sphere", f"Barba.{k}", (x, y, z), "head", barba, scale=(sx, sy, sz), segments=24, ring_count=12)
+
+    # túnica llarga amb vol per baix (os body); la senyera queda com un pegat
+    # part de dalt recta (la senyera queda per davant) i falda amb vol per davall de la insígnia
+    # (la unió queda davall del cinturó)
+    b.add("cube", "Tunica", (0, 0, 0.74), "body", tunica, scale=(0.70, 0.548, 0.44), bevel=0.24, segs=6, size=2)
+    falda = b.mesh("cube", "Tunica_Falda", (0, 0, 0.17), tunica, scale=(0.70, 0.548, 0.19), bevel=0.17, segs=6, size=2)
+    for v in falda.data.vertices:  # vol per baix
+        if v.co.z < 0:
+            v.co.x *= 1.14; v.co.y *= 1.14
+    b.attach(falda, "body")
+    b.add("torus", "Tunica_Coll", (0, 0, 1.2), "body", or_, scale=(1, 1, 0.6),
+          major_radius=0.30, minor_radius=0.04, major_segments=48, minor_segments=8)
+    for side in (-1, 1):  # mànegues amples acampanades
+        s = 'E' if side < 0 else 'D'
+        bone = "arm_L" if side < 0 else "arm_R"
+        b.add("uv_sphere", f"Mànega_Mag.{s}", (side * 0.87, 0, 0.60), bone, tunica, scale=(0.18, 0.18, 0.36),
+              rot=(0, -side * 0.385, 0), segments=32, ring_count=16)
+        b.add("cone", f"Mànega_Mag_Campana.{s}", (side * 0.955, 0, 0.39), bone, tunica, rot=(0, -side * 0.385, 0),
+              radius1=0.24, radius2=0.15, depth=0.2, vertices=32, end_fill_type='NOTHING')
+        b.add("torus", f"Mànega_Mag_Vora.{s}", (side * 0.99, 0, 0.30), bone, or_, rot=(0, -side * 0.385, 0),
+              major_radius=0.235, minor_radius=0.015, major_segments=40, minor_segments=6)
+    for k, (x, z, sz) in enumerate(((-0.52, 0.85, 0.06), (0.50, 0.95, 0.05), (-0.45, 0.30, 0.05), (0.40, 0.18, 0.065),
+                                    (0.0, 0.18, 0.045))):
+        b.attach(b.star(f"Tunica_Estrela.{k}", (x, -0.57 - (0.04 if z < 0.4 else 0), z), or_, size=sz), "body")
+
+    # cinturó de cordó daurat amb una poció verda al maluc dret
+    b.add("cube", "Cinturo_Mag", (0, 0, 0.355), "body", or_, scale=(0.715, 0.565, 0.035), bevel=0.2, segs=6, size=2)
+    b.add("uv_sphere", "Pocio_Flascó", (0.48, -0.66, 0.31), "body", vidre, radius=0.085, segments=24, ring_count=12)
+    b.add("uv_sphere", "Pocio_Liquid", (0.48, -0.66, 0.30), "body", pocio, radius=0.07, segments=24, ring_count=12)
+    b.add("cylinder", "Pocio_Coll", (0.48, -0.66, 0.41), "body", vidre, radius=0.03, depth=0.06, vertices=16)
+    b.add("cylinder", "Pocio_Suro", (0.48, -0.66, 0.45), "body", suro, radius=0.032, depth=0.03, vertices=16)
+    b.add("cylinder", "Pocio_Cordill", (0.48, -0.62, 0.47), "body", or_, rot=(0.4, 0, 0), radius=0.006, depth=0.08, vertices=6)
+
+    # vareta màgica amb una estrella a la punta, a la mà esquerra (os arm_L)
+    x, y = -1.03, -0.22
+    b.add("cylinder", "Vareta", (x - 0.06, y, 0.52), "arm_L", fusta, rot=(0, -0.25, 0), radius=0.018, depth=0.6, vertices=10)
+    b.attach(b.star("Vareta_Estrela", (x - 0.135, y, 0.83), or_, size=0.09, depth=0.025), "arm_L")
+
+
 OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_forn, "oficina": outfit_oficina,
            "a2_identificacio": outfit_festa, "a2_casa": outfit_casa,
            "a2_activitats": outfit_gimnas,
@@ -1483,7 +1585,8 @@ OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_
            "b1_vida_quotidiana": outfit_atencio_client, "b1_llocs": outfit_immobiliaria,
            "b1_viatges": outfit_viatges, "b1_oci_esport": outfit_esport,
            "b1_territori": outfit_erasmus, "b1_cultura": outfit_radio,
-           "b1_natura_clima": outfit_parc_natural, "colegi": outfit_mestra}
+           "b1_natura_clima": outfit_parc_natural, "colegi": outfit_mestra,
+           "n0_pocio": outfit_mag}
 
 
 def build(name):

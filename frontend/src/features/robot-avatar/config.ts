@@ -122,6 +122,10 @@ export const ROBOT_AVATAR = {
       modelUrl: '/avatar-robot/robot-colegi.glb',
       fallbackUrl: '/avatar-robot/robot-colegi.webp',
     },
+    n0_pocio: { // Merlí, el mag (xiquets): barret punxegut, barba, túnica amb estrelles, poció i vareta màgica
+      modelUrl: '/avatar-robot/robot-n0_pocio.glb',
+      fallbackUrl: '/avatar-robot/robot-n0_pocio.webp',
+    },
   } as Record<string, { modelUrl: string; fallbackUrl: string }>,
 } as const;
 

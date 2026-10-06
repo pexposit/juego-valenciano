@@ -9,7 +9,9 @@ export type TurnResponse={reply_text:string;transcription?:string|null;reply_aud
 // i `type` n'és la secció dins de la categoria (p. ex. 'mercat').
 // `icon`, `color`, `section_name`, `background`, `voice`, `initial_prompt`, `character` i `objectius` venen de resources.metadata; `playable` indica si la seua categoria té pantalla
 // de joc i la fila en té les dades (el decidix el backend); `has_lesson`, si té lliçó fixa (metadata.lesson).
-export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; character:string|null; objectius:string[]; playable:boolean; has_lesson:boolean };
+// Traducció d'un escenari a una llengua materna (resources.metadata.translations).
+export type ScenarioTranslation = { content: string | null; initial_prompt: string | null; objectius: string[] };
+export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; greeting_audio:string|null; character:string|null; objectius:string[]; translations:Record<string,ScenarioTranslation>; playable:boolean; has_lesson:boolean };
 
 // Exercici de pràctica del temari (taula practice_exercises). `choice`: la correcta
 // és answers[0], una de les `options`; `fill`: val qualsevol de les `answers`;

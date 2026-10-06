@@ -4,7 +4,7 @@ import { SceneArt } from '../components/SceneArt';
 import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
 import { ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
-import type { Mood, Scenario } from '../lib/types';
+import type { Mood, Scenario, ScenarioTranslation } from '../lib/types';
 import { GREETING_BY_VOICE } from '../data/content';
 import { isVoiceOnlyCategory } from '@parlaval/shared';
 
@@ -15,7 +15,7 @@ const TTS_ATTEMPTS = 2;
 const ROUND_BUTTON = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors';
 
 export function Chat({
-  scenario, category, title, voice, background, initialPrompt, actor, summary, objectives, level, xp, onXpGained, onEnd, onBack,
+  scenario, category, title, voice, background, initialPrompt, greetingAudio, actor, summary, objectives, translation, level, xp, onXpGained, onEnd, onBack,
 }: {
   scenario: Scenario;
   // Categoria del recurs a la BDD: 'escenari' o una àrea de conversa del temari.
@@ -26,12 +26,16 @@ export function Chat({
   background: string | null;
   // Primer missatge del personatge (resources.metadata.initial_prompt); si no en té, es fa servir la salutació genèrica.
   initialPrompt: string | null;
+  // Àudio estàtic de la salutació (resources.metadata.greeting_audio, generat amb matxa), si n'hi ha.
+  greetingAudio?: string | null;
   // Nom i rol del personatge (resources.metadata.character, p. ex. "Vicent, venedor del mercat"),
   // mostrat tal qual en una etiqueta davall l'actor.
   actor: string | null;
   // Quadre d'objectius: el resum de la situació (resources.content) i les tasques (metadata.objectius).
   summary: string | null;
   objectives: string[];
+  // Traducció de l'escenari a la llengua materna (subtítols), o null si no n'hi ha o no estan activats.
+  translation?: ScenarioTranslation | null;
   level: string;
   xp: number;
   onXpGained: (delta: number) => void;
@@ -39,7 +43,13 @@ export function Chat({
   onBack: () => void;
 }) {
   const [mood, setMood] = useState<Mood>('neutral');
-  const [character, setCharacter] = useState(initialPrompt || INITIAL_GREETING);
+  const [character, setCharacter] = useState(() => {
+    const greeting = initialPrompt || INITIAL_GREETING;
+    return translation?.initial_prompt ? `${greeting}
+${translation.initial_prompt}` : greeting;
+  });
+  // La primera línia del personatge és en valencià i la resta, la traducció (subtítol).
+  const [characterText, ...characterHelp] = character.split('\n');
   const [user, setUser] = useState('');
   const [userTranscription, setUserTranscription] = useState<string>();
   const [loading, setLoading] = useState(false);
@@ -126,6 +136,19 @@ export function Chat({
   // pregenerat només diu el text genèric; si no, es genera amb el TTS.
   useEffect(() => {
     if (hasSubmitted.current) return;
+    if (greetingAudio) {
+      // Només si el fitxer existix de veritat (Vite torna la pàgina d'inici per als que falten).
+      let cancelled = false;
+      void fetch(greetingAudio, { method: 'HEAD' })
+        .then(res => res.ok && (res.headers.get('content-type') ?? '').startsWith('audio'))
+        .catch(() => false)
+        .then(found => {
+          if (cancelled || hasSubmitted.current) return;
+          if (found) setReplyAudio(greetingAudio, true);
+          else void loadTextAudio(initialPrompt || INITIAL_GREETING, true);
+        });
+      return () => { cancelled = true; };
+    }
     const greeting = !initialPrompt && voice ? GREETING_BY_VOICE[voice] : undefined;
     if (greeting) setReplyAudio(greeting, true);
     else void loadTextAudio(initialPrompt || INITIAL_GREETING, true);
@@ -153,7 +176,7 @@ export function Chat({
       // conversa actual (el primer missatge inclou el salut inicial del personatge).
       const context: HistoryItem[] = history.length > 0
         ? history.map((m) => ({ role: m.role, content_text: m.text }))
-        : [{ role: 'character', content_text: character }];
+        : [{ role: 'character', content_text: characterText }];
       // include_audio:false → el turno responde solo con texto (el usuario ve la
       // respuesta al instante) y el audio se pide en paralelo a /api/tts.
       const r = await sendTurn({
@@ -176,7 +199,7 @@ export function Chat({
       if (r.reply_audio_base64) {
         setReplyAudio(`data:${r.reply_audio_mime_type || 'audio/mpeg'};base64,${r.reply_audio_base64}`, true);
       } else {
-        void loadTextAudio(r.reply_text, true);
+        void loadTextAudio(r.reply_text.split('\n')[0], true);
       }
     } catch {
       setCharacter(ERROR_REPLY);
@@ -260,10 +283,20 @@ export function Chat({
               <X size={16} />
             </button>
           </div>
-          {summary && <p className="mb-3 text-sm font-bold opacity-70">{summary}</p>}
+          {summary && (
+            <p className="mb-3 text-sm font-bold opacity-70">
+              {summary}
+              {translation?.content && <span className="mt-0.5 block text-xs font-semibold text-slate-400">{translation.content}</span>}
+            </p>
+          )}
           {objectives.length > 0 && (
             <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm font-bold">
-              {objectives.map(o => <li key={o}>{o}</li>)}
+              {objectives.map((o, i) => (
+                <li key={o}>
+                  {o}
+                  {translation?.objectius[i] && <span className="block text-xs font-semibold text-slate-400">{translation.objectius[i]}</span>}
+                </li>
+              ))}
             </ol>
           )}
         </aside>
@@ -273,8 +306,11 @@ export function Chat({
       <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] z-10 max-w-[min(72%,440px)] rounded-3xl bg-white p-5 font-bold shadow-xl text-base [@media(max-height:500px)_and_(orientation:landscape)]:left-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:p-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm">
         <div className="[@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-10.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:overflow-y-auto">
         <p className="leading-relaxed">
-          {loading ? <span className="opacity-50">El personatge està escrivint…</span> : character}
+          {loading ? <span className="opacity-50">El personatge està escrivint…</span> : characterText}
         </p>
+        {!loading && translation && characterHelp.length > 0 && (
+          <p className="mt-1 whitespace-pre-line text-sm font-semibold text-slate-400">{characterHelp.join('\n')}</p>
+        )}
         {!loading && (
           <>
             <button
@@ -323,7 +359,7 @@ export function Chat({
         </button>
       </div>
 
-      {showHistory && <HistoryModal messages={history} onClose={() => setShowHistory(false)} />}
+      {showHistory && <HistoryModal messages={history} showHelp={Boolean(translation)} onClose={() => setShowHistory(false)} />}
     </main>
   );
 }

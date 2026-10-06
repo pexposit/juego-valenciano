@@ -15,6 +15,18 @@ const text = (value: unknown) => (typeof value === 'string' && value.trim() ? va
 const textList = (value: unknown) =>
   Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && v.trim() !== '') : [];
 
+// Traduccions d'un escenari (metadata.translations): per a cada llengua materna, el resum, els
+// objectius i la primera frase del personatge.
+const translationsOf = (value: unknown) => {
+  const result: Record<string, { content: string | null; initial_prompt: string | null; objectius: string[] }> = {};
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const [lang, entry] of Object.entries(value as Record<string, Record<string, unknown>>)) {
+      result[lang] = { content: text(entry?.content), initial_prompt: text(entry?.initial_prompt), objectius: textList(entry?.objectius) };
+    }
+  }
+  return result;
+};
+
 // Lliçó fixa del contingut (metadata.lesson), per al botó «Aprendre lliçó»: teoria
 // adaptada al nivell a partir de les gramàtiques de l'AVL (fonts en assets-src/avl).
 const lessonSchema = z.object({
@@ -65,11 +77,14 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
     background: text(metadata?.background),
     voice: text(metadata?.voice),
     initial_prompt: text(metadata?.initial_prompt),
+    // Salutació pregenerada de l'escenari (ruta d'un àudio estàtic), si en té.
+    greeting_audio: text(metadata?.greeting_audio),
     // Nom i rol del personatge (p. ex. "Vicent, venedor del mercat"), sense separar-los:
     // l'etiqueta de sota l'actor a la pantalla del xat el mostra tal qual.
     character: characterOf(metadata) ?? null,
     // Objectius de la conversa dels escenaris, per al quadre de la pantalla del xat.
     objectius: textList(metadata?.objectius),
+    translations: translationsOf(metadata?.translations),
     playable: isPlayable({ ...resource, metadata, practice_exercises }),
     has_lesson: lessonOf(metadata) !== null,
   })));
