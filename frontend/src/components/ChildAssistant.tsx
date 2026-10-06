@@ -14,6 +14,26 @@ const VOICE_MESSAGE_LABEL = '🎙️ Missatge de veu';
 const ERROR_REPLY = "No t'he sentit bé, pots repetir-ho?";
 const TTS_ATTEMPTS = 2;
 
+// Mida del professor segons l'amplada de la pantalla: més xicotet en mòbils i tauletes.
+// En horitzontal en un mòbil (poca altura) el professor va a l'esquerra i ha de cabre en l'altura.
+const isShortLandscape = () => window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
+const avatarSizeFor = (width: number) =>
+  isShortLandscape() ? Math.min(200, window.innerHeight - 160) : width < 640 ? 190 : width < 1024 ? 240 : 320;
+
+function useAvatarSize() {
+  const [size, setSize] = useState(() => avatarSizeFor(window.innerWidth));
+  useEffect(() => {
+    const update = () => setSize(avatarSizeFor(window.innerWidth));
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, []);
+  return size;
+}
+
 // Xat del tauler infantil: el xiquet pregunta al professor dubtes de valencià, escrivint o parlant.
 // Reutilitza el xat de les activitats (/api/turn): els missatges es guarden a la BDD i la
 // conversa continua entre visites. El professor també respon en veu alta.
@@ -23,6 +43,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   const [openFailed, setOpenFailed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [talking, setTalking] = useState(false);
+  const avatarSize = useAvatarSize();
   const listRef = useRef<HTMLDivElement>(null);
   const audio = useRef<{ text: string; element: HTMLAudioElement } | null>(null);
   // Es guarda la promesa perquè el primer torn la puga esperar i perquè StrictMode no obri la conversa dues vegades.
@@ -140,16 +161,16 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   };
 
   return (
-    <div className="relative z-20 flex flex-col items-center gap-4 px-5 pb-10 pt-4">
+    <div className="relative z-20 flex flex-col items-center gap-4 px-5 pb-10 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
       {isRobotAvatarEnabled('dashboard')
-        ? <DashboardRobot className="drop-shadow-lg" size={320} talking={talking} thinking={loading} />
-        : <img src="/images/avatar_professor.svg" alt="El professor" className="float drop-shadow-lg" width={320} height={320} />}
+        ? <DashboardRobot className="drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} />
+        : <img src="/images/avatar_professor.svg" alt="El professor" className="float drop-shadow-lg" width={avatarSize} height={avatarSize} />}
 
-      <section className="w-full max-w-4xl" aria-label="Xat amb el professor">
+      <section className="w-full max-w-4xl [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor">
         <div
           ref={listRef}
           aria-live="polite"
-          className="flex max-h-[clamp(10rem,calc(100dvh_-_34rem),36rem)] min-h-24 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white"
+          className="flex max-h-[clamp(10rem,calc(100dvh_-_34rem),36rem)] [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-14rem)] min-h-24 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white"
         >
           {openFailed && <p className="text-center text-lg font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-lg font-bold opacity-60">Un moment...</p>}

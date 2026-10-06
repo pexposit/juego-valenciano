@@ -169,8 +169,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
                   id="auth-level"
                   className={`${INPUT_CLASS} bg-white`}
                 >
-                  {/* El Nivell 0 és per a perfils infantils: no s'ofereix en el registre d'adults. */}
-                  {LEVEL_OPTIONS.filter(o => o.value !== 'nivell0').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </>
             )}

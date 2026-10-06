@@ -14,6 +14,7 @@ import { replyFromAgent } from '../services/agent.js';
 import { getScenario } from '../services/scenarios.js';
 import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
+import { assistantLevelInstructions } from '../services/assistantLevel.js';
 import { stt, tts } from '../services/voice.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
 import { beginErrorAnalysis } from '../services/pendingErrorAnalysis.js';
@@ -99,20 +100,32 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       history = sanitizeHistory(data.history as HistoryMessage[]);
     }
 
-    // El tutor infantil té en compte la llengua materna del xiquet (profiles.mother_tongue).
+    // El tutor del tauler té en compte la llengua materna, el nivell i el públic (xiquet o adult) de l'usuari.
     let extraInstructions: string | undefined;
+    let levelInstructions: string | undefined;
+    let level = data.level;
     if (client && scenario.category === ASSISTANT_CATEGORY) {
-      const { data: profile } = await client.from('profiles').select('mother_tongue').eq('id', req.userId!).maybeSingle();
+      const { data: profile } = await client.from('profiles').select('mother_tongue, level, age_group').eq('id', req.userId!).maybeSingle();
       extraInstructions = motherTongueInstructions(profile?.mother_tongue);
+      levelInstructions = assistantLevelInstructions(profile?.level, profile?.age_group);
+      level = profile?.level ?? level;
+    } else if (client) {
+      // Escenaris del Nivell 0: si el xiquet té activada la llengua materna, el personatge hi afig
+      // la traducció de cada resposta (segona línia), que el xat mostra com a subtítol.
+      const { data: profile } = await client.from('profiles').select('mother_tongue, level, show_mother_tongue').eq('id', req.userId!).maybeSingle();
+      if (profile?.level === 'nivell0' && profile.show_mother_tongue !== false) {
+        extraInstructions = motherTongueInstructions(profile.mother_tongue);
+      }
     }
 
     const agentStart = Date.now();
     const reply = await replyFromAgent({
       scenario,
-      level: data.level,
+      level,
       message: text,
       history,
       extraInstructions,
+      levelInstructions,
     });
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
@@ -127,7 +140,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     const wantsAudio = data.include_audio;
     const ttsStart = Date.now();
     const audioPromise = wantsAudio
-      ? tts.synthesize(reply.reply_text, scenario.voice)
+      ? tts.synthesize(reply.reply_text.split('\n')[0], scenario.voice)
       : Promise.resolve(null);
 
     // 3. Persistència de missatges i XP

@@ -30,6 +30,8 @@ export async function replyFromAgent(args: {
   history: { role: string; content_text: string }[];
   // Instruccions addicionals per a esta conversa (p. ex. la llengua materna del xiquet al tutor infantil).
   extraInstructions?: string;
+  // Pautes segons el nivell i el públic de l'aprenent (no activen la ajuda en la llengua materna).
+  levelInstructions?: string;
 }): Promise<AgentReply> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY no està configurada');
@@ -91,6 +93,8 @@ export async function replyFromAgent(args: {
                             - Respon de manera natural i coherent al context de la situació com a personatge.
                             - Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
                             - Tria l'estat d'ànim ('mood') que millor represente la teua reacció com a personatge ('neutral', 'content', 'confus').
+
+                            ${args.levelInstructions ?? ''}
 
                             ${args.extraInstructions ?? ''}
 

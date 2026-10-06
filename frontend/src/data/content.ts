@@ -17,7 +17,7 @@ export const ROUTES: Record<Page, string> = {
   practice: '/practica',
   errors: '/errors',
   tutorhistory: '/converses',
-  lessons: '/llicons',
+  lessons: '/lessons',
   summary: '/resum',
   profile: '/perfil',
   // Seguiment del Nivell 0: el de la família (compte infantil) i les classes del professorat.

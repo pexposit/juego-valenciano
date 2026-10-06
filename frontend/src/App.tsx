@@ -12,7 +12,6 @@ import { activityRoute, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from '
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
-import { KidsLessons } from './pages/KidsLessons';
 import { KidsProgress } from './pages/KidsProgress';
 import { TeacherClasses } from './pages/TeacherClasses';
 import { LearningPath } from './pages/LearningPath';
@@ -21,13 +20,15 @@ import { Exam } from './pages/Exam';
 import { Practice } from './pages/Practice';
 import { ErrorPractice } from './pages/ErrorPractice';
 import { TutorHistory } from './pages/TutorHistory';
+import { Lessons } from './pages/Lessons';
 import { Summary } from './pages/Summary';
 import { Profile } from './pages/Profile';
 import { KidsAlbum } from './features/kids/KidsAlbum';
 import { KidsHome } from './features/kids/KidsHome';
 import { KidsIsland } from './features/kids/KidsIsland';
 import { KidsLesson } from './features/kids/KidsLessons';
-import { KidsTranslationProvider } from './features/kids/translations';
+import { KidsTranslationProvider, useKidsTranslationLang } from './features/kids/translations';
+import { KidsLessons } from './pages/KidsLessons';
 
 type ProfileFields = { display_name?: string; level?: string; show_mother_tongue?: boolean; mother_tongue?: string };
 
@@ -64,6 +65,9 @@ function ChatRoute({
   // Pantalla de càrrega fins que hi ha la fila, el fons i el robot: el xat no es munta
   // abans perquè en muntar-se ja sona la salutació del personatge.
   const ready = useSceneAssets(scenario, section);
+  // Subtítols en la llengua materna (Nivell 0) si el perfil els té activats i l'escenari els porta.
+  const lang = useKidsTranslationLang();
+  const translation = level === 'nivell0' && lang ? section?.translations?.[lang] ?? null : null;
 
   if (!scenario || section === null) return <Navigate to={ROUTES.scenarioselect} replace />;
   if (section === undefined || !ready) return <SceneLoading />;
@@ -76,9 +80,11 @@ function ChatRoute({
         voice={section.voice}
         background={section.background}
         initialPrompt={section.initial_prompt}
+        greetingAudio={section.greeting_audio}
         actor={section.character}
         summary={section.content}
         objectives={section.objectius ?? []}
+        translation={translation}
         level={level}
         xp={xp}
         onXpGained={onXpGained}
@@ -315,6 +321,10 @@ export function App() {
               uid={user?.id}
               onBack={() => navigate(ROUTES.dashboard)}
               onIsland={id => navigate(`${KIDS_ROUTES.island}/${id}`)}
+              onScenario={resource => {
+                const route = activityRoute(resource);
+                if (route) navigate(route);
+              }}
               onAlbum={() => navigate(KIDS_ROUTES.album)}
               onProfile={() => navigate(ROUTES.profile)}
             />
