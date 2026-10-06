@@ -13,6 +13,8 @@ import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
 import { KidsLessons } from './pages/KidsLessons';
+import { KidsProgress } from './pages/KidsProgress';
+import { TeacherClasses } from './pages/TeacherClasses';
 import { LearningPath } from './pages/LearningPath';
 import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
@@ -372,6 +374,8 @@ export function App() {
                 setMotherTongue={updateMotherTongue}
                 showMotherTongue={showMotherTongue}
                 setShowMotherTongue={updateShowMotherTongue}
+                onProgress={() => navigate(ROUTES.progress)}
+                onClasses={() => navigate(ROUTES.classes)}
               />
             </PageTransition>
           }
@@ -389,6 +393,11 @@ export function App() {
         <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
         <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard}showHelp={showMotherTongue} /></PageTransition>} />
         <Route path={ROUTES.lessons} element={<PageTransition><KidsLessons uid={user?.id} onBack={() => navigate(ROUTES.dashboard)} onOpenLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>} />
+        <Route
+          path={ROUTES.progress}
+          element={<PageTransition><KidsProgress uid={user?.id} name={name} onBack={() => navigate(-1)} onLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>}
+        />
+        <Route path={ROUTES.classes} element={<PageTransition><TeacherClasses uid={user?.id} onBack={() => navigate(-1)} /></PageTransition>} />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
     </KidsTranslationProvider>

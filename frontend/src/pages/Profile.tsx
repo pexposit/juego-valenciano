@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, LogOut, Pencil, RotateCcw } from 'lucide-react';
+import { BarChart3, Check, LogOut, Pencil, RotateCcw, School } from 'lucide-react';
 import { OrangeHeader, Stat } from '../components/ui';
 import { motherTongueLabel } from '@parlaval/shared';
 import { LEVEL_OPTIONS, MOTHER_TONGUE_OPTIONS } from '../data/content';
@@ -10,6 +10,7 @@ const levelLabel = (value: string) => LEVEL_OPTIONS.find(o => o.value === value)
 
 export function Profile({
   name, setName, level, xp, back, onLogOut, isDemo, ageGroup, motherTongue, setMotherTongue, showMotherTongue, setShowMotherTongue,
+  onProgress, onClasses,
 }: {
   name: string;
   setName: (v: string) => void;
@@ -23,6 +24,8 @@ export function Profile({
   setMotherTongue: (v: string) => void;
   showMotherTongue: boolean;
   setShowMotherTongue: (v: boolean) => void;
+  onProgress: () => void;
+  onClasses: () => void;
 }) {
   const isChild = ageGroup === 'child';
   // El nom (i, en els comptes infantils, la llengua materna) són editables, però no directament:
@@ -147,6 +150,25 @@ export function Profile({
         )}
 
         <div className="mt-8 flex flex-col gap-3">
+          {/* Per a les persones adultes: el seguiment del xiquet (família) o les classes (professorat). */}
+          {isChild ? (
+            <button
+              onClick={onProgress}
+              id="profile-progress-btn"
+              className="btn-press flex items-center justify-center gap-2 rounded-2xl bg-[#0F47AF] py-3 text-xl font-extrabold text-white hover:opacity-90 transition-opacity"
+            >
+              <BarChart3 size={20} /> Seguiment per a la família
+            </button>
+          ) : !isDemo && (
+            <button
+              onClick={onClasses}
+              id="profile-classes-btn"
+              className="btn-press flex items-center justify-center gap-2 rounded-2xl bg-[#0F47AF] py-3 text-xl font-extrabold text-white hover:opacity-90 transition-opacity"
+            >
+              <School size={20} /> Les meues classes (professorat)
+            </button>
+          )}
+
           <button
             onClick={() => confirm('Vols reiniciar el teu progrés?') && location.reload()}
             id="profile-reset-btn"

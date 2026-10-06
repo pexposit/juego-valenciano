@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Home, BookHeart, GraduationCap, Play, RotateCcw } from 'lucide-react';
 import type { KidsItem, Round } from './content';
 import { RoundCaption, RoundView } from './games/RoundView';
-import { nextEase, planSession, stageCount } from './islandSession';
+import { nextEase, planSession, stageCount, testedItems } from './islandSession';
 import { islandById } from './lessons';
 import { loadCromos, loadPractice, loadStages, markStage, savePractice, stagesDone, unlockCromo, type Practice } from './progress';
 import { say, sfxFanfare, stopVoice } from './sound';
+import { saveSessionReport, type PlayedWord } from './tracking';
 import { MissContext } from './useRound';
 import './kids.css';
 
@@ -15,7 +16,8 @@ type Session = { key: number; rounds: Round[]; stage: number | null; done: numbe
  * Una illa: es juga per etapes curtes (unes cinc rondes, vegeu islandSession.ts). Cada
  * etapa acabada és una estrela de l'illa; amb totes, el cromo de l'illa per a l'àlbum.
  * Després, cada partida és un repàs. El que costa es torna a preguntar més avant i, si
- * una partida costa molt, la següent és més fàcil.
+ * una partida costa molt, la següent és més fàcil. Cada partida es guarda per al
+ * seguiment de la família i del professorat (tracking.ts).
  */
 export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string | undefined; uid: string | undefined; onHome: () => void; onAlbum: () => void; onLesson: (id: string) => void }) {
   const island = islandById(id);
@@ -24,8 +26,11 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
   const [index, setIndex] = useState(0);
   const [finished, setFinished] = useState<'stage' | 'cromo'>();
   const practice = useRef<Practice>({ mistakes: [], easy: false });
-  const missedRound = useRef(false);
+  const missedRound = useRef<Set<string> | null>(null); // el que ha costat en esta ronda (null: res)
   const misses = useRef(0);
+  const firstTry = useRef(0);
+  const played = useRef<PlayedWord[]>([]);
+  const startedAt = useRef(0);
 
   useEffect(() => () => stopVoice(), []);
   // Enllaç a una illa que no existix: torna al mapa.
@@ -40,8 +45,11 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
     const done = cromos.includes(island.id) ? total : Math.min(total, stagesDone(stages, island.id));
     practice.current = loadPractice(uid, island.id);
     const stage = done < total ? done : null;
-    missedRound.current = false;
+    missedRound.current = null;
     misses.current = 0;
+    firstTry.current = 0;
+    played.current = [];
+    startedAt.current = Date.now();
     setIndex(0);
     setFinished(undefined);
     setSession(s => ({ key: (s?.key ?? 0) + 1, rounds: planSession(island, stage, practice.current), stage, done }));
@@ -58,7 +66,8 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
 
   // Cada error: l'element que calia tocar es guarda per a repassar-lo (els 8 últims).
   const noteMiss = useCallback((expected?: KidsItem) => {
-    missedRound.current = true;
+    missedRound.current ??= new Set();
+    if (expected) missedRound.current.add(expected.id);
     misses.current++;
     if (expected?.word) remember([expected, ...practice.current.mistakes.filter(m => m.id !== expected.id)].slice(0, 8));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,12 +79,21 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
   const next = async () => {
     // Encertat a la primera: si era una cosa que costava, ja no cal repassar-la.
     const round = rounds[index];
-    if (round.kind === 'tap' && !missedRound.current && practice.current.mistakes.some(m => m.id === round.target.id)) {
+    const missed = missedRound.current;
+    if (round.kind === 'tap' && !missed && practice.current.mistakes.some(m => m.id === round.target.id)) {
       remember(practice.current.mistakes.filter(m => m.id !== round.target.id));
     }
-    missedRound.current = false;
+    if (!missed) firstTry.current++;
+    played.current.push(...testedItems(round).map(item => ({
+      id: item.id, word: item.word, emoji: item.glyph ?? item.emoji, missed: !!missed?.has(item.id),
+    })));
+    missedRound.current = null;
     if (index + 1 < rounds.length) return setIndex(i => i + 1);
 
+    void saveSessionReport(uid, {
+      island: island.id, stage: session.stage, rounds: rounds.length, firstTry: firstTry.current, misses: misses.current,
+      easy: practice.current.easy, seconds: (Date.now() - startedAt.current) / 1000, words: played.current,
+    });
     practice.current = { ...practice.current, easy: nextEase(practice.current, misses.current, rounds.length) };
     savePractice(uid, island.id, practice.current);
     const done = session.stage === null ? total : session.stage + 1;

@@ -86,3 +86,19 @@ export function nextEase(practice: Practice, misses: number, rounds: number): bo
   if (misses <= rounds / 3) return false;
   return practice.easy;
 }
+
+/**
+ * Les paraules que pregunta una ronda (per al seguiment de les persones adultes): el que
+ * calia tocar, ordenar, classificar o arrastrar. Les cares del monstre no tenen nom propi.
+ */
+export function testedItems(round: Round): KidsItem[] {
+  switch (round.kind) {
+    case 'tap': return round.style === 'faces' ? [] : [round.target];
+    case 'odd': return [round.target];
+    case 'seq': return round.targets;
+    case 'sort': return round.items.map(i => i.item);
+    case 'bubbles': return [round.color];
+    case 'drag': return round.tasks.map(t => t.item);
+    default: return [];
+  }
+}
