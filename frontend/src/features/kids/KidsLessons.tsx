@@ -250,6 +250,84 @@ function DialogPage({ page, onReady }: PageProps<'dialog'>) {
   );
 }
 
+/** Diu una llista de frases per ordre i marca quina sona; `onReady` en acabar. */
+function useSequence(keys: string[], onReady: () => void) {
+  const [active, setActive] = useState(-1);
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      await new Promise(r => window.setTimeout(r, 400));
+      for (let i = 0; i < keys.length; i++) {
+        if (cancelled) return;
+        setActive(i);
+        if (!(await say(keys[i]))) return;
+        await new Promise(r => window.setTimeout(r, 300));
+      }
+      if (!cancelled) {
+        setActive(-1);
+        onReady();
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+      stopVoice();
+    };
+    // Les claus no canvien dins d'una pàgina.
+  }, [onReady]);
+  const replay = (i: number) => {
+    setActive(i);
+    void say(keys[i]).then(() => setActive(a => (a === i ? -1 : a)));
+  };
+  return { active, replay };
+}
+
+/** Conte en vinyetes: es narra cada vinyeta per ordre; la que sona s'il·lumina. */
+function StoryPage({ page, onReady }: PageProps<'story'>) {
+  const translate = useKidsTranslation();
+  const { active, replay } = useSequence(page.panels.map(x => x.say), onReady);
+  const current = page.panels[active];
+  return (
+    <div className="kid-lesson-page">
+      <div className="kid-story">
+        {page.panels.map((panel, i) => (
+          <button key={i} onClick={() => replay(i)} className={`kid-story-panel ${active === i ? 'now' : ''}`}>
+            <span className="kid-story-num">{i + 1}</span>
+            <span className="kid-story-scene" aria-hidden="true">{panel.scene}</span>
+          </button>
+        ))}
+      </div>
+      {current && (
+        <p className="kid-story-text">
+          {phraseText(current.say)}
+          <Translation text={translate(current.say)} />
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Cançó o rodolí: les línies s'il·luminen mentre la Taronjeta les canta. */
+function ChantPage({ page, onReady }: PageProps<'chant'>) {
+  const translate = useKidsTranslation();
+  const { active, replay } = useSequence(page.lines.map(x => x.say), onReady);
+  return (
+    <div className="kid-lesson-page">
+      <div className="kid-chant" aria-label="Cançó">
+        {page.lines.map((line, i) => (
+          <button key={i} onClick={() => replay(i)} className={`kid-chant-line ${active === i ? 'now' : ''}`}>
+            <span className="kid-chant-emoji" aria-hidden="true">{line.emoji}</span>
+            <span>
+              ♪ {phraseText(line.say)}
+              <Translation text={translate(line.say)} />
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function GamePage({ page, onDone }: PageProps<'game'>) {
   const round = useMemo(() => page.round(), [page]);
   return (
@@ -271,6 +349,8 @@ function PageView(props: { page: LessonPage; onReady: () => void; onDone: () => 
     case 'mix': return <MixPage {...props} page={page} />;
     case 'dialog': return <DialogPage {...props} page={page} />;
     case 'game': return <GamePage {...props} page={page} />;
+    case 'story': return <StoryPage {...props} page={page} />;
+    case 'chant': return <ChantPage {...props} page={page} />;
   }
 }
 

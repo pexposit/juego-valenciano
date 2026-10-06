@@ -465,3 +465,104 @@
   font-size: .85em; font-weight: 700; font-style: italic; color: #0F47AF; line-height: 1.3;
 }
 .kid-dialog-line.right .kid-translation { text-align: right; }
+
+/* ── Guia Pre-A1: jocs a l'estil de Cambridge Pre A1 Starters ──────────── */
+/* Escolta i pinta */
+.kid-paint-obj .kid-card-emoji { filter: grayscale(1); opacity: .55; transition: filter .4s, opacity .4s; }
+.kid-paint-obj.painted .kid-card-emoji { filter: none; opacity: 1; }
+.kid-paint-obj.painted { animation: kidSnap .45s cubic-bezier(.3,1.6,.5,1) both; }
+.kid-palette { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 12px 14px; border-radius: 9999px; background: #ffffffcc; box-shadow: 0 6px 0 #0000001a; }
+.kid-palette-color { width: 52px; height: 52px; border-radius: 9999px; border: 4px solid #fff; box-shadow: inset -5px -6px 10px #0003, 0 3px 0 #0000001f; transition: transform .15s; }
+.kid-palette-color.on { transform: scale(1.22) translateY(-4px); box-shadow: inset -5px -6px 10px #0003, 0 0 0 4px #1A2140; }
+
+/* Escolta i uneix */
+.kid-lines { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 0 clamp(28px, 9vw, 110px); width: 100%; max-width: 720px; }
+.kid-lines-svg { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.kid-lines-svg line { stroke: #F97316; stroke-opacity: .9; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 600; animation: kidDraw .6s ease-out both; }
+.kid-lines-col { display: flex; flex-direction: column; justify-content: space-around; gap: 12px; }
+.kid-lines-people { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 720px) { .kid-lines-people { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.kid-name-chip {
+  align-self: stretch; padding: 12px 10px; border-radius: 18px; background: #fff; color: #0F47AF;
+  font-weight: 900; font-size: clamp(18px, 4vw, 26px); box-shadow: 0 5px 0 #0000001a; border: 4px solid #fff; transition: border-color .3s, transform .3s;
+}
+.kid-name-chip.now { border-color: #F97316; transform: scale(1.06); animation: kidPulse 1.6s ease-in-out infinite; }
+.kid-name-chip.done { background: #DCFCE7; color: #15803D; }
+.kid-person { max-width: 150px; border-radius: 24px; }
+.kid-person.done { border-color: #22C55E; }
+.kid-person .kid-face-stack, .kid-yesno-picture .kid-face-stack { font-size: clamp(26px, 7vw, 48px); letter-spacing: -6px; white-space: nowrap; }
+
+/* Sí o no */
+.kid-yesno-picture { width: clamp(170px, 42vw, 240px); animation: kidPop .4s both; }
+.kid-yesno-picture .kid-card-emoji { font-size: clamp(80px, 20vw, 130px); }
+.kid-yesno { display: flex; gap: 28px; }
+.kid-yesno-btn { display: grid; place-items: center; width: 104px; height: 104px; border-radius: 9999px; color: #fff; box-shadow: 0 8px 0 #0000002a; }
+.kid-yesno-btn.yes { background: #22C55E; box-shadow: 0 8px 0 #15803D; }
+.kid-yesno-btn.no { background: #EF4444; box-shadow: 0 8px 0 #B91C1C; }
+.kid-yesno-progress { flex: none; font-size: 20px; }
+
+/* Escolta i col·loca */
+.kid-place { position: relative; width: 100%; max-width: 760px; aspect-ratio: 4 / 3; max-height: 52vh; border-radius: 32px; overflow: hidden; box-shadow: inset 0 0 0 6px #fff, 0 10px 0 #0000001a; }
+.kid-place-zone {
+  position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border: 4px dashed transparent; border-radius: 22px; transition: border-color .25s, background-color .25s;
+}
+.kid-place-zone.ready { border-color: #ffffffdd; }
+.kid-place-zone.ready:hover, .kid-place-zone.ready:active { border-color: #F97316; }
+.kid-place-zone-emoji { font-size: clamp(30px, 7vw, 54px); opacity: .55; }
+.kid-place-zone-label { font-weight: 900; font-size: clamp(12px, 2.6vw, 16px); color: #1A2140; opacity: .55; }
+.kid-place-zone-items { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; font-size: clamp(32px, 7vw, 52px); line-height: 1; }
+.kid-draggable.kid-picked { transform: scale(1.15) translateY(-6px); box-shadow: 0 0 0 5px #F97316, 0 10px 0 #0000001a; }
+
+/* Lletreja */
+.kid-spell-picture { width: clamp(150px, 36vw, 210px); }
+.kid-spell-picture .kid-face-glyph { font-size: clamp(36px, 8vw, 56px); }
+.kid-spell-slots { display: flex; gap: 10px; }
+.kid-spell-slots span {
+  display: grid; place-items: center; width: clamp(48px, 12vw, 70px); height: clamp(58px, 14vw, 82px); border-radius: 16px;
+  border-bottom: 6px solid #7C3AED; background: #ffffffb3; font-weight: 900; font-size: clamp(30px, 8vw, 48px); color: #7C3AED;
+}
+.kid-spell-slots span.on { background: #fff; animation: kidPop .35s both; }
+.kid-spell-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.kid-spell-tile {
+  width: clamp(58px, 14vw, 78px); height: clamp(58px, 14vw, 78px); border-radius: 20px; background: #FDE68A; color: #92400E;
+  font-weight: 900; font-size: clamp(28px, 7vw, 42px); box-shadow: 0 6px 0 #D97706; transition: opacity .25s, transform .25s;
+}
+.kid-spell-tile.used { opacity: 0; transform: scale(.4); pointer-events: none; }
+
+/* Busca la diferència */
+.kid-diff-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 720px; padding: 10px; border-radius: 26px; background: #fff; box-shadow: 0 7px 0 #0000001a; }
+.kid-diff-a { background: #F8FAFC; }
+.kid-diff-cell { display: grid; place-items: center; aspect-ratio: 1; border-radius: 18px; }
+.kid-diff-cell .kid-card-emoji { font-size: clamp(34px, 9vw, 70px); }
+.kid-diff-btn { background: #F1F5F9; border: 4px solid transparent; transition: border-color .25s, background .25s; }
+.kid-diff-btn.found { border-color: #22C55E; background: #DCFCE7; animation: kidJump .6s both; }
+
+/* La Taronjeta diu */
+.kid-simon-refuse {
+  display: flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 9999px; background: #EF4444; color: #fff;
+  font-weight: 900; font-size: 22px; box-shadow: 0 7px 0 #B91C1C;
+}
+
+/* Conte en vinyetes */
+.kid-story { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; width: 100%; max-width: 860px; }
+.kid-story-panel {
+  position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: 24px; background: #fff;
+  border: 5px solid #fff; box-shadow: 0 7px 0 #0000001a; transition: border-color .3s, transform .3s; animation: kidIn .4s both;
+}
+.kid-story-panel.now { border-color: #FACC15; transform: scale(1.04); }
+.kid-story-num { position: absolute; top: 8px; left: 10px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9999px; background: #7C3AED; color: #fff; font-weight: 900; }
+.kid-story-scene { font-size: clamp(40px, 10vw, 64px); letter-spacing: -4px; }
+.kid-story-text { max-width: 760px; margin: 0; padding: 14px 18px; border-radius: 24px; background: #fff; font-weight: 800; font-size: clamp(17px, 2.6vw, 22px); color: #1A2140; box-shadow: 0 6px 0 #0000000f; animation: kidIn .3s both; }
+
+/* Cançó */
+.kid-chant { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 680px; }
+.kid-chant-line {
+  display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-radius: 9999px; background: #fff; text-align: left;
+  font-weight: 800; font-size: clamp(17px, 2.6vw, 21px); color: #1A2140; box-shadow: 0 5px 0 #0000000f; transition: background .25s, transform .25s;
+  animation: kidIn .4s both;
+}
+.kid-chant-line.now { background: #FEF08A; transform: scale(1.03); }
+.kid-chant-line.now .kid-chant-emoji { animation: kidTalk .35s ease-in-out infinite alternate; }
+.kid-chant-emoji { flex: none; font-size: 40px; }
+@keyframes kidDraw { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }

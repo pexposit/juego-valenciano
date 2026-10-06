@@ -9,6 +9,7 @@ const CAT: Record<Pos, { left: string; top: string; size: number; behind?: boole
   davant: { left: '44%', top: '68%', size: 0.5 },
   darrere: { left: '66%', top: '38%', size: 0.34, behind: true },
   costat: { left: '84%', top: '60%', size: 0.38 },
+  entre: { left: '50%', top: '62%', size: 0.3 },
 };
 
 /** El gat Pelut i la caixa: dins, fora, damunt, davall, davant, darrere, al costat. */
@@ -17,9 +18,13 @@ function PosScene({ pos }: { pos: Pos }) {
   // Davall de la caixa: la caixa puja i el gat queda baix.
   const boxTop = pos === 'davall' ? '36%' : pos === 'damunt' ? '64%' : '60%';
   const boxLeft = pos === 'fora' ? '30%' : pos === 'costat' ? '40%' : '50%';
+  // Entre: dues caixes més xicotetes, una a cada costat del gat.
+  const boxes = pos === 'entre'
+    ? [{ left: '17%', size: '32cqw' }, { left: '83%', size: '32cqw' }]
+    : [{ left: boxLeft, size: '50cqw' }];
   return (
     <span className="kid-pos" aria-hidden="true">
-      <span className="kid-pos-item" style={{ left: boxLeft, top: boxTop, fontSize: '50cqw', zIndex: 2 }}>📦</span>
+      {boxes.map(b => <span key={b.left} className="kid-pos-item" style={{ left: b.left, top: boxTop, fontSize: b.size, zIndex: 2 }}>📦</span>)}
       <span className="kid-pos-item" style={{ left: cat.left, top: cat.top, fontSize: `${cat.size * 100}cqw`, zIndex: cat.behind ? 1 : 3 }}>🐈</span>
     </span>
   );
@@ -38,7 +43,11 @@ export function ItemFace({ item, letter }: { item: KidsItem; letter?: boolean })
       </span>
     );
   }
-  if (item.glyph) return <span className="kid-face-glyph" aria-hidden="true" style={{ color: item.ink }}>{item.glyph}</span>;
+  if (item.glyph) {
+    // Els noms llargs (Vicent, Marta) en lletra més xicoteta perquè càpien en la targeta.
+    const long = item.glyph.length > 3 ? { fontSize: `clamp(20px, ${item.glyph.length > 5 ? 4 : 5}vw, ${item.glyph.length > 5 ? 34 : 42}px)` } : undefined;
+    return <span className="kid-face-glyph" aria-hidden="true" style={{ color: item.ink, ...long }}>{item.glyph}</span>;
+  }
   if (letter) return <span className="kid-card-letter" aria-hidden="true">{item.emoji}</span>;
   return (
     <span

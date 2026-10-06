@@ -4,7 +4,7 @@ import { ProfileButton } from '../../components/ui';
 import { ROBOT_AVATAR } from '../robot-avatar';
 import { fetchResources } from '../../lib/api';
 import type { Resource } from '../../lib/types';
-import { ISLANDS } from './content';
+import { ISLANDS } from './lessons';
 import { loadCromos } from './progress';
 import { say, sayBriefly, stopVoice } from './sound';
 import './kids.css';

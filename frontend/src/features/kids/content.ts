@@ -29,7 +29,13 @@ export type KidsItem = {
   stack?: boolean; // emoji compost de diversos dibuixos (calaixos de classificar)
 };
 
-export type Pos = 'dins' | 'fora' | 'damunt' | 'davall' | 'davant' | 'darrere' | 'costat';
+export type Pos = 'dins' | 'fora' | 'damunt' | 'davall' | 'davant' | 'darrere' | 'costat' | 'entre';
+
+/** Escena d'«Escolta i col·loca»: zones rectangulars (en %) damunt d'un fons. */
+export type PlaceScene = {
+  background: string; // CSS
+  zones: { id: string; label: string; emoji?: string; left: number; top: number; width: number; height: number; tint?: string }[];
+};
 
 /** Clau de l'àudio que diu el nom d'un element. */
 export const itemAudio = (item: KidsItem) => item.audio ?? `w-${item.id}`;
@@ -110,7 +116,7 @@ export const BODY: KidsItem[] = [
   { id: 'dit', word: 'el dit', emoji: '☝️' },
 ];
 // El cap del monstre és una taca verda: per a «On és...?» només les parts que es veuen bé.
-const BODY_CARDS = BODY.filter(b => b.id !== 'cap');
+export const BODY_CARDS = BODY.filter(b => b.id !== 'cap');
 
 export const EMOTIONS: KidsItem[] = [
   { id: 'feliç', word: 'feliç', emoji: '😀', sound: 'Està feliç!' },
@@ -205,7 +211,7 @@ export const ALPHABET = ABC_DATA.map(([letter, name, word, emoji]) => ({
   card: { id: `abc-${letter}`, word: name, emoji: letter.toUpperCase() } as KidsItem,
   trace: { id: `abc-${letter}`, glyph: letter.toUpperCase(), word, emoji, say: '' } as TraceLetter,
 }));
-const ABC_TRACE = ['a', 'e', 'i', 'o', 'u', 'l', 'm', 'p', 's', 't'];
+export const ABC_TRACE = ['a', 'e', 'i', 'o', 'u', 'l', 'm', 'p', 's', 't'];
 const VOWELS = ['a', 'e', 'i', 'o', 'u'];
 
 // Els números com a targetes de punts (sense xifres): per a ordenar i per a «On n'hi ha més?».
@@ -336,6 +342,12 @@ export const KIDS_AUDIO: Record<string, string> = {
   'illa-cos': "L'illa del cos!",
   'illa-familia': "L'illa de la família!",
   'illa-lletres': "L'illa de les lletres!",
+  'illa-salutacions': "L'illa d'hola i adéu!",
+  'illa-presentar': "L'illa dels amics nous!",
+  'illa-articles': "L'illa de les paraules xicotetes!",
+  'illa-emocions': "L'illa de com estàs!",
+  'illa-temps': "L'illa dels dies i el temps!",
+  'illa-llocs': "L'illa del gat Pelut!",
   'illa-abecedari': "L'illa de l'abecedari!",
   // L'intrús
   'intrus-animals': 'Els animals! Quin no és un animal?',
@@ -393,6 +405,13 @@ Object.assign(KIDS_AUDIO, {
   'quin-xicotet': 'Quin és xicotet?',
   'w-gran': 'Gran!',
   'w-xicotet': 'Xicotet!',
+  // Guia Pre-A1
+  'tria-color': 'Primer, tria un color!',
+  'tria-cosa': 'Primer, toca el dibuix que vols moure!',
+  'simon-no': 'Ai! La Taronjeta no ho ha dit!',
+  'no-ho-faig': 'No ho faig!',
+  'si': 'Sí!',
+  'no': 'No!',
 });
 for (const item of [...EXTRA_ANIMALS, ...VEGGIES, ...HABITAT_BINS, ...FOOD_BINS, ...HOT_COLD_BINS, ...HOT_COLD.map(h => h.item)]) {
   KIDS_AUDIO[`w-${item.id}`] = capital(`${item.word}!`);
@@ -409,7 +428,7 @@ for (const item of OPPOSITES.flat()) {
 /* ── Rondes i illes ───────────────────────────────────────────────────── */
 
 export type Round =
-  | { kind: 'tap'; prompt: string; target: KidsItem; options: KidsItem[]; style?: 'cards' | 'faces' | 'letters'; react?: string; picture?: string }
+  | { kind: 'tap'; prompt: string | string[]; target: KidsItem; options: KidsItem[]; style?: 'cards' | 'faces' | 'letters'; react?: string; picture?: string }
   | { kind: 'odd'; prompt: string; options: KidsItem[]; target: KidsItem }
   | { kind: 'bubbles'; prompt: string; color: KidsItem; others: KidsItem[] }
   | { kind: 'count'; prompt: string; n: number }
@@ -421,7 +440,22 @@ export type Round =
   // Ordre: tocar diversos elements en l'ordre que diu la consigna (o en l'ordre natural).
   | { kind: 'seq'; prompt: string[]; targets: KidsItem[]; options: KidsItem[]; style?: 'letters' }
   // Classificar: cada element que apareix va a un dels calaixos.
-  | { kind: 'sort'; prompt: string; bins: KidsItem[]; items: { item: KidsItem; bin: string }[] };
+  | { kind: 'sort'; prompt: string; bins: KidsItem[]; items: { item: KidsItem; bin: string }[] }
+  /* Guia Pre-A1 (tasques a l'estil de Cambridge Pre A1 Starters). Cada pas té la seua consigna (key). */
+  // Escolta i pinta: es tria un color i es toca l'objecte que diu la veu.
+  | { kind: 'paint'; objects: KidsItem[]; palette: KidsItem[]; tasks: { item: string; color: string; key: string }[] }
+  // Escolta i uneix: una línia de cada nom a la persona que descriu la veu.
+  | { kind: 'lines'; names: KidsItem[]; people: KidsItem[]; tasks: { name: string; person: string; key: string }[] }
+  // Mira i respon: sí o no.
+  | { kind: 'yesno'; statements: { item: KidsItem; key: string; yes: boolean }[] }
+  // Escolta i col·loca: es toca un element i després el lloc de l'escena on va.
+  | { kind: 'place'; scene: PlaceScene; items: KidsItem[]; tasks: { item: string; zone: string; key: string }[] }
+  // Lletreja: les lletres desordenades es posen en ordre.
+  | { kind: 'spell'; prompt: string[]; item: KidsItem; letters: string[] }
+  // Busca la diferència: la fila de baix té algun dibuix canviat.
+  | { kind: 'diff'; prompt: string; a: KidsItem[]; b: KidsItem[] }
+  // La Taronjeta diu: es fa només si la consigna comença per «La Taronjeta diu».
+  | { kind: 'simon'; options: KidsItem[]; commands: { item: string; simon: boolean; key: string }[] };
 
 export type Island = {
   id: string;
@@ -446,7 +480,7 @@ export const pick = <T,>(list: readonly T[], n: number) => shuffle(list).slice(0
 // Ronda de «Toca i escolta»: l'objectiu i distractors del mateix grup. Les primeres
 // rondes de cada illa tenen menys opcions (2-3) i les últimes, més (4).
 type TapExtra = Partial<Pick<Extract<Round, { kind: 'tap' }>, 'prompt' | 'react' | 'picture' | 'style'>>;
-const tapRound = (pool: KidsItem[], target: KidsItem, size = 3, extra: TapExtra = {}): Round => ({
+export const tapRound = (pool: KidsItem[], target: KidsItem, size = 3, extra: TapExtra = {}): Round => ({
   kind: 'tap',
   prompt: `on-${target.id}`,
   target,
@@ -454,7 +488,7 @@ const tapRound = (pool: KidsItem[], target: KidsItem, size = 3, extra: TapExtra 
   ...extra,
 });
 
-const oddRound = (prompt: string, group: KidsItem[], outsiders: KidsItem[]): Round => {
+export const oddRound = (prompt: string, group: KidsItem[], outsiders: KidsItem[]): Round => {
   const target = pick(outsiders, 1)[0];
   return { kind: 'odd', prompt, target, options: shuffle([...pick(group, 3), target]) };
 };
@@ -462,25 +496,25 @@ const oddRound = (prompt: string, group: KidsItem[], outsiders: KidsItem[]): Rou
 const colorById = (id: string) => COLORS.find(c => c.id === id)!;
 
 // «De quin color és la poma?»: es veu la cosa i es toca el color.
-const colorOfRound = ({ thing, color }: (typeof COLOR_THINGS)[number], size: number): Round => {
+export const colorOfRound = ({ thing, color }: (typeof COLOR_THINGS)[number], size: number): Round => {
   const target = colorById(color);
   return { ...tapRound(COLORS, target, size, { prompt: `dequin-${thing.id}`, react: `w-${target.id}`, picture: thing.emoji }) };
 };
 
-const bubbleRound = (color: KidsItem): Round =>
+export const bubbleRound = (color: KidsItem): Round =>
   ({ kind: 'bubbles', prompt: `bamb-${color.id}`, color, others: pick(COLORS.filter(c => c.id !== color.id), 3) });
 
 // Porta cada familiar a un lloc de la casa (familiars diferents, llocs a l'atzar).
-const casaRound = (n: number): Round => ({
+export const casaRound = (n: number): Round => ({
   kind: 'drag',
   scene: 'casa',
   tasks: pick(FAMILY, n).map(person => pick(DRAG_TASKS.casa.filter(t => t.item.id === person.id), 1)[0]),
 });
 
-const monsterRound = (zones: string[]): Round =>
+export const monsterRound = (zones: string[]): Round =>
   ({ kind: 'drag', scene: 'monstre', tasks: DRAG_TASKS.monstre.filter(t => zones.includes(t.zone)) });
 
-const emotionRound = (emotion: KidsItem, size: number): Round =>
+export const emotionRound = (emotion: KidsItem, size: number): Round =>
   ({ ...tapRound(EMOTIONS, emotion, size, { prompt: `emo-${emotion.id}`, style: 'faces' }) });
 
 // Memòria: N parelles del grup.
@@ -510,7 +544,7 @@ export const moreRound = (more: boolean): Round => {
   const [a, b] = [counter(big, emoji), counter(small, emoji)];
   return { kind: 'tap', prompt: more ? 'mes' : 'menys', target: more ? a : b, options: shuffle([a, b]) };
 };
-const numbersInOrder = (n: number) => pick(NUM_ITEMS.slice(0, 8), n).sort((a, b) => a.count! - b.count!);
+export const numbersInOrder = (n: number) => pick(NUM_ITEMS.slice(0, 8), n).sort((a, b) => a.count! - b.count!);
 
 export const habitatRound = (): Round => sortRound('sort-habitat', HABITAT_BINS,
   HABITAT_BINS.flatMap(bin => pick(HABITAT[bin.id], 2).map(id => ({ item: animalById(id), bin: bin.id }))));
@@ -522,7 +556,7 @@ const fruitVegRound = (): Round => sortRound('sort-fruita', FOOD_BINS, [
 
 export const hotColdRound = (): Round => sortRound('sort-calent', HOT_COLD_BINS, HOT_COLD);
 
-const sizeRound = (big: boolean): Round => {
+export const sizeRound = (big: boolean): Round => {
   const emoji = pick(SIZE_EMOJIS, 1)[0];
   const [a, b] = [sizeItem(emoji, true), sizeItem(emoji, false)];
   return { kind: 'tap', prompt: big ? 'quin-gran' : 'quin-xicotet', target: big ? a : b, options: shuffle([a, b]) };
@@ -530,7 +564,7 @@ const sizeRound = (big: boolean): Round => {
 
 // Un contrari de la parella, amb l'altre i, si size = 3, un element d'una altra parella
 // (mai el dia amb el calent, que el sol també crema).
-const oppositeRound = (pair: [KidsItem, KidsItem], size: number): Round => {
+export const oppositeRound = (pair: [KidsItem, KidsItem], size: number): Round => {
   const target = pick(pair, 1)[0];
   const clash = (p: [KidsItem, KidsItem]) => [p[0].id, pair[0].id].sort().join() === 'op-calent,op-dia';
   const others = OPPOSITES.filter(p => p !== pair && !clash(p)).flat();
@@ -538,56 +572,10 @@ const oppositeRound = (pair: [KidsItem, KidsItem], size: number): Round => {
   return { kind: 'tap', prompt: `ask-${target.id}`, target, options };
 };
 
-const LETTER_CARDS: KidsItem[] = LETTERS.map(l => ({ id: `lt-${l.id}`, word: l.glyph, emoji: l.glyph, audio: `lletra-${l.id}` }));
+export const LETTER_CARDS: KidsItem[] = LETTERS.map(l => ({ id: `lt-${l.id}`, word: l.glyph, emoji: l.glyph, audio: `lletra-${l.id}` }));
 
-export const ISLANDS: Island[] = [
-  {
-    id: 'animals', name: 'Els animals', emoji: '🐶', color: '#FFD8A8', lesson: 'articles',
-    cromo: { emoji: '🐕', name: 'El gos' },
-    rounds: () => {
-      const [a, b, c, d, e, f, g] = pick(ANIMALS, 7);
-      const sound = (t: KidsItem) => `fa-${t.id}`;
-      const tap = (t: KidsItem, size: number) => tapRound(ANIMALS, t, size, { react: sound(t) });
-      // «Qui fa mèu?»: només se sent l'onomatopeia i es busca l'animal.
-      const who = (t: KidsItem, size: number) => tapRound(ANIMALS, t, size, { prompt: `qui-${t.id}`, react: sound(t) });
-      return [
-        tap(a, 2), tap(b, 3), who(c, 3), memoryRound(ANIMALS, 3),
-        tap(d, 4), habitatRound(), oddRound('intrus-animals', ANIMALS, INTRUDERS), who(e, 4),
-        thenRound(ANIMALS, 2, 4), tap(f, 4), memoryRound(ANIMALS, 4), who(g, 4),
-      ];
-    },
-  },
-  {
-    id: 'colors', name: 'Els colors', emoji: '🎨', color: '#D0EBFF', lesson: 'colors',
-    cromo: { emoji: '🌈', name: "L'arc de Sant Martí" },
-    rounds: () => {
-      const [b1, b2, b3, t1, t2] = pick(COLORS, 5);
-      const [c1, c2, c3] = pick(COLOR_THINGS, 3);
-      const touch = (c: KidsItem, size: number) => tapRound(COLORS, c, size, { prompt: `toca-${c.id}`, react: `w-${c.id}` });
-      return [
-        bubbleRound(b1), touch(t1, 3), colorOfRound(c1, 2), memoryRound(COLORS, 3),
-        bubbleRound(b2), touch(t2, 4), thenRound(COLORS, 2, 4), colorOfRound(c2, 3),
-        bubbleRound(b3), memoryRound(COLORS, 4), colorOfRound(c3, 4), thenRound(COLORS, 3, 6),
-      ];
-    },
-  },
-  {
-    id: 'numeros', name: 'Els números', emoji: '🔢', color: '#E5DBFF', lesson: 'numeros',
-    cromo: { emoji: '🍬', name: 'Els caramels' },
-    rounds: () => {
-      const count = (n: number) => ({ kind: 'count', prompt: `dona-${n}`, n }) as Round;
-      const dots = (n: number) => ({ kind: 'dots', prompt: `onhiha-${n}`, n, options: shuffle([n, ...pick([1, 2, 3, 4, 5, 6, 7].filter(x => x !== n), 2)]) }) as Round;
-      const [s1, s2] = pick([1, 2, 3], 2);
-      const [m1, m2] = pick([4, 5, 6], 2);
-      const [d1, d2, d3] = [pick([1, 2, 3], 1)[0], ...pick([4, 5, 6, 7], 2)];
-      const big = pick([7, 8, 9, 10], 1)[0];
-      return [
-        count(s1), dots(d1), orderRound('ordre-numeros', numbersInOrder(3)), count(s2),
-        moreRound(true), dots(d2), orderRound('ordre-numeros', numbersInOrder(4)), count(m1),
-        moreRound(false), dots(d3), orderRound('ordre-numeros', numbersInOrder(5)), count(m2), count(big),
-      ];
-    },
-  },
+// Les illes sense lliçó pròpia. Les de cada lliçó són en lessons.ts, amb el mateix vocabulari.
+export const FREE_ISLANDS: Island[] = [
   {
     id: 'menjar', name: 'El menjar', emoji: '🍎', color: '#FFE3E3',
     cromo: { emoji: '🥪', name: 'El berenar' },
@@ -607,78 +595,6 @@ export const ISLANDS: Island[] = [
         tapRound(FOOD, d, 4),
         memoryRound(FOOD, 4),
         { kind: 'drag', scene: 'plat', tasks: pick(DRAG_TASKS.plat, 3) },
-      ];
-    },
-  },
-  {
-    id: 'cos', name: 'El cos', emoji: '🧒', color: '#D3F9D8', lesson: 'cos',
-    cromo: { emoji: '👾', name: 'El monstre simpàtic' },
-    rounds: () => {
-      const [b1, b2, b3] = pick(BODY_CARDS, 3);
-      const [e1, e2] = pick(EMOTIONS, 2);
-      const [c1, c2] = pick(CLOTHES, 2);
-      return [
-        monsterRound(['cap', 'ulls', 'nas', 'boca']),
-        tapRound(BODY_CARDS, b1, 3),
-        emotionRound(e1, 3),
-        monsterRound(['braç', 'mà', 'cama', 'peu']),
-        thenRound(BODY_CARDS, 2, 4),
-        tapRound(BODY_CARDS, b2, 4),
-        tapRound(CLOTHES, c1, 3),
-        memoryRound(BODY_CARDS, 3),
-        emotionRound(e2, 4),
-        monsterRound(['barret', 'samarreta', 'sabates']),
-        tapRound(CLOTHES, c2, 4),
-        thenRound(BODY_CARDS, 3, 6),
-        tapRound(BODY_CARDS, b3, 4),
-      ];
-    },
-  },
-  {
-    id: 'familia', name: 'La família', emoji: '🏠', color: '#FFF3BF', lesson: 'familia',
-    cromo: { emoji: '👨‍👩‍👦', name: 'La família' },
-    rounds: () => {
-      const [a, b, c, d, e] = pick(FAMILY, 5);
-      const places = pick(HOME_PLACES, 2);
-      return [
-        tapRound(FAMILY, a, 2), tapRound(FAMILY, b, 3), casaRound(2), memoryRound(FAMILY, 3),
-        tapRound(HOME_PLACES, places[0], 3), tapRound(FAMILY, c, 4), casaRound(3), thenRound(FAMILY, 2, 4),
-        tapRound(FAMILY, d, 4), tapRound(HOME_PLACES, places[1], 4), memoryRound(FAMILY, 4), tapRound(FAMILY, e, 4), casaRound(3),
-      ];
-    },
-  },
-  {
-    id: 'accions', name: 'Les accions', emoji: '🤸', color: '#FFEDD5', lesson: 'accions',
-    cromo: { emoji: '🏅', name: 'La medalla' },
-    rounds: () => {
-      const [a, b, c, d, e, f] = pick(ACTIONS, 6);
-      const who = (t: KidsItem, size: number) => tapRound(ACTIONS, t, size, { prompt: `qui-${t.id}` });
-      return [
-        who(a, 2), who(b, 3), memoryRound(ACTIONS, 3), who(c, 3), thenRound(ACTIONS, 2, 4),
-        who(d, 4), memoryRound(ACTIONS, 4), who(e, 4), thenRound(ACTIONS, 3, 6), who(f, 4),
-      ];
-    },
-  },
-  {
-    id: 'contraris', name: 'Els contraris', emoji: '🌗', color: '#E0E7FF', lesson: 'contraris',
-    cromo: { emoji: '🎭', name: 'Les dues cares' },
-    rounds: () => {
-      const pairs = shuffle(OPPOSITES);
-      return [
-        sizeRound(true), oppositeRound(pairs[0], 2), sizeRound(false), oppositeRound(pairs[1], 2),
-        hotColdRound(), oppositeRound(pairs[2], 3), sizeRound(Math.random() < 0.5), oppositeRound(pairs[3], 3),
-        oppositeRound(pairs[4], 3), sizeRound(Math.random() < 0.5), oppositeRound(pairs[5], 3),
-      ];
-    },
-  },
-  {
-    id: 'lletres', name: 'Les lletres', emoji: '✨', color: '#FCE7F3', lesson: 'sons',
-    cromo: { emoji: '⭐', name: "L'estrela de les lletres" },
-    rounds: () => {
-      const traces = pick(LETTERS, 7).map(letter => ({ kind: 'trace', letter }) as Round);
-      return [
-        traces[0], traces[1], memoryRound(LETTER_CARDS, 3, 'letters'), traces[2], traces[3],
-        memoryRound(LETTER_CARDS, 3, 'letters'), traces[4], traces[5], memoryRound(LETTER_CARDS, 4, 'letters'), traces[6],
       ];
     },
   },
@@ -705,6 +621,5 @@ export const ISLANDS: Island[] = [
   },
 ];
 
-export const islandById = (id: string | undefined) => ISLANDS.find(i => i.id === id);
 export const FEEDBACK_OK = ['be-1', 'be-2', 'be-3', 'be-4'];
 export const FEEDBACK_RETRY = ['torna-1', 'torna-2'];
