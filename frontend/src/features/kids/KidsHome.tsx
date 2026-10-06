@@ -13,7 +13,7 @@ import './kids.css';
 /**
  * Mapa d'illes del Nivell 0. Tot es diu en veu alta: tocar una illa diu el seu nom i hi entra.
  * Cada illa a mig fer mostra les seues etapes (estrelles); les acabades, el seu cromo.
- * Després de les illes, els escenaris de conversa del Nivell 0.
+ * A dalt, en una franja pròpia, els escenaris de conversa del Nivell 0 (p. ex. el mag Merlí).
  */
 export function KidsHome({ name, uid, onBack, onIsland, onScenario, onAlbum, onProfile }: {
   name: string;
@@ -73,6 +73,34 @@ export function KidsHome({ name, uid, onBack, onIsland, onScenario, onAlbum, onP
         <ProfileButton name={name} onClick={onProfile} />
       </header>
 
+      {/* Els escenaris de conversa, en una franja a dalt, a banda de les illes. */}
+      {scenarios.length > 0 && (
+        <section className="kids-scenarios" aria-label="Escenaris">
+          <span className="kids-scenarios-title"><span aria-hidden="true">🎭</span> Escenaris</span>
+          <div className="kids-scenarios-list">
+            {scenarios.map(scenario => (
+              <button
+                key={scenario.id}
+                onClick={() => onScenario(scenario)}
+                aria-label={scenario.name}
+                title={scenario.name}
+                className="kid-scenario btn-press"
+              >
+                <span className="kid-scenario-face" style={{ background: scenario.color ?? '#D1C4E9' }}>
+                  {ROBOT_AVATAR.scenarioOutfits[scenario.type] ? (
+                    // El personatge de l'escenari amb la seua roba (la mateixa imatge que el robot del xat).
+                    <img src={ROBOT_AVATAR.scenarioOutfits[scenario.type].fallbackUrl} alt="" aria-hidden="true" />
+                  ) : (
+                    <span aria-hidden="true">{scenario.icon ?? '💬'}</span>
+                  )}
+                </span>
+                <span className="kid-scenario-name">{scenario.section_name ?? scenario.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="kids-islands">
         {ISLANDS.map((island, i) => (
           <button
@@ -89,23 +117,6 @@ export function KidsHome({ name, uid, onBack, onIsland, onScenario, onAlbum, onP
               <span className="kid-island-stages" aria-hidden="true">
                 {Array.from({ length: stageCount(island) }, (_, s) => <i key={s} className={s < stagesDone(stages, island.id) ? 'on' : ''}>★</i>)}
               </span>
-            )}
-          </button>
-        ))}
-        {scenarios.map((scenario, i) => (
-          <button
-            key={scenario.id}
-            onClick={() => onScenario(scenario)}
-            aria-label={scenario.name}
-            title={scenario.name}
-            className="kid-island btn-press"
-            style={{ ['--island' as string]: scenario.color ?? '#D1C4E9', animationDelay: `${(ISLANDS.length + i) * 0.35}s` }}
-          >
-            {ROBOT_AVATAR.scenarioOutfits[scenario.type] ? (
-              // El personatge de l'escenari amb la seua roba (la mateixa imatge que el robot del xat).
-              <img src={ROBOT_AVATAR.scenarioOutfits[scenario.type].fallbackUrl} alt="" aria-hidden="true" className="kid-island-avatar" />
-            ) : (
-              <span className="kid-island-emoji" aria-hidden="true">{scenario.icon ?? '💬'}</span>
             )}
           </button>
         ))}

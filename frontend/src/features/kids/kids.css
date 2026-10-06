@@ -89,7 +89,21 @@
 }
 .kid-island-stages i { font-style: normal; color: #E2E8F0; }
 .kid-island-stages i.on { color: #FACC15; }
-.kid-island-avatar { width: 78%; height: 78%; object-fit: contain; margin-top: -4%; pointer-events: none; }
+/* Franja dels escenaris de conversa, a dalt del mapa. */
+.kids-scenarios {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  width: min(900px, calc(100% - 32px)); margin: 4px auto 0; padding: 10px 16px 12px;
+  border-radius: 28px; background: #ffffffd9; box-shadow: 0 8px 0 #0369A122;
+}
+.kids-scenarios-title { font-weight: 900; font-size: 20px; color: #6D28D9; white-space: nowrap; }
+.kids-scenarios-list { display: flex; gap: 14px; overflow-x: auto; padding: 2px; }
+.kid-scenario { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; width: 112px; }
+.kid-scenario-face {
+  display: grid; place-items: center; width: 88px; height: 88px; border-radius: 9999px; overflow: hidden;
+  border: 4px solid #fff; box-shadow: 0 6px 0 #0000001a; font-size: 48px; animation: kidFloat 4s ease-in-out infinite;
+}
+.kid-scenario-face img { width: 100%; height: 100%; object-fit: contain; }
+.kid-scenario-name { font-weight: 800; font-size: 14px; line-height: 1.15; text-align: center; color: #1F2937; }
 .kid-island-done {
   position: absolute; top: 4%; right: 6%;
   font-size: 34px; background: #fff; border-radius: 9999px; padding: 4px;

@@ -3,8 +3,9 @@ import { LogOut, Users } from 'lucide-react';
 import { OrangeHeader } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { ProgressReport } from '../features/kids/ProgressReport';
+import { ConversationView } from '../features/kids/ConversationView';
 import { checkPin, hasPin, isPin, resetPin, setPin } from '../features/kids/parentPin';
-import { joinClass, leaveClass, loadChildData, loadJoinedClasses, type ChildData } from '../features/kids/tracking';
+import { joinClass, leaveClass, loadChildData, loadJoinedClasses, type ChildData, type ConversationRow } from '../features/kids/tracking';
 
 const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-2xl font-normal outline-none focus:border-[#0F47AF] transition-colors';
 
@@ -19,6 +20,7 @@ export function KidsProgress({ uid, name, onBack, onLesson }: { uid: string | un
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<{ ok: boolean; text: string }>();
+  const [conversation, setConversation] = useState<ConversationRow>();
   const online = !!supabase && !!uid;
 
   useEffect(() => {
@@ -78,7 +80,8 @@ export function KidsProgress({ uid, name, onBack, onLesson }: { uid: string | un
             <div className="mt-6">
               {data === undefined && <p className="text-lg opacity-60">Carregant...</p>}
               {data === null && <p className="text-lg text-coral">No s'ha pogut carregar el seguiment. Torneu-ho a provar més tard.</p>}
-              {data && <ProgressReport data={data} name={name} onLesson={onLesson} />}
+              {data && <ProgressReport data={data} name={name} onLesson={onLesson} onOpenConversation={online ? setConversation : undefined} />}
+              {conversation && <ConversationView conversation={conversation} name={name} onClose={() => setConversation(undefined)} />}
             </div>
 
             {online && (

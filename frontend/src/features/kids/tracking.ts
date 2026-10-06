@@ -2,7 +2,8 @@ import { supabase } from '../../lib/supabase';
 
 /**
  * Seguiment del Nivell 0 per a la família i el professorat: cada partida d'una illa i,
- * per a cada paraula preguntada, si ha costat. Amb sessió es guarda en la BD
+ * per a cada paraula preguntada, si ha costat. Les converses amb personatges (quins
+ * objectius ha complit) les guarda el backend en acabar-les (kids_scenario_reviews). Amb sessió es guarda en la BD
  * (kids_sessions i kids_word_stats, amb la funció kids_finish_session); en el mode
  * demostració, només en este navegador. Les classes són en la BD (kids_classes).
  */
@@ -22,7 +23,17 @@ export type SessionReport = {
 
 export type SessionRow = { island: string; stage: number | null; rounds: number; first_try: number; misses: number; easy: boolean; seconds: number; created_at: string };
 export type WordRow = { item_id: string; word: string; emoji: string; island: string; attempts: number; misses: number; last_seen: string };
-export type ChildData = { name: string; badges: string[]; sessions: SessionRow[]; words: WordRow[] };
+// Una conversa amb un personatge (escenari del Nivell 0): quins objectius ha complit (met: null si no s'ha pogut revisar).
+export type ConversationRow = {
+  session_resource_id: string;
+  resource_id: string;
+  scenario_name: string;
+  objectives: { text: string; met: boolean | null }[];
+  turns: number;
+  seconds: number;
+  created_at: string;
+};
+export type ChildData = { name: string; badges: string[]; sessions: SessionRow[]; words: WordRow[]; conversations: ConversationRow[] };
 
 const localKey = (uid: string | undefined) => `parlaval:kids:seguiment:${uid ?? 'demo'}`;
 type LocalData = { sessions: SessionRow[]; words: Record<string, WordRow> };
@@ -86,22 +97,25 @@ export async function loadChildData(uid: string | undefined): Promise<ChildData>
         return [];
       }
     });
-    return { name: '', badges, sessions: data.sessions, words: Object.values(data.words) };
+    return { name: '', badges, sessions: data.sessions, words: Object.values(data.words), conversations: [] };
   }
   const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
-  const [profile, sessions, words] = await Promise.all([
+  const [profile, sessions, words, conversations] = await Promise.all([
     supabase.from('profiles').select('display_name, badges').eq('id', uid).single(),
     supabase.from('kids_sessions').select('island, stage, rounds, first_try, misses, easy, seconds, created_at')
       .eq('user_id', uid).gte('created_at', since).order('created_at', { ascending: false }).limit(500),
     supabase.from('kids_word_stats').select('item_id, word, emoji, island, attempts, misses, last_seen').eq('user_id', uid),
+    supabase.from('kids_scenario_reviews').select('session_resource_id, resource_id, scenario_name, objectives, turns, seconds, created_at')
+      .eq('user_id', uid).gte('created_at', since).order('created_at', { ascending: false }).limit(200),
   ]);
-  const error = profile.error ?? sessions.error ?? words.error;
+  const error = profile.error ?? sessions.error ?? words.error ?? conversations.error;
   if (error) throw error;
   return {
     name: profile.data?.display_name ?? '',
     badges: (profile.data?.badges as string[] | undefined) ?? [],
     sessions: (sessions.data ?? []) as SessionRow[],
     words: (words.data ?? []) as WordRow[],
+    conversations: (conversations.data ?? []) as ConversationRow[],
   };
 }
 
