@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FEEDBACK_OK, FEEDBACK_RETRY } from './content';
-import { randomOf, say, sfxBoing, sfxCorrect, stopVoice } from './sound';
+import { randomOf, say, sayAll, sfxBoing, sfxCorrect, stopVoice } from './sound';
 
 /**
  * Comportament comú de les rondes: diu la consigna en començar (i quan es toca
  * l'altaveu), i dona el feedback. Encert: arpa + paraula/felicitació i passa a
  * la següent ronda. Error: «boing», de tant en tant «Torna-ho a provar!», i es
- * pot tornar a intentar sense perdre res.
+ * pot tornar a intentar sense perdre res. La consigna pot ser una frase o
+ * diverses seguides («Primer, toca...», «El gos!», «I després...», «La poma!»).
  */
-export function useRound(prompt: string | undefined, onDone: () => void) {
+export function useRound(prompt: string | readonly string[] | undefined, onDone: () => void) {
   const [locked, setLocked] = useState(false); // mentre es celebra un encert
   const done = useRef(false);
   const misses = useRef(0);
 
+  const keys = typeof prompt === 'string' ? prompt : prompt?.join('|');
   const repeat = useCallback(() => {
-    if (prompt) void say(prompt);
-  }, [prompt]);
+    if (keys) void sayAll(keys.split('|'));
+  }, [keys]);
 
   useEffect(() => {
     done.current = false;

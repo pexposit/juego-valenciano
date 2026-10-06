@@ -1,0 +1,2190 @@
+{
+ "hola": {
+  "ca": "Hola! Soc la Taronjeta. Tria una illa per a jugar!",
+  "t": "Привіт! Я Таронжета. Обери острів і грай!"
+ },
+ "album": {
+  "ca": "El teu àlbum de cromos! Toca un cromo per a posar-lo on vulgues.",
+  "t": "Твій альбом наліпок! Торкнися наліпки, щоб поставити її куди захочеш."
+ },
+ "cromo-nou": {
+  "ca": "Molt bé! Has guanyat un cromo nou!",
+  "t": "Чудово! Ти отримав нову наліпку!"
+ },
+ "be-1": {
+  "ca": "Molt bé!",
+  "t": "Чудово!"
+ },
+ "be-2": {
+  "ca": "Fantàstic!",
+  "t": "Фантастично!"
+ },
+ "be-3": {
+  "ca": "Què bé!",
+  "t": "Як добре!"
+ },
+ "be-4": {
+  "ca": "Ho has aconseguit!",
+  "t": "Тобі вдалося!"
+ },
+ "torna-1": {
+  "ca": "Ups! Torna-ho a provar!",
+  "t": "Ой! Спробуй ще раз!"
+ },
+ "torna-2": {
+  "ca": "Prova una altra vegada!",
+  "t": "Спробуй іще раз!"
+ },
+ "illa-animals": {
+  "ca": "L'illa dels animals!",
+  "t": "Острів тварин!"
+ },
+ "illa-colors": {
+  "ca": "L'illa dels colors!",
+  "t": "Острів кольорів!"
+ },
+ "illa-numeros": {
+  "ca": "L'illa dels números!",
+  "t": "Острів чисел!"
+ },
+ "illa-menjar": {
+  "ca": "L'illa del menjar!",
+  "t": "Острів їжі!"
+ },
+ "illa-cos": {
+  "ca": "L'illa del cos!",
+  "t": "Острів тіла!"
+ },
+ "illa-familia": {
+  "ca": "L'illa de la família!",
+  "t": "Острів родини!"
+ },
+ "illa-lletres": {
+  "ca": "L'illa de les lletres!",
+  "t": "Острів літер!"
+ },
+ "illa-abecedari": {
+  "ca": "L'illa de l'abecedari!",
+  "t": "Острів абетки!"
+ },
+ "intrus-animals": {
+  "ca": "Els animals! Quin no és un animal?",
+  "t": "Тварини! Що тут не тварина?"
+ },
+ "intrus-fruita": {
+  "ca": "La fruita! Quina no és una fruita?",
+  "t": "Фрукти! Що тут не фрукт?"
+ },
+ "intrus-menjar": {
+  "ca": "El menjar! Quin no es pot menjar?",
+  "t": "Їжа! Що тут не можна їсти?"
+ },
+ "on-gos": {
+  "ca": "On és el gos?",
+  "t": "Де el gos (собака)?"
+ },
+ "on-gat": {
+  "ca": "On és el gat?",
+  "t": "Де el gat (кіт)?"
+ },
+ "on-ocell": {
+  "ca": "On és l'ocell?",
+  "t": "Де l'ocell (пташка)?"
+ },
+ "on-peix": {
+  "ca": "On és el peix?",
+  "t": "Де el peix (рибка)?"
+ },
+ "on-vaca": {
+  "ca": "On és la vaca?",
+  "t": "Де la vaca (корова)?"
+ },
+ "on-cavall": {
+  "ca": "On és el cavall?",
+  "t": "Де el cavall (кінь)?"
+ },
+ "on-porc": {
+  "ca": "On és el porc?",
+  "t": "Де el porc (свиня)?"
+ },
+ "on-ovella": {
+  "ca": "On és l'ovella?",
+  "t": "Де l'ovella (вівця)?"
+ },
+ "on-gallina": {
+  "ca": "On és la gallina?",
+  "t": "Де la gallina (курка)?"
+ },
+ "on-anec": {
+  "ca": "On és l'ànec?",
+  "t": "Де l'ànec (качка)?"
+ },
+ "on-granota": {
+  "ca": "On és la granota?",
+  "t": "Де la granota (жабка)?"
+ },
+ "on-lleo": {
+  "ca": "On és el lleó?",
+  "t": "Де el lleó (лев)?"
+ },
+ "on-elefant": {
+  "ca": "On és l'elefant?",
+  "t": "Де l'elefant (слон)?"
+ },
+ "on-mona": {
+  "ca": "On és la mona?",
+  "t": "Де la mona (мавпочка)?"
+ },
+ "on-ratoli": {
+  "ca": "On és el ratolí?",
+  "t": "Де el ratolí (миша)?"
+ },
+ "on-conill": {
+  "ca": "On és el conill?",
+  "t": "Де el conill (кролик)?"
+ },
+ "on-poma": {
+  "ca": "On és la poma?",
+  "t": "Де la poma (яблуко)?"
+ },
+ "on-pa": {
+  "ca": "On és el pa?",
+  "t": "Де el pa (хліб)?"
+ },
+ "on-aigua": {
+  "ca": "On és l'aigua?",
+  "t": "Де l'aigua (вода)?"
+ },
+ "on-llet": {
+  "ca": "On és la llet?",
+  "t": "Де la llet (молоко)?"
+ },
+ "on-formatge": {
+  "ca": "On és el formatge?",
+  "t": "Де el formatge (сир)?"
+ },
+ "on-platan": {
+  "ca": "On és el plàtan?",
+  "t": "Де el plàtan (банан)?"
+ },
+ "on-taronja": {
+  "ca": "On és la taronja?",
+  "t": "Де la taronja (апельсин)?"
+ },
+ "on-maduixa": {
+  "ca": "On és la maduixa?",
+  "t": "Де la maduixa (полуниця)?"
+ },
+ "on-raim": {
+  "ca": "On és el raïm?",
+  "t": "Де el raïm (виноград)?"
+ },
+ "on-pera": {
+  "ca": "On és la pera?",
+  "t": "Де la pera (груша)?"
+ },
+ "on-sindria": {
+  "ca": "On és la síndria?",
+  "t": "Де la síndria (кавун)?"
+ },
+ "on-ou": {
+  "ca": "On és l'ou?",
+  "t": "Де l'ou (яйце)?"
+ },
+ "on-galeta": {
+  "ca": "On és la galeta?",
+  "t": "Де la galeta (печиво)?"
+ },
+ "on-pastanaga": {
+  "ca": "On és la pastanaga?",
+  "t": "Де la pastanaga (морква)?"
+ },
+ "on-tomaca": {
+  "ca": "On és la tomaca?",
+  "t": "Де la tomaca (помідор)?"
+ },
+ "on-gelat": {
+  "ca": "On és el gelat?",
+  "t": "Де el gelat (морозиво)?"
+ },
+ "on-cap": {
+  "ca": "On és el cap?",
+  "t": "Де el cap (голова)?"
+ },
+ "on-ulls": {
+  "ca": "On són els ulls?",
+  "t": "Де els ulls (очі)?"
+ },
+ "on-nas": {
+  "ca": "On és el nas?",
+  "t": "Де el nas (ніс)?"
+ },
+ "on-boca": {
+  "ca": "On és la boca?",
+  "t": "Де la boca (рот)?"
+ },
+ "on-braç": {
+  "ca": "On és el braç?",
+  "t": "Де el braç (рука)?"
+ },
+ "on-mà": {
+  "ca": "On és la mà?",
+  "t": "Де la mà (кисть руки)?"
+ },
+ "on-cama": {
+  "ca": "On és la cama?",
+  "t": "Де la cama (нога)?"
+ },
+ "on-peu": {
+  "ca": "On és el peu?",
+  "t": "Де el peu (ступня)?"
+ },
+ "on-orelles": {
+  "ca": "On són les orelles?",
+  "t": "Де les orelles (вуха)?"
+ },
+ "on-dents": {
+  "ca": "On són les dents?",
+  "t": "Де les dents (зуби)?"
+ },
+ "on-llengua": {
+  "ca": "On és la llengua?",
+  "t": "Де la llengua (язик)?"
+ },
+ "on-dit": {
+  "ca": "On és el dit?",
+  "t": "Де el dit (палець)?"
+ },
+ "on-sabates": {
+  "ca": "On són les sabates?",
+  "t": "Де les sabates (черевики)?"
+ },
+ "on-barret": {
+  "ca": "On és el barret?",
+  "t": "Де el barret (капелюх)?"
+ },
+ "on-samarreta": {
+  "ca": "On és la samarreta?",
+  "t": "Де la samarreta (футболка)?"
+ },
+ "on-pantalons": {
+  "ca": "On són els pantalons?",
+  "t": "Де els pantalons (штани)?"
+ },
+ "on-jaqueta": {
+  "ca": "On és la jaqueta?",
+  "t": "Де la jaqueta (куртка)?"
+ },
+ "on-calcetins": {
+  "ca": "On són els calcetins?",
+  "t": "Де els calcetins (шкарпетки)?"
+ },
+ "on-ulleres": {
+  "ca": "On són les ulleres?",
+  "t": "Де les ulleres (окуляри)?"
+ },
+ "on-guants": {
+  "ca": "On són els guants?",
+  "t": "Де els guants (рукавички)?"
+ },
+ "on-bufanda": {
+  "ca": "On és la bufanda?",
+  "t": "Де la bufanda (шарф)?"
+ },
+ "on-pare": {
+  "ca": "On és el pare?",
+  "t": "Де el pare (тато)?"
+ },
+ "on-mare": {
+  "ca": "On és la mare?",
+  "t": "Де la mare (мама)?"
+ },
+ "on-germà": {
+  "ca": "On és el germà?",
+  "t": "Де el germà (брат)?"
+ },
+ "on-germana": {
+  "ca": "On és la germana?",
+  "t": "Де la germana (сестра)?"
+ },
+ "on-bebe": {
+  "ca": "On és el bebé?",
+  "t": "Де el bebé (немовля)?"
+ },
+ "on-iaio": {
+  "ca": "On és el iaio?",
+  "t": "Де el iaio (дідусь)?"
+ },
+ "on-iaia": {
+  "ca": "On és la iaia?",
+  "t": "Де la iaia (бабуся)?"
+ },
+ "on-casa": {
+  "ca": "On és la casa?",
+  "t": "Де «la casa» (будинок)?"
+ },
+ "on-porta": {
+  "ca": "On és la porta?",
+  "t": "Де «la porta» (двері)?"
+ },
+ "on-llit": {
+  "ca": "On és el llit?",
+  "t": "Де «el llit» (ліжко)?"
+ },
+ "on-cuina": {
+  "ca": "On és la cuina?",
+  "t": "Де «la cuina» (кухня)?"
+ },
+ "on-sofa": {
+  "ca": "On és el sofà?",
+  "t": "Де «el sofà» (диван)?"
+ },
+ "on-banyera": {
+  "ca": "On és la banyera?",
+  "t": "Де «la banyera» (ванна)?"
+ },
+ "on-cotxe": {
+  "ca": "On és el cotxe?",
+  "t": "Де «el cotxe» (машина)?"
+ },
+ "on-pilota": {
+  "ca": "On és la pilota?",
+  "t": "Де «la pilota» (м’яч)?"
+ },
+ "on-llapis": {
+  "ca": "On és el llapis?",
+  "t": "Де «el llapis» (олівець)?"
+ },
+ "qui-gos": {
+  "ca": "Qui fa bub, bub?",
+  "t": "Хто каже «bub, bub»?"
+ },
+ "qui-gat": {
+  "ca": "Qui fa mèu, mèu?",
+  "t": "Хто каже «mèu, mèu»?"
+ },
+ "qui-ocell": {
+  "ca": "Qui fa piu, piu?",
+  "t": "Хто каже «piu, piu»?"
+ },
+ "qui-peix": {
+  "ca": "Qui fa glub, glub?",
+  "t": "Хто каже «glub, glub»?"
+ },
+ "qui-vaca": {
+  "ca": "Qui fa muuu?",
+  "t": "Хто каже «muuu»?"
+ },
+ "qui-cavall": {
+  "ca": "Qui fa hi, hi, hi?",
+  "t": "Хто каже «hi, hi, hi»?"
+ },
+ "qui-porc": {
+  "ca": "Qui fa oinc, oinc?",
+  "t": "Хто каже «oinc, oinc»?"
+ },
+ "qui-ovella": {
+  "ca": "Qui fa beee?",
+  "t": "Хто каже «beee»?"
+ },
+ "qui-gallina": {
+  "ca": "Qui fa co, co, co?",
+  "t": "Хто каже «co, co, co»?"
+ },
+ "qui-anec": {
+  "ca": "Qui fa cuac, cuac?",
+  "t": "Хто каже «cuac, cuac»?"
+ },
+ "qui-granota": {
+  "ca": "Qui fa rac, rac?",
+  "t": "Хто каже «rac, rac»?"
+ },
+ "qui-lleo": {
+  "ca": "Qui fa grrr?",
+  "t": "Хто каже «grrr»?"
+ },
+ "qui-elefant": {
+  "ca": "Qui fa pruuu?",
+  "t": "Хто каже «pruuu»?"
+ },
+ "qui-mona": {
+  "ca": "Qui fa uh, uh, ah, ah?",
+  "t": "Хто каже «uh, uh, ah, ah»?"
+ },
+ "qui-ratoli": {
+  "ca": "Qui fa ii, ii?",
+  "t": "Хто каже «ii, ii»?"
+ },
+ "qui-conill": {
+  "ca": "Qui fa nyam, nyam?",
+  "t": "Хто каже «nyam, nyam»?"
+ },
+ "toca-roig": {
+  "ca": "Toca el roig!",
+  "t": "Торкнися до «el roig» (червоного)!"
+ },
+ "bamb-roig": {
+  "ca": "Explota les bambolles de color roig!",
+  "t": "Лопни бульбашки кольору roig (червоного)!"
+ },
+ "toca-blau": {
+  "ca": "Toca el blau!",
+  "t": "Торкнися до «el blau» (синього)!"
+ },
+ "bamb-blau": {
+  "ca": "Explota les bambolles de color blau!",
+  "t": "Лопни бульбашки кольору blau (синього)!"
+ },
+ "toca-groc": {
+  "ca": "Toca el groc!",
+  "t": "Торкнися до «el groc» (жовтого)!"
+ },
+ "bamb-groc": {
+  "ca": "Explota les bambolles de color groc!",
+  "t": "Лопни бульбашки кольору groc (жовтого)!"
+ },
+ "toca-verd": {
+  "ca": "Toca el verd!",
+  "t": "Торкнися до «el verd» (зеленого)!"
+ },
+ "bamb-verd": {
+  "ca": "Explota les bambolles de color verd!",
+  "t": "Лопни бульбашки кольору verd (зеленого)!"
+ },
+ "toca-taronja-color": {
+  "ca": "Toca el taronja!",
+  "t": "Торкнися до «el taronja» (помаранчевого)!"
+ },
+ "bamb-taronja-color": {
+  "ca": "Explota les bambolles de color taronja!",
+  "t": "Лопни бульбашки кольору taronja (помаранчевого)!"
+ },
+ "toca-negre": {
+  "ca": "Toca el negre!",
+  "t": "Торкнися до «el negre» (чорного)!"
+ },
+ "bamb-negre": {
+  "ca": "Explota les bambolles de color negre!",
+  "t": "Лопни бульбашки кольору negre (чорного)!"
+ },
+ "toca-blanc": {
+  "ca": "Toca el blanc!",
+  "t": "Торкнися до «el blanc» (білого)!"
+ },
+ "bamb-blanc": {
+  "ca": "Explota les bambolles de color blanc!",
+  "t": "Лопни бульбашки кольору blanc (білого)!"
+ },
+ "toca-rosa": {
+  "ca": "Toca el rosa!",
+  "t": "Торкнися до «el rosa» (рожевого)!"
+ },
+ "bamb-rosa": {
+  "ca": "Explota les bambolles de color rosa!",
+  "t": "Лопни бульбашки кольору rosa (рожевого)!"
+ },
+ "toca-morat": {
+  "ca": "Toca el morat!",
+  "t": "Торкнися кольору morat (фіолетового)!"
+ },
+ "bamb-morat": {
+  "ca": "Explota les bambolles de color morat!",
+  "t": "Лопни бульбашки кольору morat (фіолетового)!"
+ },
+ "toca-marro": {
+  "ca": "Toca el marró!",
+  "t": "Торкнися кольору marró (коричневого)!"
+ },
+ "bamb-marro": {
+  "ca": "Explota les bambolles de color marró!",
+  "t": "Лопни бульбашки кольору marró (коричневого)!"
+ },
+ "toca-gris": {
+  "ca": "Toca el gris!",
+  "t": "Торкнися кольору gris (сірого)!"
+ },
+ "bamb-gris": {
+  "ca": "Explota les bambolles de color gris!",
+  "t": "Лопни бульбашки кольору gris (сірого)!"
+ },
+ "dequin-poma": {
+  "ca": "De quin color és la poma?",
+  "t": "Якого кольору poma (яблуко)?"
+ },
+ "dequin-platan": {
+  "ca": "De quin color és el plàtan?",
+  "t": "Якого кольору plàtan (банан)?"
+ },
+ "dequin-granota": {
+  "ca": "De quin color és la granota?",
+  "t": "Якого кольору granota (жаба)?"
+ },
+ "dequin-taronja": {
+  "ca": "De quin color és la taronja?",
+  "t": "Якого кольору taronja (апельсин)?"
+ },
+ "dequin-raim": {
+  "ca": "De quin color és el raïm?",
+  "t": "Якого кольору raïm (виноград)?"
+ },
+ "dequin-porc": {
+  "ca": "De quin color és el porc?",
+  "t": "Якого кольору porc (свиня)?"
+ },
+ "dequin-elefant": {
+  "ca": "De quin color és l'elefant?",
+  "t": "Якого кольору elefant (слон)?"
+ },
+ "dequin-os": {
+  "ca": "De quin color és l'ós?",
+  "t": "Якого кольору ós (ведмідь)?"
+ },
+ "dequin-balena": {
+  "ca": "De quin color és la balena?",
+  "t": "Якого кольору balena (кит)?"
+ },
+ "dequin-nuvol": {
+  "ca": "De quin color és el núvol?",
+  "t": "Якого кольору núvol (хмара)?"
+ },
+ "emo-feliç": {
+  "ca": "Està feliç!",
+  "t": "Він/вона feliç (щасливий/щаслива)!"
+ },
+ "emo-trist": {
+  "ca": "Està trist!",
+  "t": "Він/вона trist (сумний/сумна)!"
+ },
+ "emo-enfadat": {
+  "ca": "Està enfadat!",
+  "t": "Він/вона enfadat (сердитий/сердита)!"
+ },
+ "emo-espantat": {
+  "ca": "Té por!",
+  "t": "Йому/їй страшно!"
+ },
+ "emo-sorpres": {
+  "ca": "Està sorprès!",
+  "t": "Він/вона sorprès (здивований/здивована)!"
+ },
+ "emo-adormit": {
+  "ca": "Té son!",
+  "t": "Він/вона adormit (сонний/сонна)!"
+ },
+ "dona-1": {
+  "ca": "Dona-li un caramel a la Taronjeta!",
+  "t": "Дай Taronjeta un (одну) цукерку!"
+ },
+ "onhiha-1": {
+  "ca": "On n'hi ha un?",
+  "t": "Де є un (одна)?"
+ },
+ "dona-2": {
+  "ca": "Dona-li dos caramels a la Taronjeta!",
+  "t": "Дай Taronjeta dos (дві) цукерки!"
+ },
+ "onhiha-2": {
+  "ca": "On n'hi ha dos?",
+  "t": "Де є dos (дві)?"
+ },
+ "dona-3": {
+  "ca": "Dona-li tres caramels a la Taronjeta!",
+  "t": "Дай Taronjeta tres (три) цукерки!"
+ },
+ "onhiha-3": {
+  "ca": "On n'hi ha tres?",
+  "t": "Де є tres (три)?"
+ },
+ "dona-4": {
+  "ca": "Dona-li quatre caramels a la Taronjeta!",
+  "t": "Дай Taronjeta quatre (чотири) цукерки!"
+ },
+ "onhiha-4": {
+  "ca": "On n'hi ha quatre?",
+  "t": "Де є quatre (чотири)?"
+ },
+ "dona-5": {
+  "ca": "Dona-li cinc caramels a la Taronjeta!",
+  "t": "Дай Taronjeta cinc (п’ять) цукерок!"
+ },
+ "onhiha-5": {
+  "ca": "On n'hi ha cinc?",
+  "t": "Де є cinc (п’ять)?"
+ },
+ "dona-6": {
+  "ca": "Dona-li sis caramels a la Taronjeta!",
+  "t": "Дай Taronjeta sis (шість) цукерок!"
+ },
+ "onhiha-6": {
+  "ca": "On n'hi ha sis?",
+  "t": "Де є sis (шість)?"
+ },
+ "dona-7": {
+  "ca": "Dona-li set caramels a la Taronjeta!",
+  "t": "Дай Taronjeta set (сім) цукерок!"
+ },
+ "onhiha-7": {
+  "ca": "On n'hi ha set?",
+  "t": "Де є set (сім)?"
+ },
+ "dona-8": {
+  "ca": "Dona-li huit caramels a la Taronjeta!",
+  "t": "Дай Taronjeta huit (вісім) цукерок!"
+ },
+ "onhiha-8": {
+  "ca": "On n'hi ha huit?",
+  "t": "Де є huit (вісім)?"
+ },
+ "dona-9": {
+  "ca": "Dona-li nou caramels a la Taronjeta!",
+  "t": "Дай Taronjeta nou (дев’ять) цукерок!"
+ },
+ "onhiha-9": {
+  "ca": "On n'hi ha nou?",
+  "t": "Де тут nou (дев’ять)?"
+ },
+ "dona-10": {
+  "ca": "Dona-li deu caramels a la Taronjeta!",
+  "t": "Дай Taronjeta deu (десять) цукерок!"
+ },
+ "onhiha-10": {
+  "ca": "On n'hi ha deu?",
+  "t": "Де тут deu (десять)?"
+ },
+ "plat-poma": {
+  "ca": "Posa la poma al plat!",
+  "t": "Поклади la poma (яблуко) на тарілку!"
+ },
+ "plat-pa": {
+  "ca": "Posa el pa al plat!",
+  "t": "Поклади el pa (хліб) на тарілку!"
+ },
+ "plat-aigua": {
+  "ca": "Posa l'aigua al plat!",
+  "t": "Поклади l'aigua (воду) на тарілку!"
+ },
+ "plat-llet": {
+  "ca": "Posa la llet al plat!",
+  "t": "Поклади la llet (молоко) на тарілку!"
+ },
+ "plat-formatge": {
+  "ca": "Posa el formatge al plat!",
+  "t": "Поклади el formatge (сир) на тарілку!"
+ },
+ "plat-platan": {
+  "ca": "Posa el plàtan al plat!",
+  "t": "Поклади el plàtan (банан) на тарілку!"
+ },
+ "plat-taronja": {
+  "ca": "Posa la taronja al plat!",
+  "t": "Поклади la taronja (апельсин) на тарілку!"
+ },
+ "plat-maduixa": {
+  "ca": "Posa la maduixa al plat!",
+  "t": "Поклади la maduixa (полуницю) на тарілку!"
+ },
+ "plat-raim": {
+  "ca": "Posa el raïm al plat!",
+  "t": "Поклади el raïm (виноград) на тарілку!"
+ },
+ "plat-pera": {
+  "ca": "Posa la pera al plat!",
+  "t": "Поклади la pera (грушу) на тарілку!"
+ },
+ "plat-sindria": {
+  "ca": "Posa la síndria al plat!",
+  "t": "Поклади la síndria (кавун) на тарілку!"
+ },
+ "plat-ou": {
+  "ca": "Posa l'ou al plat!",
+  "t": "Поклади l'ou (яйце) на тарілку!"
+ },
+ "plat-galeta": {
+  "ca": "Posa la galeta al plat!",
+  "t": "Поклади la galeta (печиво) на тарілку!"
+ },
+ "plat-pastanaga": {
+  "ca": "Posa la pastanaga al plat!",
+  "t": "Поклади la pastanaga (моркву) на тарілку!"
+ },
+ "plat-tomaca": {
+  "ca": "Posa la tomaca al plat!",
+  "t": "Поклади la tomaca (помідор) на тарілку!"
+ },
+ "plat-gelat": {
+  "ca": "Posa el gelat al plat!",
+  "t": "Поклади el gelat (морозиво) на тарілку!"
+ },
+ "motxilla-poma": {
+  "ca": "Posa la poma a la motxilla!",
+  "t": "Поклади la poma (яблуко) в рюкзак!"
+ },
+ "motxilla-pa": {
+  "ca": "Posa el pa a la motxilla!",
+  "t": "Поклади el pa (хліб) у рюкзак!"
+ },
+ "motxilla-aigua": {
+  "ca": "Posa l'aigua a la motxilla!",
+  "t": "Поклади l'aigua (воду) в рюкзак!"
+ },
+ "motxilla-llet": {
+  "ca": "Posa la llet a la motxilla!",
+  "t": "Поклади la llet (молоко) в рюкзак!"
+ },
+ "motxilla-formatge": {
+  "ca": "Posa el formatge a la motxilla!",
+  "t": "Поклади el formatge (сир) у рюкзак!"
+ },
+ "motxilla-platan": {
+  "ca": "Posa el plàtan a la motxilla!",
+  "t": "Поклади el plàtan (банан) у рюкзак!"
+ },
+ "motxilla-taronja": {
+  "ca": "Posa la taronja a la motxilla!",
+  "t": "Поклади la taronja (апельсин) у рюкзак!"
+ },
+ "motxilla-maduixa": {
+  "ca": "Posa la maduixa a la motxilla!",
+  "t": "Поклади la maduixa (полуницю) в рюкзак!"
+ },
+ "motxilla-raim": {
+  "ca": "Posa el raïm a la motxilla!",
+  "t": "Поклади el raïm (виноград) у рюкзак!"
+ },
+ "motxilla-pera": {
+  "ca": "Posa la pera a la motxilla!",
+  "t": "Поклади la pera (грушу) в рюкзак!"
+ },
+ "motxilla-sindria": {
+  "ca": "Posa la síndria a la motxilla!",
+  "t": "Поклади la síndria (кавун) у рюкзак!"
+ },
+ "motxilla-ou": {
+  "ca": "Posa l'ou a la motxilla!",
+  "t": "Поклади l'ou (яйце) в рюкзак!"
+ },
+ "motxilla-galeta": {
+  "ca": "Posa la galeta a la motxilla!",
+  "t": "Поклади la galeta (печиво) в рюкзак!"
+ },
+ "motxilla-pastanaga": {
+  "ca": "Posa la pastanaga a la motxilla!",
+  "t": "Поклади la pastanaga (моркву) в рюкзак!"
+ },
+ "motxilla-tomaca": {
+  "ca": "Posa la tomaca a la motxilla!",
+  "t": "Поклади la tomaca (помідор) у рюкзак!"
+ },
+ "motxilla-gelat": {
+  "ca": "Posa el gelat a la motxilla!",
+  "t": "Поклади el gelat (морозиво) в рюкзак!"
+ },
+ "posali-cap": {
+  "ca": "Posa-li el cap!",
+  "t": "Додай йому el cap (голову)!"
+ },
+ "posali-ulls": {
+  "ca": "Posa-li els ulls!",
+  "t": "Додай йому els ulls (очі)!"
+ },
+ "posali-nas": {
+  "ca": "Posa-li el nas!",
+  "t": "Додай йому el nas (ніс)!"
+ },
+ "posali-boca": {
+  "ca": "Posa-li la boca!",
+  "t": "Додай йому la boca (рот)!"
+ },
+ "posali-braç": {
+  "ca": "Posa-li el braç!",
+  "t": "Додай йому el braç (руку)!"
+ },
+ "posali-mà": {
+  "ca": "Posa-li la mà!",
+  "t": "Додай йому la mà (руку)!"
+ },
+ "posali-cama": {
+  "ca": "Posa-li la cama!",
+  "t": "Додай йому la cama (ногу)!"
+ },
+ "posali-peu": {
+  "ca": "Posa-li el peu!",
+  "t": "Додай йому el peu (ступню)!"
+ },
+ "posali-sabates": {
+  "ca": "Posa-li les sabates!",
+  "t": "Додай йому les sabates (черевики)!"
+ },
+ "posali-barret": {
+  "ca": "Posa-li el barret!",
+  "t": "Додай йому el barret (капелюх)!"
+ },
+ "posali-samarreta": {
+  "ca": "Posa-li la samarreta!",
+  "t": "Додай йому la samarreta (футболку)!"
+ },
+ "porta-pare-casa": {
+  "ca": "Porta el pare a la casa!",
+  "t": "Відведи el pare (тата) a la casa (до будинку)!"
+ },
+ "porta-pare-porta": {
+  "ca": "Porta el pare a la porta!",
+  "t": "Відведи el pare (тата) a la porta (до дверей)!"
+ },
+ "porta-pare-llit": {
+  "ca": "Porta el pare al llit!",
+  "t": "Відведи el pare (тата) al llit (до ліжка)!"
+ },
+ "porta-pare-cuina": {
+  "ca": "Porta el pare a la cuina!",
+  "t": "Відведи el pare (тата) a la cuina (до кухні)!"
+ },
+ "porta-pare-sofa": {
+  "ca": "Porta el pare al sofà!",
+  "t": "Відведи el pare (тата) al sofà (до дивана)!"
+ },
+ "porta-pare-banyera": {
+  "ca": "Porta el pare a la banyera!",
+  "t": "Відведи el pare (тата) a la banyera (до ванни)!"
+ },
+ "porta-mare-casa": {
+  "ca": "Porta la mare a la casa!",
+  "t": "Відведи la mare (маму) a la casa (до будинку)!"
+ },
+ "porta-mare-porta": {
+  "ca": "Porta la mare a la porta!",
+  "t": "Відведи la mare (маму) a la porta (до дверей)!"
+ },
+ "porta-mare-llit": {
+  "ca": "Porta la mare al llit!",
+  "t": "Відведи la mare (маму) al llit (до ліжка)!"
+ },
+ "porta-mare-cuina": {
+  "ca": "Porta la mare a la cuina!",
+  "t": "Відведи la mare (маму) a la cuina (до кухні)!"
+ },
+ "porta-mare-sofa": {
+  "ca": "Porta la mare al sofà!",
+  "t": "Відведи la mare (маму) al sofà (до дивана)!"
+ },
+ "porta-mare-banyera": {
+  "ca": "Porta la mare a la banyera!",
+  "t": "Відведи la mare (маму) a la banyera (до ванни)!"
+ },
+ "porta-germà-casa": {
+  "ca": "Porta el germà a la casa!",
+  "t": "Відведи el germà (брата) a la casa (до будинку)!"
+ },
+ "porta-germà-porta": {
+  "ca": "Porta el germà a la porta!",
+  "t": "Відведи el germà (брата) a la porta (до дверей)!"
+ },
+ "porta-germà-llit": {
+  "ca": "Porta el germà al llit!",
+  "t": "Відведи el germà (брата) al llit (до ліжка)!"
+ },
+ "porta-germà-cuina": {
+  "ca": "Porta el germà a la cuina!",
+  "t": "Відведи el germà (брата) a la cuina (до кухні)!"
+ },
+ "porta-germà-sofa": {
+  "ca": "Porta el germà al sofà!",
+  "t": "Відведи el germà (брата) al sofà (до дивана)!"
+ },
+ "porta-germà-banyera": {
+  "ca": "Porta el germà a la banyera!",
+  "t": "Відведи el germà (брата) a la banyera (до ванни)!"
+ },
+ "porta-germana-casa": {
+  "ca": "Porta la germana a la casa!",
+  "t": "Відведи la germana (сестру) a la casa (до будинку)!"
+ },
+ "porta-germana-porta": {
+  "ca": "Porta la germana a la porta!",
+  "t": "Відведи la germana (сестру) a la porta (до дверей)!"
+ },
+ "porta-germana-llit": {
+  "ca": "Porta la germana al llit!",
+  "t": "Відведи la germana (сестру) al llit (до ліжка)!"
+ },
+ "porta-germana-cuina": {
+  "ca": "Porta la germana a la cuina!",
+  "t": "Відведи la germana (сестру) a la cuina (до кухні)!"
+ },
+ "porta-germana-sofa": {
+  "ca": "Porta la germana al sofà!",
+  "t": "Відведи la germana (сестру) al sofà (до дивана)!"
+ },
+ "porta-germana-banyera": {
+  "ca": "Porta la germana a la banyera!",
+  "t": "Відведи la germana (сестру) a la banyera (до ванни)!"
+ },
+ "porta-bebe-casa": {
+  "ca": "Porta el bebé a la casa!",
+  "t": "Відведи el bebé (малюка) a la casa (до будинку)!"
+ },
+ "porta-bebe-porta": {
+  "ca": "Porta el bebé a la porta!",
+  "t": "Відведи el bebé (малюка) a la porta (до дверей)!"
+ },
+ "porta-bebe-llit": {
+  "ca": "Porta el bebé al llit!",
+  "t": "Відведи el bebé (малюка) al llit (до ліжка)!"
+ },
+ "porta-bebe-cuina": {
+  "ca": "Porta el bebé a la cuina!",
+  "t": "Відведи el bebé (малюка) a la cuina (до кухні)!"
+ },
+ "porta-bebe-sofa": {
+  "ca": "Porta el bebé al sofà!",
+  "t": "Відведи el bebé (малюка) al sofà (до дивана)!"
+ },
+ "porta-bebe-banyera": {
+  "ca": "Porta el bebé a la banyera!",
+  "t": "Відведи el bebé (малюка) a la banyera (до ванни)!"
+ },
+ "porta-iaio-casa": {
+  "ca": "Porta el iaio a la casa!",
+  "t": "Відведи el iaio (дідуся) a la casa (до будинку)!"
+ },
+ "porta-iaio-porta": {
+  "ca": "Porta el iaio a la porta!",
+  "t": "Відведи el iaio (дідуся) a la porta (до дверей)!"
+ },
+ "porta-iaio-llit": {
+  "ca": "Porta el iaio al llit!",
+  "t": "Відведи el iaio (дідуся) al llit (до ліжка)!"
+ },
+ "porta-iaio-cuina": {
+  "ca": "Porta el iaio a la cuina!",
+  "t": "Відведи el iaio (дідуся) a la cuina (до кухні)!"
+ },
+ "porta-iaio-sofa": {
+  "ca": "Porta el iaio al sofà!",
+  "t": "Відведи дідуся на диван!"
+ },
+ "porta-iaio-banyera": {
+  "ca": "Porta el iaio a la banyera!",
+  "t": "Відведи дідуся у ванну!"
+ },
+ "porta-iaia-casa": {
+  "ca": "Porta la iaia a la casa!",
+  "t": "Відведи бабусю до будинку!"
+ },
+ "porta-iaia-porta": {
+  "ca": "Porta la iaia a la porta!",
+  "t": "Відведи бабусю до дверей!"
+ },
+ "porta-iaia-llit": {
+  "ca": "Porta la iaia al llit!",
+  "t": "Відведи бабусю до ліжка!"
+ },
+ "porta-iaia-cuina": {
+  "ca": "Porta la iaia a la cuina!",
+  "t": "Відведи бабусю на кухню!"
+ },
+ "porta-iaia-sofa": {
+  "ca": "Porta la iaia al sofà!",
+  "t": "Відведи бабусю на диван!"
+ },
+ "porta-iaia-banyera": {
+  "ca": "Porta la iaia a la banyera!",
+  "t": "Відведи бабусю у ванну!"
+ },
+ "on-abc-a": {
+  "ca": "On és la a?",
+  "t": "Де літера «a»?"
+ },
+ "comenca-a": {
+  "ca": "L'abella! Amb quina lletra comença?",
+  "t": "L'abella (бджола)! З якої літери починається?"
+ },
+ "on-abc-b": {
+  "ca": "On és la be?",
+  "t": "Де літера «be»?"
+ },
+ "comenca-b": {
+  "ca": "La balena! Amb quina lletra comença?",
+  "t": "La balena (кит)! З якої літери починається?"
+ },
+ "on-abc-c": {
+  "ca": "On és la ce?",
+  "t": "Де літера «ce»?"
+ },
+ "comenca-c": {
+  "ca": "La casa! Amb quina lletra comença?",
+  "t": "La casa (будинок)! З якої літери починається?"
+ },
+ "on-abc-d": {
+  "ca": "On és la de?",
+  "t": "Де літера «de»?"
+ },
+ "comenca-d": {
+  "ca": "El dofí! Amb quina lletra comença?",
+  "t": "El dofí (дельфін)! З якої літери починається?"
+ },
+ "on-abc-e": {
+  "ca": "On és la e?",
+  "t": "Де літера «e»?"
+ },
+ "comenca-e": {
+  "ca": "L'elefant! Amb quina lletra comença?",
+  "t": "L'elefant (слон)! З якої літери починається?"
+ },
+ "on-abc-f": {
+  "ca": "On és la efe?",
+  "t": "Де літера «efe»?"
+ },
+ "comenca-f": {
+  "ca": "La flor! Amb quina lletra comença?",
+  "t": "La flor (квітка)! З якої літери починається?"
+ },
+ "on-abc-g": {
+  "ca": "On és la ge?",
+  "t": "Де літера «ge»?"
+ },
+ "comenca-g": {
+  "ca": "El gat! Amb quina lletra comença?",
+  "t": "El gat (кіт)! З якої літери починається?"
+ },
+ "on-abc-h": {
+  "ca": "On és la hac?",
+  "t": "Де літера «hac»?"
+ },
+ "comenca-h": {
+  "ca": "L'helicòpter! Amb quina lletra comença?",
+  "t": "L'helicòpter (гелікоптер)! З якої літери починається?"
+ },
+ "on-abc-i": {
+  "ca": "On és la i?",
+  "t": "Де літера «i»?"
+ },
+ "comenca-i": {
+  "ca": "L'illa! Amb quina lletra comença?",
+  "t": "L'illa (острів)! З якої літери починається?"
+ },
+ "on-abc-j": {
+  "ca": "On és la jota?",
+  "t": "Де літера «jota»?"
+ },
+ "comenca-j": {
+  "ca": "La jirafa! Amb quina lletra comença?",
+  "t": "La jirafa (жирафа)! З якої літери починається?"
+ },
+ "on-abc-k": {
+  "ca": "On és la ka?",
+  "t": "Де літера «ka»?"
+ },
+ "comenca-k": {
+  "ca": "El koala! Amb quina lletra comença?",
+  "t": "El koala (коала)! З якої літери починається?"
+ },
+ "on-abc-l": {
+  "ca": "On és la ela?",
+  "t": "Де літера «ela»?"
+ },
+ "comenca-l": {
+  "ca": "La lluna! Amb quina lletra comença?",
+  "t": "La lluna (місяць)! З якої літери починається?"
+ },
+ "on-abc-m": {
+  "ca": "On és la ema?",
+  "t": "Де літера «ema»?"
+ },
+ "comenca-m": {
+  "ca": "La maduixa! Amb quina lletra comença?",
+  "t": "La maduixa (полуниця)! З якої літери починається?"
+ },
+ "on-abc-n": {
+  "ca": "On és la ena?",
+  "t": "Де літера «ena»?"
+ },
+ "comenca-n": {
+  "ca": "El núvol! Amb quina lletra comença?",
+  "t": "El núvol (хмаринка)! З якої літери починається?"
+ },
+ "on-abc-o": {
+  "ca": "On és la o?",
+  "t": "Де літера «o»?"
+ },
+ "comenca-o": {
+  "ca": "L'ovella! Amb quina lletra comença?",
+  "t": "L'ovella (вівця)! З якої літери починається?"
+ },
+ "on-abc-p": {
+  "ca": "On és la pe?",
+  "t": "Де літера «pe»?"
+ },
+ "comenca-p": {
+  "ca": "La poma! Amb quina lletra comença?",
+  "t": "La poma (яблуко)! З якої літери починається?"
+ },
+ "on-abc-q": {
+  "ca": "On és la cu?",
+  "t": "Де літера cu (ку)?"
+ },
+ "comenca-q": {
+  "ca": "El quatre! Amb quina lletra comença?",
+  "t": "El quatre (число чотири)! З якої літери починається?"
+ },
+ "on-abc-r": {
+  "ca": "On és la erre?",
+  "t": "Де літера erre (ерре)?"
+ },
+ "comenca-r": {
+  "ca": "El ratolí! Amb quina lletra comença?",
+  "t": "El ratolí (миша)! З якої літери починається?"
+ },
+ "on-abc-s": {
+  "ca": "On és la essa?",
+  "t": "Де літера essa (еса)?"
+ },
+ "comenca-s": {
+  "ca": "El sol! Amb quina lletra comença?",
+  "t": "El sol (сонце)! З якої літери починається?"
+ },
+ "on-abc-t": {
+  "ca": "On és la te?",
+  "t": "Де літера te (те)?"
+ },
+ "comenca-t": {
+  "ca": "La tortuga! Amb quina lletra comença?",
+  "t": "La tortuga (черепаха)! З якої літери починається?"
+ },
+ "on-abc-u": {
+  "ca": "On és la u?",
+  "t": "Де літера u (у)?"
+ },
+ "comenca-u": {
+  "ca": "L'unicorn! Amb quina lletra comença?",
+  "t": "L'unicorn (єдиноріг)! З якої літери починається?"
+ },
+ "on-abc-v": {
+  "ca": "On és la ve?",
+  "t": "Де літера ve (ве)?"
+ },
+ "comenca-v": {
+  "ca": "La vaca! Amb quina lletra comença?",
+  "t": "La vaca (корова)! З якої літери починається?"
+ },
+ "on-abc-x": {
+  "ca": "On és la xeix?",
+  "t": "Де літера xeix (шейш)?"
+ },
+ "comenca-x": {
+  "ca": "La xocolata! Amb quina lletra comença?",
+  "t": "La xocolata (шоколад)! З якої літери починається?"
+ },
+ "on-abc-z": {
+  "ca": "On és la zeta?",
+  "t": "Де літера zeta (зета)?"
+ },
+ "comenca-z": {
+  "ca": "La zebra! Amb quina lletra comença?",
+  "t": "La zebra (зебра)! З якої літери починається?"
+ },
+ "illa-accions": {
+  "ca": "L'illa de les accions!",
+  "t": "Острів дій!"
+ },
+ "illa-contraris": {
+  "ca": "L'illa dels contraris!",
+  "t": "Острів протилежностей!"
+ },
+ "parelles": {
+  "ca": "Busca les parelles! Gira dues cartes iguals.",
+  "t": "Знайди пари! Переверни дві однакові картки."
+ },
+ "primer": {
+  "ca": "Primer, toca...",
+  "t": "Спочатку торкнися..."
+ },
+ "despres": {
+  "ca": "I després...",
+  "t": "А потім..."
+ },
+ "ordre-numeros": {
+  "ca": "Toca'ls en ordre, de menys a més!",
+  "t": "Торкнися чисел по порядку — від найменшого до найбільшого!"
+ },
+ "ordre-vocals": {
+  "ca": "Toca les vocals en ordre: a, e, i, o, u!",
+  "t": "Торкнися голосних по порядку: a, e, i, o, u!"
+ },
+ "mes": {
+  "ca": "On n'hi ha més?",
+  "t": "Де більше?"
+ },
+ "menys": {
+  "ca": "On n'hi ha menys?",
+  "t": "Де менше?"
+ },
+ "sort-habitat": {
+  "ca": "On viu? Al cel, a l'aigua o a la terra?",
+  "t": "Де живе тваринка? У небі, у воді чи на землі?"
+ },
+ "sort-fruita": {
+  "ca": "La fruita, a un costat! La verdura, a l'altre!",
+  "t": "Фрукти — з одного боку, овочі — з іншого!"
+ },
+ "sort-calent": {
+  "ca": "Les coses calentes, al foc! Les coses fredes, al gel!",
+  "t": "Гарячі речі — до вогню! Холодні — до льоду!"
+ },
+ "quin-gran": {
+  "ca": "Quin és gran?",
+  "t": "Що велике?"
+ },
+ "quin-xicotet": {
+  "ca": "Quin és xicotet?",
+  "t": "Що маленьке?"
+ },
+ "qui-acc-menjar": {
+  "ca": "Qui menja?",
+  "t": "Хто їсть?"
+ },
+ "qui-acc-beure": {
+  "ca": "Qui beu?",
+  "t": "Хто п'є?"
+ },
+ "qui-acc-dormir": {
+  "ca": "Qui dorm?",
+  "t": "Хто спить?"
+ },
+ "qui-acc-correr": {
+  "ca": "Qui corre?",
+  "t": "Хто бігає?"
+ },
+ "qui-acc-saltar": {
+  "ca": "Qui salta?",
+  "t": "Хто стрибає?"
+ },
+ "qui-acc-nadar": {
+  "ca": "Qui nada?",
+  "t": "Хто плаває?"
+ },
+ "qui-acc-ballar": {
+  "ca": "Qui balla?",
+  "t": "Хто танцює?"
+ },
+ "qui-acc-cantar": {
+  "ca": "Qui canta?",
+  "t": "Хто співає?"
+ },
+ "qui-acc-pintar": {
+  "ca": "Qui pinta?",
+  "t": "Хто малює?"
+ },
+ "qui-acc-llegir": {
+  "ca": "Qui llig?",
+  "t": "Хто читає?"
+ },
+ "qui-acc-plorar": {
+  "ca": "Qui plora?",
+  "t": "Хто плаче?"
+ },
+ "qui-acc-riure": {
+  "ca": "Qui riu?",
+  "t": "Хто сміється?"
+ },
+ "ask-op-dia": {
+  "ca": "On és el dia?",
+  "t": "Де день?"
+ },
+ "ask-op-nit": {
+  "ca": "On és la nit?",
+  "t": "Де ніч?"
+ },
+ "ask-op-calent": {
+  "ca": "Què està calent?",
+  "t": "Що гаряче?"
+ },
+ "ask-op-fred": {
+  "ca": "Què està fred?",
+  "t": "Що холодне?"
+ },
+ "ask-op-rapid": {
+  "ca": "Qui és ràpid?",
+  "t": "Хто швидкий?"
+ },
+ "ask-op-lent": {
+  "ca": "Qui és lent?",
+  "t": "Хто повільний?"
+ },
+ "ask-op-alt": {
+  "ca": "Qui és alt?",
+  "t": "Хто високий?"
+ },
+ "ask-op-baix": {
+  "ca": "Qui és baix?",
+  "t": "Хто низенький?"
+ },
+ "ask-op-obert": {
+  "ca": "Quin llibre està obert?",
+  "t": "Яка книжка відкрита?"
+ },
+ "ask-op-tancat": {
+  "ca": "Quin llibre està tancat?",
+  "t": "Яка книжка закрита?"
+ },
+ "ask-op-content": {
+  "ca": "Qui està content?",
+  "t": "Хто радіє?"
+ },
+ "ask-op-trist": {
+  "ca": "Qui està trist?",
+  "t": "Хто сумує?"
+ },
+ "ll-z0r06y": {
+  "ca": "Hola i adéu!",
+  "t": "Hola (привіт) і adéu (бувай)!"
+ },
+ "ll-2vojlv": {
+  "ca": "Hola! Hui aprendrem a saludar i a dir adéu. Escolta bé i toca els dibuixos!",
+  "t": "Hola (привіт)! Сьогодні навчимося вітатися й прощатися. Слухай уважно й торкайся малюнків!"
+ },
+ "ll-1ilzsq3": {
+  "ca": "Quan veiem algú, el saludem i diem: Hola!",
+  "t": "Коли ми когось зустрічаємо, то вітаємося й кажемо: Hola (привіт)!"
+ },
+ "ll-wknal9": {
+  "ca": "Pel matí, quan ix el sol, diem: Bon dia!",
+  "t": "Вранці, коли сходить сонце, кажемо: Bon dia (доброго ранку)!"
+ },
+ "ll-3lyhha": {
+  "ca": "Per la vesprada, després de dinar, diem: Bona vesprada!",
+  "t": "Після обіду, надвечір, кажемо: Bona vesprada (добрий вечір)!"
+ },
+ "ll-1d5mdi6": {
+  "ca": "Per la nit, quan ens n'anem a dormir, diem: Bona nit!",
+  "t": "Уночі, коли йдемо спати, кажемо: Bona nit (на добраніч)!"
+ },
+ "ll-rb1drv": {
+  "ca": "I quan ens n'anem, diem: Adéu! O també: Fins demà!",
+  "t": "А коли йдемо, кажемо: Adéu (бувай)! Або ще: Fins demà (до завтра)!"
+ },
+ "ll-bi462r": {
+  "ca": "Ara toca tots els dibuixos i repeteix amb mi!",
+  "t": "Торкнися всіх малюнків і повторюй за мною!"
+ },
+ "ll-tizire": {
+  "ca": "Bon dia, Pep!",
+  "t": "Bon dia (доброго ранку), Pep!"
+ },
+ "ll-h3q1ox": {
+  "ca": "Bon dia, Taronjeta!",
+  "t": "Bon dia (доброго ранку), Taronjeta!"
+ },
+ "ll-stl6g0": {
+  "ca": "Me'n vaig a l'escola. Adéu!",
+  "t": "Я йду до школи. Adéu (бувай)!"
+ },
+ "ll-ollic0": {
+  "ca": "Adéu! Fins demà!",
+  "t": "Adéu (бувай)! Fins demà (до завтра)!"
+ },
+ "ll-12t0u2e": {
+  "ca": "Arribes a l'escola pel matí. Què dius?",
+  "t": "Ти приходиш до школи вранці. Що скажеш?"
+ },
+ "ll-4luti2": {
+  "ca": "És de nit i te'n vas a dormir. Què dius?",
+  "t": "Ніч, і ти йдеш спати. Що скажеш?"
+ },
+ "ll-17v8ge6": {
+  "ca": "També hi ha paraules màgiques! Són xicotetes, però posen molt contenta la gent.",
+  "t": "Є ще чарівні слова! Вони коротенькі, але дуже тішать людей."
+ },
+ "ll-1bnebsi": {
+  "ca": "Quan vols alguna cosa, la demanes per favor: Em dones una galeta, per favor?",
+  "t": "Коли чогось хочеш, попроси, сказавши per favor (будь ласка): Em dones una galeta, per favor? (Даси мені печиво, будь ласка?)"
+ },
+ "ll-105rxo7": {
+  "ca": "Quan algú et dona alguna cosa, dius: Gràcies! I l'altra persona contesta: De res!",
+  "t": "Коли хтось тобі щось дає, кажи: Gràcies (дякую)! А у відповідь почуєш: De res (нема за що)!"
+ },
+ "ll-gj7nfl": {
+  "ca": "I si fas mal a algú sense voler, dius: Perdó!",
+  "t": "А якщо ти ненароком когось зачепиш, скажи: Perdó (вибач)!"
+ },
+ "ll-k5xnfc": {
+  "ca": "Toca les paraules màgiques i digues-les amb mi!",
+  "t": "Торкнися чарівних слів і повторюй за мною!"
+ },
+ "ll-12fa6v1": {
+  "ca": "La iaia et dona un regal. Què dius?",
+  "t": "Бабуся дарує тобі подарунок. Що скажеш?"
+ },
+ "ll-it7cx3": {
+  "ca": "Sense voler, trepitges el peu d'un amic. Què dius?",
+  "t": "Ти ненароком наступив або наступила другові на ногу. Що скажеш?"
+ },
+ "ll-1s2lisn": {
+  "ca": "Tens set i vols aigua. Com la demanes?",
+  "t": "Ти хочеш пити й просиш води. Як попросиш?"
+ },
+ "ll-imomim": {
+  "ca": "Molt bé! Ja saps saludar: hola, bon dia, bona vesprada i bona nit. I saps dir adéu. I recorda les paraules màgiques: per favor, gràcies, de res i perdó!",
+  "t": "Чудово! Тепер ти вмієш вітатися: hola (привіт), bon dia (доброго ранку), bona vesprada (добрий вечір) і bona nit (на добраніч). І вмієш прощатися. А ще пам’ятай чарівні слова: per favor (будь ласка), gràcies (дякую), de res (нема за що) і perdó (вибач)!"
+ },
+ "ll-wj43p3": {
+  "ca": "Com et dius?",
+  "t": "Як тебе звати?"
+ },
+ "ll-ozu10d": {
+  "ca": "Quants anys tens?",
+  "t": "Скільки тобі років?"
+ },
+ "ll-583kpy": {
+  "ca": "On vius?",
+  "t": "Де ти живеш?"
+ },
+ "ll-1ndzqaq": {
+  "ca": "Encantat! Encantada!",
+  "t": "Encantat! (Приємно познайомитися!) Encantada! (Приємно познайомитися!)"
+ },
+ "ll-il88pp": {
+  "ca": "Qui soc jo?",
+  "t": "Хто я?"
+ },
+ "ll-wl9pkt": {
+  "ca": "Hola! Hui aprendràs a presentar-te. Així podràs fer amics nous!",
+  "t": "Привіт! Сьогодні ти навчишся розповідати про себе. Так ти зможеш знайти нових друзів!"
+ },
+ "ll-gz4o4k": {
+  "ca": "Per a dir el teu nom, diem: Em dic... Jo em dic Taronjeta! I tu, com et dius?",
+  "t": "Щоб назвати своє ім’я, кажемо: Em dic... (Мене звати...) Я — Taronjeta! А тебе як звати?"
+ },
+ "ll-t35exx": {
+  "ca": "Per a preguntar-li el nom a un amic, diem: Com et dius?",
+  "t": "Щоб запитати ім’я друга, кажемо: Com et dius? (Як тебе звати?)"
+ },
+ "ll-9zmjwf": {
+  "ca": "Un xiquet diu: Soc un xiquet. Una xiqueta diu: Soc una xiqueta.",
+  "t": "Хлопчик каже: Soc un xiquet (Я хлопчик). Дівчинка каже: Soc una xiqueta (Я дівчинка)."
+ },
+ "ll-1g7kv0e": {
+  "ca": "Per a dir quants anys tens, diem: Tinc... anys. Mira les espelmes: jo tinc cinc anys!",
+  "t": "Щоб сказати, скільки тобі років, кажемо: Tinc... anys (Мені... років). Поглянь на свічки: jo tinc cinc anys! (Мені п’ять років!)"
+ },
+ "ll-2audwg": {
+  "ca": "Toca les espelmes i escolta quants anys són!",
+  "t": "Торкнися свічок і послухай, скільки років!"
+ },
+ "ll-3ce6cb": {
+  "ca": "Per a preguntar l'edat, diem: Quants anys tens?",
+  "t": "Щоб запитати про вік, кажемо: Quants anys tens? (Скільки тобі років?)"
+ },
+ "ll-11v40ry": {
+  "ca": "I per a saber on viu algú, preguntem: On vius? I contestem: Visc a València!",
+  "t": "А щоб дізнатися, де хтось живе, запитуємо: On vius? (Де ти живеш?) А відповідаємо: Visc a València! (Я живу у València!)"
+ },
+ "ll-195ndfw": {
+  "ca": "Quan coneixes algú, dius: Encantat! I si ets una xiqueta: Encantada!",
+  "t": "Коли знайомишся з кимось, кажеш: Encantat! (Приємно познайомитися!) А якщо ти дівчинка: Encantada! (Приємно познайомитися!)"
+ },
+ "ll-1mce8zw": {
+  "ca": "Hola! Com et dius?",
+  "t": "Привіт! Com et dius? (Як тебе звати?)"
+ },
+ "ll-5ehyaf": {
+  "ca": "Em dic Pep. I tu?",
+  "t": "Em dic Pep (Мене звати Pep). А тебе?"
+ },
+ "ll-126f55g": {
+  "ca": "Jo em dic Taronjeta. Quants anys tens?",
+  "t": "Мене звати Taronjeta. Quants anys tens? (Скільки тобі років?)"
+ },
+ "ll-1nhcki2": {
+  "ca": "Jo, cinc. Encantada, Pep!",
+  "t": "Мені — cinc (п’ять). Encantada, Pep! (Приємно познайомитися, Pep!)"
+ },
+ "ll-135gpde": {
+  "ca": "Encantat, Taronjeta!",
+  "t": "Encantat, Taronjeta! (Приємно познайомитися, Taronjeta!)"
+ },
+ "ll-qw13s": {
+  "ca": "Qui té tres anys? Compta les espelmes!",
+  "t": "Кому три роки? Порахуй свічки!"
+ },
+ "ll-38j3s2": {
+  "ca": "Vols saber el nom d'una amiga. Què li preguntes?",
+  "t": "Хочеш дізнатися ім’я подруги. Що запитаєш?"
+ },
+ "ll-lbypks": {
+  "ca": "Vols saber quants anys té el teu amic. Què li preguntes?",
+  "t": "Хочеш дізнатися, скільки років твоєму другові. Що запитаєш?"
+ },
+ "ll-1mrgg9w": {
+  "ca": "Fantàstic! Ja et saps presentar: em dic..., tinc... anys, visc a... I saps preguntar: com et dius?, quants anys tens? i on vius?",
+  "t": "Чудово! Тепер ти вмієш розповісти про себе: em dic... (мене звати...), tinc... anys (мені... років), visc a... (я живу в...). І вмієш запитати: com et dius? (як тебе звати?), quants anys tens? (скільки тобі років?) і on vius? (де ти живеш?)"
+ },
+ "ll-12pwr4o": {
+  "ca": "Ajuda'm a ordenar! Si diem EL, a la caixa blava. Si diem LA, a la caixa rosa.",
+  "t": "Допоможи мені все розкласти! Якщо кажемо EL — у синю коробку. Якщо LA — у рожеву."
+ },
+ "ll-1d4gej": {
+  "ca": "El, la, els i les!",
+  "t": "El, la, els і les!"
+ },
+ "ll-1qu7m5c": {
+  "ca": "Hola! Hui descobrirem unes paraules molt xicotetes que van davant de les coses: el, la, l', els i les!",
+  "t": "Привіт! Сьогодні ми дізнаємося про дуже коротенькі слова, які ставимо перед назвами предметів: el, la, l', els і les!"
+ },
+ "ll-1lad7fx": {
+  "ca": "Moltes paraules van amb EL: el gos, el pa, el sol.",
+  "t": "Багато слів уживаються з EL: el gos (пес), el pa (хліб), el sol (сонце)."
+ },
+ "ll-1tp0js1": {
+  "ca": "Toca-les i escolta: totes van amb EL!",
+  "t": "Торкнися їх і послухай: усі вони вживаються з EL!"
+ },
+ "ll-141ipf3": {
+  "ca": "Altres paraules van amb LA: la poma, la casa, la lluna.",
+  "t": "Інші слова вживаються з LA: la poma (яблуко), la casa (будинок), la lluna (місяць)."
+ },
+ "ll-eak73j": {
+  "ca": "Toca-les i escolta: totes van amb LA!",
+  "t": "Торкнися їх і послухай: усі вони вживаються з LA!"
+ },
+ "ll-1xkja3g": {
+  "ca": "Escolta! Quan la paraula comença per a, e, i, o, u, l'EL i el LA es fan curtets i diem L': l'ocell, l'abella, l'aigua.",
+  "t": "Послухай! Коли слово починається з a, e, i, o, u, EL і LA стають коротенькими й ми кажемо L': l'ocell (пташка), l'abella (бджола), l'aigua (вода)."
+ },
+ "ll-1slcj1b": {
+  "ca": "Toca-les i escolta la L' del principi!",
+  "t": "Торкнися їх і послухай звук L' на початку!"
+ },
+ "ll-531xas": {
+  "ca": "I quan n'hi ha molts? EL es fa ELS: el gos, els gossos. El gat, els gats.",
+  "t": "А якщо їх багато? EL стає ELS: el gos (пес), els gossos (пси). El gat (кіт), els gats (коти)."
+ },
+ "ll-b7qayk": {
+  "ca": "I LA es fa LES: la poma, les pomes. La flor, les flors.",
+  "t": "А LA стає LES: la poma (яблуко), les pomes (яблука). La flor (квітка), les flors (квітки)."
+ },
+ "ll-1qh8mt1": {
+  "ca": "On són els gossos?",
+  "t": "Де els gossos (пси)?"
+ },
+ "ll-1oqirh3": {
+  "ca": "On és la poma?",
+  "t": "Де la poma (яблуко)?"
+ },
+ "ll-3xpayx": {
+  "ca": "On són les flors?",
+  "t": "Де les flors (квітки)?"
+ },
+ "ll-kd3qcn": {
+  "ca": "Molt bé! Recorda: el gos, la poma. Si la paraula comença per vocal, L': l'ocell. I si n'hi ha molts: els gossos, les pomes!",
+  "t": "Чудово! Запам’ятай: el gos (пес), la poma (яблуко). Якщо слово починається з голосної, кажемо L': l'ocell (пташка). А якщо їх багато: els gossos (пси), les pomes (яблука)!"
+ },
+ "ll-w1dzpz": {
+  "ca": "Cinc i cinc, deu dits!",
+  "t": "Cinc (п’ять) і cinc (п’ять) — deu (десять) dits (пальців)!"
+ },
+ "ll-n3cyqx": {
+  "ca": "Toca'ls en ordre: u, dos, tres, quatre i cinc!",
+  "t": "Торкнися їх по черзі: u (один), dos (два), tres (три), quatre (чотири) i cinc (п’ять)!"
+ },
+ "ll-yf1z5f": {
+  "ca": "Comptem!",
+  "t": "Порахуємо!"
+ },
+ "ll-1f5qlm8": {
+  "ca": "Hola! Anem a comptar! Els números ens diuen quantes coses hi ha.",
+  "t": "Привіт! Давай рахувати! Числа показують, скільки всього є."
+ },
+ "ll-1wi1aiy": {
+  "ca": "Toca cada grup i compta amb mi, de l'u al cinc!",
+  "t": "Торкнися кожної групи й рахуй разом зі мною — від u (одного) до cinc (п’яти)!"
+ },
+ "ll-qa3k6r": {
+  "ca": "Ara, del sis al deu! Toca i compta.",
+  "t": "А тепер — від sis (шість) до deu (десять)! Торкайся й рахуй."
+ },
+ "ll-1bpi9g3": {
+  "ca": "Mira les teues mans: tens cinc dits en cada mà. Cinc i cinc, deu dits!",
+  "t": "Подивися на свої руки: на кожній руці в тебе по cinc (п’ять) пальців. Cinc (п’ять) і cinc (п’ять) — deu (десять) пальців!"
+ },
+ "ll-5o5h42": {
+  "ca": "I quan no hi ha res de res? Diem: zero! Mira, el plat està buit: zero galetes.",
+  "t": "А що, коли зовсім нічого немає? Кажемо: zero (нуль)! Дивись, тарілка порожня: zero (нуль) galetes (печива)."
+ },
+ "ll-7rcfkl": {
+  "ca": "Després del deu, venen més números: onze, dotze, tretze, catorze, quinze, setze, dèsset, díhuit, dènou i vint! Toca-los.",
+  "t": "Після deu (десяти) йдуть інші числа: onze (одинадцять), dotze (дванадцять), tretze (тринадцять), catorze (чотирнадцять), quinze (п’ятнадцять), setze (шістнадцять), dèsset (сімнадцять), díhuit (вісімнадцять), dènou (дев’ятнадцять) і vint (двадцять)! Торкнися їх."
+ },
+ "ll-m7h2se": {
+  "ca": "Atenció! L'u i el dos canvien una miqueta: un gos, però una poma. Dos gossos, però dues pomes!",
+  "t": "Увага! U (один) і dos (два) трохи змінюються: un gos (один пес), але una poma (одне яблуко). Dos gossos (два пси), але dues pomes (два яблука)!"
+ },
+ "ll-1d1lc6v": {
+  "ca": "Toca on hi ha una poma!",
+  "t": "Торкнися там, де є poma (яблуко)!"
+ },
+ "ll-12t5mfa": {
+  "ca": "Molt bé! Ja saps comptar fins a vint! I recorda: un gos, una poma; dos gossos, dues pomes.",
+  "t": "Чудово! Ти вже вмієш рахувати до vint (двадцяти)! І пам’ятай: un gos (один пес), una poma (одне яблуко); dos gossos (два пси), dues pomes (два яблука)."
+ },
+ "ll-1x87fvm": {
+  "ca": "Els colors!",
+  "t": "Кольори!"
+ },
+ "ll-1wdjyu6": {
+  "ca": "Hola! El món està ple de colors! Anem a conéixer-los tots.",
+  "t": "Привіт! Світ сповнений кольорів! Ну ж бо, познайомимося з ними всіма."
+ },
+ "ll-50pcjt": {
+  "ca": "Toca cada color i escolta el seu nom!",
+  "t": "Торкнися кожного кольору й послухай, як він називається!"
+ },
+ "ll-seufkt": {
+  "ca": "Encara n'hi ha més! Toca'ls.",
+  "t": "Є ще кольори! Торкнися їх."
+ },
+ "ll-e1afip": {
+  "ca": "Cada cosa té el seu color: el plàtan és groc, la granota és verda i el núvol és blanc.",
+  "t": "У кожної речі свій колір: el plàtan (банан) és groc (жовтий), la granota (жабка) és verda (зелена), а el núvol (хмаринка) és blanc (білий)."
+ },
+ "ll-1nkatdl": {
+  "ca": "Mira què passa! Amb EL diem roig, però amb LA diem roja: el cotxe roig, la poma roja. I el pollet groc, però la flor groga!",
+  "t": "Подивися, що відбувається! З EL кажемо roig (червоний), а з LA — roja (червона): el cotxe roig (червона машина), la poma roja (червоне яблуко). А ще el pollet groc (жовте курчатко), але la flor groga (жовта квітка)!"
+ },
+ "ll-17gk2i9": {
+  "ca": "Passa amb molts colors: negre i negra, blanc i blanca, blau i blava!",
+  "t": "Так буває з багатьма кольорами: negre (чорний) і negra (чорна), blanc (білий) і blanca (біла), blau (синій) і blava (синя)!"
+ },
+ "ll-1dt4zxc": {
+  "ca": "Ara farem màgia! Barregem el groc i el blau. Toca els dos pots!",
+  "t": "А тепер трохи магії! Змішаймо el groc (жовтий) і el blau (синій). Торкнися обох баночок!"
+ },
+ "ll-13m78gf": {
+  "ca": "Ix el verd!",
+  "t": "Виходить el verd (зелений)!"
+ },
+ "ll-fhm0tq": {
+  "ca": "Ara, el roig i el groc. Toca els pots!",
+  "t": "А тепер — el roig (червоний) і el groc (жовтий). Торкнися баночок!"
+ },
+ "ll-1lfp3kx": {
+  "ca": "Ix el taronja!",
+  "t": "Виходить el taronja (помаранчевий)!"
+ },
+ "ll-d8xo9o": {
+  "ca": "I si barregem el roig i el blau?",
+  "t": "А що, як змішати el roig (червоний) і el blau (синій)?"
+ },
+ "ll-vn0vbx": {
+  "ca": "Ix el morat!",
+  "t": "Виходить el morat (фіолетовий)!"
+ },
+ "ll-1ukjino": {
+  "ca": "I el roig amb el blanc?",
+  "t": "А el roig (червоний) із el blanc (білим)?"
+ },
+ "ll-iufm8z": {
+  "ca": "Ix el rosa!",
+  "t": "Виходить el rosa (рожевий)!"
+ },
+ "ll-1c7an58": {
+  "ca": "El groc i el blau, junts, fan...",
+  "t": "El groc (жовтий) і el blau (синій) разом дають..."
+ },
+ "ll-1g2cxj6": {
+  "ca": "Molt bé! Ja coneixes els colors i saps fer-ne de nous. I recorda: el cotxe roig, la poma roja!",
+  "t": "Чудово! Ти вже знаєш кольори й умієш створювати нові. І пам’ятай: el cotxe roig (червона машина), la poma roja (червоне яблуко)!"
+ },
+ "ll-1cc41b9": {
+  "ca": "El meu cos!",
+  "t": "Моє тіло!"
+ },
+ "ll-1fzilnv": {
+  "ca": "Hola! Hui coneixerem el nostre cos. Toca cada part i, si vols, assenyala-la en el teu cos!",
+  "t": "Привіт! Сьогодні ми познайомимося з нашим тілом. Торкайся кожної частини, а якщо хочеш — показуй її на своєму тілі!"
+ },
+ "ll-17egwpk": {
+  "ca": "Primer, el cap i la cara! Toca i escolta.",
+  "t": "Спочатку — el cap (голова) і la cara (обличчя)! Торкнися й послухай."
+ },
+ "ll-pke0rf": {
+  "ca": "Ara, la resta del cos! Toca i escolta.",
+  "t": "А тепер — решта тіла! Торкнися й послухай."
+ },
+ "ll-18f7n0": {
+  "ca": "Amb el cos descobrim el món! Toca i escolta què fem amb cada part.",
+  "t": "За допомогою тіла ми пізнаємо світ! Торкнися й послухай, що робимо кожною частиною."
+ },
+ "ll-k8ituw": {
+  "ca": "Comptem! Tenim un nas i una boca. Però tenim dos ulls, dues orelles i dues mans, amb deu dits!",
+  "t": "Порахуємо! У нас є un nas (один ніс) і una boca (один рот). А ще — dos ulls (два ока), dues orelles (два вуха) і dues mans (дві руки) з deu dits (десятьма пальцями)!"
+ },
+ "ll-vu9de0": {
+  "ca": "Amb què escoltes la música?",
+  "t": "Чим ти слухаєш музику?"
+ },
+ "ll-1kmyx5b": {
+  "ca": "Amb què olores una flor?",
+  "t": "Чим ти нюхаєш квітку?"
+ },
+ "ll-sp4xhh": {
+  "ca": "Amb què xutes la pilota?",
+  "t": "Чим ти б’єш по м’ячу ногою?"
+ },
+ "ll-dzl4wl": {
+  "ca": "Amb què mires els dibuixos?",
+  "t": "Чим ти дивишся на малюнки?"
+ },
+ "ll-1utinfz": {
+  "ca": "Amb què mossegues la poma?",
+  "t": "Чим ти кусаєш яблуко?"
+ },
+ "ll-wotfbb": {
+  "ca": "Molt bé! Ja coneixes el teu cos: el cap, els ulls, el nas, la boca, els braços, les mans, les cames i els peus!",
+  "t": "Чудово! Ти вже знаєш своє тіло: el cap (голова), els ulls (очі), el nas (ніс), la boca (рот), els braços (руки), les mans (кисті), les cames (ноги) і els peus (ступні)!"
+ },
+ "ll-1sgpuqs": {
+  "ca": "La meua família!",
+  "t": "Моя сім’я!"
+ },
+ "ll-imjqxs": {
+  "ca": "Hola! Vols conéixer la meua família? Anem a aprendre com es diu cada persona!",
+  "t": "Привіт! Хочеш познайомитися з моєю сім’єю? Ну ж бо, дізнаймося, як називається кожен!"
+ },
+ "ll-1d9jslh": {
+  "ca": "Este és el pare, i esta és la mare.",
+  "t": "Це el pare (тато), а це la mare (мама)."
+ },
+ "ll-1m25uns": {
+  "ca": "Els altres fills dels teus pares són els teus germans: el germà, la germana... i el bebé, que és molt xicotet!",
+  "t": "Інші діти твоїх батьків — це твої брати й сестри: el germà (брат), la germana (сестра)... і el bebé (немовля), зовсім маленьке!"
+ },
+ "ll-6b4cj3": {
+  "ca": "Els pares del teu pare i de la teua mare són els teus iaios: el iaio i la iaia.",
+  "t": "Батьки твого тата й твоєї мами — це твої iaios (дідусь і бабуся): el iaio (дідусь) і la iaia (бабуся)."
+ },
+ "ll-s25diu": {
+  "ca": "El germà de la mare o del pare és l'oncle. I la germana, la tia.",
+  "t": "Брат мами або тата — це l'oncle (дядько). А сестра — la tia (тітка)."
+ },
+ "ll-1561d5r": {
+  "ca": "I els fills dels oncles són els teus cosins: el cosí i la cosina!",
+  "t": "А діти дядьків і тіток — твої cosins (двоюрідні брати й сестри): el cosí (двоюрідний брат) і la cosina (двоюрідна сестра)!"
+ },
+ "ll-wobnwr": {
+  "ca": "Toca tota la família i escolta!",
+  "t": "Торкнися всіх членів родини й послухай!"
+ },
+ "ll-1smop6m": {
+  "ca": "Quan parlem de la nostra família, diem: el meu pare, la meua mare. El meu germà, la meua germana!",
+  "t": "Коли говоримо про свою родину, кажемо: el meu pare (мій тато), la meua mare (моя мама). El meu germà (мій брат), la meua germana (моя сестра)!"
+ },
+ "ll-3yyw9n": {
+  "ca": "Qui és la mare de la teua mare?",
+  "t": "Хто мама твоєї мами?"
+ },
+ "ll-nlo65w": {
+  "ca": "Qui és el germà del teu pare?",
+  "t": "Хто брат твого тата?"
+ },
+ "ll-7pred8": {
+  "ca": "Qui és el més xicotet de tots?",
+  "t": "Хто з усіх найменший?"
+ },
+ "ll-16lw226": {
+  "ca": "Molt bé! Ja coneixes tota la família: el pare, la mare, els germans, els iaios, els oncles i els cosins!",
+  "t": "Чудово! Тепер ти знаєш усю родину: el pare (тато), la mare (мама), els germans (брати й сестри), els iaios (дідусь і бабуся), els oncles (дядьки й тітки) і els cosins (двоюрідні брати й сестри)!"
+ },
+ "ll-13nn1p4": {
+  "ca": "Com estàs?",
+  "t": "Як ти почуваєшся?"
+ },
+ "ll-hjwl3z": {
+  "ca": "Hola! Com estàs hui? Anem a aprendre a dir com ens sentim.",
+  "t": "Привіт! Як ти сьогодні? Навчімося казати, що ми відчуваємо."
+ },
+ "ll-1iajzak": {
+  "ca": "Quan tot va bé i tenim ganes de riure, diem: Estic feliç!",
+  "t": "Коли все добре й нам хочеться сміятися, кажемо: Estic feliç (я щасливий/щаслива)!"
+ },
+ "ll-18hd99x": {
+  "ca": "Quan alguna cosa no ens agrada i tenim ganes de plorar, diem: Estic trist.",
+  "t": "Коли нам щось не подобається й хочеться плакати, кажемо: Estic trist (мені сумно)."
+ },
+ "ll-1p2mohh": {
+  "ca": "I quan algú ens pren la joguina, a vegades diem: Estic enfadat!",
+  "t": "А коли хтось забирає нашу іграшку, іноді кажемо: Estic enfadat (я сердитий/сердита)!"
+ },
+ "ll-1lwzh2": {
+  "ca": "Diem ESTIC per a dir com estem. Toca les cares i escolta!",
+  "t": "Кажемо ESTIC (я є), щоб сказати, як почуваємося. Торкнися облич і послухай!"
+ },
+ "ll-1mtaes3": {
+  "ca": "Atenció! Un xiquet diu: estic cansat. Una xiqueta diu: estic cansada!",
+  "t": "Увага! Хлопчик каже: estic cansat (я втомився). Дівчинка каже: estic cansada (я втомилася)!"
+ },
+ "ll-fim9pf": {
+  "ca": "A vegades diem TINC: tinc son, quan se'ns tanquen els ulls. Tinc fam, quan volem menjar!",
+  "t": "Іноді кажемо TINC (у мене є): tinc son (хочу спати), коли очі заплющуються. Tinc fam (я голодний/голодна), коли хочеться їсти!"
+ },
+ "ll-1ukg0ft": {
+  "ca": "Toca i escolta: tinc por, tinc son, tinc fam, tinc set, tinc fred i tinc calor!",
+  "t": "Торкнися й послухай: tinc por (мені страшно), tinc son (хочу спати), tinc fam (я голодний/голодна), tinc set (хочу пити), tinc fred (мені холодно) і tinc calor (мені спекотно)!"
+ },
+ "ll-mdej54": {
+  "ca": "Hola, Pep! Com estàs?",
+  "t": "Привіт, Pep! Як ти почуваєшся?"
+ },
+ "ll-1xvez2a": {
+  "ca": "Estic molt bé! I tu?",
+  "t": "У мене все чудово! А в тебе?"
+ },
+ "ll-1b5baj1": {
+  "ca": "Jo estic una miqueta cansada... i tinc fam!",
+  "t": "Я трохи втомилася... і зголодніла!"
+ },
+ "ll-11v7gi5": {
+  "ca": "Vols una poma?",
+  "t": "Хочеш яблуко?"
+ },
+ "ll-1w1vk17": {
+  "ca": "Sí, per favor! Gràcies!",
+  "t": "Так, будь ласка! Дякую!"
+ },
+ "ll-hz9sle": {
+  "ca": "Fa molt de temps que no menges. Què tens?",
+  "t": "Ти давно не їв. Що з тобою?"
+ },
+ "ll-1tv54sq": {
+  "ca": "Neva i no portes jaqueta. Què tens?",
+  "t": "Іде сніг, а ти без куртки. Що з тобою?"
+ },
+ "ll-j05qu5": {
+  "ca": "S'ha trencat la teua joguina preferida. Com estàs?",
+  "t": "Твоя улюблена іграшка зламалася. Як ти почуваєшся?"
+ },
+ "ll-es4hez": {
+  "ca": "És molt tard i se't tanquen els ulls. Què tens?",
+  "t": "Уже дуже пізно, і очі заплющуються. Чого тобі хочеться?"
+ },
+ "ll-1ek7uuz": {
+  "ca": "Et fan una festa sorpresa! Com estàs?",
+  "t": "Тобі влаштували вечірку-сюрприз! Як ти почуваєшся?"
+ },
+ "ll-131vzkv": {
+  "ca": "Molt bé! Diem ESTIC per a feliç, trist, enfadat o cansat. I diem TINC per a por, son, fam, set, fred i calor.",
+  "t": "Чудово! Кажемо ESTIC (я є), коли ми щасливі, сумні, сердиті або втомлені. А TINC (у мене є) — коли нам страшно, хочеться спати, їсти чи пити, коли нам холодно або спекотно."
+ },
+ "ll-obcbm2": {
+  "ca": "Què fem?",
+  "t": "Що ми робимо?"
+ },
+ "ll-69azbw": {
+  "ca": "Hola! Hui aprendrem les accions: són les coses que fem, com córrer, menjar o dormir!",
+  "t": "Привіт! Сьогодні вивчимо дії: це те, що ми робимо, наприклад córrer (бігати), menjar (їсти) або dormir (спати)!"
+ },
+ "ll-1umrb8u": {
+  "ca": "Toca cada dibuix i escolta què fa!",
+  "t": "Торкнися кожного малюнка й послухай, що він робить!"
+ },
+ "ll-1tjuhgp": {
+  "ca": "Encara n'hi ha més! Toca i escolta.",
+  "t": "Є ще більше! Торкнися й послухай."
+ },
+ "ll-9tvhee": {
+  "ca": "Quan ho fas tu, la paraula canvia! Menjar: jo menge. Beure: jo bec. Dormir: jo dorm. Jugar: jo jugue.",
+  "t": "Коли це робиш ти, слово змінюється! Menjar (їсти): jo menge (я їм). Beure (пити): jo bec (я п’ю). Dormir (спати): jo dorm (я сплю). Jugar (гратися): jo jugue (я граюся)."
+ },
+ "ll-1vlbv08": {
+  "ca": "I quan ho fa un altre, també canvia: el gat dorm, el peix nada, l'ocell canta i la granota salta!",
+  "t": "А коли це робить хтось інший, слово теж змінюється: el gat (кіт) dorm (спить), el peix (риба) nada (плаває), l'ocell (пташка) canta (співає), а la granota (жабка) salta (стрибає)!"
+ },
+ "ll-g50awu": {
+  "ca": "Tens set. Què fas?",
+  "t": "Ти хочеш пити. Що робитимеш?"
+ },
+ "ll-aup31b": {
+  "ca": "Abans de menjar, què has de fer?",
+  "t": "Що треба зробити перед їжею?"
+ },
+ "ll-1n62339": {
+  "ca": "Què fa el peix en l'aigua?",
+  "t": "Що робить риба у воді?"
+ },
+ "ll-1806eyl": {
+  "ca": "Molt bé! Ja coneixes moltes accions. I recorda: jo menge, jo bec, jo dorm i jo jugue!",
+  "t": "Чудово! Тепер ти знаєш багато дій. І пам’ятай: jo menge (я їм), jo bec (я п’ю), jo dorm (я сплю) і jo jugue (я граюся)!"
+ },
+ "ll-1viybiw": {
+  "ca": "La primavera: ixen les flors!",
+  "t": "La primavera (весна): розквітають квіти!"
+ },
+ "ll-1r5wrd5": {
+  "ca": "L'estiu: fa calor i anem a la platja!",
+  "t": "L'estiu (літо): спекотно, і ми йдемо на пляж!"
+ },
+ "ll-t32lrj": {
+  "ca": "La tardor: cauen les fulles dels arbres!",
+  "t": "La tardor (осінь): з дерев падає листя!"
+ },
+ "ll-sq2lam": {
+  "ca": "L'hivern: fa fred i, a vegades, neva!",
+  "t": "L'hivern (зима): холодно, а іноді йде сніг!"
+ },
+ "ll-1gnsc3z": {
+  "ca": "On va cada dia? A l'escola o al cap de setmana?",
+  "t": "Куди ходять щодня? До школи чи на вихідних?"
+ },
+ "ll-181u2z2": {
+  "ca": "Els dies i el temps!",
+  "t": "Дні тижня й погода!"
+ },
+ "ll-73o6yg": {
+  "ca": "Hola! Hui aprendrem els dies de la setmana, les estacions i el temps que fa.",
+  "t": "Привіт! Сьогодні ми вивчимо дні тижня, пори року та погоду."
+ },
+ "ll-i69ujx": {
+  "ca": "La setmana té set dies. Toca-los i escolta: dilluns, dimarts, dimecres, dijous, divendres, dissabte i diumenge!",
+  "t": "У тижні сім днів. Торкайся й слухай: dilluns (понеділок), dimarts (вівторок), dimecres (середа), dijous (четвер), divendres (п'ятниця), dissabte (субота) і diumenge (неділя)!"
+ },
+ "ll-1tpzk7q": {
+  "ca": "De dilluns a divendres anem a l'escola. I dissabte i diumenge és cap de setmana: a jugar i a descansar!",
+  "t": "З dilluns (понеділка) до divendres (п'ятниці) ми ходимо до школи. А в dissabte (суботу) й diumenge (неділю) — вихідні: граймося й відпочиваймо!"
+ },
+ "ll-qmllux": {
+  "ca": "L'any té quatre estacions. Toca-les i escolta!",
+  "t": "У році чотири пори року. Торкайся й слухай!"
+ },
+ "ll-6qft90": {
+  "ca": "I quin temps fa hui? Toca i escolta!",
+  "t": "А яка сьогодні погода? Торкнися й послухай!"
+ },
+ "ll-1rwo8af": {
+  "ca": "Plou molt! Què necessites?",
+  "t": "Plou (дощить) дуже сильно! Що тобі потрібно?"
+ },
+ "ll-1nkwjv7": {
+  "ca": "Fa molta calor i anem a la platja. Quina estació és?",
+  "t": "Дуже спекотно, і ми йдемо на пляж. Яка це пора року?"
+ },
+ "ll-1lhczwc": {
+  "ca": "Cauen les fulles dels arbres. Quina estació és?",
+  "t": "З дерев падає листя. Яка це пора року?"
+ },
+ "ll-18gbap5": {
+  "ca": "Neva i fem un ninot de neu. Quina estació és?",
+  "t": "Іде сніг, і ми ліпимо сніговика. Яка це пора року?"
+ },
+ "ll-1gq3r0y": {
+  "ca": "Molt bé! Ja saps els set dies de la setmana i les quatre estacions: la primavera, l'estiu, la tardor i l'hivern!",
+  "t": "Чудово! Тепер ти знаєш сім днів тижня й чотири пори року: la primavera (весна), l'estiu (літо), la tardor (осінь) і l'hivern (зима)!"
+ },
+ "ll-1inrz1l": {
+  "ca": "El gat és dins de la caixa!",
+  "t": "El gat (кіт) — dins (усередині) коробки!"
+ },
+ "ll-pw7fbn": {
+  "ca": "El gat és fora de la caixa!",
+  "t": "El gat (кіт) — fora (зовні) коробки!"
+ },
+ "ll-iwozx8": {
+  "ca": "El gat és damunt de la caixa!",
+  "t": "El gat (кіт) — damunt (над) коробкою!"
+ },
+ "ll-ymbd8v": {
+  "ca": "El gat és davall de la caixa!",
+  "t": "El gat (кіт) — davall (під) коробкою!"
+ },
+ "ll-1u9b5il": {
+  "ca": "El gat és davant de la caixa!",
+  "t": "El gat (кіт) — davant (перед) коробкою!"
+ },
+ "ll-1ycue4k": {
+  "ca": "El gat és darrere de la caixa!",
+  "t": "El gat (кіт) — darrere (за) коробкою!"
+ },
+ "ll-13flt30": {
+  "ca": "El gat és al costat de la caixa!",
+  "t": "El gat (кіт) — al costat (поруч) із коробкою!"
+ },
+ "ll-1q091oi": {
+  "ca": "On és el gat?",
+  "t": "Де el gat (кіт)?"
+ },
+ "ll-1f053s5": {
+  "ca": "Hola! Este és el gat Pelut. És molt juganer i sempre s'amaga. Anem a aprendre a dir on és!",
+  "t": "Привіт! Це кіт Pelut. Він дуже любить гратися й постійно ховається. Нумо вчитися казати, де він!"
+ },
+ "ll-psjdhm": {
+  "ca": "Mira! El gat és dins de la caixa.",
+  "t": "Поглянь! El gat (кіт) — dins (усередині) коробки."
+ },
+ "ll-ge11j3": {
+  "ca": "Ara ha eixit: el gat és fora de la caixa!",
+  "t": "А тепер він виліз: el gat (кіт) — fora (зовні) коробки!"
+ },
+ "ll-e18f63": {
+  "ca": "Ara puja: el gat és damunt de la caixa! I ara s'amaga baix: el gat és davall de la caixa.",
+  "t": "А тепер він залазить: el gat (кіт) — damunt (над) коробкою! А тепер ховається внизу: el gat (кіт) — davall (під) коробкою."
+ },
+ "ll-bv1h5x": {
+  "ca": "El gat és davant de la caixa: el veiem molt bé! I ara, darrere de la caixa: quasi no el veiem!",
+  "t": "El gat (кіт) — davant (перед) коробкою: його добре видно! А тепер — darrere (за) коробкою: його майже не видно!"
+ },
+ "ll-1250rey": {
+  "ca": "I ara, el gat és al costat de la caixa.",
+  "t": "А тепер el gat (кіт) — al costat (поруч) із коробкою."
+ },
+ "ll-18aivqf": {
+  "ca": "Toca cada dibuix i digues on és el gat!",
+  "t": "Торкнися кожного малюнка й скажи, де el gat (кіт)!"
+ },
+ "ll-gk9wyo": {
+  "ca": "Són contraris! Damunt i davall. Davant i darrere. Dins i fora.",
+  "t": "Це протилежності! Damunt (над) і davall (під). Davant (перед) і darrere (за). Dins (усередині) і fora (зовні)."
+ },
+ "ll-1mly38w": {
+  "ca": "Toca el gat que és damunt de la caixa!",
+  "t": "Торкнися кота, який damunt (над) коробкою!"
+ },
+ "ll-heprcl": {
+  "ca": "Toca el gat que és dins de la caixa!",
+  "t": "Торкнися кота, який dins (усередині) коробки!"
+ },
+ "ll-1vwq2a8": {
+  "ca": "Toca el gat que és darrere de la caixa!",
+  "t": "Торкнися кота, який darrere (за) коробкою!"
+ },
+ "ll-3ngou3": {
+  "ca": "Toca el gat que és davall de la caixa!",
+  "t": "Торкнися кота, який davall (під) коробкою!"
+ },
+ "ll-bbd1dc": {
+  "ca": "Toca el gat que és al costat de la caixa!",
+  "t": "Торкнися кота, який al costat (поруч) із коробкою!"
+ },
+ "ll-175iawt": {
+  "ca": "Molt bé! Ja saps dir on són les coses: dins, fora, damunt, davall, davant, darrere i al costat!",
+  "t": "Чудово! Тепер ти вмієш казати, де речі: dins (усередині), fora (зовні), damunt (над), davall (під), davant (перед), darrere (за) і al costat (поруч)!"
+ },
+ "ll-1vwnk6v": {
+  "ca": "Els contraris!",
+  "t": "Протилежності!"
+ },
+ "ll-xsl1pu": {
+  "ca": "Hola! Hui jugarem amb els contraris: paraules ben diferents, com el dia i la nit!",
+  "t": "Привіт! Сьогодні ми пограємо з протилежностями — зовсім різними словами, як el dia (день) і la nit (ніч)!"
+ },
+ "ll-5m6scu": {
+  "ca": "Toca i escolta: gran i xicotet. El dia i la nit. Calent i fred.",
+  "t": "Торкнися й послухай: gran (великий) і xicotet (маленький). El dia (день) і la nit (ніч). Calent (гарячий) і fred (холодний)."
+ },
+ "ll-1ocvafz": {
+  "ca": "Més contraris! El conill és ràpid i la tortuga és lenta. La girafa és alta i el pingüí és baix.",
+  "t": "Ще більше протилежностей! El conill (кролик) швидкий, а la tortuga (черепаха) повільна. La girafa (жирафа) висока, а el pingüí (пінгвін) низький."
+ },
+ "ll-kpscfk": {
+  "ca": "I encara més: el llibre obert i el llibre tancat. Content i trist!",
+  "t": "І ще: el llibre obert (відкрита книжка) і el llibre tancat (закрита книжка). Content (веселий) і trist (сумний)!"
+ },
+ "ll-1nux3te": {
+  "ca": "Molt bé! Ja coneixes molts contraris: gran i xicotet, calent i fred, ràpid i lent, alt i baix, obert i tancat!",
+  "t": "Чудово! Ти вже знаєш багато протилежностей: gran (великий) і xicotet (маленький), calent (гарячий) і fred (холодний), ràpid (швидкий) і lent (повільний), alt (високий) і baix (низький), obert (відкритий) і tancat (закритий)!"
+ },
+ "ll-1r39ubz": {
+  "ca": "Les lletres i els sons!",
+  "t": "Літери й звуки!"
+ },
+ "ll-9kyrg8": {
+  "ca": "Hola! Les paraules estan fetes de sons, i els sons s'escriuen amb lletres. Escoltem-les!",
+  "t": "Привіт! Слова складаються зі звуків, а звуки записують літерами. Послухаймо їх!"
+ },
+ "ll-1djy76x": {
+  "ca": "Hi ha cinc lletres molt especials: les vocals! A, e, i, o, u. Sonen fort i clar.",
+  "t": "Є п’ять особливих літер: les vocals (голосні)! A, e, i, o, u. Вони звучать голосно й чітко."
+ },
+ "ll-1xh56uz": {
+  "ca": "Toca cada vocal i escolta una paraula que comença així!",
+  "t": "Торкнися кожної голосної й послухай слово, яке починається з неї!"
+ },
+ "ll-z29jme": {
+  "ca": "Més paraules que comencen per vocal: l'avió, l'elefant, l'illa, l'ou i l'ull! Toca-les.",
+  "t": "Ще слова, що починаються з голосної: l'avió (літак), l'elefant (слон), l'illa (острів), l'ou (яйце) і l'ull (око)! Торкнися їх."
+ },
+ "ll-ghh5jw": {
+  "ca": "Les altres lletres es diuen consonants. Si ajuntem lletres, fem paraules: la pe i la a fan... pa!",
+  "t": "Інші літери називаються consonants (приголосні). Якщо поєднати літери, утворяться слова: la pe (літера pe) і la a (літера a) разом дають... pa (хліб)!"
+ },
+ "ll-1vkrp4s": {
+  "ca": "En valencià tenim sons molt especials! Toca-los i escolta.",
+  "t": "У валенсійській є дуже особливі звуки! Торкнися їх і послухай."
+ },
+ "ll-ribv0m": {
+  "ca": "Quina paraula té el so nya, nye, nyi?",
+  "t": "У якому слові є звук nya, nye, nyi?"
+ },
+ "ll-10trlbu": {
+  "ca": "Quina paraula té la ce trencada?",
+  "t": "У якому слові є ce trencada (літера ç)?"
+ },
+ "ll-wjxr20": {
+  "ca": "Molt bé! Ja coneixes les vocals, a, e, i, o, u, i els sons especials del valencià!",
+  "t": "Чудово! Ти вже знаєш les vocals (голосні) — a, e, i, o, u — і особливі звуки валенсійської!"
+ },
+ "ll-1oc7uc4": {
+  "ca": "El gos xicotet és el gosset!",
+  "t": "El gos xicotet (маленький собака) — це el gosset (цуценя)!"
+ },
+ "ll-1455lj9": {
+  "ca": "El gat xicotet és el gatet!",
+  "t": "El gat xicotet (маленький кіт) — це el gatet (кошеня)!"
+ },
+ "ll-1vwnxwp": {
+  "ca": "La gallina té pollets!",
+  "t": "La gallina (курка) має pollets (курчат)!"
+ },
+ "ll-17ggmor": {
+  "ca": "Els animals!",
+  "t": "Тварини!"
+ },
+ "ll-cdhbgb": {
+  "ca": "Hola! Hui coneixerem els animals. Cada animal fa un so diferent: escolta bé!",
+  "t": "Привіт! Сьогодні ми познайомимося з тваринами. Кожна тварина видає свій звук: уважно послухай!"
+ },
+ "ll-1lpvv7i": {
+  "ca": "Primer, els animals de casa. Toca cada un i escolta quin so fa!",
+  "t": "Спершу — домашні тварини. Торкнися кожної й послухай, як вона звучить!"
+ },
+ "ll-6wri1f": {
+  "ca": "Ara, els animals de la granja. Toca i escolta!",
+  "t": "А тепер — тварини з ферми. Торкнися й послухай!"
+ },
+ "ll-1echmxp": {
+  "ca": "I estos viuen lluny, a la selva o a la bassa. Toca i escolta!",
+  "t": "А ці живуть далеко, у джунглях або біля ставка. Торкнися й послухай!"
+ },
+ "ll-1v99d5b": {
+  "ca": "Els animals xicotets tenen un nom molt dolç: el gosset, el gatet, el pollet.",
+  "t": "У маленьких тваринок такі милі назви: el gosset (цуценя), el gatet (кошеня), el pollet (курчатко)."
+ },
+ "ll-1jkk7e": {
+  "ca": "Uns animals volen pel cel, uns altres naden en l'aigua, i molts caminen per la terra.",
+  "t": "Одні тварини літають у небі, інші плавають у воді, а багато хто ходить по землі."
+ },
+ "ll-9ansg3": {
+  "ca": "Molt bé! Ja coneixes molts animals i els seus sons. Recorda: el gos fa bub, bub, i el gat fa mèu, mèu!",
+  "t": "Чудово! Ти вже знаєш багато тварин і їхні звуки. Пам’ятай: el gos (собака) каже bub, bub, а el gat (кіт) — mèu, mèu!"
+ },
+ "llicons": {
+  "ca": "Les lliçons de la Taronjeta! Tria una lliçó i aprendrem moltes coses noves.",
+  "t": "Уроки Тaronjeta! Обери урок, і ми дізнаємося багато нового."
+ },
+ "llico-medalla": {
+  "ca": "Molt bé! Has acabat la lliçó i has guanyat una medalla!",
+  "t": "Чудово! Ти завершив урок і здобув медаль!"
+ },
+ "llico-fi": {
+  "ca": "Molt bé! Has acabat la lliçó una altra vegada!",
+  "t": "Чудово! Ти знову завершив урок!"
+ }
+}

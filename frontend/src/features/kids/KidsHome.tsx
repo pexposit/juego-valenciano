@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { BookHeart } from 'lucide-react';
+import { BookHeart, ChevronLeft } from 'lucide-react';
 import { ProfileButton } from '../../components/ui';
 import { ISLANDS } from './content';
 import { loadCromos } from './progress';
-import { say, stopVoice } from './sound';
+import { say, sayBriefly, stopVoice } from './sound';
 import './kids.css';
 
 /** Mapa d'illes del Nivell 0. Tot es diu en veu alta: tocar una illa diu el seu nom i hi entra. */
-export function KidsHome({ name, uid, onIsland, onAlbum, onProfile }: {
+export function KidsHome({ name, uid, onBack, onIsland, onAlbum, onProfile }: {
   name: string;
   uid: string | undefined;
+  onBack: () => void;
   onIsland: (id: string) => void;
   onAlbum: () => void;
   onProfile: () => void;
@@ -31,15 +32,15 @@ export function KidsHome({ name, uid, onIsland, onAlbum, onProfile }: {
   const open = async (id: string) => {
     if (opening) return;
     setOpening(id);
-    await say(`illa-${id}`);
+    await sayBriefly(`illa-${id}`);
     onIsland(id);
   };
 
   return (
     <main className="kids-world kids-sea">
       <header className="kids-bar">
-        <button onClick={() => void say('hola')} aria-label="La Taronjeta" className="kid-mascot-btn btn-press">
-          <span className="kid-mascot-small" aria-hidden="true">🍊</span>
+        <button onClick={onBack} aria-label="Tornar al tauler" title="Tornar al tauler" className="kid-round-btn btn-press">
+          <ChevronLeft className="h-9 w-9" />
         </button>
         <button onClick={onAlbum} aria-label="L'àlbum de cromos" className="kid-album-btn btn-press">
           <BookHeart className="h-9 w-9" />

@@ -1,4 +1,5 @@
 import { KIDS_AUDIO } from './content';
+import { LESSON_AUDIO } from './lessons';
 
 /**
  * So del Nivell 0: frases pregenerades amb el TTS (/audio/kids/<clau>.wav) i
@@ -7,34 +8,80 @@ import { KIDS_AUDIO } from './content';
  */
 
 let current: HTMLAudioElement | null = null;
+let token = 0; // canvia cada vegada que comença una frase nova o es para la veu
 
-/** Diu una frase. Para la que sonava. Es resol quan acaba (o si falla). */
-export function say(key: string): Promise<void> {
-  current?.pause();
+// Para la frase que sonava i allibera el fitxer: un àudio només pausat continua
+// ocupant la connexió, i amb unes quantes pausades les frases noves no carreguen.
+function release() {
+  if (!current) return;
+  current.onended = current.onerror = null;
+  current.pause();
+  current.removeAttribute('src');
+  current.load();
+  current = null;
+}
+
+/** El text d'una frase (per als subtítols de les lliçons i la veu de respatller). */
+export const phraseText = (key: string) => KIDS_AUDIO[key] ?? LESSON_AUDIO[key] ?? '';
+
+/**
+ * Diu una frase. Para la que sonava. Es resol quan acaba (o si falla) amb true
+ * si ningú l'ha interrompuda.
+ */
+export function say(key: string): Promise<boolean> {
+  release();
   window.speechSynthesis?.cancel();
+  const mine = ++token;
   return new Promise(resolve => {
     const audio = new Audio(`/audio/kids/${encodeURIComponent(key)}.wav`);
     current = audio;
-    audio.onended = () => resolve();
-    audio.onerror = () => fallback(key).then(resolve);
-    audio.play().catch(() => fallback(key).then(resolve));
+    const done = () => resolve(mine === token);
+    // Si el fitxer falla, onerror i el rebuig de play() arriben tots dos: la veu de
+    // respatller només es diu una vegada, i no si mentrestant ja sona una altra frase.
+    let failed = false;
+    const fail = () => {
+      if (failed) return;
+      failed = true;
+      if (mine !== token) return done();
+      void fallback(key).then(done);
+    };
+    audio.onended = done;
+    audio.onerror = fail;
+    audio.play().catch(fail);
   });
 }
 
+/** Diu una frase però no espera més de `ms`: per a no bloquejar la navegació si l'àudio s'encalla. */
+export const sayBriefly = (key: string, ms = 2500): Promise<unknown> =>
+  Promise.race([say(key), new Promise(r => window.setTimeout(r, ms))]);
+
+/** Diu diverses frases seguides; s'atura si se'n diu una altra o es para la veu. */
+export async function sayAll(keys: readonly string[]): Promise<boolean> {
+  for (const key of keys) if (!(await say(key))) return false;
+  return true;
+}
+
 export const stopVoice = () => {
-  current?.pause();
+  token++;
+  release();
   window.speechSynthesis?.cancel();
 };
 
 // Si el fitxer no hi és, la veu del navegador (en català, si n'hi ha).
 function fallback(key: string): Promise<void> {
-  const text = KIDS_AUDIO[key];
+  const text = phraseText(key);
   if (!text || !window.speechSynthesis) return Promise.resolve();
   return new Promise(resolve => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ca-ES';
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
+    // Hi ha navegadors sense veu que mai avisen que han acabat: no es queda esperant.
+    const timer = window.setTimeout(resolve, 1500 + text.length * 90);
+    const end = () => {
+      window.clearTimeout(timer);
+      resolve();
+    };
+    utterance.onend = end;
+    utterance.onerror = end;
     window.speechSynthesis.speak(utterance);
   });
 }
