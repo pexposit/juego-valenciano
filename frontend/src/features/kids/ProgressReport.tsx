@@ -12,17 +12,15 @@ export function ProgressReport({ data, name, onLesson }: { data: ChildData; name
   const report = summarize(data);
   const who = name || 'el xiquet o la xiqueta';
 
-  if (!report.total.sessions) {
-    return (
-      <Card>
-        <p className="text-xl font-extrabold">Encara no hi ha partides</p>
-        <p className="mt-1 text-lg opacity-70">Quan {who} jugue a les illes, ací veureu què domina, què li costa i com avança.</p>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-5">
+      {/* Sense partides, totes les illes queden «a practicar». */}
+      {!report.total.sessions && (
+        <Card>
+          <p className="text-xl font-extrabold">Encara no hi ha partides</p>
+          <p className="mt-1 text-lg opacity-70">Quan {who} jugue a les illes, ací veureu què domina, què li costa i com avança.</p>
+        </Card>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Tile label="Aquesta setmana" value={`${report.week.minutes} min`} detail={`${plural(report.week.sessions, 'partida', 'partides')} · ${plural(report.week.days, 'dia', 'dies')}`} />
         <Tile label="Encerts a la primera" value={percent(report.accuracy)} detail={`Última vegada: ${ago(report.lastPlayed)}`} />
@@ -40,7 +38,7 @@ export function ProgressReport({ data, name, onLesson }: { data: ChildData; name
       />
       <Group
         title="A practicar"
-        hint="Illes amb entre el 50 % i el 80 % d'encerts, les que van bé però encara no ha acabat i les que encara no ha jugat."
+        hint="Illes amb més del 50 % i menys del 80 % d'encerts, les que van bé però encara no ha acabat i les que encara no ha jugat."
         empty="Cap: totes les illes jugades van molt bé o costen."
         tone="amber"
         islands={report.practicar}
@@ -48,7 +46,7 @@ export function ProgressReport({ data, name, onLesson }: { data: ChildData; name
       />
       <Group
         title="Ho domina"
-        hint="Illes acabades (totes les etapes) on encerta a la primera més del 80 % de les rondes."
+        hint="Illes acabades (totes les etapes) on encerta a la primera el 80 % de les rondes o més."
         empty="Encara cap: cal jugar-hi unes quantes vegades."
         tone="teal"
         islands={report.domina}

@@ -1,4 +1,4 @@
-import { stageCount } from './islandSession';
+import { STAGE_PASS, stageCount } from './islandSession';
 import { ALL_LESSONS, ISLANDS } from './lessons';
 import type { ChildData, SessionRow } from './tracking';
 
@@ -12,12 +12,13 @@ const DAY = 86_400_000;
 
 /**
  * Com va una illa, segons els encerts a la primera: li costa (50 % o menys), ho domina
- * (més del 80 % i totes les etapes fetes) o a practicar (la resta: entre el 50 % i el 80 %,
- * més del 80 % però amb etapes per fer, o encara no hi ha jugat).
+ * (el 80 % o més i totes les etapes fetes, el mateix llindar que el joc demana per a passar
+ * d'etapa) o a practicar (la resta: entre el 50 % i el 80 %, el 80 % o més però amb etapes
+ * per fer, o encara no hi ha jugat).
  */
 export type Mastery = 'costa' | 'practicar' | 'domina';
 export const masteryOf = (accuracy: number | null, complete: boolean): Mastery =>
-  accuracy === null ? 'practicar' : accuracy <= 0.5 ? 'costa' : accuracy > 0.8 && complete ? 'domina' : 'practicar';
+  accuracy === null ? 'practicar' : accuracy <= 0.5 ? 'costa' : accuracy >= STAGE_PASS && complete ? 'domina' : 'practicar';
 
 const COUNT = ['una', 'dues', 'tres', 'quatre', 'cinc'];
 /**
@@ -25,7 +26,7 @@ const COUNT = ['una', 'dues', 'tres', 'quatre', 'cinc'];
  * però encara li'n falten dues.» Res si no és el cas.
  */
 export function stageNote(island: IslandSummary): string | null {
-  if (island.cromo || island.accuracy === null || island.accuracy <= 0.8 || !island.stagesDone) return null;
+  if (island.cromo || island.accuracy === null || island.accuracy < STAGE_PASS || !island.stagesDone) return null;
   const left = island.stages - island.stagesDone;
   const done = island.stagesDone === 1 ? 'la primera etapa' : `les ${COUNT[island.stagesDone - 1]} primeres etapes`;
   return `Domina ${done}, però encara li'n ${left === 1 ? 'falta una' : `falten ${COUNT[left - 1]}`}.`;

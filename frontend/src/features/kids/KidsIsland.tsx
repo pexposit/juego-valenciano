@@ -2,19 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Home, BookHeart, GraduationCap, Play, RotateCcw } from 'lucide-react';
 import type { KidsItem, Round } from './content';
 import { RoundCaption, RoundView } from './games/RoundView';
-import { nextEase, planSession, stageCount, testedItems } from './islandSession';
+import { nextEase, planSession, stageCount, stagePassed, testedItems } from './islandSession';
 import { islandById } from './lessons';
 import { loadCromos, loadPractice, loadStages, markStage, savePractice, stagesDone, unlockCromo, type Practice } from './progress';
-import { say, sfxFanfare, stopVoice } from './sound';
+import { say, sfxCorrect, sfxFanfare, stopVoice } from './sound';
 import { saveSessionReport, type PlayedWord } from './tracking';
 import { MissContext } from './useRound';
 import './kids.css';
 
-type Session = { key: number; rounds: Round[]; stage: number | null; done: number };
+type Session = { key: number; rounds: Round[]; review: boolean[]; stage: number | null; done: number };
 
 /**
  * Una illa: es juga per etapes curtes (unes cinc rondes, vegeu islandSession.ts). Cada
- * etapa acabada és una estrela de l'illa; amb totes, el cromo de l'illa per a l'àlbum.
+ * etapa dominada (80 % a la primera) és una estrela de l'illa i obri la següent; si no,
+ * es torna a jugar la mateixa. Amb totes, el cromo de l'illa per a l'àlbum.
  * Després, cada partida és un repàs. El que costa es torna a preguntar més avant i, si
  * una partida costa molt, la següent és més fàcil. Cada partida es guarda per al
  * seguiment de la família i del professorat (tracking.ts).
@@ -24,11 +25,12 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
   const total = island ? stageCount(island) : 1;
   const [session, setSession] = useState<Session>();
   const [index, setIndex] = useState(0);
-  const [finished, setFinished] = useState<'stage' | 'cromo'>();
+  const [finished, setFinished] = useState<'stage' | 'retry' | 'cromo'>();
   const practice = useRef<Practice>({ mistakes: [], easy: false });
   const missedRound = useRef<Set<string> | null>(null); // el que ha costat en esta ronda (null: res)
   const misses = useRef(0);
   const firstTry = useRef(0);
+  const stageFirstTry = useRef(0); // les rondes de l'etapa (no les de repàs) encertades a la primera
   const played = useRef<PlayedWord[]>([]);
   const startedAt = useRef(0);
 
@@ -48,11 +50,12 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
     missedRound.current = null;
     misses.current = 0;
     firstTry.current = 0;
+    stageFirstTry.current = 0;
     played.current = [];
     startedAt.current = Date.now();
     setIndex(0);
     setFinished(undefined);
-    setSession(s => ({ key: (s?.key ?? 0) + 1, rounds: planSession(island, stage, practice.current), stage, done }));
+    setSession(s => ({ key: (s?.key ?? 0) + 1, ...planSession(island, stage, practice.current), stage, done }));
   }, [island, uid, total]);
 
   useEffect(() => {
@@ -83,7 +86,10 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
     if (round.kind === 'tap' && !missed && practice.current.mistakes.some(m => m.id === round.target.id)) {
       remember(practice.current.mistakes.filter(m => m.id !== round.target.id));
     }
-    if (!missed) firstTry.current++;
+    if (!missed) {
+      firstTry.current++;
+      if (!session.review[index]) stageFirstTry.current++;
+    }
     played.current.push(...testedItems(round).map(item => ({
       id: item.id, word: item.word, emoji: item.glyph ?? item.emoji, missed: !!missed?.has(item.id),
     })));
@@ -96,6 +102,14 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
     });
     practice.current = { ...practice.current, easy: nextEase(practice.current, misses.current, rounds.length) };
     savePractice(uid, island.id, practice.current);
+    // L'etapa no dominada no compta: es torna a jugar (amb el que ha costat per a repassar).
+    const stageRounds = session.review.filter(r => !r).length;
+    if (session.stage !== null && !stagePassed(stageFirstTry.current, stageRounds)) {
+      setFinished('retry');
+      sfxCorrect();
+      await new Promise(r => window.setTimeout(r, 500));
+      return void say('etapa-repetir');
+    }
     const done = session.stage === null ? total : session.stage + 1;
     if (session.stage !== null) await markStage(uid, island.id, session.stage);
     setSession(s => s && { ...s, done });
@@ -125,11 +139,17 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
         </MissContext.Provider>
       ) : (
         <div className="kid-finish">
-          <div className="kid-confetti" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ left: `${(i * 41) % 100}%`, animationDelay: `${(i % 8) * 0.12}s` }} />)}</div>
-          {finished === 'stage' ? (
-            <div className="kid-stage-stars" aria-label={`${session.done} de ${total} parts de l'illa`}>
-              {Array.from({ length: total }, (_, i) => <span key={i} className={i < session.done ? 'on' : ''} style={{ animationDelay: `${i * 0.15}s` }}>★</span>)}
-            </div>
+          {finished !== 'retry' && <div className="kid-confetti" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ left: `${(i * 41) % 100}%`, animationDelay: `${(i % 8) * 0.12}s` }} />)}</div>}
+          {finished !== 'cromo' ? (
+            <>
+              {/* Sense dominar l'etapa: la Taronjeta anima a tornar-hi; l'estrela que falta bota. */}
+              {finished === 'retry' && <div className="kid-mascot" aria-hidden="true">🍊</div>}
+              <div className="kid-stage-stars" aria-label={`${session.done} de ${total} parts de l'illa`}>
+                {Array.from({ length: total }, (_, i) => (
+                  <span key={i} className={i < session.done ? 'on' : finished === 'retry' && i === session.done ? 'next' : ''} style={{ animationDelay: `${i * 0.15}s` }}>★</span>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="kid-cromo kid-cromo-win">
               <span className="kid-cromo-emoji">{island.cromo.emoji}</span>
@@ -139,6 +159,8 @@ export function KidsIsland({ id, uid, onHome, onAlbum, onLesson }: { id: string 
           <div className="kid-finish-actions">
             {finished === 'stage' ? (
               <button onClick={() => void start()} aria-label="Continua l'illa" className="kid-big-btn btn-press" style={{ background: '#F97316' }}><Play className="h-10 w-10" /></button>
+            ) : finished === 'retry' ? (
+              <button onClick={() => void start()} aria-label="Torna-ho a provar" className="kid-big-btn btn-press" style={{ background: '#F97316' }}><RotateCcw className="h-10 w-10" /></button>
             ) : (
               <>
                 <button onClick={onAlbum} aria-label="Vés a l'àlbum de cromos" className="kid-big-btn btn-press" style={{ background: '#F97316' }}><BookHeart className="h-10 w-10" /></button>

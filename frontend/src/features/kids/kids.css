@@ -248,6 +248,7 @@
 .kid-stage-stars { display: flex; gap: 10px; font-size: clamp(64px, 14vw, 110px); line-height: 1; filter: drop-shadow(0 6px 0 #0000001a); }
 .kid-stage-stars span { color: #ffffffb3; animation: kidPop .5s both; }
 .kid-stage-stars span.on { color: #FACC15; }
+.kid-stage-stars span.next { animation: kidPulse 1.6s ease-in-out infinite; }
 .kid-big-btn { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 9999px; color: #fff; box-shadow: 0 8px 0 #0000002a; }
 .kid-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .kid-confetti i {

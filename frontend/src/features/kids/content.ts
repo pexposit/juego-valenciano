@@ -350,6 +350,7 @@ export const KIDS_AUDIO: Record<string, string> = {
   'illa-llocs': "L'illa del gat Pelut!",
   // Etapes de les illes i repàs del que ha costat
   'etapa-feta': "Molt bé! Has acabat un tros de l'illa. Continuem?",
+  'etapa-repetir': 'Quasi ho tens! Tornem a jugar este tros i, quan et sàpies quasi tot, passem al següent!',
   'repas': 'Repassem una cosa que abans ha costat una miqueta!',
   'illa-abecedari': "L'illa de l'abecedari!",
   // L'intrús
@@ -613,12 +614,12 @@ export const FREE_ISLANDS: Island[] = [
         tapRound(cards, l.card, size, { style: 'letters', prompt: `comenca-${l.letter}`, react: `abc-de-${l.letter}`, picture: l.emoji });
       const trace = (id: string) => ({ kind: 'trace', letter: ALPHABET.find(l => l.letter === id)!.trace }) as Round;
       const vowels = VOWELS.map(v => ALPHABET.find(l => l.letter === v)!.card);
-      const [a, b, c, d, e, f, g] = pick(ALPHABET, 7);
-      const [t1, t2] = pick(ABC_TRACE, 2);
+      const [a, b, c, d, e, f, g, h, i] = pick(ALPHABET, 9);
+      const [t1, t2, t3] = pick(ABC_TRACE, 3);
       return [
-        letter(a, 2), letter(b, 3), trace(t1), starts(c, 2),
-        orderRound('ordre-vocals', vowels, 'letters'), memoryRound(cards, 3, 'letters'), letter(d, 3), trace(t2),
-        starts(e, 3), memoryRound(cards, 4, 'letters'), letter(f, 4), starts(g, 4),
+        letter(a, 2), letter(b, 3), trace(t1), starts(c, 2), memoryRound(cards, 3, 'letters'),
+        orderRound('ordre-vocals', vowels, 'letters'), letter(d, 3), trace(t2), starts(e, 3), letter(h, 3),
+        memoryRound(cards, 4, 'letters'), letter(f, 4), trace(t3), starts(g, 4), starts(i, 4),
       ];
     },
   },

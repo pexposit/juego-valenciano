@@ -954,21 +954,26 @@ const oppositePlace: Activity = () => {
   return ask(prompt, to, pick(CAT_PLACES.filter(x => x !== to), 2))();
 };
 
+const catTrueFalse = trueFalse(CAT_PLACES.flatMap((item, i): [KidsItem, string, boolean][] => [
+  [item, `Mira: el gat és ${item.word}.`, true],
+  [item, `Mira: el gat és ${CAT_PLACES[(i + 2) % CAT_PLACES.length].word}.`, false],
+]), 5);
+
 const LLOCS_ILLA = islandFor(LLOCS, { emoji: '🐈', name: 'El gat Pelut' }, [
   findCat(2),
   findCat(2),
   findCat(3),
   oppositePlace,
+  listen(CAT_PLACES, 3),
   () => memoryRound(CAT_PLACES, 3),
   findCat(3),
-  trueFalse(CAT_PLACES.flatMap((item, i): [KidsItem, string, boolean][] => [
-    [item, `Mira: el gat és ${item.word}.`, true],
-    [item, `Mira: el gat és ${CAT_PLACES[(i + 2) % CAT_PLACES.length].word}.`, false],
-  ]), 5),
+  catTrueFalse,
   oppositePlace,
   () => thenRound(CAT_PLACES, 2, 4),
   findCat(4),
+  catTrueFalse,
   oppositePlace,
+  () => memoryRound(CAT_PLACES, 3),
   findCat(4),
 ]);
 

@@ -4,14 +4,19 @@ import type { Practice } from './progress';
 
 /**
  * Sessions de les illes del Nivell 0: micro-sessions de 3 a 5 minuts. Cada illa es
- * reparteix en etapes d'unes cinc rondes, en l'ordre de la lliçó; quan s'han fet totes
- * (i s'ha guanyat el cromo), cada partida és un repàs de cinc rondes a l'atzar. A més:
+ * reparteix en etapes d'unes cinc rondes, en l'ordre de la lliçó. Per a passar a la
+ * següent cal dominar-la: encertar a la primera el 80 % de les seues rondes (si no, es
+ * torna a jugar). Quan s'han fet totes (i s'ha guanyat el cromo), cada partida és un repàs
+ * de cinc rondes a l'atzar. A més:
  * - Repàs: abans i després de l'etapa torna a preguntar el que ha costat («Escolta i toca»).
  * - Més fàcil: si l'última partida va costar molt, menys opcions i memòries més curtes.
  */
 
 const STAGE_ROUNDS = 5;
 const REVIEWS = 2;
+/** Una etapa està dominada (i es passa a la següent) amb el 80 % de rondes encertades a la primera. */
+export const STAGE_PASS = 0.8;
+export const stagePassed = (firstTry: number, rounds: number) => rounds > 0 && firstTry / rounds >= STAGE_PASS;
 
 const counts = new Map<string, number>();
 /** Quantes etapes té una illa (les rondes es reparteixen a parts iguals). */
@@ -67,8 +72,12 @@ function easier(round: Round): Round {
   return round;
 }
 
-/** Les rondes d'una partida: l'etapa `stage` (o un repàs lliure si és null), amb el repàs del que ha costat. */
-export function planSession(island: Island, stage: number | null, practice: Practice): Round[] {
+/**
+ * Les rondes d'una partida: l'etapa `stage` (o un repàs lliure si és null), amb el repàs del
+ * que ha costat al principi i al final. `review` marca quines rondes són repàs: no compten
+ * per a saber si l'etapa està dominada.
+ */
+export function planSession(island: Island, stage: number | null, practice: Practice): { rounds: Round[]; review: boolean[] } {
   const all = island.rounds();
   const size = all.length / stageCount(island);
   const base = stage === null ? pick(all, STAGE_ROUNDS) : all.slice(Math.round(stage * size), Math.round((stage + 1) * size));
@@ -77,7 +86,8 @@ export function planSession(island: Island, stage: number | null, practice: Prac
     .map((item, i) => reviewRound(item, pool, practice.easy ? 2 : 3, i === 0))
     .filter((r): r is Round => !!r);
   const rounds = [...reviews.slice(0, 1), ...base, ...reviews.slice(1)];
-  return practice.easy ? rounds.map(easier) : rounds;
+  const review = rounds.map((_, i) => (reviews.length > 0 && i === 0) || (reviews.length > 1 && i === rounds.length - 1));
+  return { rounds: practice.easy ? rounds.map(easier) : rounds, review };
 }
 
 /** Després de la partida: si ha costat molt, la pròxima serà més fàcil; si ha anat bé, normal. */

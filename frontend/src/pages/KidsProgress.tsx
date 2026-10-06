@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { LogOut, Users } from 'lucide-react';
 import { OrangeHeader } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { ProgressReport } from '../features/kids/ProgressReport';
+import { checkPin, hasPin, isPin, resetPin, setPin } from '../features/kids/parentPin';
 import { joinClass, leaveClass, loadChildData, loadJoinedClasses, type ChildData } from '../features/kids/tracking';
 
 const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-2xl font-normal outline-none focus:border-[#0F47AF] transition-colors';
 
 /**
  * Seguiment del Nivell 0 per a la família (s'hi entra des del perfil del compte infantil).
- * Primer, una pregunta que un xiquet de 3 a 6 anys no sap contestar; després, l'informe
+ * Primer, el PIN de la família (parentPin.ts); després, l'informe
  * del xiquet i les classes del professorat on està (amb el codi que dona la docent).
  */
 export function KidsProgress({ uid, name, onBack, onLesson }: { uid: string | undefined; name: string; onBack: () => void; onLesson: (lesson: string) => void }) {
@@ -67,7 +68,7 @@ export function KidsProgress({ uid, name, onBack, onLesson }: { uid: string | un
 
       <div className="mx-auto max-w-3xl px-5 pt-6 pb-16">
         {!adult ? (
-          <AdultGate onPass={() => setAdult(true)} />
+          <PinGate uid={uid} onPass={() => setAdult(true)} />
         ) : (
           <>
             <h1 className="text-4xl font-black sm:text-5xl">Seguiment{name ? ` de ${name}` : ''}</h1>
@@ -118,36 +119,125 @@ export function KidsProgress({ uid, name, onBack, onLesson }: { uid: string | un
   );
 }
 
-/** Porta per a adults: una multiplicació que un xiquet del Nivell 0 encara no sap fer. */
-function AdultGate({ onPass }: { onPass: () => void }) {
-  const [a, b] = useMemo(() => [3 + Math.floor(Math.random() * 7), 3 + Math.floor(Math.random() * 7)], []);
-  const [answer, setAnswer] = useState('');
-  const [wrong, setWrong] = useState(false);
+/** Camp del PIN: quatre xifres grans i amagades. */
+function PinField({ value, onChange, label, autoFocus }: { value: string; onChange: (pin: string) => void; label: string; autoFocus?: boolean }) {
+  return (
+    <label className="mt-4 block text-xl font-extrabold">
+      {label}
+      <input
+        type="password"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={4}
+        value={value}
+        onChange={e => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))}
+        className={`mt-2 ${FIELD_CLASS} text-center font-mono text-4xl tracking-[0.6em]`}
+        placeholder="••••"
+        autoFocus={autoFocus}
+      />
+    </label>
+  );
+}
 
-  const check = (e: FormEvent) => {
-    e.preventDefault();
-    if (Number(answer) === a * b) return onPass();
-    setWrong(true);
-    setAnswer('');
+/**
+ * Porta per a adults: el PIN de la família. Si el compte encara no en té (comptes antics
+ * o creats sense), es crea ací; si s'ha oblidat, se'n posa un de nou amb la contrasenya.
+ */
+function PinGate({ uid, onPass }: { uid: string | undefined; onPass: () => void }) {
+  const [mode, setMode] = useState<'loading' | 'create' | 'enter' | 'forgot'>('loading');
+  const [pin, setPinValue] = useState('');
+  const [repeat, setRepeat] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    hasPin(uid)
+      .then(has => setMode(has ? 'enter' : 'create'))
+      .catch(e => {
+        console.error(e);
+        setError("No s'ha pogut comprovar el PIN. Torneu-ho a provar més tard.");
+      });
+  }, [uid]);
+
+  const go = (next: typeof mode) => {
+    setMode(next);
+    setPinValue('');
+    setRepeat('');
+    setPassword('');
+    setError(undefined);
   };
 
+  const locked = (seconds: number) => `Massa intents. Torneu-ho a provar d'ací a ${Math.ceil(seconds / 60)} ${seconds > 60 ? 'minuts' : 'minut'}.`;
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!isPin(pin)) return setError('El PIN ha de tindre 4 xifres.');
+    if ((mode === 'create' || mode === 'forgot') && pin !== repeat) return setError('Els dos PIN no coincidixen.');
+    setBusy(true);
+    try {
+      if (mode === 'create') {
+        await setPin(uid, pin);
+        return onPass();
+      }
+      if (mode === 'forgot') {
+        const result = await resetPin(uid, password, pin);
+        if (result.ok) return onPass();
+        return setError(result.lockedSeconds ? locked(result.lockedSeconds) : 'La contrasenya no és correcta.');
+      }
+      const result = await checkPin(uid, pin);
+      if (result.ok) return onPass();
+      setPinValue('');
+      setError(result.lockedSeconds
+        ? locked(result.lockedSeconds)
+        : `PIN incorrecte. ${result.attemptsLeft === 1 ? 'Queda 1 intent' : `Queden ${result.attemptsLeft} intents`}.`);
+    } catch (e) {
+      console.error(e);
+      setError("No s'ha pogut comprovar. Torneu-ho a provar.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (mode === 'loading') return error ? <p className="text-lg text-coral">{error}</p> : <p className="text-lg opacity-60">Carregant...</p>;
+
   return (
-    <form onSubmit={check} className="mx-auto max-w-md rounded-3xl bg-white p-6 shadow-sm">
-      <h1 className="text-3xl font-black">Només per a persones adultes</h1>
-      <p className="mt-2 text-lg opacity-70">Per a vore el seguiment, contesteu esta pregunta:</p>
-      <label className="mt-4 block text-2xl font-extrabold">
-        Quant fan {a} × {b}?
-        <input
-          type="number"
-          inputMode="numeric"
-          value={answer}
-          onChange={e => { setAnswer(e.target.value); setWrong(false); }}
-          className={`mt-2 ${FIELD_CLASS}`}
-          autoFocus
-        />
-      </label>
-      {wrong && <p className="mt-2 text-base text-coral">No és correcte. Torneu-ho a provar.</p>}
-      <button className="btn-press mt-4 w-full rounded-2xl bg-[#0F47AF] py-3 text-xl font-extrabold text-white">Entra</button>
+    <form onSubmit={submit} className="mx-auto max-w-md rounded-3xl bg-white p-6 shadow-sm">
+      <span className="text-4xl" aria-hidden="true">🔒</span>
+      <h1 className="mt-2 text-3xl font-black">
+        {mode === 'create' ? 'Creeu el PIN de la família' : mode === 'forgot' ? 'Un PIN nou' : 'Només per a persones adultes'}
+      </h1>
+      <p className="mt-2 text-lg opacity-70">
+        {mode === 'create'
+          ? 'Quatre xifres per a entrar al seguiment. Trieu-ne unes que el xiquet o la xiqueta no sàpia.'
+          : mode === 'forgot'
+            ? 'Escriviu la contrasenya del compte i trieu un PIN nou.'
+            : 'Escriviu el PIN de la família per a vore el seguiment.'}
+      </p>
+
+      {mode === 'forgot' && (
+        <label className="mt-4 block text-xl font-extrabold">
+          Contrasenya del compte
+          <input type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className={`mt-2 ${FIELD_CLASS}`} autoFocus />
+        </label>
+      )}
+      <PinField label={mode === 'enter' ? 'PIN' : 'PIN nou'} value={pin} onChange={p => { setPinValue(p); setError(undefined); }} autoFocus={mode !== 'forgot'} />
+      {mode !== 'enter' && <PinField label="Repetiu el PIN" value={repeat} onChange={p => { setRepeat(p); setError(undefined); }} />}
+
+      {error && <p className="mt-3 text-base text-coral">{error}</p>}
+      <button disabled={busy} className="btn-press mt-5 w-full rounded-2xl bg-[#0F47AF] py-3 text-xl font-extrabold text-white disabled:opacity-60">
+        {busy ? 'Espera...' : mode === 'enter' ? 'Entra' : 'Guarda el PIN i entra'}
+      </button>
+      {mode === 'enter' && (
+        <button type="button" onClick={() => go('forgot')} className="mt-3 w-full text-base font-bold text-gray-500 hover:text-[#0F47AF]">
+          Heu oblidat el PIN?
+        </button>
+      )}
+      {mode === 'forgot' && (
+        <button type="button" onClick={() => go('enter')} className="mt-3 w-full text-base font-bold text-gray-500 hover:text-[#0F47AF]">
+          ← Tinc el PIN
+        </button>
+      )}
     </form>
   );
 }

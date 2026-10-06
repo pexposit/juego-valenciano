@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { AGE_GROUP_OPTIONS, LEVEL_OPTIONS, MOTHER_TONGUE_OPTIONS, type Page } from '../data/content';
 import { startSession } from '../lib/api';
+import { isPin, setPin } from '../features/kids/parentPin';
 
 const NETWORK_ERROR = 'No hem pogut connectar. Revisa la connexió i torna-ho a provar.';
 const INPUT_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0F47AF] transition-colors';
@@ -29,6 +30,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   const [level, setLevel] = useState('principiant');
   const [ageGroup, setAgeGroup] = useState('');
   const [motherTongue, setMotherTongue] = useState('');
+  // Comptes infantils: el PIN de la família, que protegix el seguiment del xiquet.
+  const [familyPin, setFamilyPin] = useState('');
   const [notice, setNotice] = useState('');
   // El nivell només es tria en crear el compte: en iniciar sessió es llig del perfil.
   const [creating, setCreating] = useState(false);
@@ -57,10 +60,11 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
     }
     if (supabase && !ageGroup) return setNotice('Indica si el compte és per a un xiquet o per a una persona adulta.');
     if (supabase && !motherTongue) return setNotice('Tria la teua llengua materna.');
+    if (ageGroup === 'child' && !isPin(familyPin)) return setNotice('Tria un PIN de la família de 4 xifres.');
     // Només les persones adultes trien nivell; els xiquets comencen en el Nivell 0.
     const startLevel = ageGroup === 'child' ? 'nivell0' : level;
     return withAuth(async client => {
-      const { error } = await client.auth.signUp({
+      const { data, error } = await client.auth.signUp({
         email,
         password,
         options: { data: { level: startLevel, age_group: ageGroup || 'adult', mother_tongue: motherTongue, display_name: email.split('@')[0] } },
@@ -70,6 +74,10 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           ? 'Ja hi ha un compte amb aquest correu. Utilitza «Inicia sessió» amb la teua contrasenya.'
           : `No hem pogut crear el compte: ${error.message}`);
         return;
+      }
+      // Si cal confirmar el correu encara no hi ha sessió: el PIN es demanarà en entrar al seguiment.
+      if (ageGroup === 'child' && data.session) {
+        await setPin(data.user?.id, familyPin).catch(e => console.error('Error guardant el PIN de la família:', e));
       }
       setNotice('Compte creat! Entrant...');
       await recordLogin(startLevel);
@@ -164,6 +172,24 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
                   {/* El Nivell 0 és per a perfils infantils: no s'ofereix en el registre d'adults. */}
                   {LEVEL_OPTIONS.filter(o => o.value !== 'nivell0').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
+              </>
+            )}
+
+            {ageGroup === 'child' && (
+              <>
+                <label className="mt-4 block text-sm font-extrabold mb-1" htmlFor="auth-family-pin">PIN de la família (4 xifres)</label>
+                <input
+                  value={familyPin}
+                  onChange={e => { setFamilyPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setNotice(''); }}
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={4}
+                  placeholder="••••"
+                  id="auth-family-pin"
+                  className={`${INPUT_CLASS} text-center font-mono text-2xl tracking-[0.5em]`}
+                />
+                <p className="mt-1 text-xs opacity-60">El demanarem per a entrar al seguiment del xiquet o la xiqueta. Trieu-ne un que no sàpia.</p>
               </>
             )}
 
