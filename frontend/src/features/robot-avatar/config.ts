@@ -134,6 +134,10 @@ export const ROBOT_AVATAR = {
       modelUrl: '/avatar-robot/robot-n0_pati.glb',
       fallbackUrl: '/avatar-robot/robot-n0_pati.webp',
     },
+    n0_biblioteca: { // Pau, el bibliotecari (xiquets): armilla de punt amb rombes, ulleres daurades, llapis a l'orella i conte
+      modelUrl: '/avatar-robot/robot-n0_biblioteca.glb',
+      fallbackUrl: '/avatar-robot/robot-n0_biblioteca.webp',
+    },
   } as Record<string, { modelUrl: string; fallbackUrl: string }>,
 } as const;
 

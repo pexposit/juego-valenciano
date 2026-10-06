@@ -100,7 +100,7 @@
 .kid-scenario { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; width: 112px; }
 .kid-scenario-face {
   display: grid; place-items: center; width: 88px; height: 88px; border-radius: 9999px; overflow: hidden;
-  border: 4px solid #fff; box-shadow: 0 6px 0 #0000001a; font-size: 48px; animation: kidFloat 4s ease-in-out infinite;
+  border: 4px solid #fff; box-shadow: 0 6px 0 #0000001a; font-size: 48px;
 }
 .kid-scenario-face img { width: 100%; height: 100%; object-fit: contain; }
 .kid-scenario-name { font-weight: 800; font-size: 14px; line-height: 1.15; text-align: center; color: #1F2937; }

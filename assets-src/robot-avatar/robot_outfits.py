@@ -1680,6 +1680,69 @@ def outfit_pati(b):
               rot=tuple(n.to_track_quat('Z', 'Y').to_euler()), radius=0.055, depth=0.012, vertices=5)
 
 
+# --- n0_biblioteca (Pau, el bibliotecari, per als xiquets): armilla de punt amb rombes,
+#     camisa celeste, ulleres rodones daurades, llapis a l'orella i un conte obert ---------
+def outfit_biblioteca(b):
+    from math import pi
+    armilla = mat("Armilla_Punt",     (0.65, 0.42, 0.06), 0.9)
+    romb1   = mat("Romb_Granat",      (0.40, 0.08, 0.10), 0.9)
+    romb2   = mat("Romb_Crema",       (0.90, 0.85, 0.70), 0.9)
+    camisa  = mat("Camisa_Bibliotecari", (0.55, 0.72, 0.88), 0.6)
+    daurat  = mat("Montura_Daurada",  (0.85, 0.62, 0.15), 0.3, metal=0.9)
+    llapis  = mat("Llapis_Groc_Bib",  (0.95, 0.75, 0.10), 0.5)
+    goma    = mat("Goma_Llapis",      (0.95, 0.50, 0.55), 0.6)
+    tapa    = mat("Tapa_Conte",       (0.70, 0.08, 0.06), 0.5)
+    pagina  = mat("Pagina_Conte",     (0.97, 0.95, 0.88), 0.8)
+    dibuix1 = mat("Dibuix_Sol",       (0.98, 0.75, 0.10), 0.6)
+    dibuix2 = mat("Dibuix_Arbre",     (0.15, 0.55, 0.20), 0.6)
+    dibuix3 = mat("Dibuix_Mar",       (0.15, 0.45, 0.85), 0.6)
+
+    # camisa celeste (mànegues llargues i coll) i armilla de punt per damunt; la senyera com a estampat
+    for side in (-1, 1):
+        b.add("uv_sphere", f"Mànega.{'E' if side < 0 else 'D'}", (side * 0.87, 0, 0.60), "arm_L" if side < 0 else "arm_R",
+              camisa, scale=(0.175, 0.175, 0.36), rot=(0, -side * 0.385, 0), segments=32, ring_count=16)
+        b.add("cone", f"Camisa_Coll.{'E' if side < 0 else 'D'}", (side * 0.17, -0.40, 1.19), "body", camisa,
+              scale=(0.09, 0.012, 0.06), rot=(-0.6, 0, side * 0.5), radius1=1, depth=2, vertices=3)
+    b.add("torus", "Camisa_Coll_Darrere", (0, 0.02, 1.19), "body", camisa, scale=(1, 1, 0.6),
+          major_radius=0.30, minor_radius=0.05, major_segments=48, minor_segments=12)
+    b.add("cube", "Armilla_Punt", (0, 0, 0.60), "body", armilla, scale=(0.70, 0.548, 0.575), bevel=0.24, segs=6, size=2)
+    # rombes (argyle) als costats de la senyera
+    for side in (-1, 1):
+        for k, (z, m_) in enumerate(((0.92, romb1), (0.70, romb2), (0.48, romb1), (0.26, romb2))):
+            b.add("cube", f"Romb.{'E' if side < 0 else 'D'}{k}", (side * 0.52, -0.552, z), "body", m_,
+                  rot=(0, pi / 4, 0), scale=(0.065, 0.004, 0.065), size=2)
+
+    # ulleres rodones daurades al voltant dels ulls de la pantalla (os head)
+    for side in (-1, 1):
+        b.add("torus", f"Ulleres_Rodones.{'E' if side < 0 else 'D'}", (side * 0.33, -0.845, 2.12), "head", daurat,
+              rot=(pi / 2, 0, 0), major_radius=0.22, minor_radius=0.012, major_segments=48, minor_segments=8)
+    b.add("cylinder", "Ulleres_Rodones_Pont", (0, -0.845, 2.2), "head", daurat, rot=(0, pi / 2, 0),
+          radius=0.011, depth=0.24, vertices=8)
+
+    # llapis darrere de l'orella dreta (os head)
+    b.add("cylinder", "Llapis_Orella", (0.99, -0.10, 2.40), "head", llapis, rot=(pi / 2 - 0.35, 0, 0), radius=0.026, depth=0.36, vertices=6)
+    b.add("cylinder", "Llapis_Orella_Goma", (0.99, 0.08, 2.46), "head", goma, rot=(pi / 2 - 0.35, 0, 0), radius=0.027, depth=0.05, vertices=12)
+    b.add("cone", "Llapis_Orella_Punta", (0.99, -0.30, 2.33), "head", romb2, rot=(-pi / 2 - 0.35, 0, 0), radius1=0.026,
+          radius2=0.004, depth=0.06, vertices=6)
+
+    # conte obert a la mà esquerra (os arm_L): tapa roja, dues pàgines i dibuixos de colors
+    x, y, z, w, h = -1.10, -0.28, 0.42, 0.23, 0.27
+    for k, sgn in enumerate((-1, 1)):
+        ang = sgn * 0.22
+        b.add("cube", f"Conte_Tapa.{k}", (x + sgn * w * 0.5, y + 0.006, z), "arm_L", tapa, rot=(0, 0, -ang),
+              scale=(w * 0.52, 0.006, h * 1.04), size=2)
+        b.add("cube", f"Conte_Pagina.{k}", (x + sgn * w * 0.5, y - 0.002, z), "arm_L", pagina, rot=(0, 0, -ang),
+              scale=(w * 0.48, 0.004, h), size=2)
+    b.add("uv_sphere", "Conte_Sol", (x - w * 0.55, y - 0.03, z + h * 0.5), "arm_L", dibuix1, scale=(0.035, 0.004, 0.035),
+          segments=12, ring_count=6)
+    b.add("cone", "Conte_Arbre", (x - w * 0.45, y - 0.03, z - h * 0.2), "arm_L", dibuix2, rot=(pi / 2, 0, 0),
+          scale=(0.05, 0.07, 0.004), radius1=1, depth=2, vertices=3)
+    b.add("cube", "Conte_Mar", (x + w * 0.5, y - 0.04, z - h * 0.45), "arm_L", dibuix3, rot=(0, 0, 0.22),
+          scale=(w * 0.4, 0.004, 0.03), size=2)
+    b.add("cube", "Conte_Text", (x + w * 0.5, y - 0.04, z + h * 0.35), "arm_L", tapa, rot=(0, 0, 0.22),
+          scale=(w * 0.32, 0.004, 0.012), size=2)
+
+
 OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_forn, "oficina": outfit_oficina,
            "a2_identificacio": outfit_festa, "a2_casa": outfit_casa,
            "a2_activitats": outfit_gimnas,
@@ -1696,7 +1759,7 @@ OUTFITS = {"mercat": outfit_mercat, "farmacia": outfit_farmacia, "forn": outfit_
            "b1_territori": outfit_erasmus, "b1_cultura": outfit_radio,
            "b1_natura_clima": outfit_parc_natural, "colegi": outfit_mestra,
            "n0_pocio": outfit_mag, "n0_zoo": outfit_zoo,
-           "n0_pati": outfit_pati}
+           "n0_pati": outfit_pati, "n0_biblioteca": outfit_biblioteca}
 
 
 def build(name):
