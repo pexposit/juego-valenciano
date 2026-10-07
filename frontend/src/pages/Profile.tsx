@@ -10,7 +10,7 @@ const levelLabel = (value: string) => LEVEL_OPTIONS.find(o => o.value === value)
 
 export function Profile({
   name, setName, level, xp, back, onLogOut, isDemo, ageGroup, motherTongue, setMotherTongue, showMotherTongue, setShowMotherTongue,
-  onProgress, onClasses,
+  onProgress, isTeacher, onClasses,
 }: {
   name: string;
   setName: (v: string) => void;
@@ -25,6 +25,7 @@ export function Profile({
   showMotherTongue: boolean;
   setShowMotherTongue: (v: boolean) => void;
   onProgress: () => void;
+  isTeacher: boolean;
   onClasses: () => void;
 }) {
   const isChild = ageGroup === 'child';
@@ -152,7 +153,7 @@ export function Profile({
         )}
 
         <div className="mt-8 flex flex-col gap-3">
-          {/* Per a les persones adultes: el seguiment del xiquet (família) o les classes (professorat). */}
+          {/* El seguiment del xiquet (compte infantil) o les classes (només el professorat). */}
           {isChild ? (
             <button
               onClick={onProgress}
@@ -161,7 +162,7 @@ export function Profile({
             >
               <BarChart3 size={20} /> Seguiment per a la família
             </button>
-          ) : !isDemo && (
+          ) : isTeacher && (
             <button
               onClick={onClasses}
               id="profile-classes-btn"
