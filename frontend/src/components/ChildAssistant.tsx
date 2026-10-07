@@ -46,6 +46,8 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   const avatarSize = useAvatarSize();
   const listRef = useRef<HTMLDivElement>(null);
   const audio = useRef<{ text: string; element: HTMLAudioElement } | null>(null);
+  // false quan el tauler ja no és en pantalla: una resposta del TTS que arribe tard no ha de sonar.
+  const mounted = useRef(true);
   // Es guarda la promesa perquè el primer torn la puga esperar i perquè StrictMode no obri la conversa dues vegades.
   const conversation = useRef<Promise<AssistantConversation>>();
 
@@ -62,7 +64,9 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
     const spoken = text.split('\n')[0].trim();
     for (let attempt = 1; attempt <= TTS_ATTEMPTS; attempt += 1) {
       try {
-        const element = new Audio(await fetchTts(spoken, KID_ASSISTANT_TYPE));
+        const source = await fetchTts(spoken, KID_ASSISTANT_TYPE);
+        if (!mounted.current) return;
+        const element = new Audio(source);
         element.onplay = () => setTalking(true);
         element.onpause = element.onended = () => setTalking(false);
         audio.current = { text, element };
@@ -86,6 +90,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
 
   useEffect(() => {
     let cancelled = false;
+    mounted.current = true;
     conversation.current ??= ensureSession(CHILD_LEVEL).then(openAssistant);
     conversation.current
       .then(opened => {
@@ -100,7 +105,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         conversation.current = undefined;
         if (!cancelled) setOpenFailed(true);
       });
-    return () => { cancelled = true; stopAudio(); };
+    return () => { cancelled = true; mounted.current = false; stopAudio(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { normalizeAnswer } from '@parlaval/shared';
+import { ASSISTANT_CATEGORY, normalizeAnswer } from '@parlaval/shared';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
@@ -19,12 +19,12 @@ errorsRouter.get('/api/errors', requireAuth, async (req: AuthRequest, res) => {
     .from('user_errors')
     .select(
       'id, error_text, correction, category, explanation, source, context, created_at, ' +
-      'conversation_messages(content_text), resources(name), session_resource(resources(name)), practice_exercises(kind, options)',
+      'conversation_messages(content_text), resources(name), session_resource(resources(name, category)), practice_exercises(kind, options)',
     )
     .eq('user_id', req.userId)
     .eq('resolved', false)
     .order('created_at', { ascending: false })
-    .limit(100);
+    .limit(200);
 
   if (error) {
     console.error('[errors] Error carregant els errors:', error);
@@ -33,12 +33,15 @@ errorsRouter.get('/api/errors', requireAuth, async (req: AuthRequest, res) => {
 
   // Un mateix error repetit es practica una sola vegada: es queda el més recent.
   const seen = new Set<string>();
-  const unique = (data ?? []).filter((e: { error_text: string; correction: string }) => {
+  // Els errors del xat amb el professor del tauler (categoria 'assistent') no es practiquen ací.
+  const fromAssistant = (e: any) => e.session_resource?.resources?.category === ASSISTANT_CATEGORY;
+  const unique = (data ?? []).filter((e: any) => {
+    if (fromAssistant(e)) return false;
     const key = `${e.error_text.trim().toLowerCase()}|${e.correction.trim().toLowerCase()}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
-  });
+  }).slice(0, 100);
   // `message` és la frase/enunciat on es va cometre l'error; `scenario`, l'activitat on va passar.
   res.json(unique.map(({ conversation_messages, resources, session_resource, practice_exercises, context, ...e }: any) => ({
     ...e,
