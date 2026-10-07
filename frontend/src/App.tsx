@@ -6,7 +6,7 @@ import { ScenarioSelect } from './components/ScenarioSelect';
 import { SceneLoading, useDashboardAssets, useSceneAssets } from './components/SceneLoading';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
-import { endSession, fetchExam, fetchPractice, fetchResources } from './lib/api';
+import { endSession, fetchExam, fetchPractice, fetchResources, forgetSession } from './lib/api';
 import type { Exam as ExamResource, Practice as PracticeResource, Resource } from './lib/types';
 import { activityRoute, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
@@ -195,6 +195,8 @@ export function App() {
   // false mentre es comprova la sessió i es carrega el perfil (sense Supabase, ja està).
   const [profileReady, setProfileReady] = useState(!supabase);
   const loadedProfileFor = useRef<string>();
+  // On es torna en tancar la sessió: a l'inici, o al login si qui la tanca és docent.
+  const afterLogOut = useRef<string>(ROUTES.home);
   // Xiquets de Nivell 0: en lloc del tauler i les activitats, el món d'illes.
   const kids = isKidsLevel0({ level, age_group: ageGroup });
 
@@ -226,6 +228,8 @@ export function App() {
   };
 
   const resetProfile = () => {
+    // La sessió del backend era de l'usuari que ha eixit (també si ha eixit des d'una altra pestanya).
+    forgetSession();
     loadedProfileFor.current = undefined;
     setProfileReady(true);
     setUser(null);
@@ -236,7 +240,8 @@ export function App() {
     setMotherTongue(null);
     setShowMotherTongue(true);
     setRole('user');
-    navigate(ROUTES.home, { replace: true });
+    navigate(afterLogOut.current, { replace: true });
+    afterLogOut.current = ROUTES.home;
   };
 
   useEffect(() => {
@@ -301,6 +306,7 @@ export function App() {
   };
 
   const logOut = async () => {
+    if (role === 'teacher') afterLogOut.current = ROUTES.auth;
     // Tanca la sessió al backend abans d'invalidar el token de Supabase.
     await endSession().catch(err => console.error('Error tancant la sessió:', err));
     await supabase?.auth.signOut();
@@ -424,7 +430,8 @@ export function App() {
           element={
             !profileReady ? null
               : role === 'teacher' ? <PageTransition><TeacherClasses uid={user?.id} onLogOut={logOut} /></PageTransition>
-              : <Navigate to={ROUTES.dashboard} replace />
+              // Sense sessió (p. ex. just després de tancar-la), al login; no al tauler, que seria el mode demo.
+              : <Navigate to={user ? ROUTES.dashboard : ROUTES.auth} replace />
           }
         />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />

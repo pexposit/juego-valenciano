@@ -156,41 +156,64 @@ export async function finishSession(sessionId: string, accessToken?: string): Pr
 }
 
 // L'id de la sessió creada en el login es guarda a sessionStorage perquè la
-// reutilitzen tots els escenaris fins que l'usuari tanca la sessió.
-const SESSION_KEY = 'parlaval:session_id';
+// reutilitzen tots els escenaris fins que l'usuari tanca la sessió. Es guarda amb
+// l'usuari a qui pertany: si la pestanya canvia de compte (p. ex. s'ha tancat la
+// sessió des d'una altra pestanya), la d'un altre usuari no es fa servir.
+const SESSION_KEY = 'parlaval:session';
+type StoredSession = { userId: string; sessionId: string };
 
-export function getStoredSession(): string | undefined {
+function readStoredSession(): StoredSession | undefined {
   try {
-    return sessionStorage.getItem(SESSION_KEY) ?? undefined;
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) as StoredSession : undefined;
   } catch {
     return undefined;
   }
 }
 
-function storeSession(sessionId: string | undefined) {
+function storeSession(value: StoredSession | undefined) {
   try {
-    if (sessionId) sessionStorage.setItem(SESSION_KEY, sessionId);
+    if (value) sessionStorage.setItem(SESSION_KEY, JSON.stringify(value));
     else sessionStorage.removeItem(SESSION_KEY);
   } catch {
     // Sense storage: es crearà una sessió nova en obrir l'escenari.
   }
 }
 
-// Crea la sessió al backend (en fer login) i la guarda.
+// Sense sessió de Supabase (mode demo), les sessions són de l'usuari 'demo'.
+const sessionOwner = async () => (await supabase?.auth.getSession())?.data.session?.user.id ?? 'demo';
+
+/** La sessió guardada de l'usuari actual (no la d'un altre compte que haja usat esta pestanya). */
+export async function getStoredSession(): Promise<string | undefined> {
+  const stored = readStoredSession();
+  return stored && stored.userId === (await sessionOwner()) ? stored.sessionId : undefined;
+}
+
+// Crea la sessió al backend i la guarda.
 export async function startSession(level: string, accessToken?: string): Promise<string> {
+  const userId = await sessionOwner();
   const sessionId = await createSession(level, accessToken);
-  storeSession(sessionId);
+  storeSession({ userId, sessionId });
   return sessionId;
 }
 
-// Retorna la sessió del login o, si no n'hi ha (p. ex. pestanya nova), en crea una.
-export async function ensureSession(level: string): Promise<string> {
-  return getStoredSession() ?? startSession(level);
+// Retorna la sessió de l'usuari o, si no n'hi ha (login, pestanya nova...), en crea una. Les
+// crides simultànies (el login i el tutor del tauler en entrar) comparteixen la mateixa.
+let ensuring: Promise<string> | undefined;
+export function ensureSession(level: string): Promise<string> {
+  ensuring ??= (async () => (await getStoredSession()) ?? startSession(level))()
+    .finally(() => { ensuring = undefined; });
+  return ensuring;
+}
+
+// Oblida la sessió guardada (quan es tanca la sessió de Supabase per qualsevol via).
+export function forgetSession() {
+  storeSession(undefined);
 }
 
 // Tanca la sessió al backend (logout) i l'oblida localment.
 export async function endSession(): Promise<void> {
-  const sessionId = getStoredSession();
+  const sessionId = await getStoredSession();
   storeSession(undefined);
   if (sessionId) await finishSession(sessionId);
 }

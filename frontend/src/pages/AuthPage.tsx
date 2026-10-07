@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { AGE_GROUP_OPTIONS, LEVEL_OPTIONS, MOTHER_TONGUE_OPTIONS, type Page } from '../data/content';
-import { startSession } from '../lib/api';
+import { ensureSession } from '../lib/api';
 import { isPin, setPin } from '../features/kids/parentPin';
 
 const NETWORK_ERROR = 'No hem pogut connectar. Revisa la connexió i torna-ho a provar.';
 const INPUT_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0F47AF] transition-colors';
 
-// Crea la sessió al backend en entrar. Si falla, no impedix l'accés:
-// el xat en crearà una en obrir l'escenari.
+// Crea la sessió al backend en entrar (o reutilitza la que ja haja creat el tauler, que pot
+// carregar-se abans que acabe el login). Si falla, no impedix l'accés: el xat en crearà una
+// en obrir l'escenari.
 async function recordLogin(level: string) {
   try {
-    await startSession(level);
+    await ensureSession(level);
   } catch (error) {
     console.error('Error creant la sessió:', error);
   }
