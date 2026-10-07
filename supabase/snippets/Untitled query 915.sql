@@ -1,1 +1,1 @@
-Select count(*) from practice_exercises;
+delete from user_errors;

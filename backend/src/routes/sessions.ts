@@ -3,14 +3,10 @@ import { z } from 'zod';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
-import { scenarioSchema, sessionSchema } from '../schemas.js';
+import { finishResourceSchema, scenarioSchema, sessionSchema } from '../schemas.js';
 import { runPedagogicalEvaluation } from '../services/subagentRecommendation.js';
-import { waitForPendingErrorAnalysis } from '../services/pendingErrorAnalysis.js';
 import { onResourceFinished } from '../services/learningPath.js';
 import { reviewKidsConversation } from '../services/kidsObjectives.js';
-
-const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : undefined);
-
 
 export const sessionsRouter = Router();
 
@@ -90,7 +86,7 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
     // B. Buscar el recurs de l'escenari per categoria, tipus i nom
     const { data: resourceData, error: resourceError } = await client
       .from('resources')
-      .select('id, metadata')
+      .select('id')
       .eq('category', body.category)
       .eq('type', body.type)
       .limit(1)
@@ -114,24 +110,6 @@ sessionsRouter.post('/api/sessions/:sessionId/resources', requireAuth, async (re
       .single();
 
     if (sessionResourceError) throw sessionResourceError;
-
-    // D. El primer missatge de l'escenari és la salutació del personatge
-    // (resources.metadata.initial_prompt), guardada com a torn 'character' perquè
-    // forme part de l'historial que llig /api/turn.
-    const initialPrompt = text((resourceData.metadata as Record<string, unknown> | null)?.initial_prompt);
-    if (initialPrompt) {
-      const { error: greetingError } = await client
-        .from('conversation_messages')
-        .insert({
-          session_resource_id: sessionResourceData.id,
-          role: 'character',
-          content_text: initialPrompt,
-          input_mode: 'text',
-        });
-      if (greetingError) {
-        console.error('[session_resource] Error guardant la salutació inicial:', greetingError.message);
-      }
-    }
 
     res.status(201).json(sessionResourceData);
   } catch (error) {
@@ -188,8 +166,10 @@ sessionsRouter.post('/api/sessions/finish', requireAuth, async (req: AuthRequest
   }
 });
 
-// Tanca un recurs individual (botó "Eixir" dins de l'escenari) i dispara
-// l'avaluació pedagògica diagnòstica per a eixe recurs concret.
+// Tanca un recurs individual (botó "Eixir" dins de l'escenari) i fa l'avaluació pedagògica
+// diagnòstica d'eixe recurs. Les dades per a avaluar-lo (la conversa, els errors i les últimes
+// avaluacions) les guarda el navegador de l'usuari i les envia ací; el servidor no les guarda.
+// L'avaluació es torna al client, que és qui la guarda; al servidor només en queda el focus.
 sessionsRouter.post(
   '/api/sessions/:sessionId/resources/:sessionResourceId/finish',
   requireAuth,
@@ -197,6 +177,8 @@ sessionsRouter.post(
     try {
       const sessionId = req.params.sessionId as string;
       const sessionResourceId = req.params.sessionResourceId as string;
+      const parsed = finishResourceSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return validationError(res, parsed.error);
       const client = db(req.userId);
 
       if (!client || !req.userId) {
@@ -231,47 +213,34 @@ sessionsRouter.post(
         return res.status(500).json({ error: 'No s\'ha pogut tancar el recurs' });
       }
 
-      // Responem immediatament: l'avaluació es fa en segon pla, sense bloquejar el "Eixir".
-      res.json({ ok: true });
-
       const userId = req.userId;
       const { data: profile } = await client.from('profiles').select('level').eq('id', userId).maybeSingle();
       // Nivell 0: sense errors ni avaluació pedagògica; només quins objectius de l'escenari ha complit.
       if (profile?.level === 'nivell0') {
-        void reviewKidsConversation(client, userId, sessionResourceId, sessionResource.recurso_id)
+        res.json({ ok: true, evaluation: null });
+        void reviewKidsConversation(client, userId, sessionResourceId, sessionResource.recurso_id, parsed.data.messages)
           .catch((err: Error) => console.error('[kids-objectives] Error:', err.message));
         return;
       }
-      void (async () => {
-        try {
-          // Esperem que acaben totes les anàlisis d'errors (LLM) encara en curs
-          // per a aquest recurs abans d'avaluar, si no, l'avaluació pot arribar
-          // abans que l'últim torn haja acabat de guardar els seus errors.
-          console.log(`[evaluator] Esperant que acabe l'anàlisi d'errors del recurs ${sessionResourceId}...`);
-          await waitForPendingErrorAnalysis(sessionResourceId);
 
-          console.log(`[evaluator] Disparant avaluació per a recurs ${sessionResourceId} (usuari ${userId})...`);
-          const evalStart = Date.now();
-          const report = await runPedagogicalEvaluation(userId, sessionResourceId);
+      let evaluation = null;
+      const evalStart = Date.now();
+      const report = await runPedagogicalEvaluation(parsed.data.errors, parsed.data.evaluations);
+      if (report) {
+        const { data: saved, error: saveError } = await client
+          .from('user_evaluations')
+          .insert({ user_id: userId, session_resource_id: sessionResourceId, priority_focus: report.priority_focus })
+          .select('created_at')
+          .single();
+        if (saveError) console.error('[evaluator] Error guardant el focus:', saveError.message);
+        evaluation = { ...report, created_at: saved?.created_at ?? new Date().toISOString() };
+        console.log(`[evaluator] Categoria: ${report.priority_focus} en ${Date.now() - evalStart}ms`);
+      }
+      res.json({ ok: true, evaluation });
 
-          if (report) {
-            console.log(
-              `[evaluator] Exit! Categoria: ${report.priority_focus} en ${Date.now() - evalStart}ms`
-            );
-          } else {
-            console.log('[evaluator] No hi ha errors pendents suficients per a avaluar.');
-          }
-        } catch (err: any) {
-          console.error('[evaluator] Error:', err.message);
-        }
-
-        // Després de l'avaluació (que pot canviar el focus prioritari) s'actualitza la ruta.
-        try {
-          await onResourceFinished(client, userId, { resourceId: sessionResource.recurso_id, kind: 'chat' });
-        } catch (err: any) {
-          console.error('[learning-path] Error actualitzant la ruta:', err.message);
-        }
-      })();
+      // Després de l'avaluació (que pot canviar el focus prioritari) s'actualitza la ruta.
+      void onResourceFinished(client, userId, { resourceId: sessionResource.recurso_id, kind: 'chat' })
+        .catch((err: Error) => console.error('[learning-path] Error actualitzant la ruta:', err.message));
     } catch (error) {
       console.error('[session_resource finish] Error:', error);
       res.status(500).json({ error: 'Error intern' });

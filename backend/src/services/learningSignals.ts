@@ -1,8 +1,9 @@
-// Dades d'aprenentatge d'un usuari per a generar-li la ruta: les últimes
-// avaluacions pedagògiques dels xats, els errors encara no resolts i els
-// resultats dels recursos acabats (pràctica, exàmens i xats).
+// Dades d'aprenentatge d'un usuari per a generar-li la ruta: el focus de les últimes
+// avaluacions pedagògiques dels xats, els errors encara no resolts (per categoria) i els
+// resultats dels recursos acabats (pràctica, exàmens i xats). Al servidor no hi ha cap
+// text de l'usuari: el resum de les avaluacions i el text dels errors els guarda el client.
 
-export type EvaluationSignal = { summary: string; weaknesses: string[]; priority_focus: string; created_at: string };
+export type EvaluationSignal = { priority_focus: string; created_at: string };
 export type ResultSignal = { resource_id: string; category: string; kind: string; score: number | null; total: number | null; created_at: string };
 export type AreaStat = { category: string; attempts: number; average: number | null };
 
@@ -20,7 +21,7 @@ export async function loadLearningSignals(client: any, userId: string): Promise<
   const [evaluations, errors, results] = await Promise.all([
     client
       .from('user_evaluations')
-      .select('summary, weaknesses, priority_focus, created_at')
+      .select('priority_focus, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(5),

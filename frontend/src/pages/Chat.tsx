@@ -3,7 +3,8 @@ import { MessageCircle, Target, Volume2, X } from 'lucide-react';
 import { SceneArt } from '../components/SceneArt';
 import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
-import { ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
+import { analyzeMessage, ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
+import { addMessages } from '../lib/localStore';
 import type { Mood, Scenario, ScenarioTranslation } from '../lib/types';
 import { GREETING_BY_VOICE } from '../data/content';
 import { isVoiceOnlyCategory } from '@parlaval/shared';
@@ -43,11 +44,13 @@ export function Chat({
   onBack: () => void;
 }) {
   const [mood, setMood] = useState<Mood>('neutral');
-  const [character, setCharacter] = useState(() => {
-    const greeting = initialPrompt || INITIAL_GREETING;
-    return translation?.initial_prompt ? `${greeting}
-${translation.initial_prompt}` : greeting;
+  // Salutació del personatge (primer missatge de la conversa), amb la traducció si n'hi ha.
+  const [greeting] = useState(() => {
+    const text = initialPrompt || INITIAL_GREETING;
+    return translation?.initial_prompt ? `${text}
+${translation.initial_prompt}` : text;
   });
+  const [character, setCharacter] = useState(greeting);
   // La primera línia del personatge és en valencià i la resta, la traducció (subtítol).
   const [characterText, ...characterHelp] = character.split('\n');
   const [user, setUser] = useState('');
@@ -106,11 +109,14 @@ ${translation.initial_prompt}` : greeting;
     }
   };
 
-  // Tanca el recurs (no la sessió, que es tanca en fer logout) i el backend
-  // llança l'avaluació pedagògica d'aquest escenari en segon pla.
+  // Tanca el recurs (no la sessió, que es tanca en fer logout) i el backend en fa l'avaluació
+  // pedagògica. En el Nivell 0 s'envia la conversa, per a revisar-ne els objectius.
   const finishActivity = () => {
     const opened = openedActivity.current;
-    if (opened) void finishSessionResource(opened.sessionId, opened.sessionResourceId);
+    if (opened) {
+      void finishSessionResource(opened.sessionId, opened.sessionResourceId, { includeMessages: level === 'nivell0' })
+        .catch(error => console.error("Error tancant l'escenari:", error));
+    }
   };
   const handleExit = () => {
     finishActivity();
@@ -191,6 +197,17 @@ ${translation.initial_prompt}` : greeting;
         include_audio: false,
       });
       const transcription = r.transcription || undefined;
+      const said = transcription ?? text;
+      // La conversa es guarda només en este navegador; el primer cop, amb la salutació del personatge.
+      void addMessages(sessionResourceId, 'scenario', [
+        ...(history.length === 0 ? [{ role: 'character' as const, text: greeting }] : []),
+        { role: 'user', text: said || userLabel },
+        { role: 'character', text: r.reply_text },
+      ]).catch(error => console.error('Error guardant la conversa:', error));
+      // Els errors del missatge es busquen a banda, sense fer esperar la resposta.
+      if (r.analyze_errors && said) {
+        analyzeMessage({ session_id: sessionId, session_resource_id: sessionResourceId, text: said }, { scenario: title, practicable: true });
+      }
       setCharacter(r.reply_text);
       setUserTranscription(transcription);
       setMood(r.mood);

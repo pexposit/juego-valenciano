@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CHAT_CATEGORIES, isKidsLevel0, isTranslatedTongue } from '@parlaval/shared';
 import type { User } from '@supabase/supabase-js';
-import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
 import { SceneLoading, useDashboardAssets, useSceneAssets } from './components/SceneLoading';
 import { PageTransition } from './components/ui';
@@ -177,12 +177,18 @@ function KidsLessonRoute({ uid }: { uid: string | undefined }) {
   );
 }
 
+// On entra cada perfil en iniciar sessió: el professorat, a les seues classes.
+const homeFor = (role: string | undefined) => (role === 'teacher' ? ROUTES.classes : ROUTES.dashboard);
+
 export function App() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [xp, setXp] = useState(DEFAULT_PROFILE.xp);
   const [level, setLevel] = useState(DEFAULT_PROFILE.level);
   const [name, setName] = useState(DEFAULT_PROFILE.name);
   const [ageGroup, setAgeGroup] = useState(DEFAULT_PROFILE.ageGroup);
+  // Rol del perfil: només el professorat ('teacher') veu i crea classes.
+  const [role, setRole] = useState('user');
   const [motherTongue, setMotherTongue] = useState<string | null>(null);
   const [showMotherTongue, setShowMotherTongue] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -193,12 +199,12 @@ export function App() {
   const kids = isKidsLevel0({ level, age_group: ageGroup });
 
   // Sync profile details from Supabase if logged in
-  const loadProfile = async (uid: string) => {
+  const loadProfile = async (uid: string): Promise<string | undefined> => {
     if (!supabase) return;
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, level, xp, age_group, mother_tongue, show_mother_tongue')
+        .select('display_name, level, xp, age_group, mother_tongue, show_mother_tongue, role')
         .eq('id', uid)
         .single();
       if (data) {
@@ -208,6 +214,8 @@ export function App() {
         setAgeGroup(data.age_group || DEFAULT_PROFILE.ageGroup);
         setMotherTongue(data.mother_tongue ?? null);
         setShowMotherTongue(data.show_mother_tongue ?? true);
+        setRole(data.role || 'user');
+        return data.role;
       }
     } catch (e) {
       console.error('Error carregant perfil:', e);
@@ -227,6 +235,7 @@ export function App() {
     setAgeGroup(DEFAULT_PROFILE.ageGroup);
     setMotherTongue(null);
     setShowMotherTongue(true);
+    setRole('user');
     navigate(ROUTES.home, { replace: true });
   };
 
@@ -240,11 +249,10 @@ export function App() {
     void supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) return setProfileReady(true);
       setUser(session.user);
-      void loadProfile(session.user.id);
-      const path = window.location.pathname;
-      if (path === ROUTES.home || path === ROUTES.auth) {
-        navigate(ROUTES.dashboard, { replace: true });
-      }
+      void loadProfile(session.user.id).then(r => {
+        const path = window.location.pathname;
+        if (path === ROUTES.home || path === ROUTES.auth) navigate(homeFor(r), { replace: true });
+      });
     });
 
     // Listen for auth state changes
@@ -254,12 +262,12 @@ export function App() {
       // Un inici de sessió nou torna a mostrar la càrrega; un refresc del token
       // del mateix usuari, no.
       if (loadedProfileFor.current !== session.user.id) setProfileReady(false);
-      await loadProfile(session.user.id);
+      const r = await loadProfile(session.user.id);
       // Sols redirigix si encara estava a l'inici o a l'autenticació; si ja
       // navegava per l'app (p. ex. refresc del token), es queda on estava.
       const path = window.location.pathname;
       if (path === ROUTES.home || path === ROUTES.auth) {
-        navigate(ROUTES.dashboard, { replace: true });
+        navigate(homeFor(r), { replace: true });
       }
     });
 
@@ -302,6 +310,9 @@ export function App() {
   // Callback compatible amb les pàgines que només naveguen entre pantalles
   // simples (sense paràmetres); el xat es gestiona a banda amb `chatRoute`.
   const goToPage = (p: Page) => navigate(ROUTES[p]);
+
+  // El professorat només té accés a les seues classes: qualsevol altra ruta hi redirigix.
+  if (role === 'teacher' && pathname !== ROUTES.classes) return <Navigate to={ROUTES.classes} replace />;
 
   return (
     // Subtítols en la llengua materna en el Nivell 0, si el perfil els té activats.
@@ -385,6 +396,7 @@ export function App() {
                 showMotherTongue={showMotherTongue}
                 setShowMotherTongue={updateShowMotherTongue}
                 onProgress={() => navigate(ROUTES.progress)}
+                isTeacher={role === 'teacher'}
                 onClasses={() => navigate(ROUTES.classes)}
               />
             </PageTransition>
@@ -407,7 +419,14 @@ export function App() {
           path={ROUTES.progress}
           element={<PageTransition><KidsProgress uid={user?.id} name={name} onBack={() => navigate(-1)} onLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>}
         />
-        <Route path={ROUTES.classes} element={<PageTransition><TeacherClasses uid={user?.id} onBack={() => navigate(-1)} /></PageTransition>} />
+        <Route
+          path={ROUTES.classes}
+          element={
+            !profileReady ? null
+              : role === 'teacher' ? <PageTransition><TeacherClasses uid={user?.id} onLogOut={logOut} /></PageTransition>
+              : <Navigate to={ROUTES.dashboard} replace />
+          }
+        />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
     </KidsTranslationProvider>

@@ -206,7 +206,8 @@ export async function analyzeErrorsWithLocalLLM(content: string): Promise<Detect
       for (const toolCall of choice.message.tool_calls) {
         if (toolCall.type !== 'function') continue;
 
-        console.log(`[MCP Tool Exec] ${toolCall.function.name}(${toolCall.function.arguments})`);
+        // Sense els arguments: porten text de l'usuari, que no ha de quedar en els logs.
+        console.log(`[MCP Tool Exec] ${toolCall.function.name}`);
 
         let toolOutput: any;
         try {

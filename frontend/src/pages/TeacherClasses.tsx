@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Copy, Plus, Trash2, UserMinus } from 'lucide-react';
+import { Copy, LogOut, Plus, Trash2, UserMinus } from 'lucide-react';
 import { OrangeHeader } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { ProgressReport } from '../features/kids/ProgressReport';
@@ -17,7 +17,7 @@ const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-xl fon
  * de l'alumnat, les illes que costen al grup i la fitxa de seguiment de cada alumne (amb
  * les seues converses amb personatges, que també pot llegir).
  */
-export function TeacherClasses({ uid, onBack }: { uid: string | undefined; onBack: () => void }) {
+export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onLogOut: () => void }) {
   const [classes, setClasses] = useState<KidsClass[]>();
   const [selected, setSelected] = useState<KidsClass>();
   const [students, setStudents] = useState<Student[]>();
@@ -82,14 +82,20 @@ export function TeacherClasses({ uid, onBack }: { uid: string | undefined; onBac
     window.setTimeout(() => setCopied(false), 1500);
   };
 
-  const back = () => (student ? setStudent(undefined) : selected ? setSelected(undefined) : onBack());
+  const back = () => (student ? setStudent(undefined) : setSelected(undefined));
 
   return (
     <main className="fade-up" style={{ background: '#FAFAF9', minHeight: '100vh' }}>
       <OrangeHeader showOranges={false}>
-        <div className="px-5 pb-2">
-          <button onClick={back} className="text-xl btn-press rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-teal shadow hover:bg-white transition-colors">
-            ← Tornar
+        {/* El professorat només té esta pantalla: dins d'una classe es torna enrere; a la llista, es tanca la sessió. */}
+        <div className="flex justify-between px-5 pb-2">
+          {selected ? (
+            <button onClick={back} className="text-xl btn-press rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-teal shadow hover:bg-white transition-colors">
+              ← Tornar
+            </button>
+          ) : <span />}
+          <button onClick={onLogOut} id="classes-logout-btn" className="btn-press flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-coral shadow hover:bg-white transition-colors">
+            <LogOut size={16} /> Tanca la sessió
           </button>
         </div>
       </OrangeHeader>

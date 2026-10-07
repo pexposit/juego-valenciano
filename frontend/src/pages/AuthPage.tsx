@@ -92,7 +92,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
     const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error) return setNotice(`No hem pogut iniciar sessió: ${error.message}`);
 
-    const { data: profile } = await client.from('profiles').select('level').eq('id', data.user.id).single();
+    const { data: profile } = await client.from('profiles').select('level, role').eq('id', data.user.id).single();
     if (!profile) {
       await client.auth.signOut();
       return setNotice('Este compte no té cap perfil associat. Contacta amb l\'administrador.');
@@ -100,7 +100,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
 
     await updateLastActive(client, data.user.id);
     await recordLogin(profile.level);
-    setPage('dashboard');
+    // El professorat entra directament a les seues classes.
+    setPage(profile.role === 'teacher' ? 'classes' : 'dashboard');
   });
 
   return (
