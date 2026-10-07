@@ -40,3 +40,42 @@ export const sessionSchema = z.object({
   type: z.string().optional().default('scenari'),
 });
 
+
+// Dades que guarda el navegador de l'usuari (no el servidor) i que envia quan el servidor les
+// necessita per a avaluar. El servidor les fa servir i no les guarda.
+const clientText = z.string().max(MESSAGE_MAX_CHARS);
+
+export const clientMessageSchema = z.object({
+  role: z.enum(['user', 'character']),
+  text: clientText,
+  created_at: z.string().datetime(),
+});
+
+export const clientErrorSchema = z.object({
+  error_text: clientText,
+  correction: clientText,
+  category: z.string().max(100),
+  explanation: clientText,
+});
+
+export const clientEvaluationSchema = z.object({
+  summary: z.string().max(4000),
+  weaknesses: z.array(clientText).max(30),
+  priority_focus: z.string().max(100),
+  created_at: z.string().datetime(),
+});
+
+// En tancar un recurs: la conversa (Nivell 0, per a revisar els objectius) o els errors
+// pendents del recurs i les últimes avaluacions (per a l'avaluació pedagògica).
+export const finishResourceSchema = z.object({
+  messages: z.array(clientMessageSchema).max(400).optional().default([]),
+  errors: z.array(clientErrorSchema).max(100).optional().default([]),
+  evaluations: z.array(clientEvaluationSchema).max(4).optional().default([]),
+});
+
+// Un missatge de l'usuari en un xat, per a buscar-hi errors.
+export const analyzeSchema = z.object({
+  session_id: z.string().uuid(),
+  session_resource_id: z.string().uuid(),
+  text: z.string().trim().min(1).max(MESSAGE_MAX_CHARS),
+});

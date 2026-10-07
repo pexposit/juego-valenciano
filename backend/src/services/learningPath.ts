@@ -111,7 +111,7 @@ export function validatePlan(plan: Plan, catalogIds: ReadonlySet<string>): strin
 const SYSTEM_PROMPT = `Ets un tutor de valencià que prepara aprenents per als certificats de la JQCV. Has de dissenyar la ruta d'aprenentatge personalitzada dels pròxims dies per a un aprenent, a partir de les seues dades i del catàleg d'activitats del seu nivell.
 
 DADES QUE REPS
-- avaluacions: diagnòstics de les seues últimes converses (summary, weaknesses amb «error -> correcció», priority_focus = categoria d'error prioritària).
+- avaluacions: focus de les seues últimes converses (priority_focus = categoria d'error prioritària de cada una).
 - errors_pendents: recompte d'errors encara no resolts per categoria (accentuació, apostrofació, concordança, morfologia, sintaxi, lèxic, preposicions, pronoms, ortografia, altres).
 - arees: per a cada àrea, quantes activitats ha fet i la mitjana d'encerts (0-1; null si no té nota).
 - recents: últims recursos fets (id, àrea, nota).

@@ -1,10 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import {
-  HISTORY_MAX_MESSAGES,
-  sanitizeHistory,
-  type HistoryMessage,
-} from '@parlaval/shared';
+import { sanitizeHistory, type HistoryMessage } from '@parlaval/shared';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { db } from '../db.js';
@@ -16,8 +12,6 @@ import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
 import { assistantLevelInstructions } from '../services/assistantLevel.js';
 import { stt, tts } from '../services/voice.js';
-import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
-import { beginErrorAnalysis } from '../services/pendingErrorAnalysis.js';
 
 export const turnRouter = Router();
 
@@ -27,12 +21,12 @@ const TURN_RATE_LIMIT = {
   maxAnonymous: Number(process.env.RATE_LIMIT_ANON_PER_MIN) || 6,
 };
 
+// Un torn del xat. Els missatges no es guarden al servidor: el client envia l'historial de la
+// conversa (que guarda en el seu navegador) i rep la resposta. Els errors del missatge es busquen
+// a banda, amb /api/errors/analyze, perquè la resposta no haja d'esperar-los.
 turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req: AuthRequest, res) => {
-  let finishPending: (() => void) | undefined;
-  let analysisStarted = false;
   try {
     const data = turnSchema.parse(req.body);
-    finishPending = beginErrorAnalysis(data.session_resource_id);
     let text = data.text.trim();
     const startedAt = Date.now();
 
@@ -82,30 +76,13 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       }
     }
 
-    // 2. Historial aïllat per recurs
-    let history: HistoryMessage[];
-    if (client) {
-      const { data: historyData, error: historyError } = await client
-        .from('conversation_messages')
-        .select('role, content_text')
-        .eq('session_resource_id', data.session_resource_id)
-        .order('created_at', { ascending: false })
-        .limit(HISTORY_MAX_MESSAGES);
-
-      if (historyError) {
-        console.error("[turn] no hem pogut llegir l'historial:", historyError.message);
-      }
-      history = sanitizeHistory(((historyData || []).reverse()) as HistoryMessage[]);
-    } else {
-      history = sanitizeHistory(data.history as HistoryMessage[]);
-    }
+    // 2. Historial de la conversa, enviat pel client (no es guarda al servidor).
+    const history = sanitizeHistory(data.history as HistoryMessage[]);
 
     // El tutor del tauler té en compte la llengua materna, el nivell i el públic (xiquet o adult) de l'usuari.
     let extraInstructions: string | undefined;
     let levelInstructions: string | undefined;
     let level = data.level;
-    // Nivell 0 (xiquets): no es busquen ni es guarden errors gramaticals de la conversa; en acabar-la
-    // només es revisen els objectius de l'escenari (services/kidsObjectives.ts).
     let levelZero = false;
     if (client && scenario.category === ASSISTANT_CATEGORY) {
       const { data: profile } = await client.from('profiles').select('mother_tongue, level, age_group').eq('id', req.userId!).maybeSingle();
@@ -136,127 +113,29 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
     const xpDelta = 10;
 
-    // Sincronitzador per assegurar que l'ID del missatge existix abans d'inserir errors
-    let resolveMessageId: (id: string | null) => void;
-    const messageIdPromise = new Promise<string | null>((resolve) => {
-      resolveMessageId = resolve;
-    });
-
     const wantsAudio = data.include_audio;
     const ttsStart = Date.now();
     const audioPromise = wantsAudio
       ? tts.synthesize(reply.reply_text.split('\n')[0], scenario.voice)
       : Promise.resolve(null);
 
-    // 3. Persistència de missatges i XP
-    const persistPromise = client
+    // 3. XP del torn (els missatges no es guarden).
+    const xpPromise = client
       ? (async () => {
-          const dbStart = Date.now();
-
-          const { data: userMsgInsert, error: userMsgError } = await client
-            .from('conversation_messages')
-            .insert({
-              session_resource_id: data.session_resource_id,
-              role: 'user',
-              content_text: text,
-              input_mode: data.input_mode,
-            })
-            .select('id')
-            .single();
-
-          if (userMsgError || !userMsgInsert) {
-            console.error('[turn] Error guardant missatge usuari:', userMsgError?.message);
-            resolveMessageId!(null);
-            return;
-          }
-
-          resolveMessageId!(userMsgInsert.id);
-
-          // El missatge del personatge es guarda com a 'voice' només si finalment s'ha
-          // generat àudio (la síntesi pot fallar encara que s'haja demanat).
-          const audio = await audioPromise;
-          const { error: characterMsgError } = await client
-            .from('conversation_messages')
-            .insert({
-              session_resource_id: data.session_resource_id,
-              role: 'character',
-              content_text: reply.reply_text,
-              input_mode: audio ? 'voice' : 'text',
-            });
-
-          if (characterMsgError) {
-            console.error('[turn] Error guardant missatge personatge:', characterMsgError.message);
-          }
-
           const { error: xpError } = await client.rpc('apply_turn_xp', {
             p_user_id: req.userId,
             p_session_id: data.session_id,
             p_xp_delta: xpDelta,
           });
-
-          if (xpError) {
-            console.error('[turn] no hem pogut aplicar els XP:', xpError.message);
-          }
-
-          console.log(`[turn] db=${Date.now() - dbStart}ms`);
+          if (xpError) console.error('[turn] no hem pogut aplicar els XP:', xpError.message);
         })()
       : Promise.resolve();
 
-    const [audio] = await Promise.all([audioPromise, persistPromise]);
+    const [audio] = await Promise.all([audioPromise, xpPromise]);
 
     console.log(
       `[turn] tts=${wantsAudio ? Date.now() - ttsStart : 0}ms total=${Date.now() - startedAt}ms`,
     );
-
-    // 4. Anàlisi asíncrona segura (no en el Nivell 0)
-    if (client && req.userId && !levelZero) {
-      const currentText = text;
-
-      analysisStarted = true;
-      const done = finishPending;
-      void (async () => {
-        const start = Date.now();
-        try {
-          const [detectedErrors, targetMessageId] = await Promise.all([
-            analyzeErrorsWithLocalLLM(currentText),
-            messageIdPromise,
-          ]);
-
-          if (!targetMessageId) {
-            console.warn('[bgAnalysis] No es poden guardar errors: fallada en persistir el missatge pare.');
-            return;
-          }
-
-          if (!detectedErrors || detectedErrors.length === 0) return;
-
-          const records = detectedErrors.map((item) => ({
-            user_id: req.userId,
-            source: 'chat',
-            message_id: targetMessageId,
-            session_resource_id: data.session_resource_id,
-            error_text: item.error_text,
-            correction: item.correction,
-            category: item.category,
-            explanation: item.explanation,
-            resolved: false,
-          }));
-
-          const { error: insertErr } = await client.from('user_errors').insert(records);
-          if (insertErr) {
-            console.error('[bgAnalysis] Error guardant a user_errors:', insertErr.message);
-            return;
-          }
-
-          console.log(
-            `[bgAnalysis] Guardats ${records.length} errors vinculats a ${targetMessageId} en ${Date.now() - start}ms`,
-          );
-        } catch (err: any) {
-          console.error('[bgAnalysis] Error analitzant el missatge:', err.message);
-        } finally {
-          done?.();
-        }
-      })();
-    }
 
     res.json({
       ...reply,
@@ -264,6 +143,9 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       reply_audio_base64: audio?.audio.toString('base64') || null,
       reply_audio_mime_type: audio?.mimeType || null,
       xp_delta: xpDelta,
+      // Nivell 0 (xiquets): no es busquen errors gramaticals de la conversa; en acabar-la només
+      // es revisen els objectius de l'escenari (services/kidsObjectives.ts).
+      analyze_errors: !levelZero,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -272,8 +154,5 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     }
     console.error(error);
     res.status(500).json({ error: 'No hem pogut processar el torn' });
-  } finally {
-    // Si el torn acaba sense llançar l'anàlisi (error, missatge buit...), alliberem l'espera.
-    if (!analysisStarted) finishPending?.();
   }
 });

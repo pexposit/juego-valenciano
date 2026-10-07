@@ -330,10 +330,11 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
 
   try {
     const evaluation = await evaluate();
-    // Els errors que assenyala el LLM es guarden perquè es puguen practicar a la pestanya «Errors».
+    // Els errors que assenyala el LLM es guarden perquè es puguen practicar a la pestanya «Errors»:
+    // al servidor les metadades i, el text, en el navegador (es tornen en `saved_errors`).
     const written = exercise.kind === 'form' ? Object.values(parsedBody.data.answers ?? {}).join(' · ') : parsedBody.data.text ?? '';
-    await saveWritingErrors(req.userId, exercise, evaluation, written);
-    res.json(evaluation);
+    const savedErrors = await saveWritingErrors(req.userId, exercise, evaluation, written);
+    res.json({ ...(evaluation as object), saved_errors: savedErrors });
   } catch (err) {
     console.error('[practice] Error avaluant l’exercici:', err);
     res.status(503).json({ error: 'No hem pogut avaluar l’exercici. Torna-ho a provar.' });

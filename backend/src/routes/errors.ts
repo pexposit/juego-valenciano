@@ -1,96 +1,159 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { ASSISTANT_CATEGORY, normalizeAnswer } from '@parlaval/shared';
+import { normalizeAnswer } from '@parlaval/shared';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
+import { analyzeSchema } from '../schemas.js';
+import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
 
 export const errorsRouter = Router();
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Els errors de l'usuari es guarden en dos llocs amb el mateix id:
+//   * al servidor (user_errors), només les metadades: categoria, origen i si està resolt. És el
+//     que fa servir la ruta d'aprenentatge, i on es marquen com a resolts.
+//   * al navegador de l'usuari (IndexedDB), el text: la frase, la correcció, l'explicació i el
+//     context. Per això cada endpoint que crea errors els torna al client perquè els guarde.
+export type ClientError = {
+  id: string;
+  source: 'chat' | 'practice' | 'writing';
+  error_text: string;
+  correction: string;
+  category: string;
+  explanation: string;
+  // La frase/enunciat on es va cometre l'error (per als xats, el missatge sencer).
+  context: string | null;
+  // Opcions de les preguntes tancades de pràctica (la correcta és la primera).
+  options: string[] | null;
+  exercise_id: string | null;
+  created_at: string;
+};
 
-// Errors sense resoldre de l'usuari, per a la pestanya de pràctica d'errors: venen dels
-// xats (source 'chat'), dels exercicis de pràctica ('practice') i de l'Expressió escrita ('writing').
+type NewError = Omit<ClientError, 'id' | 'created_at'> & { resource_id?: string | null; session_resource_id?: string | null };
+
+// Guarda les metadades dels errors i torna cada error amb el seu id, per al client.
+async function insertErrors(client: any, userId: string, errors: NewError[]): Promise<ClientError[]> {
+  if (errors.length === 0) return [];
+  const { data, error } = await client
+    .from('user_errors')
+    .insert(errors.map(e => ({
+      user_id: userId,
+      source: e.source,
+      category: e.category,
+      resource_id: e.resource_id ?? null,
+      session_resource_id: e.session_resource_id ?? null,
+      exercise_id: e.exercise_id,
+    })))
+    .select('id, created_at');
+  if (error) throw error;
+  return (data as { id: string; created_at: string }[]).map((row, i) => {
+    const { resource_id: _r, session_resource_id: _s, ...e } = errors[i];
+    return { ...e, id: row.id, created_at: row.created_at };
+  });
+}
+
+// Ids dels errors sense resoldre de l'usuari: el client hi creua el text que té guardat.
 errorsRouter.get('/api/errors', requireAuth, async (req: AuthRequest, res) => {
   const client = db(req.userId);
   if (!client || !req.userId) return res.json([]);
 
   const { data, error } = await client
     .from('user_errors')
-    .select(
-      'id, error_text, correction, category, explanation, source, context, created_at, ' +
-      'conversation_messages(content_text), resources(name), session_resource(resources(name, category)), practice_exercises(kind, options)',
-    )
+    .select('id')
     .eq('user_id', req.userId)
     .eq('resolved', false)
     .order('created_at', { ascending: false })
-    .limit(200);
+    .limit(1000);
 
   if (error) {
     console.error('[errors] Error carregant els errors:', error);
     return res.status(500).json({ error: "No hem pogut carregar els errors" });
   }
-
-  // Un mateix error repetit es practica una sola vegada: es queda el més recent.
-  const seen = new Set<string>();
-  // Els errors del xat amb el professor del tauler (categoria 'assistent') no es practiquen ací.
-  const fromAssistant = (e: any) => e.session_resource?.resources?.category === ASSISTANT_CATEGORY;
-  const unique = (data ?? []).filter((e: any) => {
-    if (fromAssistant(e)) return false;
-    const key = `${e.error_text.trim().toLowerCase()}|${e.correction.trim().toLowerCase()}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).slice(0, 100);
-  // `message` és la frase/enunciat on es va cometre l'error; `scenario`, l'activitat on va passar.
-  res.json(unique.map(({ conversation_messages, resources, session_resource, practice_exercises, context, ...e }: any) => ({
-    ...e,
-    // Preguntes tancades de pràctica: es tornen a mostrar les opcions en lloc d'un camp de text.
-    options: practice_exercises?.kind === 'choice' ? practice_exercises.options : null,
-    message: conversation_messages?.content_text ?? context ?? null,
-    scenario: resources?.name ?? session_resource?.resources?.name ?? null,
-  })));
+  res.json((data ?? []).map((e: { id: string }) => e.id));
 });
 
-// Marca com a resolt un error (i els duplicats exactes) després de contestar-lo bé en la pràctica.
-errorsRouter.post('/api/errors/:id/resolve', requireAuth, async (req: AuthRequest, res) => {
-  const id = req.params.id as string;
-  if (!UUID.test(id)) return res.status(400).json({ error: 'Identificador no vàlid' });
+const resolveSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(200) });
+
+// Marca com a resolts uns errors (el que s'ha contestat bé en la pràctica i els seus duplicats,
+// que el client reconeix pel text).
+errorsRouter.post('/api/errors/resolve', requireAuth, async (req: AuthRequest, res) => {
+  const parsed = resolveSchema.safeParse(req.body);
+  if (!parsed.success) return validationError(res, parsed.error);
 
   const client = db(req.userId);
   if (!client || !req.userId) return res.json({ ok: true, demo: true });
 
-  const { data: row, error: findError } = await client
-    .from('user_errors')
-    .select('id, error_text, correction')
-    .eq('id', id)
-    .eq('user_id', req.userId)
-    .maybeSingle();
-
-  if (findError) {
-    console.error('[errors] Error verificant l\'error:', findError);
-    return res.status(500).json({ error: "No s'ha pogut verificar l'error" });
-  }
-  if (!row) return res.status(404).json({ error: 'Error no trobat' });
-
-  const { error: updateError } = await client
+  const { error } = await client
     .from('user_errors')
     .update({ resolved: true, resolved_at: new Date().toISOString() })
     .eq('user_id', req.userId)
-    .eq('error_text', row.error_text)
-    .eq('correction', row.correction)
-    .eq('resolved', false);
+    .eq('resolved', false)
+    .in('id', parsed.data.ids);
 
-  if (updateError) {
-    console.error('[errors] Error resolent:', updateError);
+  if (error) {
+    console.error('[errors] Error resolent:', error);
     return res.status(500).json({ error: "No s'ha pogut actualitzar l'error" });
   }
   res.json({ ok: true });
 });
 
+const ANALYZE_RATE_LIMIT = {
+  windowMs: 60_000,
+  max: Number(process.env.RATE_LIMIT_AUTHED_PER_MIN) || 30,
+  maxAnonymous: Number(process.env.RATE_LIMIT_ANON_PER_MIN) || 6,
+};
+
+// Busca els errors d'un missatge de l'usuari en un xat (es crida després de /api/turn). El
+// missatge no es guarda: només les metadades dels errors, que es tornen amb el text al client.
+errorsRouter.post('/api/errors/analyze', requireAuth, rateLimit(ANALYZE_RATE_LIMIT), async (req: AuthRequest, res) => {
+  const parsed = analyzeSchema.safeParse(req.body);
+  if (!parsed.success) return validationError(res, parsed.error);
+
+  const client = db(req.userId);
+  if (!client || !req.userId) return res.json([]);
+  const { session_id, session_resource_id, text } = parsed.data;
+
+  try {
+    // El session_resource ha de ser d'una sessió de l'usuari.
+    const { data: owned, error: ownedError } = await client
+      .from('session_resource')
+      .select('id, sessions!inner(user_id)')
+      .eq('id', session_resource_id)
+      .eq('sesion_id', session_id)
+      .eq('sessions.user_id', req.userId)
+      .maybeSingle();
+    if (ownedError) throw ownedError;
+    if (!owned) return res.status(403).json({ error: 'Recurs de sessió no vàlid o no autoritzat' });
+
+    // Nivell 0 (xiquets): no es busquen errors gramaticals de la conversa.
+    const { data: profile } = await client.from('profiles').select('level').eq('id', req.userId).maybeSingle();
+    if (profile?.level === 'nivell0') return res.json([]);
+
+    const start = Date.now();
+    const detected = await analyzeErrorsWithLocalLLM(text);
+    const saved = await insertErrors(client, req.userId, detected.map(e => ({
+      source: 'chat',
+      session_resource_id,
+      error_text: e.error_text,
+      correction: e.correction,
+      category: e.category,
+      explanation: e.explanation,
+      context: text,
+      options: null,
+      exercise_id: null,
+    })));
+    console.log(`[analyze] ${saved.length} errors en ${Date.now() - start}ms`);
+    res.json(saved);
+  } catch (error: any) {
+    console.error('[analyze] Error analitzant el missatge:', error.message ?? error);
+    res.status(500).json({ error: "No hem pogut analitzar el missatge" });
+  }
+});
+
 // Respostes d'una tanda d'exercicis de pràctica (preguntes tancades i d'escriure la resposta). La
-// correcció es fa ací, no al client: una resposta errònia guarda l'error i una d'encertada resol
-// el que hi haguera pendent d'eixe exercici.
+// correcció es fa ací, no al client: una resposta errònia crea l'error (i es torna al client
+// perquè en guarde el text) i una d'encertada resol el que hi haguera pendent d'eixe exercici.
 const practiceAnswersSchema = z.object({
   answers: z.array(z.object({ exercise_id: z.string().uuid(), answer: z.string().max(500) })).min(1).max(100),
 });
@@ -100,11 +163,11 @@ errorsRouter.post('/api/errors/practice', requireAuth, async (req: AuthRequest, 
   if (!parsed.success) return validationError(res, parsed.error);
 
   const client = db(req.userId);
-  if (!client || !req.userId) return res.json({ ok: true, demo: true });
+  if (!client || !req.userId) return res.json({ ok: true, demo: true, errors: [] });
 
   const { data: exercises, error } = await client
     .from('practice_exercises')
-    .select('id, kind, prompt, answers, explanation, resource_id, resources(name)')
+    .select('id, kind, prompt, options, answers, explanation, resource_id, resources(name)')
     .in('id', parsed.data.answers.map(a => a.exercise_id))
     .in('kind', ['choice', 'fill']);
 
@@ -114,7 +177,7 @@ errorsRouter.post('/api/errors/practice', requireAuth, async (req: AuthRequest, 
   }
 
   const byId = new Map<string, any>((exercises ?? []).map((e: any) => [e.id, e]));
-  const wrong: Record<string, unknown>[] = [];
+  const wrong: NewError[] = [];
   const right: string[] = [];
   for (const { exercise_id, answer } of parsed.data.answers) {
     const exercise = byId.get(exercise_id);
@@ -123,7 +186,6 @@ errorsRouter.post('/api/errors/practice', requireAuth, async (req: AuthRequest, 
     if (ok) right.push(exercise_id);
     else {
       wrong.push({
-        user_id: req.userId,
         source: 'practice',
         resource_id: exercise.resource_id,
         exercise_id,
@@ -132,6 +194,7 @@ errorsRouter.post('/api/errors/practice', requireAuth, async (req: AuthRequest, 
         category: exercise.resources?.name ?? 'Pràctica',
         explanation: exercise.explanation ?? '',
         context: exercise.prompt,
+        options: exercise.kind === 'choice' ? exercise.options : null,
       });
     }
   }
@@ -146,6 +209,7 @@ errorsRouter.post('/api/errors/practice', requireAuth, async (req: AuthRequest, 
     if (resolveError) console.error('[errors] Error resolent exercicis:', resolveError);
   }
 
+  let saved: ClientError[] = [];
   if (wrong.length) {
     // Només un error pendent per exercici (índex únic parcial): es salten els que ja hi són.
     const { data: pending } = await client
@@ -156,13 +220,14 @@ errorsRouter.post('/api/errors/practice', requireAuth, async (req: AuthRequest, 
       .in('exercise_id', wrong.map(w => w.exercise_id));
     const already = new Set((pending ?? []).map((p: { exercise_id: string }) => p.exercise_id));
     const fresh = wrong.filter(w => !already.has(w.exercise_id as string));
-    if (fresh.length) {
-      const { error: insertError } = await client.from('user_errors').insert(fresh);
-      if (insertError && insertError.code !== '23505') console.error('[errors] Error guardant errors de pràctica:', insertError);
+    try {
+      saved = await insertErrors(client, req.userId, fresh);
+    } catch (insertError: any) {
+      if (insertError?.code !== '23505') console.error('[errors] Error guardant errors de pràctica:', insertError);
     }
   }
 
-  res.json({ ok: true, wrong: wrong.length, right: right.length });
+  res.json({ ok: true, wrong: wrong.length, right: right.length, errors: saved });
 });
 
 type WritingError = { original: string; correction: string; category: string };
@@ -177,19 +242,19 @@ export function writingErrorsOf(evaluation: any): WritingError[] {
   );
 }
 
+// Guarda les metadades dels errors d'una redacció i els torna amb el text, per al client.
 export async function saveWritingErrors(
   userId: string | undefined,
   exercise: { resource_id: string; resources?: { name?: string } | null },
   evaluation: unknown,
   text: string,
-) {
+): Promise<ClientError[]> {
   const client = db(userId);
   const errors = writingErrorsOf(evaluation);
-  if (!client || !userId || errors.length === 0) return;
+  if (!client || !userId || errors.length === 0) return [];
 
-  const { error } = await client.from('user_errors').insert(
-    errors.map(e => ({
-      user_id: userId,
+  try {
+    return await insertErrors(client, userId, errors.map(e => ({
       source: 'writing',
       resource_id: exercise.resource_id,
       error_text: e.original.trim(),
@@ -197,7 +262,11 @@ export async function saveWritingErrors(
       category: e.category || exercise.resources?.name || 'Expressió escrita',
       explanation: e.category ? `Error de ${e.category}` : "Errada detectada en l'avaluació de la redacció",
       context: text,
-    })),
-  );
-  if (error) console.error('[errors] Error guardant errors de redacció:', error);
+      options: null,
+      exercise_id: null,
+    })));
+  } catch (error) {
+    console.error('[errors] Error guardant errors de redacció:', error);
+    return [];
+  }
 }

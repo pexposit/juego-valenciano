@@ -7,6 +7,8 @@ import type { ConversationRow } from './tracking';
 /**
  * Una conversa del Nivell 0 (escenari), per a la família: els objectius que ha complit i,
  * davall, tota la conversa, frase a frase (el personatge a l'esquerra, el xiquet a la dreta).
+ * Per privacitat, la conversa només es guarda en el navegador on es va fer: el professorat (o la
+ * família en un altre dispositiu) veu els objectius, però no les frases.
  */
 export function ConversationView({ conversation, name, onClose }: { conversation: ConversationRow; name: string; onClose: () => void }) {
   const [messages, setMessages] = useState<TutorMessage[] | null>();
@@ -69,7 +71,11 @@ export function ConversationView({ conversation, name, onClose }: { conversation
 
           <div className="mt-5 space-y-3">
             {messages === undefined && <p className="text-lg opacity-60">Carregant la conversa...</p>}
-            {messages === null && <p className="text-lg text-coral">No s'ha pogut carregar la conversa.</p>}
+            {messages === null && (
+              <p className="text-lg opacity-60">
+                Per privacitat, la conversa només es guarda en el dispositiu on el xiquet o la xiqueta l'ha feta.
+              </p>
+            )}
             {messages?.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-lg ${m.role === 'user' ? 'rounded-br-md bg-[#0F47AF] text-white' : 'rounded-bl-md bg-white shadow-sm'}`}>

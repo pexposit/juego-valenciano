@@ -3,7 +3,8 @@ import OpenAI from 'openai';
 /**
  * Títol curt per a una conversa amb el tutor (pestanya «Converses»): el LLM resumix de
  * què s'ha parlat en unes poques paraules, en valencià. Si no hi ha clau o falla, torna
- * null i la llista mostra el primer missatge com fins ara.
+ * null i la llista mostra el primer missatge com fins ara. No es guarda res: el títol el
+ * guarda el client, com els missatges.
  */
 
 const MAX_MESSAGES = 16; // amb el principi de la conversa n'hi ha prou per a saber de què va

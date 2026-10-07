@@ -47,24 +47,6 @@ learningPathRouter.post('/api/learning-path/regenerate', requireAuth, rateLimit(
   }
 });
 
-// Última avaluació pedagògica (es genera en segon pla en acabar un xat).
-learningPathRouter.get('/api/evaluations/latest', requireAuth, async (req: AuthRequest, res) => {
-  const client = db(req.userId);
-  if (!client) return res.json(null);
-  const { data, error } = await client
-    .from('user_evaluations')
-    .select('summary, weaknesses, priority_focus, created_at')
-    .eq('user_id', req.userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) {
-    console.error('[evaluations] Error carregant l\'avaluació:', error);
-    return res.status(500).json({ error: "No hem pogut carregar l'avaluació" });
-  }
-  res.json(data ?? null);
-});
-
 // Resultat d'una pràctica o d'un examen acabat. Es respon de seguida: marcar el
 // pas i regenerar la ruta (amb el LLM) es fa en segon pla.
 function resultRoute(kind: 'practice' | 'exam', matches: (category: string) => boolean) {

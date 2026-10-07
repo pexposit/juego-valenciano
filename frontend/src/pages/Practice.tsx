@@ -133,7 +133,8 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
   const answer = (id: string, value: string) =>
     setProgress(p => ({ ...p, answers: { ...p.answers, [id]: value } }));
   const check = () => {
-    // Les respostes es guarden al backend perquè els errors isquen a la pestanya «Errors».
+    // El backend corregix les respostes i torna els errors, que es guarden en este navegador
+    // perquè isquen a la pestanya «Errors».
     // Les preguntes tancades guarden la clau de l'opció: s'envia el text.
     const sent = gradable.flatMap(e => {
       const value = progress.answers[e.id];
@@ -141,7 +142,7 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
       const text = e.kind === 'choice' ? questions[e.id]?.options?.find(o => o.key === value)?.text : value;
       return text ? [{ exercise_id: e.id, answer: text }] : [];
     });
-    recordPracticeAnswers(sent).catch(error => console.error('Error enviant les respostes:', error));
+    recordPracticeAnswers(sent, practice.name).catch(error => console.error('Error enviant les respostes:', error));
     setProgress(p => ({ ...p, checked: true }));
     // El resultat alimenta la ruta d'aprenentatge personalitzada.
     void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length });
@@ -162,7 +163,7 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
     setEvaluating(e.id);
     setEvaluationError(undefined);
     try {
-      const evaluation = await evaluatePracticeExercise(e.id, evaluationBody(e));
+      const evaluation = await evaluatePracticeExercise(e.id, evaluationBody(e), practice.name);
       setProgress(p => ({ ...p, evaluations: { ...p.evaluations, [e.id]: evaluation } }));
       void saveActivityResult('practice', practice.id, { level, ...writingMark(evaluation), details: { exercise_id: e.id, rubrica: evaluation.rubrica ?? 'a1_formulari' } });
     } catch (error) {

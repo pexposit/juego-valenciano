@@ -1,1 +1,1 @@
-Select * from profiles;
+Select * from user_errors;

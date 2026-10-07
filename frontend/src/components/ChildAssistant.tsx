@@ -4,7 +4,8 @@ import { KID_ASSISTANT_TYPE } from '@parlaval/shared';
 import { ChatBubble } from './ChatBubble';
 import { VoiceInput } from './VoiceInput';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
-import { ensureSession, fetchTts, openAssistant, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
+import { analyzeMessage, ensureSession, fetchTts, openAssistant, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
+import { addMessages } from '../lib/localStore';
 
 type Message = AssistantConversation['messages'][number];
 
@@ -35,8 +36,8 @@ function useAvatarSize() {
 }
 
 // Xat del tauler infantil: el xiquet pregunta al professor dubtes de valencià, escrivint o parlant.
-// Reutilitza el xat de les activitats (/api/turn): els missatges es guarden a la BDD i la
-// conversa continua entre visites. El professor també respon en veu alta.
+// Reutilitza el xat de les activitats (/api/turn): els missatges es guarden en este navegador (no
+// al servidor) i la conversa continua entre visites. El professor també respon en veu alta.
 export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [ready, setReady] = useState(false);
@@ -152,11 +153,20 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         history: context,
         include_audio: false,
       });
+      const said = reply.transcription || text;
       setMessages(m => {
         const next = [...m];
         if (reply.transcription) next[next.length - 1] = { role: 'user', text: reply.transcription };
         return [...next, { role: 'character', text: reply.reply_text }];
       });
+      void addMessages(opened.session_resource_id, 'tutor', [
+        { role: 'user', text: said || VOICE_MESSAGE_LABEL },
+        { role: 'character', text: reply.reply_text },
+      ]).catch(error => console.error('Error guardant la conversa:', error));
+      // Els errors del xat amb el professor compten per a la ruta, però no es practiquen.
+      if (reply.analyze_errors && said) {
+        analyzeMessage({ session_id: opened.session_id, session_resource_id: opened.session_resource_id, text: said }, { scenario: null, practicable: false });
+      }
       void speak(reply.reply_text);
     } catch {
       setMessages(m => [...m, { role: 'character', text: ERROR_REPLY }]);

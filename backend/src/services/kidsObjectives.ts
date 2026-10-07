@@ -5,6 +5,7 @@ import OpenAI from 'openai';
  * revisa la conversa i només diu quins objectius de l'escenari ha complit el xiquet. No es
  * busquen errors: a esta edat el que compta és que s'atrevisca a dir-ho en valencià. El
  * resultat es guarda en kids_scenario_reviews per al seguiment de la família i del professorat.
+ * La conversa no es guarda al servidor: l'envia el client en tancar l'escenari.
  */
 
 const MAX_MESSAGES = 60;
@@ -71,16 +72,20 @@ export function parseObjectives(raw: string, count: number): boolean[] | null {
 }
 
 /**
- * Revisa una conversa acabada d'un xiquet del Nivell 0 i la guarda (o l'actualitza, si es
- * torna a tancar). Sense cap missatge del xiquet no es guarda res.
+ * Revisa una conversa acabada d'un xiquet del Nivell 0 i en guarda el resultat (o l'actualitza,
+ * si es torna a tancar). Sense cap missatge del xiquet no es guarda res.
  */
-export async function reviewKidsConversation(client: any, userId: string, sessionResourceId: string, resourceId: string) {
-  const [{ data: messages }, { data: resource }] = await Promise.all([
-    client.from('conversation_messages').select('role, content_text, created_at')
-      .eq('session_resource_id', sessionResourceId).order('created_at', { ascending: true }),
-    client.from('resources').select('name, metadata').eq('id', resourceId).maybeSingle(),
-  ]);
-  const list = (messages ?? []) as Message[];
+export async function reviewKidsConversation(
+  client: any,
+  userId: string,
+  sessionResourceId: string,
+  resourceId: string,
+  messages: { role: string; text: string; created_at: string }[],
+) {
+  const { data: resource } = await client.from('resources').select('name, metadata').eq('id', resourceId).maybeSingle();
+  const list: Message[] = messages
+    .map(m => ({ role: m.role, content_text: m.text, created_at: m.created_at }))
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
   const turns = list.filter(m => m.role === 'user').length;
   if (!turns || !resource) return;
 
