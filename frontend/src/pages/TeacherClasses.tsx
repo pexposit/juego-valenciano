@@ -2,7 +2,11 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Copy, LogOut, Plus, Trash2, UserMinus } from 'lucide-react';
 import { OrangeHeader } from '../components/ui';
 import { supabase } from '../lib/supabase';
+import { CLASS_LEVELS, classLevelLabel, isLevel0Class, toggleClassLevel } from '@parlaval/shared';
 import { ProgressReport } from '../features/kids/ProgressReport';
+import { ClassPaths } from '../features/paths/ClassPaths';
+import { ClassActivities } from '../features/paths/ClassActivities';
+import { TeacherActivities } from '../features/activities/TeacherActivities';
 import { ConversationView } from '../features/kids/ConversationView';
 import { ago, groupStruggles, percent, summarize } from '../features/kids/report';
 import {
@@ -24,8 +28,11 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
   const [student, setStudent] = useState<Student>();
   const [conversation, setConversation] = useState<ConversationRow>();
   const [newName, setNewName] = useState('');
+  const [newLevels, setNewLevels] = useState<string[]>([]);
   const [error, setError] = useState<string>();
   const [copied, setCopied] = useState(false);
+  // Pantalla principal de la docent: les classes o la biblioteca d'activitats.
+  const [tab, setTab] = useState<'classes' | 'activities'>('classes');
   const online = !!supabase && !!uid;
 
   useEffect(() => {
@@ -53,9 +60,10 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
   const create = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const created = await createClass(newName.trim());
+      const created = await createClass(newName.trim(), newLevels);
       setClasses(c => [...(c ?? []), created]);
       setNewName('');
+      setNewLevels([]);
       setSelected(created);
     } catch (e) {
       console.error(e);
@@ -127,14 +135,30 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
           />
         ) : (
           <>
+            <div className="mb-6 flex gap-2 rounded-full bg-white p-1 shadow-sm sm:w-fit" role="tablist">
+              {([['classes', 'Classes'], ['activities', 'Activitats']] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  role="tab"
+                  aria-selected={tab === id}
+                  onClick={() => setTab(id)}
+                  className={`btn-press flex-1 rounded-full px-5 py-2 text-lg font-extrabold sm:flex-none ${tab === id ? 'bg-[#0F47AF] text-white' : 'text-[#0F47AF]'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {tab === 'activities' ? <TeacherActivities classes={classes ?? []} /> : (
+          <>
             <h1 className="text-5xl font-black">Les meues classes</h1>
-            <p className="mt-2 text-lg opacity-70">Seguiment de l'alumnat del Nivell 0 (xiquets i xiquetes de 3 a 6 anys).</p>
+            <p className="mt-2 text-lg opacity-70">Classes d'infantil (Nivell 0) i d'adults (A1-C2): l'alumnat s'hi unix amb el codi.</p>
 
             <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {classes?.map(c => (
                 <li key={c.id}>
                   <button onClick={() => setSelected(c)} className="btn-press w-full rounded-3xl bg-white p-5 text-left shadow-sm hover:bg-white/80">
                     <span className="block text-2xl font-black">{c.name}</span>
+                    <LevelBadges levels={c.levels} />
                     <span className="mt-1 block font-mono text-lg tracking-widest opacity-60">{c.code}</span>
                   </button>
                 </li>
@@ -144,17 +168,42 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
 
             <form onSubmit={create} className="mt-6 rounded-3xl bg-white p-5 shadow-sm">
               <label className="block text-xl font-extrabold" htmlFor="class-name">Crea una classe</label>
-              <div className="mt-2 flex gap-2">
+              <p className="mt-3 text-base font-extrabold">Nivell de l'alumnat</p>
+              <p className="text-sm opacity-60">Només s'hi podrà unir alumnat d'estos nivells. Tria el Nivell 0 (infantil), o un o dos nivells contigus (per a qui està entre els dos).</p>
+              <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Nivell de la classe">
+                {CLASS_LEVELS.map(l => (
+                  <button
+                    key={l.value}
+                    type="button"
+                    aria-pressed={newLevels.includes(l.value)}
+                    onClick={() => setNewLevels(levels => toggleClassLevel(levels, l.value))}
+                    className={`btn-press rounded-2xl border-2 px-4 py-2 text-lg font-extrabold ${newLevels.includes(l.value) ? 'border-[#0F47AF] bg-[#0F47AF]/10 text-[#0F47AF]' : 'border-gray-100 text-gray-600'}`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 flex gap-2">
                 <input id="class-name" value={newName} onChange={e => setNewName(e.target.value.slice(0, 60))} placeholder="P. ex.: Infantil 5 anys B" className={FIELD_CLASS} />
-                <button disabled={!newName.trim()} className="btn-press flex shrink-0 items-center gap-2 rounded-2xl bg-[#0F47AF] px-5 text-xl font-extrabold text-white disabled:opacity-40">
+                <button disabled={!newName.trim() || !newLevels.length} className="btn-press flex shrink-0 items-center gap-2 rounded-2xl bg-[#0F47AF] px-5 text-xl font-extrabold text-white disabled:opacity-40">
                   <Plus size={20} /> Crea
                 </button>
               </div>
             </form>
           </>
+            )}
+          </>
         )}
       </div>
     </main>
+  );
+}
+
+function LevelBadges({ levels }: { levels: string[] }) {
+  return (
+    <span className="mt-1 flex gap-1">
+      {levels.map(l => <span key={l} className="rounded-full bg-[#0F47AF]/10 px-2.5 py-0.5 text-sm font-black text-[#0F47AF]">{classLevelLabel(l)}</span>)}
+    </span>
   );
 }
 
@@ -168,11 +217,15 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
   onDelete: () => void;
 }) {
   const struggles = students ? groupStruggles(students.map(s => s.data)) : [];
+  const [pathsVersion, setPathsVersion] = useState(0);
 
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="text-4xl font-black sm:text-5xl">{klass.name}</h1>
+        <div>
+          <h1 className="text-4xl font-black sm:text-5xl">{klass.name}</h1>
+          <LevelBadges levels={klass.levels} />
+        </div>
         <button onClick={onDelete} className="btn-press flex items-center gap-1 rounded-full px-3 py-2 font-bold text-gray-500 hover:text-coral">
           <Trash2 size={18} /> Esborra la classe
         </button>
@@ -180,13 +233,25 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
 
       <section className="mt-4 flex flex-wrap items-center gap-4 rounded-3xl bg-white p-5 shadow-sm">
         <span className="flex-1 text-lg">
-          <b>Codi de la classe.</b> Doneu-lo a les famílies: l'han d'escriure en el perfil del xiquet, en «Seguiment», apartat «La classe».
+          <b>Codi de la classe.</b>{' '}
+          {isLevel0Class(klass.levels)
+            ? "Doneu-lo a les famílies, que l'escriuen en el perfil del xiquet («Seguiment», apartat «La classe», amb el PIN)."
+            : "Doneu-lo a l'alumnat, que l'escriu en «Classe» o en el seu perfil («Les meues classes»)."}
         </span>
         <button onClick={onCopy} className="btn-press flex items-center gap-2 rounded-2xl bg-gray-50 px-4 py-2 font-mono text-3xl font-black tracking-[0.3em]" aria-label="Copia el codi">
           {klass.code} <Copy size={20} />
         </button>
         {copied && <span className="text-teal">Copiat!</span>}
       </section>
+
+      {/* El Nivell 0 és massa bàsic per a activitats i rutes de la docent: només el seguiment infantil. */}
+      {!isLevel0Class(klass.levels) && (
+        <>
+          {/* En guardar una ruta, les activitats pròpies que hi ha s'assignen a la classe: es tornen a carregar. */}
+          <ClassActivities key={pathsVersion} classId={klass.id} classLevels={klass.levels} />
+          <ClassPaths classId={klass.id} classLevels={klass.levels} onSaved={() => setPathsVersion(v => v + 1)} />
+        </>
+      )}
 
       {!students ? (
         <p className="mt-6 text-lg opacity-60">Carregant l'alumnat...</p>

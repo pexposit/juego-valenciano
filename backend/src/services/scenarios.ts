@@ -1,5 +1,6 @@
 import { CHAT_CATEGORIES } from '@parlaval/shared';
 import { getAdmin } from '../middleware/auth.js';
+import { canSeeResource } from './teacherActivities.js';
 
 // Els escenaris (xats amb un personatge) viuen a la taula resources:
 // category 'escenari', `type` com a clau i el personatge a `metadata`.
@@ -60,17 +61,19 @@ export function toScenarioDefinition(row: ScenarioRow): ScenarioDefinition | nul
 }
 
 // Busca l'escenari pel seu `type`. El catàleg és públic, així que es llig amb
-// el client admin també en mode demo. Retorna null si no existix o no és jugable.
-export async function getScenario(type: string): Promise<ScenarioDefinition | null> {
+// el client admin també en mode demo. Retorna null si no existix, no és jugable o és
+// un escenari del professorat que `userId` no pot vore.
+export async function getScenario(type: string, userId: string | null = null): Promise<ScenarioDefinition | null> {
   const client = getAdmin() as any;
   if (!client) return null;
   const { data, error } = await client
     .from('resources')
-    .select('type, category, name, content, metadata')
+    .select('id, teacher_id, type, category, name, content, metadata')
     .in('category', CHAT_CATEGORIES)
     .eq('type', type)
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  return data ? toScenarioDefinition(data) : null;
+  if (!data || !(await canSeeResource(client, userId, data))) return null;
+  return toScenarioDefinition(data);
 }

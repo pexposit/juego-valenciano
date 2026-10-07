@@ -43,8 +43,10 @@ export function KidsProgress({ uid, name, onBack, onLesson }: { uid: string | un
       setClasses(c => (c.some(x => x.id === joined.id) ? c : [...c, joined]));
       setCode('');
       setMessage({ ok: true, text: `Ja és en la classe «${joined.name}». La docent ja pot vore el seu seguiment.` });
-    } catch {
-      setMessage({ ok: false, text: 'No hi ha cap classe amb este codi. Reviseu-lo amb la docent.' });
+    } catch (error) {
+      // La BDD diu per què: el codi no existix o la classe és d'un altre nivell.
+      const reason = (error as { message?: string } | null)?.message;
+      setMessage({ ok: false, text: reason?.startsWith('Esta classe') ? `${reason}.` : 'No hi ha cap classe amb este codi. Reviseu-lo amb la docent.' });
     }
   };
 

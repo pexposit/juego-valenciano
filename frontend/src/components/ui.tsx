@@ -69,3 +69,13 @@ export function OrangeHeader({ children, showOranges = true }: { children: React
     </div>
   );
 }
+
+/** Comptador de caràcters, visible només quan el text s'acosta al límit (90 %). */
+export function CharLimit({ length, max, className = '' }: { length: number; max: number; className?: string }) {
+  if (length < max * 0.9) return null;
+  return (
+    <p className={`text-right text-xs font-bold ${length >= max ? 'text-coral' : 'opacity-60'} ${className}`}>
+      {length}/{max} caràcters{length >= max && ' · has arribat al límit'}
+    </p>
+  );
+}

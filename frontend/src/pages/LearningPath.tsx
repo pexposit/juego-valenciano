@@ -72,7 +72,7 @@ export function LearningPath({ onOpen, onBack }: { onOpen: (resource: Resource) 
           >
             ← Tornar
           </button>
-          <Logo />
+          <Logo onDark />
           <span className="w-24" aria-hidden="true" />
         </div>
       </header>

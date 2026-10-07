@@ -31,7 +31,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     const startedAt = Date.now();
 
     // L'escenari (prompt, personatge, veu) es llig de la taula resources.
-    const scenario = await getScenario(data.scenario);
+    const scenario = await getScenario(data.scenario, req.userId ?? null);
     if (!scenario) return res.status(404).json({ error: "L'escenari no existix o encara no està disponible" });
     // En l'Expressió oral es practica parlant: no s'admeten missatges escrits.
     if (isVoiceOnlyCategory(scenario.category) && data.input_mode !== 'voice') {

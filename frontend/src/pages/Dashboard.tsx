@@ -1,4 +1,4 @@
-import { BookOpen, LayoutGrid, MessageCircle, Target } from 'lucide-react';
+import { BookOpen, LayoutGrid, MessageCircle, Route, School, Target } from 'lucide-react';
 import { ChildAssistant } from '../components/ChildAssistant';
 import { Logo, ProfileButton } from '../components/ui';
 import type { Page } from '../data/content';
@@ -39,6 +39,25 @@ export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name:
                 <span className="hidden sm:inline">Lliçons</span>
               </button>
             ) : (
+              <>
+              <button
+                aria-label="Les rutes d'aprenentatge"
+                title="Les rutes d'aprenentatge"
+                onClick={() => setPage('learningpath')}
+                className="btn-press shadow-md ring-2 ring-white flex h-10 items-center gap-1.5 rounded-full bg-navy px-3 py-2 text-xl font-black text-white hover:bg-navy/90"
+              >
+                <Route size={18} />
+                <span className="hidden sm:inline">Rutes</span>
+              </button>
+              <button
+                aria-label="La teua classe"
+                title="La teua classe"
+                onClick={() => setPage('myclasses')}
+                className="btn-press shadow-md ring-2 ring-white flex h-10 items-center gap-1.5 rounded-full bg-mustard px-3 py-2 text-xl font-black text-navy hover:bg-mustard/90"
+              >
+                <School size={18} />
+                <span className="hidden sm:inline">Classe</span>
+              </button>
               <button
                 aria-label="Practica els teus errors"
                 title="Practica els teus errors"
@@ -48,6 +67,7 @@ export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name:
                 <Target size={18} />
                 <span className="hidden sm:inline">Errors</span>
               </button>
+              </>
             )}
             <button
               aria-label="Les meues converses amb el professor"

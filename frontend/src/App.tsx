@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { CHAT_CATEGORIES, isKidsLevel0, isTranslatedTongue } from '@parlaval/shared';
+import { CHAT_CATEGORIES, hasPredefinedPaths, isKidsLevel0, isTranslatedTongue } from '@parlaval/shared';
 import type { User } from '@supabase/supabase-js';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
 import { SceneLoading, useDashboardAssets, useSceneAssets } from './components/SceneLoading';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
-import { endSession, fetchExam, fetchPractice, fetchResources, forgetSession } from './lib/api';
+import { endSession, fetchExam, fetchPractice, fetchResources, forgetSession, invalidateResources } from './lib/api';
 import type { Exam as ExamResource, Practice as PracticeResource, Resource } from './lib/types';
 import { activityRoute, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
@@ -15,6 +15,8 @@ import { Dashboard } from './pages/Dashboard';
 import { KidsProgress } from './pages/KidsProgress';
 import { TeacherClasses } from './pages/TeacherClasses';
 import { LearningPath } from './pages/LearningPath';
+import { StudyPaths } from './pages/StudyPaths';
+import { MyClasses } from './pages/MyClasses';
 import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
 import { Practice } from './pages/Practice';
@@ -230,6 +232,8 @@ export function App() {
   const resetProfile = () => {
     // La sessió del backend era de l'usuari que ha eixit (també si ha eixit des d'una altra pestanya).
     forgetSession();
+    // El catàleg inclou les activitats de les classes de l'usuari: es torna a demanar.
+    invalidateResources();
     loadedProfileFor.current = undefined;
     setProfileReady(true);
     setUser(null);
@@ -264,9 +268,12 @@ export function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session?.user) return resetProfile();
       setUser(session.user);
-      // Un inici de sessió nou torna a mostrar la càrrega; un refresc del token
-      // del mateix usuari, no.
-      if (loadedProfileFor.current !== session.user.id) setProfileReady(false);
+      // Un inici de sessió nou torna a mostrar la càrrega (i a demanar el catàleg, que depén
+      // de l'usuari); un refresc del token del mateix usuari, no.
+      if (loadedProfileFor.current !== session.user.id) {
+        setProfileReady(false);
+        invalidateResources();
+      }
       const r = await loadProfile(session.user.id);
       // Sols redirigix si encara estava a l'inici o a l'autenticació; si ja
       // navegava per l'app (p. ex. refresc del token), es queda on estava.
@@ -356,7 +363,32 @@ export function App() {
           path={ROUTES.learningpath}
           element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
             <PageTransition>
-              <LearningPath
+              {/* A2 i B1: rutes predefinides i del professorat; la resta de nivells, la ruta de la IA. */}
+              {hasPredefinedPaths(level) ? (
+                <StudyPaths
+                  onOpen={resource => {
+                    const route = activityRoute(resource);
+                    if (route) navigate(route);
+                  }}
+                  onBack={goDashboard}
+                />
+              ) : (
+                <LearningPath
+                  onOpen={resource => {
+                    const route = activityRoute(resource);
+                    if (route) navigate(route);
+                  }}
+                  onBack={goDashboard}
+                />
+              )}
+            </PageTransition>
+          )}
+        />
+        <Route
+          path={ROUTES.myclasses}
+          element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
+            <PageTransition>
+              <MyClasses
                 onOpen={resource => {
                   const route = activityRoute(resource);
                   if (route) navigate(route);
@@ -403,6 +435,7 @@ export function App() {
                 setShowMotherTongue={updateShowMotherTongue}
                 onProgress={() => navigate(ROUTES.progress)}
                 isTeacher={role === 'teacher'}
+                uid={user?.id}
                 onClasses={() => navigate(ROUTES.classes)}
               />
             </PageTransition>

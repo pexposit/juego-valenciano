@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { z } from 'zod';
+import { hasPredefinedPaths } from '@parlaval/shared';
 import { isPlayable, type Metadata } from './catalog.js';
 import { loadLearningSignals, type LearningSignals } from './learningSignals.js';
 
@@ -68,6 +69,8 @@ async function loadCatalog(client: any, level: string): Promise<CatalogItem[]> {
     .from('resources')
     .select('id, name, type, category, content, sort_order, url, metadata, practice_exercises(count)')
     .eq('difficulty', level)
+    // Les activitats del professorat no entren en la ruta de la IA.
+    .is('teacher_id', null)
     .order('category')
     .order('sort_order');
   if (error) throw error;
@@ -230,6 +233,8 @@ export function generateLearningPath(client: any, userId: string): Promise<boole
     const { data: profile, error } = await client.from('profiles').select('level').eq('id', userId).single();
     if (error) throw error;
     const level: string = profile.level;
+    // L'A2 i el B1 tenen rutes predefinides (study_paths): no se'ls genera cap ruta amb la IA.
+    if (hasPredefinedPaths(level)) return false;
 
     const [signals, catalog, previous] = await Promise.all([
       loadLearningSignals(client, userId),

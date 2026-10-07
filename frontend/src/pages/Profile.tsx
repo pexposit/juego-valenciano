@@ -3,6 +3,7 @@ import { BarChart3, Check, LogOut, Pencil, RotateCcw, School } from 'lucide-reac
 import { OrangeHeader, Stat } from '../components/ui';
 import { motherTongueLabel } from '@parlaval/shared';
 import { LEVEL_OPTIONS, MOTHER_TONGUE_OPTIONS } from '../data/content';
+import { StudentClasses } from '../features/paths/StudentClasses';
 
 const FIELD_CLASS = 'mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 text-2xl font-normal outline-none focus:border-[#0F47AF] transition-colors';
 
@@ -10,7 +11,7 @@ const levelLabel = (value: string) => LEVEL_OPTIONS.find(o => o.value === value)
 
 export function Profile({
   name, setName, level, xp, back, onLogOut, isDemo, ageGroup, motherTongue, setMotherTongue, showMotherTongue, setShowMotherTongue,
-  onProgress, isTeacher, onClasses,
+  onProgress, isTeacher, onClasses, uid,
 }: {
   name: string;
   setName: (v: string) => void;
@@ -26,6 +27,8 @@ export function Profile({
   setShowMotherTongue: (v: boolean) => void;
   onProgress: () => void;
   isTeacher: boolean;
+  // Usuari amb sessió (per a les classes de l'alumne adult).
+  uid?: string;
   onClasses: () => void;
 }) {
   const isChild = ageGroup === 'child';
@@ -151,6 +154,9 @@ export function Profile({
             </button>
           </div>
         )}
+
+        {/* Alumnat adult de qualsevol nivell: s'unix a classes amb el codi, sense PIN (el dels xiquets és en el seguiment). */}
+        {!isChild && !isTeacher && uid && <StudentClasses uid={uid} />}
 
         <div className="mt-8 flex flex-col gap-3">
           {/* El seguiment del xiquet (compte infantil) o les classes (només el professorat). */}

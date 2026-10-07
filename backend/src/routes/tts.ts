@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { tts } from '../services/voice.js';
 import { getScenario } from '../services/scenarios.js';
@@ -23,7 +23,7 @@ ttsRouter.post('/api/tts', requireAuth, rateLimit(TTS_RATE_LIMIT), async (req, r
     const { text, scenario, voice } = ttsSchema.parse(req.body);
     const audio = await tts.synthesize(
       text,
-      voice ?? (scenario ? (await getScenario(scenario))?.voice : undefined),
+      voice ?? (scenario ? (await getScenario(scenario, (req as AuthRequest).userId ?? null))?.voice : undefined),
     );
     if (!audio) return res.status(503).json({ error: 'No hem pogut generar l’àudio' });
     res.json({

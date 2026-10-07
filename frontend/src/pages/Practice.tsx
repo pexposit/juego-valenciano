@@ -86,7 +86,10 @@ function paginate(groups: Group[]): Group[][] {
   });
 }
 
-export function Practice({ practice, userLevel, onBack }: { practice: PracticeResource; userLevel: string; onBack: () => void }) {
+// `preview`: vista prèvia de la docent mentre crea l'activitat. Es pot contestar i corregir en
+// pantalla, però no s'envia ni es guarda res (ni errors, ni resultats, ni progrés) i les
+// redaccions no s'avaluen amb el LLM fins que l'activitat està guardada.
+export function Practice({ practice, userLevel, onBack, preview = false }: { practice: PracticeResource; userLevel: string; onBack: () => void; preview?: boolean }) {
   // Només els nivells del MECR de l'aprenent (A1-A2, B1-B2 o C1-C2); si el
   // contingut no en té cap (p. ex. un enllaç directe), es mostren tots.
   const levels = useMemo(() => {
@@ -95,7 +98,7 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
     return own.length ? own : all;
   }, [practice, userLevel]);
   const [level, setLevel] = useState(levels[0]);
-  const [progress, setProgress] = useState<Progress>(() => loadProgress(practice.id, level));
+  const [progress, setProgress] = useState<Progress>(() => (preview ? EMPTY : loadProgress(practice.id, level)));
   const [evaluating, setEvaluating] = useState<string>();
   const [evaluationError, setEvaluationError] = useState<{ id: string; message: string }>();
   const [page, setPage] = useState(0);
@@ -114,12 +117,13 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
   );
 
   useEffect(() => {
+    if (preview) return;
     try {
       localStorage.setItem(storageKey(practice.id, level), JSON.stringify(progress));
     } catch {
       // Sense storage: el progrés només dura mentre la pàgina estiga oberta.
     }
-  }, [progress, practice.id, level]);
+  }, [progress, practice.id, level, preview]);
 
   const changeLevel = (next: string) => {
     setLevel(next);
@@ -142,10 +146,10 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
       const text = e.kind === 'choice' ? questions[e.id]?.options?.find(o => o.key === value)?.text : value;
       return text ? [{ exercise_id: e.id, answer: text }] : [];
     });
-    recordPracticeAnswers(sent, practice.name).catch(error => console.error('Error enviant les respostes:', error));
+    if (!preview) recordPracticeAnswers(sent, practice.name).catch(error => console.error('Error enviant les respostes:', error));
     setProgress(p => ({ ...p, checked: true }));
     // El resultat alimenta la ruta d'aprenentatge personalitzada.
-    void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length });
+    if (!preview) void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const reset = () => {
@@ -160,6 +164,10 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
   const hasContent = (e: Evaluable) =>
     e.kind === 'form' ? e.task.fields.some(f => progress.forms[e.id]?.[f]?.trim()) : Boolean(progress.writings[e.id]?.trim());
   const evaluate = async (e: Evaluable) => {
+    if (preview) {
+      setEvaluationError({ id: e.id, message: "En la vista prèvia no es corregix: l'alumnat rebrà la correcció amb la rúbrica de la JQCV." });
+      return;
+    }
     setEvaluating(e.id);
     setEvaluationError(undefined);
     try {

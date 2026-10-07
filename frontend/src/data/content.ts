@@ -1,7 +1,7 @@
 import { CHAT_CATEGORIES, isPracticeArea, MOTHER_TONGUES } from '@parlaval/shared';
 import type { Resource, Scenario } from '../lib/types';
 
-export type Page = 'home' | 'auth' | 'dashboard' | 'learningpath' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'errors' | 'tutorhistory' | 'lessons' | 'summary' | 'profile' | 'progress' | 'classes';
+export type Page = 'home' | 'auth' | 'dashboard' | 'learningpath' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'errors' | 'tutorhistory' | 'lessons' | 'summary' | 'profile' | 'progress' | 'classes' | 'myclasses';
 
 /* Rutes URL de cada pàgina. La de xat porta l'escenari com a paràmetre de ruta
  * (/xat/:scenario): l'entrada `chat` és només un valor per defecte, no s'hi
@@ -23,6 +23,8 @@ export const ROUTES: Record<Page, string> = {
   // Seguiment del Nivell 0: el de la família (compte infantil) i les classes del professorat.
   progress: '/seguiment',
   classes: '/classes',
+  // Secció «Classe» de l'alumne: el que el professorat ha posat a les seues classes.
+  myclasses: '/classe',
 };
 
 // Món d'illes del Nivell 0 (xiquets): el tauler i les activitats hi redirigixen.

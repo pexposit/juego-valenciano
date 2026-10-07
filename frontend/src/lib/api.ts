@@ -1,5 +1,5 @@
-import type { ActivityResult, Exam, LatestEvaluation, LearningPath, Lesson, Practice, Resource, Scenario, TurnResponse, WritingEvaluation } from './types';
-import { sanitizeHistory } from '@parlaval/shared';
+import type { ActivityResult, Exam, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, WritingEvaluation } from './types';
+import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
 import { supabase } from './supabase';
 import {
   addErrors, addEvaluation, addMessages, getMessages, latestEvaluations, listConversations, listErrors, markErrorsResolved,
@@ -8,9 +8,17 @@ import {
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
 // Catàleg d'activitats de la BDD (taula resources). Es demana una sola vegada
 // per càrrega de la pàgina: el comparteixen la selecció d'activitats i el xat.
+// Amb sessió, el catàleg inclou les activitats del professorat que pot vore l'usuari (les de
+// les seues classes): per això es torna a demanar en canviar d'usuari (invalidateResources).
 let resourcesRequest: Promise<Resource[]> | undefined;
+export function invalidateResources() {
+  resourcesRequest = undefined;
+}
 export function fetchResources(): Promise<Resource[]> {
-  resourcesRequest ??= fetch(`${import.meta.env.VITE_API_BASE_URL}/api/resources`)
+  resourcesRequest ??= (async () => {
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    return fetch(`${import.meta.env.VITE_API_BASE_URL}/api/resources`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  })()
     .then(res => {
       if (!res.ok) throw new Error('No hem pogut carregar les activitats');
       return res.json() as Promise<Resource[]>;
@@ -30,7 +38,10 @@ export async function fetchExam(id: string): Promise<Exam | null> {
 }
 // Exercicis d'un contingut del temari (fonètica, morfosintaxi, lèxic). null si no existix.
 export async function fetchPractice(id: string): Promise<Practice | null> {
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/practice/${encodeURIComponent(id)}`);
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/practice/${encodeURIComponent(id)}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('No hem pogut carregar els exercicis');
   return res.json();
@@ -548,6 +559,22 @@ export async function regenerateLearningPath(): Promise<LearningPath> {
   return payload;
 }
 
+// Rutes de l'A2 i el B1 (les predefinides i les del professorat de les classes de l'usuari), amb el progrés.
+export async function fetchStudyPaths(): Promise<{ level: string; paths: StudyPath[] }> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/study-paths`, { headers: await authHeaders() });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut carregar les rutes');
+  return payload;
+}
+
+// Les classes de l'alumne amb les seues activitats i rutes (secció «Classe»).
+export async function fetchMyClasses(): Promise<MyClass[]> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/my-classes`, { headers: await authHeaders() });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut carregar les teues classes');
+  return payload;
+}
+
 // Última avaluació pedagògica (null si encara no n'hi ha o no hi ha sessió). Es guarda en este navegador.
 export async function fetchLatestEvaluation(): Promise<LatestEvaluation | null> {
   const [latest] = await latestEvaluations(1);
@@ -566,4 +593,46 @@ export async function saveActivityResult(kind: 'practice' | 'exam', resourceId: 
     body: JSON.stringify(result),
   });
   if (!res.ok) console.warn(`[saveActivityResult] El backend ha respost amb codi ${res.status}`);
+}
+
+/* ── Activitats del professorat ───────────────────────────────────────── */
+async function teacherRequest<T>(path: string, init: RequestInit, fallback: string): Promise<T> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, { ...init, headers: await authHeaders() });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const issue = payload?.issues?.[0]?.message as string | undefined;
+    throw new Error(issue ? `${payload.error}: ${issue}` : payload?.error ?? fallback);
+  }
+  return payload as T;
+}
+
+export const fetchTeacherActivities = () =>
+  teacherRequest<TeacherActivity[]>('/api/teacher/activities', {}, 'No hem pogut carregar les activitats');
+
+// Crea (sense id) o guarda una activitat. El catàleg es torna a demanar perquè hi aparega.
+export async function saveTeacherActivity(input: TeacherActivityInput, id?: string): Promise<TeacherActivity> {
+  const saved = await teacherRequest<TeacherActivity>(
+    id ? `/api/teacher/activities/${encodeURIComponent(id)}` : '/api/teacher/activities',
+    { method: id ? 'PUT' : 'POST', body: JSON.stringify(input) },
+    "No hem pogut guardar l'activitat",
+  );
+  invalidateResources();
+  return saved;
+}
+
+export async function deleteTeacherActivity(id: string): Promise<void> {
+  await teacherRequest(`/api/teacher/activities/${encodeURIComponent(id)}`, { method: 'DELETE' }, "No hem pogut esborrar l'activitat");
+  invalidateResources();
+}
+
+// Activitats soltes assignades a una classe (de la docent o del catàleg).
+export const fetchClassActivities = (classId: string) =>
+  teacherRequest<{ resource_id: string; assigned_at: string }[]>(`/api/teacher/classes/${encodeURIComponent(classId)}/activities`, {}, "No hem pogut carregar les activitats de la classe");
+
+export async function assignClassActivities(classId: string, resourceIds: string[]): Promise<void> {
+  await teacherRequest(`/api/teacher/classes/${encodeURIComponent(classId)}/activities`, { method: 'POST', body: JSON.stringify({ resource_ids: resourceIds }) }, "No hem pogut assignar les activitats");
+}
+
+export async function unassignClassActivity(classId: string, resourceId: string): Promise<void> {
+  await teacherRequest(`/api/teacher/classes/${encodeURIComponent(classId)}/activities/${encodeURIComponent(resourceId)}`, { method: 'DELETE' }, "No hem pogut llevar l'activitat");
 }

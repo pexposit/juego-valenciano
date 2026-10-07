@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-react';
-import { countWords, usedRequiredWords } from '@parlaval/shared';
+import { countWords, FORM_FIELD_MAX_CHARS, usedRequiredWords, WRITING_MAX_CHARS } from '@parlaval/shared';
+import { CharLimit } from './ui';
 import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice, A1WritingEvaluation, A2CriterionKey, A2WritingEvaluation, B1WritingEvaluation, WritingCriterionKey, WritingEvaluation } from '../lib/types';
 
 // Respostes de l'aspirant (número de pregunta -> clau de l'opció) i si l'àrea ja
@@ -285,12 +286,14 @@ export function FormExercise({
                   <textarea
                     rows={2}
                     value={values[field] ?? ''}
+                    maxLength={FORM_FIELD_MAX_CHARS}
                     onChange={e => onChange(field, e.target.value)}
                     className="rounded-xl border-2 border-ink/10 bg-cream px-3 py-2 outline-none transition-colors focus:border-teal"
                   />
                 ) : (
                   <input
                     value={values[field] ?? ''}
+                    maxLength={FORM_FIELD_MAX_CHARS}
                     onChange={e => onChange(field, e.target.value)}
                     className="rounded-xl border-2 border-ink/10 bg-cream px-3 py-2 outline-none transition-colors focus:border-teal"
                   />
@@ -375,10 +378,12 @@ export function WritingExercise({
         <textarea
           rows={9}
           value={value}
+          maxLength={WRITING_MAX_CHARS}
           onChange={e => onChange(e.target.value)}
           placeholder="Escriu ací el teu text..."
           className="w-full resize-y bg-[repeating-linear-gradient(transparent,transparent_31px,#E7E5E4_32px)] px-5 py-3 leading-8 outline-none"
         />
+        <CharLimit length={value.length} max={WRITING_MAX_CHARS} className="px-5 pb-3" />
       </div>
     </div>
   );

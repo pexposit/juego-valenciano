@@ -21,9 +21,19 @@ export const LEVEL_CEFR: Record<LevelKey, readonly string[]> = {
   avancat: ['C1', 'C2'],
 };
 
+/* ── Rutes d'aprenentatge ─────────────────────────────────────────────── */
+/** Nivells amb rutes predefinides (i del professorat) en lloc de la ruta generada per la IA. */
+export const PREDEFINED_PATH_LEVELS: readonly string[] = ['principiant', 'intermedi'];
+export const hasPredefinedPaths = (level: string | null | undefined) => !!level && PREDEFINED_PATH_LEVELS.includes(level);
+
 /* ── Límits de l'historial de conversa ────────────────────────────────── */
-/** Longitud màxima d'un missatge individual. */
+/* ── Límits del text que avalua un LLM ────────────────────────────────── */
+/** Longitud màxima d'un missatge individual (xat dels escenaris i del tutor). */
 export const MESSAGE_MAX_CHARS = 2000;
+/** Longitud màxima d'una redacció (Expressió escrita, en pràctica i en examen). */
+export const WRITING_MAX_CHARS = 2000;
+/** Longitud màxima de cada camp d'un formulari (A1). */
+export const FORM_FIELD_MAX_CHARS = 500;
 /** Nombre màxim de missatges de context. */
 export const HISTORY_MAX_MESSAGES = 20;
 /** Pressupost total de caràcters de l'historial (anti-inflació de tokens). */
@@ -145,3 +155,121 @@ export const isTranslatedTongue = (code: string | null | undefined): code is Tra
 /** Nom (en valencià) d'una llengua materna, o undefined si no és una de les triables. */
 export const motherTongueLabel = (code: string | null | undefined) =>
   MOTHER_TONGUES.find(t => t.value === code)?.label;
+
+/* ── Activitats del professorat ───────────────────────────────────────── */
+// Plantilles tancades: cada tipus té la mateixa forma que les activitats del catàleg i es pinta
+// amb les mateixes pantalles. El backend valida estos límits; el formulari els mostra.
+export const TEACHER_ACTIVITY_LIMITS = {
+  title: 80,
+  description: 300,
+  questions: 40,
+  prompt: 300,
+  options: 5,
+  option: 150,
+  answers: 5,
+  explanation: 300,
+  readingTitle: 120,
+  readingText: 4000,
+  readingQuestions: 20,
+  writingPrompt: 1000,
+  minWords: 20,
+  maxWords: 300,
+  character: 80,
+  situation: 600,
+  greeting: 300,
+  objectives: 5,
+  objective: 200,
+} as const;
+
+// Àrees on pot anar un full d'exercicis (preguntes tancades i d'escriure la resposta).
+export const TEACHER_EXERCISE_AREAS = ['fonetica_ortografia', 'morfosintaxi', 'lexic_semantica'] as const;
+export type TeacherExerciseArea = (typeof TEACHER_EXERCISE_AREAS)[number];
+
+// Veus i fons dels escenaris (els mateixos que fan servir els del catàleg).
+export const SCENARIO_VOICES = [
+  { value: 'gina', label: 'Gina (veu de dona)' },
+  { value: 'lluc', label: 'Lluc (veu d\'home)' },
+] as const;
+export const SCENARIO_BACKGROUNDS = [
+  { value: '/images/bar.jpg', label: 'Bar' },
+  { value: '/images/restaurant.jpg', label: 'Restaurant' },
+  { value: '/images/forn.jpg', label: 'Forn' },
+  { value: '/images/market.jpg', label: 'Mercat' },
+  { value: '/images/mall.jpg', label: 'Centre comercial' },
+  { value: '/images/pharmacy.jpg', label: 'Farmàcia' },
+  { value: '/images/office.jpg', label: 'Oficina' },
+  { value: '/images/townhall.jpg', label: 'Ajuntament' },
+  { value: '/images/tourism.jpg', label: 'Oficina de turisme' },
+  { value: '/images/travel_agency.jpg', label: 'Agència de viatges' },
+  { value: '/images/hotel.jpg', label: 'Hotel' },
+  { value: '/images/real_state.jpg', label: 'Immobiliària' },
+  { value: '/images/car_workshop.jpg', label: 'Taller mecànic' },
+  { value: '/images/cooking_workshop.jpg', label: 'Taller de cuina' },
+  { value: '/images/gym.jpg', label: 'Gimnàs' },
+  { value: '/images/radio_station.jpg', label: 'Ràdio' },
+  { value: '/images/flat.jpg', label: 'Pis' },
+  { value: '/images/house_party.jpg', label: 'Festa a casa' },
+  { value: '/images/classroom.jpg', label: 'Aula' },
+  { value: '/images/street.jpg', label: 'Carrer' },
+  { value: '/images/Montgó.jpg', label: 'Muntanya' },
+] as const;
+
+export type TeacherChoiceQuestion = { type: 'choice'; prompt: string; options: string[]; correct: number; explanation: string };
+export type TeacherFillQuestion = { type: 'fill'; prompt: string; answers: string[]; explanation: string };
+export type TeacherQuestion = TeacherChoiceQuestion | TeacherFillQuestion;
+
+export type TeacherActivityContent =
+  | { kind: 'exercises'; area: TeacherExerciseArea; questions: TeacherQuestion[] }
+  | { kind: 'reading'; text_title: string; text: string; questions: TeacherChoiceQuestion[] }
+  | { kind: 'writing'; prompt: string; min_words: number; max_words: number }
+  | { kind: 'scenario'; character: string; situation: string; greeting: string; objectives: string[]; voice: string; background: string };
+export type TeacherActivityKind = TeacherActivityContent['kind'];
+
+/** El que envia el formulari de la docent (i el que torna el backend per a editar-la). */
+export type TeacherActivityInput = {
+  // Nivell del MECR de l'activitat (resources.difficulty serà el nivell de l'app que el cobrix).
+  level: CefrLevel;
+  title: string;
+  description: string;
+  icon: string;
+  class_ids: string[];
+  content: TeacherActivityContent;
+};
+export type TeacherActivity = TeacherActivityInput & { id: string; created_at: string };
+
+/* ── Nivells de les classes i de les activitats del professorat ──────── */
+// Nivells del MECR. El perfil de l'alumnat té els nivells de l'app (LEVEL_CEFR diu quins del MECR
+// cobrix cadascun); les classes i les activitats de la docent van per nivells del MECR.
+export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+export type CefrLevel = (typeof CEFR_LEVELS)[number];
+
+/** El nivell de l'app que cobrix un nivell del MECR (A1 → principiant...). */
+export const learnerLevelOf = (cefr: string): LevelKey =>
+  (Object.entries(LEVEL_CEFR).find(([, list]) => list.includes(cefr))?.[0] as LevelKey | undefined) ?? 'nivell0';
+
+/** Nom visible d'un nivell, siga de l'app (principiant → A1-A2) o del MECR (B1). */
+export const levelLabel = (level: string) =>
+  level === 'nivell0' ? 'Nivell 0' : LEVEL_CEFR[level as LevelKey]?.join('-') || level;
+
+// Una classe és del Nivell 0 (infantil, sense activitats ni rutes de la docent) o d'un o dos
+// nivells contigus del MECR (com valid_class_levels a la BDD).
+export const CLASS_LEVELS: readonly { value: string; label: string }[] = [
+  { value: 'nivell0', label: 'Nivell 0' },
+  ...CEFR_LEVELS.map(l => ({ value: l, label: l })),
+];
+export const classLevelLabel = (level: string) => (level === 'nivell0' ? 'Nivell 0' : level);
+export const isLevel0Class = (levels: readonly string[]) => levels.includes('nivell0');
+
+/** Un alumne d'este nivell de l'app pot entrar en una classe d'estos nivells? */
+export const classAcceptsLearner = (levels: readonly string[], learner: string) =>
+  learner === 'nivell0' ? levels.includes('nivell0') : (LEVEL_CEFR[learner as LevelKey] ?? []).some(l => levels.includes(l));
+
+/** Tria o desfà la tria d'un nivell: el Nivell 0 sol, o com a molt dos del MECR contigus. */
+export function toggleClassLevel(selected: readonly string[], level: string): string[] {
+  if (selected.includes(level)) return selected.filter(l => l !== level);
+  if (level === 'nivell0') return ['nivell0'];
+  const order = CEFR_LEVELS as readonly string[];
+  const next = [...selected.filter(l => l !== 'nivell0'), level].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  const contiguous = next.length === 2 && order.indexOf(next[1]) - order.indexOf(next[0]) === 1;
+  return next.length === 1 || contiguous ? next : [level];
+}

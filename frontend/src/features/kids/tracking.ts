@@ -121,7 +121,8 @@ export async function loadChildData(uid: string | undefined): Promise<ChildData>
 
 /* ── Classes ──────────────────────────────────────────────────────────── */
 
-export type KidsClass = { id: string; name: string; code: string; created_at: string };
+// `levels`: el nivell o els dos nivells consecutius de l'alumnat que s'hi pot unir.
+export type KidsClass = { id: string; name: string; code: string; created_at: string; levels: string[] };
 export type Student = { id: string; joined_at: string; data: ChildData };
 
 const need = () => {
@@ -131,13 +132,13 @@ const need = () => {
 
 /** Les classes de la docent que ha iniciat sessió. */
 export async function loadMyClasses(teacher: string): Promise<KidsClass[]> {
-  const { data, error } = await need().from('kids_classes').select('id, name, code, created_at').eq('teacher_id', teacher).order('created_at');
+  const { data, error } = await need().from('kids_classes').select('id, name, code, created_at, levels').eq('teacher_id', teacher).order('created_at');
   if (error) throw error;
   return data as KidsClass[];
 }
 
-export async function createClass(name: string): Promise<KidsClass> {
-  const { data, error } = await need().rpc('kids_create_class', { p_name: name });
+export async function createClass(name: string, levels: string[]): Promise<KidsClass> {
+  const { data, error } = await need().rpc('kids_create_class', { p_name: name, p_levels: levels });
   if (error) throw error;
   return data as KidsClass;
 }

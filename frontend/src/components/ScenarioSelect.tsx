@@ -45,12 +45,17 @@ type Category = { id: string; sections: Section[] };
 // Agrupa els recursos per categoria i, dins de cada categoria, per tipus
 // (secció). Les categories segueixen CATEGORY_LABELS i, dins de cadascuna, es
 // manté l'ordre en què arriben del backend.
-function groupResources(resources: Resource[]): Category[] {
+// Només el catàleg del nivell de l'alumne: el que el professorat ha posat a les classes (activitats
+// soltes i rutes) és en la secció «Classe».
+function groupResources(resources: Resource[], level: string): Category[] {
   const categories = new Map<string, Map<string, Resource[]>>();
-  for (const r of resources) {
-    const sections = categories.get(r.category) ?? new Map<string, Resource[]>();
+  const add = (category: string, r: Resource) => {
+    const sections = categories.get(category) ?? new Map<string, Resource[]>();
     sections.set(r.type, [...(sections.get(r.type) ?? []), r]);
-    categories.set(r.category, sections);
+    categories.set(category, sections);
+  };
+  for (const r of resources) {
+    if (!r.class_activity && r.difficulty === level) add(r.category, r);
   }
   return [...categories]
     .map(([id, sections]) => ({
@@ -99,11 +104,9 @@ export function ScenarioSelect({
   const preloadScenario = (type: string) => { if (robotChat) preloadRobotAvatar(type); };
 
   // Només les activitats del nivell de l'aprenent: resources.difficulty fa servir
-  // els mateixos valors que profiles.level (principiant, intermedi, avancat).
-  const categories = useMemo(
-    () => groupResources((resources ?? []).filter(r => r.difficulty === level)),
-    [resources, level],
-  );
+  // els mateixos valors que profiles.level (principiant, intermedi, avancat). Les del
+  // professorat es mostren totes: les ha triades la docent per a la classe.
+  const categories = useMemo(() => groupResources(resources ?? [], level), [resources, level]);
   const current = categories.find(c => c.id === selected) ?? categories[0];
 
   return (

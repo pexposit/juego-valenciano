@@ -5,8 +5,9 @@ import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
 import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing } from '../services/examWritingEvaluator.js';
 import { characterOf, isScenarioPlayable } from '../services/scenarios.js';
-import { ASSISTANT_CATEGORY, CHAT_CATEGORIES, isPracticeArea } from '@parlaval/shared';
+import { ASSISTANT_CATEGORY, CHAT_CATEGORIES, FORM_FIELD_MAX_CHARS, isPracticeArea, WRITING_MAX_CHARS } from '@parlaval/shared';
 import { saveWritingErrors } from './errors.js';
+import { canSeeResource, optionalUserId, teacherResourcesFor } from '../services/teacherActivities.js';
 import { EXAM_CATEGORY, hasExam, isPlayable, type Metadata, type ResourceRow } from '../services/catalog.js';
 
 export const resourcesRouter = Router();
@@ -48,14 +49,18 @@ const lessonOf = (metadata: Metadata) => {
 
 // Catàleg d'activitats (taula resources). El frontend l'agrupa per `category`
 // i, dins de cada categoria, per `type`: afegir una fila a la BDD fa aparéixer
-// l'activitat sense tocar codi. És públic: el catàleg no té dades d'usuari.
-resourcesRouter.get('/api/resources', async (_req, res) => {
+// l'activitat sense tocar codi. És públic, però si la petició porta el token
+// també inclou les activitats creades pel professorat que pot vore l'usuari
+// (`class_activity`: les de les seues classes o, per a la docent, les seues) i
+// marca amb `assigned` les que el professorat ha assignat a les classes de l'usuari.
+resourcesRouter.get('/api/resources', async (req, res) => {
   const client = getAdmin() as any;
   if (!client) return res.json([]);
 
+  const { own, assigned } = await teacherResourcesFor(client, await optionalUserId(req));
   const { data, error } = await client
     .from('resources')
-    .select('id, name, type, category, difficulty, xp_earned, content, url, metadata, practice_exercises(count)')
+    .select('id, name, type, category, difficulty, xp_earned, content, url, metadata, teacher_id, practice_exercises(count)')
     // El tutor infantil es xateja des del tauler: no és una activitat del catàleg.
     .neq('category', ASSISTANT_CATEGORY)
     .order('category')
@@ -69,8 +74,13 @@ resourcesRouter.get('/api/resources', async (_req, res) => {
   }
 
   // De metadata només s'exposa el que necessiten les pantalles, no el prompt del personatge.
-  res.json((data ?? []).map(({ metadata, practice_exercises, ...resource }: ResourceRow & Record<string, unknown>) => ({
+  const rows = (data ?? []).filter((r: { id: string; teacher_id: string | null }) => !r.teacher_id || own.has(r.id) || assigned.has(r.id));
+  res.json(rows.map(({ metadata, practice_exercises, teacher_id, ...resource }: ResourceRow & Record<string, unknown>) => ({
     ...resource,
+    class_activity: !!teacher_id,
+    // Nivell del MECR de les activitats del professorat.
+    cefr_level: teacher_id ? text(metadata?.cefr_level) : null,
+    assigned: assigned.has(resource.id as string),
     icon: text(metadata?.icon),
     color: text(metadata?.color),
     section_name: text(metadata?.section_name),
@@ -124,7 +134,7 @@ resourcesRouter.get('/api/practice/:id', async (req, res) => {
 
   const { data, error } = await client
     .from('resources')
-    .select(`id, name, type, category, content, metadata,
+    .select(`id, name, type, category, content, metadata, teacher_id,
       practice_passages(id, level, position, media, title, lines, audio_url),
       practice_exercises(id, level, position, passage_id, kind, prompt, options, answers, task, explanation)`)
     .eq('id', req.params.id)
@@ -134,13 +144,14 @@ resourcesRouter.get('/api/practice/:id', async (req, res) => {
     console.error('[practice] Error carregant els exercicis:', error);
     return res.status(500).json({ error: "No hem pogut carregar els exercicis" });
   }
-  if (!data || !isPracticeArea(data.category) || !data.practice_exercises?.length) {
+  if (!data || !isPracticeArea(data.category) || !data.practice_exercises?.length
+      || !(await canSeeResource(client, await optionalUserId(req), data))) {
     return res.status(404).json({ error: "Els exercicis no existixen" });
   }
 
   type Ordered = { level: string; position: number };
   const byOrder = (a: Ordered, b: Ordered) => a.level.localeCompare(b.level) || a.position - b.position;
-  const { metadata, practice_exercises: exercises, practice_passages: passages, ...resource } = data;
+  const { metadata, practice_exercises: exercises, practice_passages: passages, teacher_id: _teacher, ...resource } = data;
   res.json({
     ...resource,
     icon: text(metadata?.icon),
@@ -187,8 +198,8 @@ const EVALUATE_RATE_LIMIT = {
 // Formulari de l'A1 (`answers`: camp -> resposta) o redacció de l'A2/B1 (`text`,
 // i `choice` si l'exercici té opcions A/B).
 const evaluateSchema = z.object({
-  answers: z.record(z.string().max(500)).optional(),
-  text: z.string().max(3000).optional(),
+  answers: z.record(z.string().max(FORM_FIELD_MAX_CHARS)).optional(),
+  text: z.string().max(WRITING_MAX_CHARS).optional(),
   choice: z.string().max(5).optional(),
 });
 
@@ -282,12 +293,15 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
   if (!client) return res.status(503).json({ error: "El catàleg no està disponible" });
   const { data: exercise, error } = await client
     .from('practice_exercises')
-    .select('kind, level, prompt, task, resource_id, resources(name), practice_passages(title, lines)')
+    .select('kind, level, prompt, task, resource_id, resources(name, teacher_id), practice_passages(title, lines)')
     .eq('id', req.params.id)
     .maybeSingle();
   if (error) {
     console.error("[practice] Error carregant l'exercici:", error);
     return res.status(500).json({ error: "No hem pogut carregar l'exercici" });
+  }
+  if (exercise && !(await canSeeResource(client, req.userId ?? null, { id: exercise.resource_id, teacher_id: exercise.resources?.teacher_id ?? null }))) {
+    return res.status(404).json({ error: "Este exercici no es pot avaluar" });
   }
   // Del B1 amunt s'avalua amb la rúbrica del B1 i, si la tasca parteix d'un text
   // o d'un àudio (paràfrasi, apunts...), l'avaluador en rep la transcripció.
