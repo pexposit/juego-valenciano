@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BookOpen, Target } from 'lucide-react';
+import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, Circle, CircleDashed, Clock, Target } from 'lucide-react';
 import { CONVERSATION_AREAS, PRACTICE_AREAS } from '@parlaval/shared';
 import { Logo, ProfileButton } from './ui';
 import { LessonModal } from './LessonModal';
-import { fetchResources } from '../lib/api';
+import { fetchActivityStatus, fetchResources, type ActivityStatus } from '../lib/api';
 import type { Resource } from '../lib/types';
 import { isRobotAvatarEnabled, preloadRobotAvatar } from '../features/robot-avatar'; // [robot-avatar]
 
@@ -65,6 +65,46 @@ function groupResources(resources: Resource[], level: string): Category[] {
     .sort((a, b) => categoryRank(a.id) - categoryRank(b.id));
 }
 
+// Insígnia de l'estat d'una activitat a la targeta: acabada (amb la nota), acabada amb errors per corregir, en curs o sense començar.
+function StatusBadge({ status }: { status?: ActivityStatus }) {
+  if (status?.status === 'done') {
+    const mark = status.score != null && status.total ? ` · ${status.score}/${status.total}` : '';
+    return (
+      <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-black text-green-700">
+        <CheckCircle2 size={13} /> Feta{mark}
+      </span>
+    );
+  }
+  if (status?.status === 'incomplete') {
+    const mark = status.answered != null && status.total ? ` · ${status.answered}/${status.total}` : '';
+    return (
+      <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-black text-sky-700">
+        <CircleDashed size={13} /> Sense acabar{mark}
+      </span>
+    );
+  }
+  if (status?.status === 'partial') {
+    const n = status.pending_errors;
+    return (
+      <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-orange/15 px-2.5 py-0.5 text-xs font-black text-orange">
+        <AlertCircle size={13} /> Per corregir · {n} {n === 1 ? 'error' : 'errors'}
+      </span>
+    );
+  }
+  if (status?.status === 'in_progress') {
+    return (
+      <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-mustard/30 px-2.5 py-0.5 text-xs font-black text-navy">
+        <Clock size={13} /> En curs
+      </span>
+    );
+  }
+  return (
+    <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-black/5 px-2.5 py-0.5 text-xs font-black opacity-60">
+      <Circle size={13} /> Sense començar
+    </span>
+  );
+}
+
 export function ScenarioSelect({
   name,
   level,
@@ -94,6 +134,16 @@ export function ScenarioSelect({
         console.error('Error carregant les activitats:', error);
         if (!cancelled) setLoadError(true);
       });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Estat de cada activitat (acabada, en curs); si no es pot carregar, les targetes no en mostren.
+  const [statuses, setStatuses] = useState<Record<string, ActivityStatus>>();
+  useEffect(() => {
+    let cancelled = false;
+    fetchActivityStatus()
+      .then(data => { if (!cancelled) setStatuses(data); })
+      .catch(error => console.error("Error carregant l'estat de les activitats:", error));
     return () => { cancelled = true; };
   }, []);
 
@@ -187,6 +237,8 @@ export function ScenarioSelect({
               // El backend decidix si la categoria té pantalla i la fila en té les dades.
               const playable = list.find(r => r.playable);
               const withLesson = list.find(r => r.has_lesson);
+              // Estat de l'activitat: el del recurs que s'obri (o, si no, el de qualsevol de la secció).
+              const status = statuses && (statuses[(playable ?? first).id] ?? list.map(r => statuses[r.id]).find(Boolean));
               return (
                 <div
                   key={type}
@@ -221,6 +273,7 @@ export function ScenarioSelect({
                         </ul>
                       )}
                       {!playable && <p className="text-xs font-bold opacity-50">Pròximament disponible</p>}
+                      {playable && statuses && <StatusBadge status={status} />}
                     </div>
                   </button>
                   {/* Lliçó fixa del contingut (metadata.lesson), en un modal. */}

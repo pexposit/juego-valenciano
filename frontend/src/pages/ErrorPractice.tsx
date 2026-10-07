@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
 import { normalizeAnswer } from '@parlaval/shared';
 import { Logo } from '../components/ui';
+import { practiceRoute } from '../data/content';
 import { fetchUserErrors, resolveUserError, type UserError } from '../lib/api';
 
 type Result = 'right' | 'wrong';
@@ -47,6 +49,15 @@ function ErrorCard({ error, n, total, onFixed }: { error: UserError; n: number; 
           <p className="mt-1 font-semibold">
             {error.source === 'practice' ? error.message : <Highlighted text={error.message} part={error.error_text} />}
           </p>
+          {/* Enllaç a la pregunta dins de la pràctica: també es pot corregir allí (obri la pàgina i la ressalta). */}
+          {error.source === 'practice' && error.resource_id && (
+            <Link
+              to={`${practiceRoute(error.resource_id)}${error.exercise_id ? `?pregunta=${error.exercise_id}` : ''}`}
+              className="mt-2 inline-flex items-center gap-1 text-sm font-extrabold text-teal underline-offset-2 hover:underline"
+            >
+              <ArrowRight size={14} /> Anar a la pregunta
+            </Link>
+          )}
         </div>
       )}
       <p className="mt-4 font-bold">{error.source === 'practice' ? 'La teua resposta (errònia):' : 'Com es corregix?'}</p>

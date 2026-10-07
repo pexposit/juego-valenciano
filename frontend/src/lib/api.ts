@@ -297,7 +297,7 @@ export async function startSessionResource(sessionId: string, scenario: Scenario
 // Errors tal com els torna el servidor en crear-los (amb el text, que només es guarda ací).
 type ServerError = {
   id: string; source: LocalError['source']; error_text: string; correction: string; category: string; explanation: string;
-  context: string | null; options: string[] | null; exercise_id: string | null; created_at: string;
+  context: string | null; options: string[] | null; exercise_id: string | null; resource_id?: string | null; created_at: string;
 };
 
 async function storeErrors(
@@ -314,6 +314,7 @@ async function storeErrors(
     context: e.context,
     options: e.options,
     exerciseId: e.exercise_id,
+    resourceId: e.resource_id ?? null,
     sessionResourceId,
     scenario,
     practicable,
@@ -348,7 +349,7 @@ export function analyzeMessage(
 
 // Errors sense resoldre de l'usuari, per a la pestanya de pràctica d'errors. El text és en este
 // navegador; el servidor diu quins continuen pendents (la ruta en pot donar per resolts).
-export type UserError = { id: string; error_text: string; correction: string; category: string; explanation: string; message: string | null; scenario: string | null; source: 'chat' | 'practice' | 'writing'; options: string[] | null };
+export type UserError = { id: string; error_text: string; correction: string; category: string; explanation: string; message: string | null; scenario: string | null; source: 'chat' | 'practice' | 'writing'; options: string[] | null; resource_id: string | null; exercise_id: string | null };
 const errorKey = (e: Pick<LocalError, 'errorText' | 'correction'>) => `${e.errorText.trim().toLowerCase()}|${e.correction.trim().toLowerCase()}`;
 export async function fetchUserErrors(): Promise<UserError[]> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -383,6 +384,8 @@ export async function fetchUserErrors(): Promise<UserError[]> {
       scenario: e.scenario,
       source: e.source,
       options: e.options,
+      resource_id: e.resourceId ?? null,
+      exercise_id: e.exerciseId,
     }));
 }
 // Marca un error com a resolt (amb els seus duplicats exactes) després de corregir-lo bé en la pràctica.
@@ -398,7 +401,16 @@ export async function resolveUserError(id: string): Promise<void> {
   });
   if (!res.ok) throw new Error("No s'ha pogut desar el progrés");
   await markErrorsResolved(ids);
+  // La pantalla d'exercicis guarda les respostes en este navegador: se li deixa dit quines preguntes s'han
+  // corregit ací, perquè en obrir-la no les mostre com a errònies.
+  try {
+    for (const e of local) if (ids.includes(e.id) && e.exerciseId) localStorage.setItem(`${FIXED_PREFIX}${e.exerciseId}`, '1');
+  } catch {
+    // Sense storage: l'exercici mostrarà la resposta antiga fins que es torne a fer.
+  }
 }
+/** Marca (a localStorage) d'una pregunta de pràctica corregida des de la pestanya «Errors»; la llig Practice. */
+export const FIXED_PREFIX = 'parlaval:practice-fixed:';
 // Envia les respostes d'una tanda d'exercicis de pràctica: el backend corregix i torna els errors,
 // que es guarden ací per a la pestanya «Errors».
 export async function recordPracticeAnswers(answers: { exercise_id: string; answer: string }[], scenario: string | null = null): Promise<void> {
@@ -539,6 +551,14 @@ export async function renameTutorConversation(id: string, title: string): Promis
 }
 export const fetchTutorConversation = async (id: string) => toTutorMessages(await getMessages(id));
 /* ── Ruta d'aprenentatge ──────────────────────────────────────────────── */
+// Estat d'una activitat per a l'usuari (per resource id): acabada (amb nota si en té), acabada amb errors per corregir o començada.
+export type ActivityStatus = { status: 'done' | 'incomplete' | 'partial' | 'in_progress'; score: number | null; total: number | null; answered: number | null; pending_errors: number };
+export async function fetchActivityStatus(): Promise<Record<string, ActivityStatus>> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/activity-status`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error("No hem pogut carregar l'estat de les activitats");
+  return res.json();
+}
+
 const authHeaders = async (): Promise<Record<string, string>> => {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };

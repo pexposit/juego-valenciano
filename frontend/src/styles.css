@@ -10,7 +10,9 @@ html { -webkit-text-size-adjust: 100%; }
 @media (max-width: 1023px) { html { font-size: 15px; } }
 @media (max-width: 639px) { html { font-size: 13.5px; } }
 
+/* Barra institucional fixa al peu (InstitutionalBar): App.tsx posa --app-footer a 68px quan es mostra. */
 body {
+  padding-bottom: var(--app-footer, 0px);
   margin: 0;
   background: #FAFAF9;
   color: #263747;

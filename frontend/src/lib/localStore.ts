@@ -57,6 +57,8 @@ export type LocalError = {
   context: string | null;
   options: string[] | null;
   exerciseId: string | null;
+  // Contingut de pràctica on es va cometre (per a enllaçar la pregunta); els errors antics no en tenen.
+  resourceId?: string | null;
   sessionResourceId: string | null;
   // Activitat on es va cometre (nom de l'escenari o de la pràctica).
   scenario: string | null;

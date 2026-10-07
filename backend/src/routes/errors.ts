@@ -27,10 +27,12 @@ export type ClientError = {
   // Opcions de les preguntes tancades de pràctica (la correcta és la primera).
   options: string[] | null;
   exercise_id: string | null;
+  // Contingut de pràctica de l'error (per a enllaçar la pregunta); null en els xats.
+  resource_id: string | null;
   created_at: string;
 };
 
-type NewError = Omit<ClientError, 'id' | 'created_at'> & { resource_id?: string | null; session_resource_id?: string | null };
+type NewError = Omit<ClientError, 'id' | 'created_at' | 'resource_id'> & { resource_id?: string | null; session_resource_id?: string | null };
 
 // Guarda les metadades dels errors i torna cada error amb el seu id, per al client.
 async function insertErrors(client: any, userId: string, errors: NewError[]): Promise<ClientError[]> {
@@ -48,8 +50,8 @@ async function insertErrors(client: any, userId: string, errors: NewError[]): Pr
     .select('id, created_at');
   if (error) throw error;
   return (data as { id: string; created_at: string }[]).map((row, i) => {
-    const { resource_id: _r, session_resource_id: _s, ...e } = errors[i];
-    return { ...e, id: row.id, created_at: row.created_at };
+    const { resource_id, session_resource_id: _s, ...e } = errors[i];
+    return { ...e, resource_id: resource_id ?? null, id: row.id, created_at: row.created_at };
   });
 }
 

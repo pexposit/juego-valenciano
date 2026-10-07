@@ -29,6 +29,9 @@ import { KidsAlbum } from './features/kids/KidsAlbum';
 import { KidsHome } from './features/kids/KidsHome';
 import { KidsIsland } from './features/kids/KidsIsland';
 import { KidsLesson } from './features/kids/KidsLessons';
+import { InstitutionalBar } from './components/InstitutionalLogos';
+import { installAudioTracking, stopAllAudio } from './lib/audioControl';
+import { stopVoice } from './features/kids/sound';
 import { KidsTranslationProvider, useKidsTranslationLang } from './features/kids/translations';
 import { KidsLessons } from './pages/KidsLessons';
 
@@ -90,7 +93,7 @@ function ChatRoute({
         level={level}
         xp={xp}
         onXpGained={onXpGained}
-        onEnd={() => navigate(ROUTES.summary)}
+        onEnd={onBack}
         onBack={onBack}
       />
     </PageTransition>
@@ -185,6 +188,18 @@ const homeFor = (role: string | undefined) => (role === 'teacher' ? ROUTES.class
 export function App() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  // En canviar de pantalla para tot l'àudio que sonava. És la neteja de l'efecte (no el cos) perquè s'execute abans
+  // que les pantalles noves comencen els seus àudios (la salutació d'un xat, la veu d'una illa...).
+  installAudioTracking();
+  useEffect(() => () => {
+    stopAllAudio();
+    stopVoice();
+  }, [pathname]);
+  // Barra institucional fixa al peu de totes les pantalles, menys la d'inici (que té el peu complet).
+  const showFooterBar = pathname !== ROUTES.home;
+  useEffect(() => {
+    document.documentElement.style.setProperty('--app-footer', showFooterBar ? '68px' : '0px');
+  }, [showFooterBar]);
   const [xp, setXp] = useState(DEFAULT_PROFILE.xp);
   const [level, setLevel] = useState(DEFAULT_PROFILE.level);
   const [name, setName] = useState(DEFAULT_PROFILE.name);
@@ -469,6 +484,7 @@ export function App() {
         />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
+      {showFooterBar && <InstitutionalBar />}
     </KidsTranslationProvider>
   );
 }

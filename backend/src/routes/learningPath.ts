@@ -21,6 +21,70 @@ const resultSchema = z.object({
   details: z.record(z.string(), z.unknown()).refine(d => JSON.stringify(d).length <= 20_000, 'details és massa gran').optional(),
 }).refine(r => r.score == null || (r.total != null && r.score <= r.total), 'score ha de ser menor o igual que total');
 
+// Estat de cada activitat per a l'usuari, per a les targetes del catàleg: «done» si ja en té un resultat (pràctica,
+// examen o xat acabat; amb l'última nota si n'hi ha), «incomplete» si es va corregir sense haver contestat totes les preguntes
+// (encara no se'n mostren els errors), «partial» si està feta però encara té errors sense corregir
+// (`pending_errors`; es resolen corregint-los en l'exercici o en la pestanya «Errors») i «in_progress» si ha començat
+// un xat sense acabar-lo. Les activitats sense entrada no hi apareixen (sense començar).
+learningPathRouter.get('/api/activity-status', requireAuth, async (req: AuthRequest, res) => {
+  const client = db(req.userId);
+  if (!client || !req.userId) return res.json({});
+  try {
+    const [results, sessions, errors] = await Promise.all([
+      client
+        .from('user_resource_results')
+        .select('resource_id, score, total, details, created_at')
+        .eq('user_id', req.userId)
+        .order('created_at', { ascending: false })
+        .limit(1000),
+      client
+        .from('session_resource')
+        .select('recurso_id, resolved, sessions!inner(user_id)')
+        .eq('sessions.user_id', req.userId)
+        .limit(1000),
+      // Errors de pràctica i redaccions (tenen resource_id) encara sense corregir.
+      client
+        .from('user_errors')
+        .select('resource_id')
+        .eq('user_id', req.userId)
+        .eq('resolved', false)
+        .not('resource_id', 'is', null)
+        .limit(2000),
+    ]);
+    if (results.error) throw results.error;
+    if (sessions.error) throw sessions.error;
+    if (errors.error) throw errors.error;
+
+    const status: Record<string, { status: 'done' | 'incomplete' | 'partial' | 'in_progress'; score: number | null; total: number | null; answered: number | null; pending_errors: number }> = {};
+    // Resultats: el més recent de cada recurs (venen ordenats de més nou a més antic).
+    for (const r of results.data ?? []) {
+      if (status[r.resource_id]) continue;
+      // La pràctica guarda quantes preguntes s'havien contestat en corregir; si en falten, no està completa.
+      const answered = typeof r.details?.answered === 'number' ? r.details.answered : null;
+      const incomplete = answered != null && r.total != null && answered < r.total;
+      status[r.resource_id] = { status: incomplete ? 'incomplete' : 'done', score: r.score ?? null, total: r.total ?? null, answered, pending_errors: 0 };
+    }
+    // Xats: acabat (resolved) o només començat.
+    for (const s of sessions.data ?? []) {
+      const current = status[s.recurso_id];
+      if (s.resolved) status[s.recurso_id] = current ?? { status: 'done', score: null, total: null, answered: null, pending_errors: 0 };
+      else if (!current) status[s.recurso_id] = { status: 'in_progress', score: null, total: null, answered: null, pending_errors: 0 };
+    }
+    // Feta del tot (totes les preguntes contestades), però amb errors pendents: només és «feta» quan s'han corregit.
+    for (const e of errors.data ?? []) {
+      const current = status[e.resource_id];
+      if (current?.status === 'done') {
+        current.status = 'partial';
+        current.pending_errors = 1;
+      } else if (current?.status === 'partial') current.pending_errors += 1;
+    }
+    res.json(status);
+  } catch (error) {
+    console.error("[activity-status] Error carregant l'estat de les activitats:", error);
+    res.status(500).json({ error: "No hem pogut carregar l'estat de les activitats" });
+  }
+});
+
 // Ruta activa de l'usuari; la primera vegada se'n genera una (diagnòstica si encara no hi ha dades).
 learningPathRouter.get('/api/learning-path', requireAuth, async (req: AuthRequest, res) => {
   const client = db(req.userId);

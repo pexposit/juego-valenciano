@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Headphones, Lightbulb, RotateCcw } from 'lucide-react';
 import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type PracticeArea } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
-import { evaluatePracticeExercise, recordPracticeAnswers, saveActivityResult } from '../lib/api';
+import { evaluatePracticeExercise, FIXED_PREFIX, fetchUserErrors, recordPracticeAnswers, saveActivityResult } from '../lib/api';
 import type { ExamQuestion, Practice as PracticeResource, PracticeExercise, PracticePassage, WritingEvaluation } from '../lib/types';
 
 type Progress = {
   answers: Record<string, string>; // preguntes tancades: id de l'exercici -> resposta
   checked: boolean;
+  retry: Record<string, boolean>; // preguntes fallades que s'estan tornant a provar: id -> true
   writings: Record<string, string>; // redaccions: id -> text
   forms: Record<string, Record<string, string>>; // formularis: id -> camp -> valor
   evaluations: Record<string, WritingEvaluation>; // avaluació amb IA per exercici
 };
-const EMPTY: Progress = { answers: {}, checked: false, writings: {}, forms: {}, evaluations: {} };
+const EMPTY: Progress = { answers: {}, checked: false, retry: {}, writings: {}, forms: {}, evaluations: {} };
 
 // El progrés es guarda al navegador per nivell, com el dels exàmens.
 const storageKey = (id: string, level: string) => `parlaval:practice:${id}:${level}`;
@@ -92,13 +94,48 @@ function paginate(groups: Group[]): Group[][] {
 export function Practice({ practice, userLevel, onBack, preview = false }: { practice: PracticeResource; userLevel: string; onBack: () => void; preview?: boolean }) {
   // Només els nivells del MECR de l'aprenent (A1-A2, B1-B2 o C1-C2); si el
   // contingut no en té cap (p. ex. un enllaç directe), es mostren tots.
+  // ?pregunta=<id> (enllaç des de «Errors»): s'obri el nivell i la pàgina d'eixa pregunta i es ressalta.
+  const [searchParams] = useSearchParams();
+  const target = practice.exercises.find(e => e.id === searchParams.get('pregunta'));
   const levels = useMemo(() => {
     const all = [...new Set(practice.exercises.map(e => e.level))];
-    const own = all.filter(l => LEVEL_CEFR[userLevel as LevelKey]?.includes(l));
+    const own = all.filter(l => LEVEL_CEFR[userLevel as LevelKey]?.includes(l) || l === target?.level);
     return own.length ? own : all;
-  }, [practice, userLevel]);
-  const [level, setLevel] = useState(levels[0]);
-  const [progress, setProgress] = useState<Progress>(() => (preview ? EMPTY : loadProgress(practice.id, level)));
+  }, [practice, userLevel, target?.level]);
+  const [level, setLevel] = useState(target?.level ?? levels[0]);
+  const [focusId, setFocusId] = useState(target?.id);
+  // El progrés guardat, amb les preguntes corregides en la pestanya «Errors» ja contestades bé: es llig la marca que hi
+  // deixa resolveUserError i es posa la resposta correcta (la clau de l'opció, en les tancades).
+  const loadWithFixed = (forLevel: string): Progress => {
+    const saved = loadProgress(practice.id, forLevel);
+    const answers = { ...saved.answers };
+    for (const e of practice.exercises) {
+      if (e.level !== forLevel || !isGradable(e)) continue;
+      try {
+        if (localStorage.getItem(`${FIXED_PREFIX}${e.id}`) === null) continue;
+        const right = e.kind === 'choice' ? asQuestion(e, 0).options?.find(o => o.text === e.answers[0])?.key : e.answers[0];
+        if (right) answers[e.id] = right;
+      } catch {
+        // Sense storage: es queda com estava.
+      }
+    }
+    return { ...saved, answers };
+  };
+  // En la vista prèvia de la docent no es llig ni es guarda cap progrés.
+  const [progress, setProgress] = useState<Progress>(() => (preview ? EMPTY : loadWithFixed(level)));
+  // Ja aplicades (i guardades amb el progrés), les marques de les preguntes d'este nivell s'esborren. No es fa dins de
+  // loadWithFixed perquè React crida els inicialitzadors dues vegades en desenvolupament.
+  useEffect(() => {
+    if (preview) return;
+    try {
+      for (const e of practice.exercises) if (e.level === level) localStorage.removeItem(`${FIXED_PREFIX}${e.id}`);
+    } catch {
+      // Sense storage: res a esborrar.
+    }
+  }, [practice, level, preview]);
+  // Preguntes d'este contingut amb un error pendent (pestanya «Errors»): es mostren com a fallades, amb la
+  // resposta errònia, fins que es contesten bé (en l'exercici o en «Errors»).
+  const [failed, setFailed] = useState<ReadonlySet<string>>(new Set());
   const [evaluating, setEvaluating] = useState<string>();
   const [evaluationError, setEvaluationError] = useState<{ id: string; message: string }>();
   const [page, setPage] = useState(0);
@@ -111,6 +148,16 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
   );
   const currentPage = pages[Math.min(page, pages.length - 1)] ?? [];
   const gradable = useMemo(() => exercises.filter(isGradable), [exercises]);
+
+  // Porta a la pregunta de l'enllaç: canvia a la seua pàgina, hi fa scroll i, passats uns segons, lleva el ressaltat.
+  useEffect(() => {
+    if (!focusId) return;
+    const index = pages.findIndex(p => p.some(g => g.exercises.some(x => x.exercise.id === focusId)));
+    if (index >= 0 && index !== page) return setPage(index);
+    document.getElementById(`pregunta-${focusId}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const timer = window.setTimeout(() => setFocusId(undefined), 4000);
+    return () => window.clearTimeout(timer);
+  }, [focusId, pages, page]);
   const questions = useMemo(
     () => Object.fromEntries(exercises.flatMap((e, i) => (e.kind === 'choice' ? [[e.id, asQuestion(e, i + 1)]] : []))),
     [exercises],
@@ -125,9 +172,36 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
     }
   }, [progress, practice.id, level, preview]);
 
+  useEffect(() => {
+    if (preview) return;
+    let cancelled = false;
+    fetchUserErrors()
+      .then(errors => {
+        if (cancelled) return;
+        const pending = errors.filter(e => e.source === 'practice' && e.exercise_id && practice.exercises.some(x => x.id === e.exercise_id));
+        if (pending.length === 0) return;
+        setFailed(new Set(pending.map(e => e.exercise_id!)));
+        // La resposta errònia queda marcada: per a les tancades, l'opció amb eixe text.
+        setProgress(p => {
+          const answers = { ...p.answers };
+          for (const e of pending) {
+            const exercise = practice.exercises.find(x => x.id === e.exercise_id);
+            if (!exercise || !isGradable(exercise) || answers[exercise.id]?.trim()) continue;
+            const key = exercise.kind === 'choice'
+              ? asQuestion(exercise, 0).options?.find(o => o.text === e.error_text)?.key
+              : e.error_text;
+            if (key) answers[exercise.id] = key;
+          }
+          return { ...p, answers };
+        });
+      })
+      .catch(error => console.error('Error carregant els errors pendents:', error));
+    return () => { cancelled = true; };
+  }, [practice, preview]);
+
   const changeLevel = (next: string) => {
     setLevel(next);
-    setProgress(loadProgress(practice.id, next));
+    setProgress(loadWithFixed(next));
     setPage(0);
   };
   const goToPage = (next: number) => {
@@ -147,13 +221,16 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
       return text ? [{ exercise_id: e.id, answer: text }] : [];
     });
     if (!preview) recordPracticeAnswers(sent, practice.name).catch(error => console.error('Error enviant les respostes:', error));
-    setProgress(p => ({ ...p, checked: true }));
+    // Les preguntes sense contestar no es corregixen ni se'n mostra la solució: queden obertes, cadascuna amb el seu
+    // «Comprova», per a contestar-les.
+    const unanswered = Object.fromEntries(gradable.filter(e => !progress.answers[e.id]?.trim()).map(e => [e.id, true]));
+    setProgress(p => ({ ...p, checked: true, retry: unanswered }));
     // El resultat alimenta la ruta d'aprenentatge personalitzada.
-    if (!preview) void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length });
+    if (!preview) void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length, details: { answered } });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const reset = () => {
-    setProgress(p => ({ ...p, answers: {}, checked: false }));
+    setProgress(p => ({ ...p, answers: {}, checked: false, retry: {} }));
     setPage(0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -181,7 +258,21 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
     }
   };
 
-  const { answers, checked } = progress;
+  const { answers, checked, retry } = progress;
+  // Una pregunta fallada es pot tornar a provar sense eixir de l'exercici: s'esborra la resposta, es contesta de nou
+  // i «Comprova» la torna a enviar (si és correcta, l'error de la pestanya «Errors» queda resolt).
+  const isDone = (id: string) => (checked || failed.has(id)) && !retry[id];
+  const retryQuestion = (id: string) =>
+    setProgress(p => ({ ...p, answers: { ...p.answers, [id]: '' }, retry: { ...p.retry, [id]: true } }));
+  const recheckQuestion = (e: Gradable) => {
+    const value = answers[e.id];
+    const text = e.kind === 'choice' ? questions[e.id]?.options?.find(o => o.key === value)?.text : value;
+    if (!text?.trim()) return;
+    recordPracticeAnswers([{ exercise_id: e.id, answer: text }], practice.name).catch(error => console.error('Error enviant la resposta:', error));
+    setProgress(p => ({ ...p, retry: { ...p.retry, [e.id]: false } }));
+    // `answered` i `correct` ja inclouen esta resposta: s'actualitza l'estat de l'activitat (p. ex. quan ja estan contestades totes).
+    void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length, details: { answered } });
+  };
   const answered = gradable.filter(e => answers[e.id]?.trim()).length;
   const correct = gradable.filter(e => isCorrect(e, questions[e.id], answers[e.id])).length;
   const area = PRACTICE_AREAS[practice.category as PracticeArea];
@@ -193,7 +284,7 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
           <ChoiceExercise
             questions={[{ ...questions[e.id], n }]}
             answers={{ [n]: answers[e.id] }}
-            checked={checked}
+            checked={isDone(e.id)}
             onAnswer={(_n, key) => answer(e.id, key)}
           />
         );
@@ -204,7 +295,7 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
             prompt={e.prompt}
             value={answers[e.id] ?? ''}
             onChange={value => answer(e.id, value)}
-            checked={checked}
+            checked={isDone(e.id)}
             correct={isCorrect(e, undefined, answers[e.id])}
             solution={e.answers[0]}
           />
@@ -302,9 +393,26 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
           <section key={group.passage?.id ?? group.exercises[0].exercise.id} className="flex flex-col gap-4">
             {group.passage && <Passage passage={group.passage} showTranscript={checked} />}
             {group.exercises.map(({ exercise: e, n }) => (
-              <article key={e.id} className="rounded-[1.75rem] bg-white p-6 shadow-sm">
+              <article key={e.id} id={`pregunta-${e.id}`} className={`rounded-[1.75rem] bg-white p-6 shadow-sm ${e.id === focusId ? 'ring-4 ring-mustard' : ''}`}>
                 {renderExercise(e, n)}
-                {checked && isGradable(e) && e.explanation && (
+                {isGradable(e) && isDone(e.id) && !isCorrect(e, questions[e.id], answers[e.id]) && (
+                  <button
+                    onClick={() => retryQuestion(e.id)}
+                    className="btn-press mt-4 flex items-center gap-2 rounded-full bg-cream px-4 py-2 text-sm font-black text-teal hover:bg-teal/10"
+                  >
+                    <RotateCcw size={16} /> Torna-ho a provar
+                  </button>
+                )}
+                {isGradable(e) && retry[e.id] && (
+                  <button
+                    onClick={() => recheckQuestion(e)}
+                    disabled={!answers[e.id]?.trim()}
+                    className="btn-press mt-4 rounded-full bg-orange px-5 py-2 text-sm font-black text-white shadow hover:bg-orange/90 disabled:opacity-50"
+                  >
+                    Comprova
+                  </button>
+                )}
+                {isGradable(e) && isDone(e.id) && e.explanation && (
                   <p className="mt-4 flex items-start gap-2 rounded-xl bg-cream px-4 py-3 text-sm">
                     <Lightbulb size={16} className="mt-0.5 shrink-0 text-orange" />
                     <span>{e.explanation}</span>

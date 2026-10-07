@@ -6,7 +6,8 @@ import { ItemFace } from './games/ItemFace';
 import { lessonById, type LessonPage } from './lessons';
 import { markLessonDone } from './progress';
 import { PICTOGRAM_CREDIT } from './pictograms';
-import { phraseText, say, sfxCorrect, sfxFanfare, sfxTick, stopVoice } from './sound';
+import { phraseText, say, sfxCorrect, sfxFanfare, sfxTick, stopVoice, useVoiceState } from './sound';
+import { AudioLoading, useDelayedFlag } from '../../components/AudioLoading';
 import { Translation, useKidsTranslation } from './translations';
 import './kids.css';
 
@@ -52,6 +53,8 @@ function Picto({ item, onTap, heard, size = 'md' }: { item: KidsItem; onTap: () 
  */
 function Bubble({ phrase, onRepeat, talking }: { phrase: string; onRepeat: () => void; talking: boolean }) {
   const translate = useKidsTranslation();
+  // Si la veu triga a arribar, s'avisa que està carregant (és per això que encara no sona).
+  const loadingVoice = useDelayedFlag(useVoiceState() === 'loading');
   return (
     <div className="kid-lesson-bubble">
       <button onClick={onRepeat} aria-label="Escolta una altra vegada" className={`kid-lesson-mascot btn-press ${talking ? 'talking' : ''}`}>
@@ -60,6 +63,7 @@ function Bubble({ phrase, onRepeat, talking }: { phrase: string; onRepeat: () =>
       <p>
         {phraseText(phrase)}
         <Translation text={translate(phrase)} />
+        {loadingVoice && <AudioLoading className="mt-1 block" />}
       </p>
     </div>
   );
@@ -286,14 +290,16 @@ function useSequence(keys: string[], onReady: () => void) {
 /** Frases amb pictogrames: es narra cada frase per ordre; la que sona s'il·lumina i es pot tocar. */
 function SentencesPage({ page, onReady }: PageProps<'sentences'>) {
   const translate = useKidsTranslation();
-  const { talking, play } = useNarration(page.say);
-  const { active, replay } = useSequence(page.sentences.map(s => s.say), onReady);
+  // Una sola seqüència: primer la frase de la bombolla i després cada frase, per ordre. Si cada part comencés pel seu
+  // compte (la bombolla amb useNarration i les frases amb useSequence), les dues veus arrancarien alhora i la
+  // segona tallaria la primera.
+  const { active, replay } = useSequence([page.say, ...page.sentences.map(s => s.say)], onReady);
   return (
     <div className="kid-lesson-page">
-      <Bubble phrase={page.say} onRepeat={play} talking={talking} />
+      <Bubble phrase={page.say} onRepeat={() => replay(0)} talking={active === 0} />
       <div className="kid-sentences">
         {page.sentences.map((sentence, i) => (
-          <button key={sentence.say} onClick={() => replay(i)} className={`kid-sentence ${active === i ? 'now' : ''}`} style={{ animationDelay: `${i * 0.12}s` }}>
+          <button key={sentence.say} onClick={() => replay(i + 1)} className={`kid-sentence ${active === i + 1 ? 'now' : ''}`} style={{ animationDelay: `${i * 0.12}s` }}>
             <span className="kid-sentence-chips" aria-hidden="true">
               {sentence.chips.map(chip => (
                 <span key={chip.word} className="kid-sentence-chip">

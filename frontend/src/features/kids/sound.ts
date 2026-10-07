@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { fetchKidsVoice } from '../../lib/api';
 import { KIDS_AUDIO } from './content';
 import { LESSON_AUDIO } from './lessons';
@@ -8,6 +9,19 @@ import { LESSON_AUDIO } from './lessons';
  * efectes sintetitzats amb Web Audio (sense fitxers): arpa i campanetes quan
  * s'encerta, un «boing» suau quan no, i sons curts per a bambolles i comptes.
  */
+
+// Estat de la veu per a avisar l'usuari: «loading» des que es demana una frase fins que comença a sonar (si l'àudio
+// triga a arribar, és el motiu pel qual encara no sona), «playing» mentre sona i «idle» la resta del temps.
+type VoiceState = 'idle' | 'loading' | 'playing';
+let voiceState: VoiceState = 'idle';
+const voiceListeners = new Set<() => void>();
+const setVoiceState = (next: VoiceState) => {
+  if (next === voiceState) return;
+  voiceState = next;
+  voiceListeners.forEach(listener => listener());
+};
+export const useVoiceState = () =>
+  useSyncExternalStore(listener => { voiceListeners.add(listener); return () => void voiceListeners.delete(listener); }, () => voiceState);
 
 let current: HTMLAudioElement | null = null;
 let token = 0; // canvia cada vegada que comença una frase nova o es para la veu
@@ -38,6 +52,7 @@ function play(src: string): Promise<boolean> {
       settled = true;
       resolve(ok);
     };
+    audio.onplaying = () => { if (current === audio) setVoiceState('playing'); };
     audio.onended = () => end(true);
     audio.onerror = () => end(false);
     audio.play().catch(() => end(false));
@@ -54,15 +69,19 @@ export function say(key: string): Promise<boolean> {
   window.speechSynthesis?.cancel();
   const mine = ++token;
   const live = () => mine === token;
+  setVoiceState('loading');
   return (async () => {
     if (await play(`/audio/kids/${encodeURIComponent(key)}.wav`)) return live();
     if (!live()) return false;
     const text = phraseText(key);
     const url = text ? await serverVoice(key, text) : null;
     if (url && live() && (await play(url))) return live();
-    if (live()) await browserVoice(text);
+    if (live()) {
+      setVoiceState('playing');
+      await browserVoice(text);
+    }
     return live();
-  })();
+  })().finally(() => { if (live()) setVoiceState('idle'); });
 }
 
 /** Diu una frase però no espera més de `ms`: per a no bloquejar la navegació si l'àudio s'encalla. */
@@ -77,6 +96,7 @@ export async function sayAll(keys: readonly string[]): Promise<boolean> {
 
 export const stopVoice = () => {
   token++;
+  setVoiceState('idle');
   release();
   window.speechSynthesis?.cancel();
 };

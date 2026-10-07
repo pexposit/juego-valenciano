@@ -37,6 +37,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   // El nivell només es tria en crear el compte: en iniciar sessió es llig del perfil.
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
+  // La llengua materna només es demana (i es guarda) als xiquets i als adults que trien el Nivell 0.
+  const asksMotherTongue = ageGroup === 'child' || (ageGroup === 'adult' && level === 'nivell0');
 
   // Executa una acció d'autenticació amb l'estat d'espera i l'error de xarxa
   // comuns. Sense Supabase (mode demo) entra directament al tauler.
@@ -60,7 +62,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
       return setNotice('La contrasenya ha de tindre almenys 6 caràcters.');
     }
     if (supabase && !ageGroup) return setNotice('Indica si el compte és per a un xiquet o per a una persona adulta.');
-    if (supabase && !motherTongue) return setNotice('Tria la teua llengua materna.');
+    if (supabase && asksMotherTongue && !motherTongue) return setNotice('Tria la teua llengua materna.');
     if (ageGroup === 'child' && !isPin(familyPin)) return setNotice('Tria un PIN de la família de 4 xifres.');
     // Només les persones adultes trien nivell; els xiquets comencen en el Nivell 0.
     const startLevel = ageGroup === 'child' ? 'nivell0' : level;
@@ -68,7 +70,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
       const { data, error } = await client.auth.signUp({
         email,
         password,
-        options: { data: { level: startLevel, age_group: ageGroup || 'adult', mother_tongue: motherTongue, display_name: email.split('@')[0] } },
+        options: { data: { level: startLevel, age_group: ageGroup || 'adult', ...(asksMotherTongue ? { mother_tongue: motherTongue } : {}), display_name: email.split('@')[0] } },
       });
       if (error) {
         setNotice(error.message?.toLowerCase().includes('already registered')
@@ -194,16 +196,20 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
               </>
             )}
 
-            <label className="mt-4 block text-sm font-extrabold mb-1" htmlFor="auth-mother-tongue">La teua llengua materna</label>
-            <select
-              value={motherTongue}
-              onChange={e => setMotherTongue(e.target.value)}
-              id="auth-mother-tongue"
-              className={`${INPUT_CLASS} bg-white`}
-            >
-              <option value="" disabled>Tria una llengua</option>
-              {MOTHER_TONGUE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+            {asksMotherTongue && (
+              <>
+                <label className="mt-4 block text-sm font-extrabold mb-1" htmlFor="auth-mother-tongue">La teua llengua materna</label>
+                <select
+                  value={motherTongue}
+                  onChange={e => setMotherTongue(e.target.value)}
+                  id="auth-mother-tongue"
+                  className={`${INPUT_CLASS} bg-white`}
+                >
+                  <option value="" disabled>Tria una llengua</option>
+                  {MOTHER_TONGUE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </>
+            )}
           </>
         )}
 

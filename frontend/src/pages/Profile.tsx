@@ -35,7 +35,7 @@ export function Profile({
   // La llengua materna i l'ajuda amb la traducció són per als xiquets i per a qui està en el Nivell 0.
   const hasHelp = isChild || level === 'nivell0';
   // El nom (i, en els comptes infantils, la llengua materna) són editables, però no directament:
-  // cal prémer el llapis primer, i el canvi no es desa a la BD fins que es confirma (botó del check).
+  // cal prémer el llapis primer, i el canvi no es desa a la BD fins que es confirma (botó «Confirma els canvis» davall de les dades).
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftTongue, setDraftTongue] = useState(motherTongue ?? '');
@@ -77,14 +77,16 @@ export function Profile({
         <div className="mt-5 rounded-3xl bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <span className="font-extrabold text-xl opacity-60">Les teues dades</span>
-            <button
-              onClick={() => (editing ? confirmEditing() : startEditing())}
-              id="profile-edit-toggle"
-              aria-label={editing ? 'Guarda els canvis' : 'Edita les dades'}
-              className="btn-press grid h-11 w-11 place-items-center rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-[#0F47AF] transition-colors"
-            >
-              {editing ? <Check size={20} /> : <Pencil size={20} />}
-            </button>
+            {!editing && (
+              <button
+                onClick={startEditing}
+                id="profile-edit-toggle"
+                aria-label="Edita les dades"
+                className="btn-press grid h-11 w-11 place-items-center rounded-full bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-[#0F47AF] transition-colors"
+              >
+                <Pencil size={20} />
+              </button>
+            )}
           </div>
 
           {editing ? (
@@ -131,6 +133,25 @@ export function Profile({
                 <span id="profile-mother-tongue" className="mt-1 block p-3 text-2xl font-normal">{motherTongueLabel(motherTongue) ?? 'Sense indicar'}</span>
               </div>
             )
+          )}
+
+          {editing && (
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                onClick={confirmEditing}
+                id="profile-confirm"
+                className="btn-press inline-flex items-center gap-2 rounded-full bg-[#0F47AF] px-6 py-3 text-lg font-black text-white shadow hover:bg-[#0F47AF]/90 transition-colors"
+              >
+                <Check size={20} /> Confirma els canvis
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                id="profile-cancel"
+                className="btn-press rounded-full bg-gray-100 px-6 py-3 text-lg font-extrabold text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                Cancel·la
+              </button>
+            </div>
           )}
         </div>
 
