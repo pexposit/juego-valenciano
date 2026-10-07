@@ -143,8 +143,12 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
     });
     recordPracticeAnswers(sent).catch(error => console.error('Error enviant les respostes:', error));
     setProgress(p => ({ ...p, checked: true }));
-    // El resultat alimenta la ruta d'aprenentatge personalitzada.
-    void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length });
+    // El resultat alimenta la ruta d'aprenentatge personalitzada; les respostes (en text) són
+    // perquè la docent puga revisar què ha contestat en uns deures.
+    void saveActivityResult('practice', practice.id, {
+      level, score: correct, total: gradable.length,
+      details: { answers: Object.fromEntries(sent.map(a => [a.exercise_id, a.answer])) },
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const reset = () => {

@@ -24,9 +24,14 @@ export function ConversationView({ conversation, name, onClose }: { conversation
 
   // Es tanca amb Escape, com qualsevol finestra.
   useEffect(() => {
-    const close = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', close);
-    return () => window.removeEventListener('keydown', close);
+    // En captura i sense propagar: si s'obri damunt d'una altra finestra, només es tanca esta.
+    const close = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      onClose();
+    };
+    window.addEventListener('keydown', close, true);
+    return () => window.removeEventListener('keydown', close, true);
   }, [onClose]);
 
   const met = conversation.objectives.filter(o => o.met).length;

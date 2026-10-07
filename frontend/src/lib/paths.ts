@@ -212,3 +212,20 @@ export async function updateHomeworkDue(id: string, dueAt: Date) {
   const { error } = await need().from('study_path_assignments').update({ due_at: dueAt.toISOString() }).eq('id', id);
   if (error) throw error;
 }
+
+/** Un intent d'un pas: una partida, una lliçó acabada, un resultat o una conversa. */
+export type WorkRow = {
+  item_id: string;
+  source: 'island' | 'lesson' | 'result' | 'conversation' | 'error';
+  at: string;
+  score: number | null;
+  total: number | null;
+  extra: Record<string, unknown>;
+};
+
+/** Tot el que ha fet l'aprenent en una assignació (per als deures, des que es van posar). */
+export async function loadAssignmentWork(assignmentId: string, student: string): Promise<WorkRow[]> {
+  const { data, error } = await need().rpc('study_assignment_work', { p_assignment: assignmentId, p_student: student });
+  if (error) throw error;
+  return data as WorkRow[];
+}

@@ -88,9 +88,11 @@ export async function saveSessionReport(uid: string | undefined, report: Session
 }
 
 /** Guarda una lliçó acabada (amb data). Com les partides, mai falla cap amunt. */
-export async function saveLessonDone(uid: string | undefined, lesson: string) {
+export async function saveLessonDone(uid: string | undefined, lesson: string, missed: PlayedWord[] = []) {
   if (!supabase || !uid) return;
-  const { error } = await supabase.rpc('kids_finish_lesson', { p_lesson: lesson });
+  // Una vegada cada paraula que ha costat.
+  const words = [...new Map(missed.map(w => [w.word, w])).values()].slice(0, 80);
+  const { error } = await supabase.rpc('kids_finish_lesson', { p_lesson: lesson, p_words: words });
   if (error) console.error('Error guardant la lliçó acabada:', error);
 }
 

@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Gamepad2, GraduationCap, RotateCcw } from 'lucide-react';
 import { itemAudio, type KidsItem } from './content';
 import { RoundCaption, RoundView } from './games/RoundView';
 import { ItemFace } from './games/ItemFace';
 import { lessonById, type LessonPage } from './lessons';
 import { markLessonDone } from './progress';
-import { saveLessonDone } from './tracking';
+import { saveLessonDone, type PlayedWord } from './tracking';
+import { MissContext } from './useRound';
 import { phraseText, say, sfxCorrect, sfxFanfare, sfxTick, stopVoice } from './sound';
 import { Translation, useKidsTranslation } from './translations';
 import './kids.css';
@@ -372,6 +373,11 @@ export function KidsLesson({ id, uid, onLessons, onIsland }: {
   const [readyFor, setReadyFor] = useState<string>();
   const [finished, setFinished] = useState(false);
   const pageKey = `${session}-${index}`;
+  // Les paraules que han costat en els jocs de la lliçó (per al seguiment i els deures).
+  const missed = useRef<PlayedWord[]>([]);
+  const noteMiss = useCallback((item?: KidsItem) => {
+    if (item?.word) missed.current.push({ id: item.id, word: item.word, emoji: item.emoji, missed: true });
+  }, []);
 
   useEffect(() => () => stopVoice(), []);
   useEffect(() => {
@@ -388,7 +394,7 @@ export function KidsLesson({ id, uid, onLessons, onIsland }: {
     stopVoice();
     setFinished(true);
     // La medalla (una vegada) i, cada vegada, la lliçó acabada amb data (per als deures i el seguiment).
-    void saveLessonDone(uid, lesson.id);
+    void saveLessonDone(uid, lesson.id, missed.current);
     const isNew = await markLessonDone(uid, lesson.id);
     sfxFanfare();
     await new Promise(r => window.setTimeout(r, 500));
@@ -401,6 +407,7 @@ export function KidsLesson({ id, uid, onLessons, onIsland }: {
   const prev = () => index > 0 && setIndex(i => i - 1);
   const again = () => {
     setSession(s => s + 1);
+    missed.current = [];
     setIndex(0);
     setFinished(false);
   };
@@ -417,7 +424,9 @@ export function KidsLesson({ id, uid, onLessons, onIsland }: {
 
       {!finished ? (
         <>
-          <PageView key={pageKey} page={page} onReady={onReady} onDone={next} />
+          <MissContext.Provider value={noteMiss}>
+            <PageView key={pageKey} page={page} onReady={onReady} onDone={next} />
+          </MissContext.Provider>
           <nav className="kid-lesson-nav">
             <button onClick={prev} disabled={index === 0} aria-label="Enrere" className="kid-nav-btn btn-press"><ChevronLeft className="h-10 w-10" /></button>
             {page.kind !== 'game' && (

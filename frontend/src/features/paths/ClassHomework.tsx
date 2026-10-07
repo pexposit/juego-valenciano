@@ -8,7 +8,8 @@ import { summarize } from '../kids/report';
 import type { ChildData } from '../kids/tracking';
 import { itemKey, resolveItem } from './catalog';
 import { CatalogPicker } from './CatalogPicker';
-import { countDone, loadAssignmentState, PathSteps, useAssignmentState, type PathState } from './PathSteps';
+import { HomeworkWork, HomeworkWorkDialog } from './HomeworkWork';
+import { countDone, loadAssignmentState, useAssignmentState, type PathState } from './PathSteps';
 
 type Student = { id: string; data: ChildData };
 
@@ -66,6 +67,9 @@ export function ClassHomework({ uid, classId, students, paths, resources }: { ui
   const [states, setStates] = useState<Record<string, PathState | null>>({});
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Homework>();
+  // La cel·la oberta: el treball d'un alumne en uns deures.
+  const [reviewing, setReviewing] = useState<{ hw: Homework; student: Student }>();
+  const resourcesById = useMemo(() => new Map(resources.map(r => [r.id, r])), [resources]);
   const [error, setError] = useState<string>();
   const studentIds = students.map(s => s.id).join(',');
 
@@ -158,9 +162,13 @@ export function ClassHomework({ uid, classId, students, paths, resources }: { ui
                     const st = homeworkStatus(hw, state);
                     return (
                       <td key={hw.id} className="px-2">
-                        <span className={`inline-block rounded-full px-3 py-1 text-sm font-black ${TONE[st.tone]}`} title={st.label}>
+                        <button
+                          onClick={() => setReviewing({ hw, student: s })}
+                          title="Mira què ha fet"
+                          className={`btn-press inline-block rounded-full px-3 py-1 text-sm font-black underline-offset-2 hover:underline ${TONE[st.tone]}`}
+                        >
                           {st.done}/{st.total} · {st.label}
-                        </span>
+                        </button>
                       </td>
                     );
                   })}
@@ -178,6 +186,16 @@ export function ClassHomework({ uid, classId, students, paths, resources }: { ui
         </table>
       </div>
       {homework?.length === 0 && <p className="mt-2 text-lg opacity-70">No hi ha deures que vencen esta setmana.</p>}
+      {homework && homework.length > 0 && <p className="mt-2 text-sm opacity-60">Toca l'estat d'un alumne per a vore què ha fet en cada activitat.</p>}
+      {reviewing && (
+        <HomeworkWorkDialog
+          assignment={reviewing.hw}
+          student={reviewing.student.id}
+          name={reviewing.student.data.name}
+          resources={resourcesById}
+          onClose={() => setReviewing(undefined)}
+        />
+      )}
 
       {editing ? (
         <HomeworkForm
@@ -473,14 +491,14 @@ export function StudentHomework({ uid, classId, student, resources, onReinforce 
         <p className="mt-2 text-lg opacity-70">No té deures esta setmana.</p>
       ) : (
         <div className="mt-3 flex flex-col gap-4">
-          {homework.map(hw => <StudentHomeworkItem key={hw.id} hw={hw} student={student.id} resources={resources} />)}
+          {homework.map(hw => <StudentHomeworkItem key={hw.id} hw={hw} student={student.id} name={student.data.name} resources={resources} />)}
         </div>
       )}
     </section>
   );
 }
 
-function StudentHomeworkItem({ hw, student, resources }: { hw: Homework; student: string; resources: Map<string, Resource> }) {
+function StudentHomeworkItem({ hw, student, name, resources }: { hw: Homework; student: string; name: string; resources: Map<string, Resource> }) {
   const state = useAssignmentState(hw.id, hw.path.id, student);
   const st = state ? homeworkStatus(hw, state) : null;
   return (
@@ -490,7 +508,7 @@ function StudentHomeworkItem({ hw, student, resources }: { hw: Homework; student
         <span className="text-sm opacity-60">fins al {shortDate(hw.due_at)}</span>
         {st && <span className={`rounded-full px-3 py-0.5 text-sm font-black ${TONE[st.tone]}`}>{st.done}/{st.total} · {st.label}</span>}
       </div>
-      <div className="mt-3">{state ? <PathSteps state={state} resources={resources} /> : <p className="opacity-60">…</p>}</div>
+      <div className="mt-3"><HomeworkWork assignment={hw} student={student} name={name} resources={resources} /></div>
     </div>
   );
 }
