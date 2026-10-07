@@ -18,7 +18,7 @@ errorsRouter.get('/api/errors', requireAuth, async (req: AuthRequest, res) => {
   const { data, error } = await client
     .from('user_errors')
     .select(
-      'id, error_text, correction, category, explanation, source, context, created_at, ' +
+      'id, error_text, correction, category, explanation, source, context, created_at, resource_id, exercise_id, ' +
       'conversation_messages(content_text), resources(name), session_resource(resources(name, category)), practice_exercises(kind, options)',
     )
     .eq('user_id', req.userId)

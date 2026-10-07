@@ -222,7 +222,7 @@ export async function startSessionResource(sessionId: string, scenario: Scenario
 }
 
 // Errors sense resoldre de l'usuari (detectats al xat), per a la pestanya de pràctica d'errors.
-export type UserError = { id: string; error_text: string; correction: string; category: string; explanation: string; message: string | null; scenario: string | null; source: 'chat' | 'practice' | 'writing'; options: string[] | null };
+export type UserError = { id: string; error_text: string; correction: string; category: string; explanation: string; message: string | null; scenario: string | null; source: 'chat' | 'practice' | 'writing'; options: string[] | null; resource_id: string | null; exercise_id: string | null };
 export async function fetchUserErrors(): Promise<UserError[]> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/errors`, {
