@@ -367,7 +367,16 @@ export async function resolveUserError(id: string): Promise<void> {
   });
   if (!res.ok) throw new Error("No s'ha pogut desar el progrés");
   await markErrorsResolved(ids);
+  // La pantalla d'exercicis guarda les respostes en este navegador: se li deixa dit quines preguntes s'han
+  // corregit ací, perquè en obrir-la no les mostre com a errònies.
+  try {
+    for (const e of local) if (ids.includes(e.id) && e.exerciseId) localStorage.setItem(`${FIXED_PREFIX}${e.exerciseId}`, '1');
+  } catch {
+    // Sense storage: l'exercici mostrarà la resposta antiga fins que es torne a fer.
+  }
 }
+/** Marca (a localStorage) d'una pregunta de pràctica corregida des de la pestanya «Errors»; la llig Practice. */
+export const FIXED_PREFIX = 'parlaval:practice-fixed:';
 // Envia les respostes d'una tanda d'exercicis de pràctica: el backend corregix i torna els errors,
 // que es guarden ací per a la pestanya «Errors».
 export async function recordPracticeAnswers(answers: { exercise_id: string; answer: string }[], scenario: string | null = null): Promise<void> {
@@ -508,6 +517,14 @@ export async function renameTutorConversation(id: string, title: string): Promis
 }
 export const fetchTutorConversation = async (id: string) => toTutorMessages(await getMessages(id));
 /* ── Ruta d'aprenentatge ──────────────────────────────────────────────── */
+// Estat d'una activitat per a l'usuari (per resource id): acabada (amb nota si en té), acabada amb errors per corregir o començada.
+export type ActivityStatus = { status: 'done' | 'incomplete' | 'partial' | 'in_progress'; score: number | null; total: number | null; answered: number | null; pending_errors: number };
+export async function fetchActivityStatus(): Promise<Record<string, ActivityStatus>> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/activity-status`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error("No hem pogut carregar l'estat de les activitats");
+  return res.json();
+}
+
 const authHeaders = async (): Promise<Record<string, string>> => {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };

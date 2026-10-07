@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Headphones, Lightbulb, RotateCcw } from 'luc
 import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type PracticeArea } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
-import { evaluatePracticeExercise, fetchUserErrors, recordPracticeAnswers, saveActivityResult } from '../lib/api';
+import { evaluatePracticeExercise, FIXED_PREFIX, fetchUserErrors, recordPracticeAnswers, saveActivityResult } from '../lib/api';
 import type { ExamQuestion, Practice as PracticeResource, PracticeExercise, PracticePassage, WritingEvaluation } from '../lib/types';
 
 type Progress = {
@@ -101,7 +101,33 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
   }, [practice, userLevel, target?.level]);
   const [level, setLevel] = useState(target?.level ?? levels[0]);
   const [focusId, setFocusId] = useState(target?.id);
-  const [progress, setProgress] = useState<Progress>(() => loadProgress(practice.id, level));
+  // El progrés guardat, amb les preguntes corregides en la pestanya «Errors» ja contestades bé: es llig la marca que hi
+  // deixa resolveUserError i es posa la resposta correcta (la clau de l'opció, en les tancades).
+  const loadWithFixed = (forLevel: string): Progress => {
+    const saved = loadProgress(practice.id, forLevel);
+    const answers = { ...saved.answers };
+    for (const e of practice.exercises) {
+      if (e.level !== forLevel || !isGradable(e)) continue;
+      try {
+        if (localStorage.getItem(`${FIXED_PREFIX}${e.id}`) === null) continue;
+        const right = e.kind === 'choice' ? asQuestion(e, 0).options?.find(o => o.text === e.answers[0])?.key : e.answers[0];
+        if (right) answers[e.id] = right;
+      } catch {
+        // Sense storage: es queda com estava.
+      }
+    }
+    return { ...saved, answers };
+  };
+  const [progress, setProgress] = useState<Progress>(() => loadWithFixed(level));
+  // Ja aplicades (i guardades amb el progrés), les marques de les preguntes d'este nivell s'esborren. No es fa dins de
+  // loadWithFixed perquè React crida els inicialitzadors dues vegades en desenvolupament.
+  useEffect(() => {
+    try {
+      for (const e of practice.exercises) if (e.level === level) localStorage.removeItem(`${FIXED_PREFIX}${e.id}`);
+    } catch {
+      // Sense storage: res a esborrar.
+    }
+  }, [practice, level]);
   // Preguntes d'este contingut amb un error pendent (pestanya «Errors»): es mostren com a fallades, amb la
   // resposta errònia, fins que es contesten bé (en l'exercici o en «Errors»).
   const [failed, setFailed] = useState<ReadonlySet<string>>(new Set());
@@ -168,7 +194,7 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
 
   const changeLevel = (next: string) => {
     setLevel(next);
-    setProgress(loadProgress(practice.id, next));
+    setProgress(loadWithFixed(next));
     setPage(0);
   };
   const goToPage = (next: number) => {
@@ -188,9 +214,12 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
       return text ? [{ exercise_id: e.id, answer: text }] : [];
     });
     recordPracticeAnswers(sent, practice.name).catch(error => console.error('Error enviant les respostes:', error));
-    setProgress(p => ({ ...p, checked: true, retry: {} }));
+    // Les preguntes sense contestar no es corregixen ni se'n mostra la solució: queden obertes, cadascuna amb el seu
+    // «Comprova», per a contestar-les.
+    const unanswered = Object.fromEntries(gradable.filter(e => !progress.answers[e.id]?.trim()).map(e => [e.id, true]));
+    setProgress(p => ({ ...p, checked: true, retry: unanswered }));
     // El resultat alimenta la ruta d'aprenentatge personalitzada.
-    void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length });
+    void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length, details: { answered } });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const reset = () => {
@@ -230,6 +259,8 @@ export function Practice({ practice, userLevel, onBack }: { practice: PracticeRe
     if (!text?.trim()) return;
     recordPracticeAnswers([{ exercise_id: e.id, answer: text }], practice.name).catch(error => console.error('Error enviant la resposta:', error));
     setProgress(p => ({ ...p, retry: { ...p.retry, [e.id]: false } }));
+    // `answered` i `correct` ja inclouen esta resposta: s'actualitza l'estat de l'activitat (p. ex. quan ja estan contestades totes).
+    void saveActivityResult('practice', practice.id, { level, score: correct, total: gradable.length, details: { answered } });
   };
   const answered = gradable.filter(e => answers[e.id]?.trim()).length;
   const correct = gradable.filter(e => isCorrect(e, questions[e.id], answers[e.id])).length;
