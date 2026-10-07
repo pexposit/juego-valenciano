@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, Target, Volume2, X } from 'lucide-react';
+import { AudioLoading, useDelayedFlag } from '../components/AudioLoading';
 import { SceneArt } from '../components/SceneArt';
 import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
@@ -65,6 +66,20 @@ ${translation.initial_prompt}` : text;
   const [audioSource, setAudioSource] = useState<string>();
   const [talking, setTalking] = useState(false); // [robot-avatar] true mentre sona l'àudio del personatge
   const replyAudio = useRef<HTMLAudioElement | null>(null);
+  // false quan s'ix de la pantalla: para l'àudio i evita que en comence un altre amb una resposta que arriba tard.
+  const alive = useRef(true);
+  // Número de l'última petició d'àudio: si en arriba una de vella (la salutació, en reaccionar ràpid), es descarta.
+  const audioRequest = useRef(0);
+  // true mentre l'àudio del personatge es demana o es descarrega i encara no pot sonar.
+  const [audioLoading, setAudioLoading] = useState(false);
+  const showAudioLoading = useDelayedFlag(audioLoading);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      replyAudio.current?.pause();
+    };
+  }, []);
   const hasSubmitted = useRef(false);
   // Sessió del login + entrada de session_resource d'aquest escenari. Es guarda
   // la promesa perquè el primer torn puga esperar-la i perquè StrictMode no
@@ -89,7 +104,11 @@ ${translation.initial_prompt}` : text;
   // Nunca se usa la voz del navegador (speechSynthesis): solo audio generado
   // por el backend o los saludos pregenerados.
   const setReplyAudio = (source: string | undefined, autoplay = false) => {
+    if (!alive.current) return; // la pantalla ja s'ha tancat: un àudio que arriba tard no ha de sonar
+    replyAudio.current?.pause(); // l'anterior no ha de continuar sonant per davall del nou
     const audio = source ? new Audio(source) : null;
+    setAudioLoading(Boolean(audio));
+    if (audio) audio.oncanplay = audio.onerror = () => setAudioLoading(false);
     setTalking(false); // [robot-avatar]
     if (audio) { audio.onplay = () => setTalking(true); audio.onpause = audio.onended = () => setTalking(false); } // [robot-avatar]
     replyAudio.current = audio;
@@ -100,9 +119,13 @@ ${translation.initial_prompt}` : text;
   // Solo TTS real (matxa). Si falla tras los reintentos se queda sin audio y el
   // usuario puede reintentar.
   const loadTextAudio = async (text: string, autoplay = false) => {
+    const mine = ++audioRequest.current;
+    setAudioLoading(true);
     for (let attempt = 1; attempt <= TTS_ATTEMPTS; attempt += 1) {
       try {
-        return setReplyAudio(await fetchTts(text, scenario), autoplay);
+        const source = await fetchTts(text, scenario);
+        if (mine !== audioRequest.current) return; // n'hi ha una petició més nova: esta ja no cal
+        return setReplyAudio(source, autoplay);
       } catch {
         if (attempt === TTS_ATTEMPTS) setReplyAudio(undefined);
       }
@@ -171,6 +194,7 @@ ${translation.initial_prompt}` : text;
     if ((!text && !audio) || loading) return;
     const userLabel = text || VOICE_MESSAGE_LABEL;
     hasSubmitted.current = true;
+    audioRequest.current += 1; // cancel·la l'àudio que encara s'estiga demanant
     setReplyAudio(undefined);
     setUser(userLabel);
     setUserTranscription(undefined);
@@ -228,7 +252,7 @@ ${translation.initial_prompt}` : text;
   };
 
   return (
-    <main className="relative h-[100dvh] overflow-hidden">
+    <main className="relative h-[calc(100dvh-var(--app-footer,0px))] overflow-hidden">
       <SceneArt scenario={scenario} background={background} mood={mood} thinking={loading} talking={talking} />
 
       {/* Nom i rol de l'actor, davall seu (resources.metadata.character). */}
@@ -330,6 +354,7 @@ ${translation.initial_prompt}` : text;
         )}
         {!loading && (
           <>
+            {showAudioLoading && <AudioLoading className="mt-3" />}
             <button
               onClick={replayCharacter}
               className="btn-press mt-3 flex items-center gap-1 text-sm font-extrabold"
@@ -370,7 +395,7 @@ ${translation.initial_prompt}` : text;
         <button
           onClick={handleEnd}
           id="chat-end-btn"
-          className="btn-press mx-auto mt-3 block rounded-full bg-white/80 px-4 py-2 text-xs font-extrabold backdrop-blur-sm hover:bg-white transition-colors"
+          className="btn-press mx-auto mt-3 block rounded-full bg-white/80 px-6 py-2.5 text-lg font-extrabold backdrop-blur-sm hover:bg-white transition-colors"
         >
           Acabar conversa
         </button>

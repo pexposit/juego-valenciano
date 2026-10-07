@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { RotateCcw, Volume2 } from 'lucide-react';
+import { Loader2, RotateCcw, Volume2 } from 'lucide-react';
+import { useDelayedFlag } from './AudioLoading';
 import { KID_ASSISTANT_TYPE } from '@parlaval/shared';
 import { ChatBubble } from './ChatBubble';
 import { VoiceInput } from './VoiceInput';
@@ -52,7 +53,14 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   // Es guarda la promesa perquè el primer torn la puga esperar i perquè StrictMode no obri la conversa dues vegades.
   const conversation = useRef<Promise<AssistantConversation>>();
 
+  // Número de l'última petició de veu: si en arriba una de vella, es descarta (si no, sonarien dues veus alhora).
+  const speakRequest = useRef(0);
+  // true mentre la veu del professor es demana o es descarrega i encara no pot sonar.
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const showVoiceLoading = useDelayedFlag(voiceLoading);
   const stopAudio = () => {
+    speakRequest.current += 1;
+    setVoiceLoading(false);
     audio.current?.element.pause();
     audio.current = null;
     setTalking(false);
@@ -61,13 +69,16 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   // Reprodueix el text amb la veu del professor (TTS del backend; mai la del navegador).
   const speak = async (text: string) => {
     stopAudio();
+    const mine = speakRequest.current;
+    setVoiceLoading(true);
     // Només la primera línia (en valencià): la resta és l'ajuda en la llengua materna del xiquet.
     const spoken = text.split('\n')[0].trim();
     for (let attempt = 1; attempt <= TTS_ATTEMPTS; attempt += 1) {
       try {
         const source = await fetchTts(spoken, KID_ASSISTANT_TYPE);
-        if (!mounted.current) return;
+        if (!mounted.current || mine !== speakRequest.current) return;
         const element = new Audio(source);
+        element.oncanplay = element.onerror = () => setVoiceLoading(false);
         element.onplay = () => setTalking(true);
         element.onpause = element.onended = () => setTalking(false);
         audio.current = { text, element };
@@ -76,6 +87,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         // Es torna a provar; si falla sense àudio, el botó de repetir ho reintenta.
       }
     }
+    if (mine === speakRequest.current) setVoiceLoading(false);
   };
 
   const lastReply = [...messages].reverse().find(m => m.role === 'character')?.text;
@@ -210,10 +222,11 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
             onClick={replay}
             disabled={!lastReply}
             aria-label="Torna a escoltar el professor"
-            title="Torna a escoltar el professor"
+            aria-busy={showVoiceLoading}
+            title={showVoiceLoading ? "Carregant l'àudio…" : 'Torna a escoltar el professor'}
             className="btn-press grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/90 text-teal shadow-lg ring-2 ring-white disabled:opacity-40"
           >
-            <Volume2 size={22} />
+            {showVoiceLoading ? <Loader2 size={22} className="animate-spin" /> : <Volume2 size={22} />}
           </button>
         </div>
       </section>
