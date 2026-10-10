@@ -28,6 +28,10 @@ if ! "$VENV/bin/python" -c "import torch" 2>/dev/null; then
   "$VENV/bin/pip" install -q torch torchaudio --index-url https://download.pytorch.org/whl/cu121
   "$VENV/bin/pip" install -q demucs soundfile
 fi
+if ! "$VENV/bin/python" -c "import speechbrain, sklearn" 2>/dev/null; then
+  echo "[setup:matxa] instal·lant SpeechBrain i scikit-learn (separa-personatges.py)"
+  "$VENV/bin/pip" install -q speechbrain scikit-learn
+fi
 
 # ── 2. espeak-ng de projecte-aina (té ca-va, ca-ba i ca-nw) ───────────────
 if [[ ! -x "$ESPEAK/bin/espeak-ng" ]]; then
