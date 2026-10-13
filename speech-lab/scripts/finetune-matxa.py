@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Fine-tune de Matxa multiaccent amb la veu del narrador (voz-dataset/matxa/).
+"""Fine-tune de Matxa multiaccent amb veus pròpies (per defecte, el narrador de voz-dataset/matxa/).
 
-Parteix dels pesos de `matxa-tts-cat-multiaccent` (epoch 629) i entrena el
-locutor 6 (lluc, valencià, home) amb els clips del narrador: no cal tocar
-l'arquitectura i l'embedding de partida ja és d'una veu valenciana masculina.
+Parteix dels pesos de `matxa-tts-cat-multiaccent` (epoch 629) i entrena cada
+veu sobre un locutor existent, el que diu el filelist (prepara-matxa.py): no
+cal tocar l'arquitectura. El narrador va en el 6 (lluc, valencià, home), que
+ja és d'una veu valenciana masculina.
 Es fa servir el mateix optimitzador que el fine-tune de BSC (Adam, lr 1e-4) i
 el trainer per defecte de Matcha (16-mixed, gradient clip 5).
 
@@ -16,6 +17,8 @@ Cada `--cada` èpoques guarda un checkpoint i sintetitza les frases de
 
   .venv-voz/bin/python scripts/finetune-matxa.py --nom narrador-v1
   .venv-voz/bin/python scripts/finetune-matxa.py --nom narrador-v1 --reprendre   # continua
+  .venv-voz/bin/python scripts/finetune-matxa.py --nom doraemon-v1 \
+      --dades voz-dataset/matxa-doraemon --spk 7 --spk 3       # mostres de cada locutor
 """
 from __future__ import annotations
 
@@ -35,8 +38,11 @@ def main() -> None:
     ap.add_argument("--cada", type=int, default=50, help="èpoques entre checkpoints i mostres")
     ap.add_argument("--batch", type=int, default=8, help="16 no cap en 6 GB (clips de fins a 12 s)")
     ap.add_argument("--lr", type=float, default=1e-4)
+    ap.add_argument("--spk", type=int, action="append",
+                    help="locutor de les mostres (es pot repetir; per defecte, lluc)")
     ap.add_argument("--reprendre", action="store_true", help="continua des de l'últim checkpoint")
     args = ap.parse_args()
+    spks = args.spk or [mx.SPK_LLUC]
 
     import functools
 
@@ -62,7 +68,7 @@ def main() -> None:
     stats = {k: float(v) for k, v in (("mel_mean", model.mel_mean), ("mel_std", model.mel_std))}
 
     dm = TextMelDataModule(
-        name="narrador", train_filelist_path=str(args.dades / "train.txt"),
+        name=args.nom, train_filelist_path=str(args.dades / "train.txt"),
         valid_filelist_path=str(args.dades / "val.txt"), batch_size=args.batch, num_workers=4,
         pin_memory=True, cleaners=["basic_cleaners"], add_blank=True, n_spks=model.n_spks,
         n_fft=1024, n_feats=80, sample_rate=22050, hop_length=256, win_length=1024, f_min=0,
@@ -87,9 +93,10 @@ def main() -> None:
             dir_ep = run / "mostres" / f"epoch={ep:04d}"
             dir_ep.mkdir(parents=True, exist_ok=True)
             pl_module.eval()
-            for i, text in enumerate(sintetitza.FRASES, 1):
-                ona = mx.sintetitza(pl_module, self.voc, text, mx.SPK_LLUC, pl_module.device)
-                sintetitza.escriu(dir_ep / f"frase_{i:02d}_spk{mx.SPK_LLUC}.wav", ona.float())
+            for spk in spks:
+                for i, text in enumerate(sintetitza.FRASES, 1):
+                    ona = mx.sintetitza(pl_module, self.voc, text, spk, pl_module.device)
+                    sintetitza.escriu(dir_ep / f"frase_{i:02d}_spk{spk}.wav", ona.float())
             pl_module.train()
 
     trainer = L.Trainer(
