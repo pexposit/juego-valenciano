@@ -9,6 +9,7 @@ bench/samples/*.wav
 __pycache__/
 # Clonació de veu: entorn amb torch/demucs, àudios font i dataset generat (pesen i tenen drets).
 .venv-voz/
+.venv-rvc/
 audios/
 voz-dataset/
 # Matxa (es refà amb scripts/setup-matxa.sh). Només es versionen els models
