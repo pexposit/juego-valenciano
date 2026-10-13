@@ -12,6 +12,7 @@ import { readPcm16Wav } from './bench/wav.js';
 import { logSummary, SessionMetrics } from './metrics.js';
 import { availableProviders, disposeProviders, getStreamingStt } from './streaming/registry.js';
 import { availableTtsProviders, disposeTtsProviders, getStreamingTts } from './tts/registry.js';
+import { disposeLocalTts, localTtsModels, synthesizeLocal, TtsRequestError } from './tts/local.js';
 import type { StreamingSttSession } from './streaming/types.js';
 
 /* ── Servidor HTTP: /health i la pàgina de proves ────────────────────────── */
@@ -131,8 +132,17 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── Catàleg de models de l'apartat «Generació d'àudio» ──────────────
+  if (url.pathname === '/api/tts/models' && req.method === 'GET') {
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ models: localTtsModels() }));
+    return;
+  }
+
   // ── Síntesi: POST /api/tts ───────────────────────────────────────────
-  // Cos JSON: {text, voice?}. Resposta: WAV del proveïdor TTS actiu.
+  // Cos JSON: {text, voice?} → WAV del proveïdor TTS actiu (el que usa el
+  // mode trucada). Amb `model` (id de /api/tts/models) genera amb aquell
+  // model: remot, Matxa local, un fine-tune o un personatge RVC.
   if (url.pathname === '/api/tts' && req.method === 'POST') {
     const chunks: Buffer[] = [];
     req.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -153,6 +163,31 @@ const server = http.createServer(async (req, res) => {
               .end(JSON.stringify({ error: 'Cal un JSON amb {text} (i voice opcional)' }));
             return;
           }
+          if (parsed.data.model) {
+            const { model, ...options } = parsed.data;
+            const started = Date.now();
+            const result = await synthesizeLocal({ ...options, model });
+            const totalMs = Date.now() - started;
+            console.log(
+              `[tts] model=${result.model}${result.checkpoint ? `@${result.checkpoint}` : ''}`
+              + ` total=${totalMs}ms matxa=${Math.round(result.matxaMs)}ms`
+              + `${result.rvcMs !== undefined ? ` rvc=${Math.round(result.rvcMs)}ms` : ''}`
+              + ` àudio=${result.audioSecs}s${result.cached ? '' : ' (càrrega del model)'}`,
+            );
+            res.writeHead(200, {
+              'content-type': 'audio/wav',
+              'content-length': result.audio.length,
+              'x-tts-model': result.model,
+              'x-tts-checkpoint': result.checkpoint ?? '',
+              'x-tts-total-ms': String(totalMs),
+              'x-tts-matxa-ms': String(Math.round(result.matxaMs)),
+              'x-tts-rvc-ms': result.rvcMs !== undefined ? String(Math.round(result.rvcMs)) : '',
+              'x-tts-audio-secs': String(result.audioSecs),
+              'x-tts-cached': result.cached ? '1' : '0',
+            });
+            res.end(result.audio);
+            return;
+          }
           const provider = getStreamingTts();
           const result = await provider.synthesize(parsed.data.text, { voice: parsed.data.voice });
           console.log(
@@ -169,7 +204,7 @@ const server = http.createServer(async (req, res) => {
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           console.error('[tts] error:', message);
-          res.writeHead(502, { 'content-type': 'application/json; charset=utf-8' })
+          res.writeHead(error instanceof TtsRequestError ? 400 : 502, { 'content-type': 'application/json; charset=utf-8' })
             .end(JSON.stringify({ error: message }));
         }
       })();
@@ -213,6 +248,12 @@ const controlMessageSchema = z.union([configMessageSchema, z.object({ eof: z.lit
 const ttsRequestSchema = z.object({
   text: z.string().min(1).max(2000),
   voice: z.string().min(1).max(64).optional(),
+  model: z.string().min(1).max(128).optional(),
+  checkpoint: z.string().min(1).max(128).optional(),
+  temperature: z.number().min(0).max(1.5).optional(),
+  speed: z.number().min(0.5).max(2).optional(),
+  pitch: z.number().int().min(-24).max(24).optional(),
+  indexRate: z.number().min(0).max(1).optional(),
 });
 
 function safeJson(raw: string): unknown {
@@ -383,7 +424,7 @@ server.listen(config.port, () => {
 async function shutdown(): Promise<void> {
   console.log('[speech] aturant el laboratori…');
   for (const client of wss.clients) client.terminate();
-  await Promise.all([disposeProviders(), disposeBatchProviders(), disposeTtsProviders()]);
+  await Promise.all([disposeProviders(), disposeBatchProviders(), disposeTtsProviders(), disposeLocalTts()]);
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 2000).unref();
 }

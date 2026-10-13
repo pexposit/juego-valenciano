@@ -35,6 +35,25 @@ export const config = {
     voices: (process.env.MATXA_TTS_VOICES?.trim() || 'gina,lluc').split(',').map((v) => v.trim()).filter(Boolean),
     timeoutMs: positiveNumber(process.env.MATXA_TTS_TIMEOUT_MS, 120_000),
   },
+  /**
+   * Generació local (apartat «Generació d'àudio»): Matxa en GPU amb el model
+   * base i els fine-tunes de tts/runs/, i RVC (Applio) damunt de gina per als
+   * personatges de tts/rvc/Applio/logs/. Cada motor viu en el seu entorn.
+   */
+  localTts: {
+    matxaPython: resolveFromLab(process.env.MATXA_PYTHON?.trim() || '.venv-voz/bin/python'),
+    matxaScript: path.join(labRoot, 'sidecar', 'matxa_local.py'),
+    baseCheckpoint: resolveFromLab(
+      process.env.MATXA_BASE_CKPT?.trim() || 'tts/models/matxa-tts-cat-multiaccent/checkpoint_epoch=629.ckpt',
+    ),
+    runsDir: resolveFromLab(process.env.MATXA_RUNS_DIR?.trim() || 'tts/runs'),
+    rvcPython: resolveFromLab(process.env.RVC_PYTHON?.trim() || '.venv-rvc/bin/python'),
+    rvcScript: path.join(labRoot, 'sidecar', 'rvc_convert.py'),
+    applioDir: resolveFromLab(process.env.APPLIO_DIR?.trim() || 'tts/rvc/Applio'),
+    /** To mitjà de cada personatge respecte de gina (scripts/parla.sh llig el mateix fitxer). */
+    rvcCharacters: path.join(labRoot, 'scripts', 'rvc-personatges.json'),
+    startTimeoutMs: positiveNumber(process.env.LOCAL_TTS_START_TIMEOUT_MS, 180_000),
+  },
   /** Freqüència d'amostratge que espera el reconeixedor (els models Vosk són de 16 kHz). */
   sampleRate: positiveNumber(process.env.VOSK_SAMPLE_RATE, 16000),
   publicDir: path.join(labRoot, 'public'),

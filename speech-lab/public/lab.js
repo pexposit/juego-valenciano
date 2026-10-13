@@ -1062,6 +1062,173 @@ document.querySelectorAll('#sampleRow .sample').forEach((button) => {
   });
 });
 
+/* ── Generació d'àudio: el mateix text amb qualsevol model ──────────────── */
+// Catàleg de /api/tts/models (remot, Matxa local, fine-tunes i personatges RVC)
+// i síntesi per /api/tts amb `model`. L'historial guarda les últimes
+// generacions per a comparar-les de costat.
+
+const GEN_HISTORY_MAX = 12;
+const genUi = {
+  text: el('genText'), model: el('genModel'), checkpoint: el('genCheckpoint'), btn: el('genBtn'),
+  state: el('genState'), audio: el('genAudio'), metrics: el('genMetrics'), history: el('genHistory'),
+  temp: el('genTemp'), speed: el('genSpeed'), pitch: el('genPitch'), index: el('genIndex'),
+};
+let genModels = [];
+
+const setGenState = (text, kind = 'hint') => {
+  genUi.state.textContent = text;
+  genUi.state.className = kind;
+};
+
+const genKind = (model) => model?.id.split(':')[0];
+const selectedGenModel = () => genModels.find((m) => m.id === genUi.model.value);
+
+/** Mostra només els controls que el model fa servir (el remot no en té cap). */
+function syncGenControls() {
+  const model = selectedGenModel();
+  const kind = genKind(model);
+  document.querySelectorAll('.gen-params label').forEach((label) => {
+    const target = label.dataset.for;
+    label.hidden = target === 'rvc' ? kind !== 'rvc' : kind === 'remot';
+  });
+  genUi.checkpoint.hidden = !model?.checkpoints?.length;
+  genUi.checkpoint.innerHTML = '';
+  for (const checkpoint of model?.checkpoints ?? []) {
+    const option = new Option(
+      checkpoint === model.defaultCheckpoint ? `${checkpoint} (per defecte)` : checkpoint, checkpoint,
+    );
+    genUi.checkpoint.add(option);
+  }
+  if (model?.defaultCheckpoint) genUi.checkpoint.value = model.defaultCheckpoint;
+  if (kind === 'rvc') {
+    genUi.pitch.value = String(model.pitch ?? 0);
+    genUi.pitch.dispatchEvent(new Event('input'));
+  }
+}
+
+async function loadGenModels() {
+  try {
+    const response = await fetch('/api/tts/models', { signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) throw new Error(`el servidor ha respost ${response.status}`);
+    genModels = (await response.json()).models ?? [];
+  } catch (error) {
+    setGenState(`No hem pogut llegir els models: ${error.message}`, 'bad');
+    return;
+  }
+  const previous = genUi.model.value;
+  genUi.model.innerHTML = '';
+  const groups = new Map();
+  for (const model of genModels) {
+    if (!groups.has(model.group)) {
+      const group = document.createElement('optgroup');
+      group.label = model.group;
+      groups.set(model.group, group);
+      genUi.model.append(group);
+    }
+    groups.get(model.group).append(new Option(model.label, model.id));
+  }
+  const firstRvc = genModels.find((m) => genKind(m) === 'rvc');
+  genUi.model.value = genModels.some((m) => m.id === previous) ? previous : (firstRvc ?? genModels[0])?.id ?? '';
+  syncGenControls();
+}
+
+for (const [input, output, digits] of [
+  [genUi.temp, 'genTempOut', 2], [genUi.speed, 'genSpeedOut', 2],
+  [genUi.pitch, 'genPitchOut', 0], [genUi.index, 'genIndexOut', 2],
+]) {
+  input.addEventListener('input', () => { el(output).textContent = Number(input.value).toFixed(digits); });
+}
+genUi.model.addEventListener('change', syncGenControls);
+
+function addGenHistory(url, label, metrics, text) {
+  const item = document.createElement('li');
+  const title = document.createElement('div');
+  const name = document.createElement('strong');
+  name.textContent = label;
+  const download = document.createElement('a');
+  download.href = url;
+  download.download = `${label.replace(/[^\w.-]+/g, '_')}.wav`;
+  download.textContent = 'descarregar';
+  title.append(name, download);
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = `${metrics} · «${text.slice(0, 60)}${text.length > 60 ? '…' : ''}»`;
+  const audio = document.createElement('audio');
+  audio.controls = true;
+  audio.src = url;
+  item.append(title, meta, audio);
+  genUi.history.prepend(item);
+  while (genUi.history.children.length > GEN_HISTORY_MAX) {
+    const old = genUi.history.lastElementChild;
+    URL.revokeObjectURL(old.querySelector('audio')?.src ?? '');
+    old.remove();
+  }
+}
+
+genUi.btn.addEventListener('click', async () => {
+  const text = genUi.text.value.trim();
+  const model = selectedGenModel();
+  if (!text || !model) {
+    setGenState('Escriu un text i tria un model.', 'warn');
+    return;
+  }
+  const kind = genKind(model);
+  const body = { text, model: model.id };
+  if (model.checkpoints?.length) body.checkpoint = genUi.checkpoint.value;
+  if (kind !== 'remot') {
+    body.temperature = Number(genUi.temp.value);
+    body.speed = Number(genUi.speed.value);
+  }
+  if (kind === 'rvc') {
+    body.pitch = Number(genUi.pitch.value);
+    body.indexRate = Number(genUi.index.value);
+  }
+
+  genUi.btn.disabled = true;
+  setGenState(`Generant amb ${model.label}…`, 'warn');
+  const started = performance.now();
+  try {
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(300_000),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `el servidor ha respost ${response.status}`);
+    }
+    const wav = await response.blob();
+    const wallMs = Math.round(performance.now() - started);
+    const header = (name) => response.headers.get(`x-tts-${name}`);
+    const audioSecs = Number(header('audio-secs')) || 0;
+    const parts = [`total ${wallMs} ms`];
+    if (kind !== 'remot') parts.push(`Matxa ${header('matxa-ms')} ms`);
+    if (header('rvc-ms')) parts.push(`RVC ${header('rvc-ms')} ms`);
+    parts.push(`àudio ${audioSecs.toFixed(1)} s`);
+    if (audioSecs > 0) parts.push(`×${(audioSecs * 1000 / wallMs).toFixed(1)} temps real`);
+    if (header('cached') === '0') parts.push('amb càrrega del model');
+    const metrics = parts.join(' · ');
+
+    const url = URL.createObjectURL(wav);
+    genUi.audio.src = url;
+    genUi.audio.hidden = false;
+    void genUi.audio.play().catch(() => {});
+    genUi.metrics.textContent = metrics;
+    const checkpoint = header('checkpoint');
+    addGenHistory(url, checkpoint ? `${model.label} · ${checkpoint.replace(/\.(ckpt|pth)$/, '')}` : model.label, metrics, text);
+    setGenState('Fet. Les generacions anteriors queden davall per a comparar-les.', 'ok');
+    log(`generat amb ${model.id}${checkpoint ? `@${checkpoint}` : ''}: ${metrics}`);
+  } catch (error) {
+    setGenState(`No hem pogut generar: ${error.message}`, 'bad');
+    log(`ERROR de generació: ${error.message}`);
+  } finally {
+    genUi.btn.disabled = false;
+  }
+});
+
+void loadGenModels();
+
 showMetrics({ audioMs: 0, firstPartialMs: null, finalMs: null, computeMs: 0, rtf: null });
 listDevices().catch(() => log('no hem pogut llistar els dispositius d\'entrada'));
 connect();

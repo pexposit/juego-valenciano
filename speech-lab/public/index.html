@@ -121,10 +121,24 @@
       display: flex; flex-direction: column; overflow: hidden;
     }
     section.files {
-      grid-column: 1 / 4; grid-row: 4;
+      grid-column: 1; grid-row: 4;
+      max-height: 38vh; overflow-y: auto;
+    }
+    section.gen {
+      grid-column: 2 / 4; grid-row: 4;
       max-height: 38vh; overflow-y: auto;
     }
   }
+  .gen-params { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px 12px; margin-top: 8px; }
+  .gen-params label { font-size: 13px; color: #52606d; }
+  .gen-params label[hidden] { display: none; }
+  .gen-params input[type="range"] { padding: 0; border: 0; }
+  .gen-params output { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+  .gen-history { list-style: none; margin: 8px 0 0; padding: 0; font-size: 13px; }
+  .gen-history li { border-top: 1px dashed var(--line); padding: 6px 0; }
+  .gen-history .meta { color: #64748b; font-size: 12px; }
+  .gen-history audio { width: 100%; height: 32px; margin-top: 4px; }
+  .gen-history a { color: var(--teal); font-size: 12px; margin-left: 6px; }
   select { font: inherit; padding: 6px; border: 1px solid var(--line); border-radius: 8px; max-width: 100%; }
 </style>
 </head>
@@ -277,6 +291,37 @@
       <button id="compareBtn" class="ghost">Comparar Aina vs Vosk</button>
     </div>
     <div id="compareOut"></div>
+  </section>
+
+  <section class="gen">
+    <h2>Generació d'àudio</h2>
+    <textarea id="genText" spellcheck="false" aria-label="Text a sintetitzar">Hola Nobita! Vine, que t'ensenyaré un invent nou.</textarea>
+    <div class="row" style="margin-top:8px">
+      <select id="genModel" aria-label="Model"><option>Carregant models…</option></select>
+      <select id="genCheckpoint" aria-label="Checkpoint" hidden></select>
+    </div>
+    <div class="gen-params">
+      <label data-for="local" title="Variació de la prosòdia de Matxa: més baix = més estable i pla">
+        Temperatura <output id="genTempOut">0.67</output>
+        <input type="range" id="genTemp" min="0.1" max="1.2" step="0.05" value="0.667"></label>
+      <label data-for="local" title="length_scale de Matxa: per davall d'1 parla més ràpid">
+        Durada <output id="genSpeedOut">1.00</output>
+        <input type="range" id="genSpeed" min="0.6" max="1.5" step="0.05" value="1"></label>
+      <label data-for="rvc" title="Semitons que es puja gina abans de passar-la pel model del personatge">
+        To (semitons) <output id="genPitchOut">0</output>
+        <input type="range" id="genPitch" min="-12" max="12" step="1" value="0"></label>
+      <label data-for="rvc" title="Quant s'acosta el timbre als clips reals del personatge (fitxer .index)">
+        Índex <output id="genIndexOut">0.60</output>
+        <input type="range" id="genIndex" min="0" max="1" step="0.05" value="0.6"></label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="genBtn">Generar</button>
+    </div>
+    <p id="genState" class="hint">Tria un model i prem «Generar». La primera vegada que
+      uses un model local tarda uns segons a carregar-lo; després va en temps real.</p>
+    <audio id="genAudio" controls style="width:100%" hidden></audio>
+    <p id="genMetrics" class="hint"></p>
+    <ul class="gen-history" id="genHistory"></ul>
   </section>
 </main>
 

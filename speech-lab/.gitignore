@@ -7,6 +7,8 @@ bench/samples/*.wav
 # Els exemples de la pàgina SÍ es versionen (són els mateixos WAV, ~230 KB).
 !public/samples/*.wav
 __pycache__/
+# Registre del servidor del laboratori quan s'arranca en segon pla.
+lab-dev.log
 # Clonació de veu: entorn amb torch/demucs, àudios font i dataset generat (pesen i tenen drets).
 .venv-voz/
 .venv-rvc/

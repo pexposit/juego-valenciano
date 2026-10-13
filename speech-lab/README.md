@@ -149,6 +149,29 @@ también `batchProvider`, `batchModel` y `ttsProvider`):
   servidor. Parámetros: `?provider=aina`, `?language=ca`, `?words=1`.
 - `POST /api/tts` — cuerpo JSON `{text, voice?}` (máx. 2000 chars).
   Responde el WAV con cabeceras `x-tts-voice` y `x-tts-first-byte-ms`.
+  Con `model` (id de `/api/tts/models`) genera con ese modelo; admite también
+  `checkpoint`, `temperature`, `speed` (length_scale), `pitch` e `indexRate`, y
+  responde con `x-tts-model`, `x-tts-checkpoint`, `x-tts-total-ms`,
+  `x-tts-matxa-ms`, `x-tts-rvc-ms`, `x-tts-audio-secs` y `x-tts-cached`.
+- `GET /api/tts/models` — catálogo leído del disco en cada petición (un
+  entrenamiento nuevo aparece sin reiniciar): `remot:<voz>` (matxa-tts UJI),
+  `matxa:base:<spk>` (Matxa multiaccent local), `matxa:<run>:<spk>` (fine-tunes
+  de `tts/runs/`, con `veus.json` opcional para nombrar locutores y elegir el
+  checkpoint recomendado) y `rvc:<nombre>` (gina + RVC de
+  `tts/rvc/Applio/logs/`, tono por defecto en `scripts/rvc-personatges.json`).
+
+### Página: generació d'àudio
+
+Sección «Generació d'àudio»: un texto, un modelo del catálogo (y su checkpoint
+si tiene varios) y, según el tipo, temperatura y duración de Matxa o tono e
+índice de RVC. Cada generación queda en un historial con sus tiempos para
+comparar modelos de oído. Los modelos locales corren en dos sidecars NDJSON
+que arrancan con la primera petición y mantienen los modelos en GPU:
+`sidecar/matxa_local.py` (`.venv-voz`, `scripts/setup-matxa.sh`) y
+`sidecar/rvc_convert.py` (`.venv-rvc` en `tts/rvc/Applio`,
+`scripts/setup-rvc.sh`). La primera petición tarda ~12 s (carga); después,
+~0,2 s Matxa y ~0,2–0,4 s RVC por frase. Ocupan ~2 GB de GPU: no caben junto a
+un entrenamiento en una GPU de 6 GB.
 
 ### Página: transcripción de fitxers (fase B)
 
