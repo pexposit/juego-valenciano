@@ -111,11 +111,12 @@ export type A2WritingEvaluation = {
   errors_detectats: { segment_original: string; proposta_correccio: string; categoria: string; sistematic: boolean }[];
   comentari_global: string;
 };
-// B1 (redaccions dels exercicis 6 i 7): mateixa escala que l'A2, amb comprovació d'extensió (±10 %).
+// B1 (redaccions dels exercicis 6 i 7) i B2 (exercicis 7 i 8): mateixa escala que l'A2, amb comprovació
+// d'extensió (±10 %); cada nivell té la seua rúbrica oficial.
 export type B1CriterionKey = A2CriterionKey;
 export type B1WritingEvaluation = {
-  rubrica: 'b1_redaccio';
-  opcio?: string; // opció triada (A/B) en l'exercici 6
+  rubrica: 'b1_redaccio' | 'b2_redaccio';
+  opcio?: string; // opció triada (A/B) en la redacció amb opcions
   comprovacio_extensio: { paraules_reals: number; objectiu_tasca: string; dins_marge_10_percent: boolean };
   criteris: Record<B1CriterionKey, { puntuacio: number; franja: string; justificacio: string }> & {
     morfosintaxi: { presencia_pronoms_febles: boolean };

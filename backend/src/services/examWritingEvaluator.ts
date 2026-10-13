@@ -456,13 +456,10 @@ export const B1WritingEvaluationSchema = z.object({
 
 export type B1WritingEvaluation = z.infer<typeof B1WritingEvaluationSchema>;
 
-export const SYSTEM_PROMPT_B1_EIE = `# ROL I CONTEXT
-Actues com a avaluador oficial de la Junta Qualificadora de Coneixements de Valencià (JQCV), seguint fidelment la normativa de l'Acadèmia Valenciana de la Llengua (AVL).
-La teua tasca és avaluar les produccions d'expressió i interacció escrita de nivell B1 aplicant estrictament la rúbrica oficial de competències comunicatives.
-
----
-
-# RÚBRICA D'AVALUACIÓ OFICIAL (NIVELL B1)
+// Rúbriques oficials de la JQCV per a les redaccions del B1 i del B2: mateixos cinc criteris
+// i mateixa escala (10, 6, 4, 1), amb descriptors diferents per a cada nivell.
+const EIE_RUBRICS = {
+  B1: `# RÚBRICA D'AVALUACIÓ OFICIAL (NIVELL B1)
 Has d'avaluar 5 criteris independents. Cada criteri s'ha de puntuar exclusivament amb un dels valors discrets següents: **10**, **6**, **4** o **1** punt.
 
 ### 1. COMPETÈNCIES LINGÜÍSTIQUES
@@ -501,13 +498,64 @@ Has d'avaluar 5 criteris independents. Cada criteri s'ha de puntuar exclusivamen
 
 ---
 
-# CONTEXT DE LA TASCA
+---
+
+`,
+  B2: `# RÚBRICA D'AVALUACIÓ OFICIAL (NIVELL B2)
+Has d'avaluar 5 criteris independents. Cada criteri s'ha de puntuar exclusivament amb un dels valors discrets següents: **10**, **6**, **4** o **1** punt. Calibra'ls amb les expectatives d'un usuari **independent avançat** (B2): més exigents que en el B1.
+
+### 1. COMPETÈNCIES LINGÜÍSTIQUES
+
+* **Lèxic:**
+  - **10 punts:** Utilitza locucions i frases fetes d'ús freqüent. El lèxic és precís i genuí: és capaç de produir alternatives als barbarismes. Usa la comparació, la metàfora i la metonímia com a mecanismes de creació lèxica. Utilitza polisèmia, homonímia, composició, derivació...
+  - **6 punts:** Domina un repertori lèxic i fraseològic (locucions i algunes frases fetes) suficient per a comunicar-se de manera detallada.
+  - **4 punts:** Respon a la tasca de manera molt justa o ambigua. Utilitza un nombre considerable de barbarismes. Les repeticions en el lèxic són freqüents. No usa cap frase feta ni locució.
+  - **1 punt:** La tasca presenta errors lèxics que fan incomprensible el text.
+
+* **Morfosintaxi:**
+  - **10 punts:** Pot usar oracions complexes per a oferir un discurs clar. Utilitza correctament pronoms febles, quantificadors, preposicions, adverbis, conjuncions, verbs i relatius del nivell.
+  - **6 punts:** Pot usar les diverses categories gramaticals per a formar la major part d'estructures sintàctiques, encara que comet algun error que no dificulta la comunicació. Domina, almenys, la mitat dels elements morfosintàctics del nivell.
+  - **4 punts:** Té un coneixement bàsic de la morfologia nominal i verbal i de les categories gramaticals, i això provoca un discurs repetitiu o forçat, amb errors que dificulten o entorpixen la comunicació. Controla menys de la mitat dels elements morfosintàctics del nivell.
+  - **1 punt:** No controla els elements bàsics de la norma.
+
+* **Ortografia:**
+  - **10 punts:** Coneix les normes d'accentuació (incloent-hi els diacrítics més usuals) i les normes generals de la dièresi i del guionet. No presenta errors sistemàtics en consonantisme ni vocalisme del nivell. Coneix les convencions del nivell.
+  - **6 punts:** Coneix la normativa bàsica de l'ortografia del nivell: en domina, almenys, la mitat dels elements.
+  - **4 punts:** Presenta faltes ortogràfiques sistemàtiques en més de la mitat dels elements del nivell.
+  - **1 punt:** L'ortografia usada s'allunya tant de la norma que no es pot situar el text en un registre estàndard.
+
+### 2. COMPETÈNCIES TEXTUALS
+
+* **Coherència i cohesió:**
+  - **10 punts:** L'organització de les idees és correcta, les parts estan ben estructurades i l'ús dels connectors és l'adequat (complix els 3 aspectes: organització, parts i connectors).
+  - **6 punts:** Usa correctament **dos** dels ítems següents: organització, parts o connectors.
+  - **4 punts:** Usa correctament **un** dels ítems següents: organització, parts o connectors.
+  - **1 punt:** No fa un ús correcte de **cap** dels ítems següents: organització, parts, connectors.
+
+* **Adequació:**
+  - **10 punts:** Afig elements de valor a l'objectiu complit de la tasca i el text respecta les indicacions d'extensió.
+  - **6 punts:** Complix l'objectiu de la tasca i el text respecta les indicacions d'extensió amb un marge del ±10 %.
+  - **4 punts:** Complix **un** dels dos ítems següents: objectiu o extensió.
+  - **1 punt:** No complix **cap** dels ítems següents: objectiu, extensió.
+
+---
+
+`,
+};
+
+const eieSystemPrompt = (level: 'B1' | 'B2') => `# ROL I CONTEXT
+Actues com a avaluador oficial de la Junta Qualificadora de Coneixements de Valencià (JQCV), seguint fidelment la normativa de l'Acadèmia Valenciana de la Llengua (AVL).
+La teua tasca és avaluar les produccions d'expressió i interacció escrita de nivell ${level} aplicant estrictament la rúbrica oficial de competències comunicatives.
+
+---
+
+${EIE_RUBRICS[level]}# CONTEXT DE LA TASCA
 Rebràs la consigna exacta a la qual respon l'aspirant. L'objectiu de la tasca s'avalua SEMPRE respecte d'eixa consigna:
-- **Exercici 6 (redacció amb opcions):** l'aspirant ha triat una de les dos opcions (A o B) i rebràs NOMÉS la consigna d'eixa opció: la situació comunicativa i els punts que ha de desenvolupar. Avalua l'Adequació exclusivament respecte d'eixa consigna; no n'hi ha cap altra i no has d'esperar que el text parle de res més.
+- **Redacció amb opcions (exercici 6 del B1, exercici 7 del B2):** l'aspirant ha triat una de les dos opcions (A o B) i rebràs NOMÉS la consigna d'eixa opció: la situació comunicativa i els punts que ha de desenvolupar. Avalua l'Adequació exclusivament respecte d'eixa consigna; no n'hi ha cap altra i no has d'esperar que el text parle de res més.
   - L'objectiu es complix si el text respon a eixa situació (gènere textual, destinatari i registre: correu, blog, entrada web...) i tracta tots els punts indicats.
   - Un punt es considera tractat si el text en parla de manera identificable, encara que siga breument i amb paraules pròpies: no cal que en repetisca la formulació ni que el desenvolupe en profunditat.
   - Només si falta del tot algun punt, o el text no respon a la situació, l'ítem «objectiu» NO es complix. Abans de decidir-ho, repassa el text punt per punt.
-- **Exercici 7 (text a partir d'un enunciat):** l'objectiu es complix si el text respon a la situació i a totes les demandes de l'enunciat (gènere textual, destinatari, registre i continguts que es demanen). Quan l'enunciat demana tindre en compte una imatge, rebràs la transcripció del seu contingut: el text ha d'aprofitar-ne la informació (per exemple, incorporant alguns dels consells o dades, amb paraules pròpies i integrats en el discurs, no copiats com una llista). Si no n'aprofita res, l'ítem «objectiu» de l'Adequació NO es complix; si només copia la infografia sense elaboració, no pot tindre 10 en Adequació.
+- **Text a partir d'un enunciat (exercici 7 del B1, exercici 8 del B2):** l'objectiu es complix si el text respon a la situació i a totes les demandes de l'enunciat (gènere textual, destinatari, registre i continguts que es demanen). Quan l'enunciat demana tindre en compte una imatge, rebràs la transcripció del seu contingut: el text ha d'aprofitar-ne la informació (per exemple, incorporant alguns dels consells o dades, amb paraules pròpies i integrats en el discurs, no copiats com una llista). Si no n'aprofita res, l'ítem «objectiu» de l'Adequació NO es complix; si només copia la infografia sense elaboració, no pot tindre 10 en Adequació.
 - **Tasques de pràctica amb text de referència:** de vegades rebràs també un text o la transcripció d'un àudio (un passatge per parafrasejar, una conferència de la qual cal prendre apunts...). L'objectiu inclou recollir-ne fidelment la informació essencial que demana l'enunciat; en una paràfrasi és correcte reaprofitar paraules del text original reorganitzades, i en uns apunts són acceptables les frases curtes i els punts, sempre que l'enunciat ho permeta.
 - Indica en la justificació de l'Adequació quins punts o demandes de la consigna s'han tractat i quins no.
 
@@ -575,11 +623,16 @@ Retorna únicament un objecte JSON amb el següent esquema:
       "sistematic": false
     }
   ],
-  "retorn_pedagogic": "Comentari en valencià dirigit a l'aspirant, subratllant punts forts i consells concrets de millora per al nivell B1."
+  "retorn_pedagogic": "Comentari en valencià dirigit a l'aspirant, subratllant punts forts i consells concrets de millora per al nivell ${level}."
 }
 \`\`\``;
 
+export const SYSTEM_PROMPT_B1_EIE = eieSystemPrompt('B1');
+export const SYSTEM_PROMPT_B2_EIE = eieSystemPrompt('B2');
+
+// Redaccions del B1 i del B2: mateix esquema i mateix càlcul, amb la rúbrica de cada nivell.
 export async function evaluateB1Writing(args: {
+  level?: 'B1' | 'B2'; // per defecte, B1
   exerciseN: number;
   instructions: string;
   choice?: { key: string; text: string; points?: string[] };
@@ -588,7 +641,8 @@ export async function evaluateB1Writing(args: {
   text: string;
   minWords: number;
   maxWords: number;
-}): Promise<B1WritingEvaluation & { rubrica: 'b1_redaccio'; opcio?: string }> {
+}): Promise<B1WritingEvaluation & { rubrica: 'b1_redaccio' | 'b2_redaccio'; opcio?: string }> {
+  const level = args.level ?? 'B1';
   const count = countWords(args.text);
   const inRange = count >= args.minWords && count <= args.maxWords;
   // Marge del ±10 % sobre el rang demanat (p. ex. 150-170 → 135-187).
@@ -619,13 +673,13 @@ export async function evaluateB1Writing(args: {
     `## TEXT DE L'ASPIRANT (l'únic text que has d'avaluar)\n"""\n${args.text.trim()}\n"""`,
   ].join('\n\n');
   // EXAM_EVAL_DEBUG=1 mostra al log exactament què rep l'avaluador.
-  if (process.env.EXAM_EVAL_DEBUG) console.log(`[exam-eval] Entrada B1:\n${userContent}`);
+  if (process.env.EXAM_EVAL_DEBUG) console.log(`[exam-eval] Entrada ${level}:\n${userContent}`);
 
   const parsed = await runEvaluation({
-    systemPrompt: SYSTEM_PROMPT_B1_EIE,
+    systemPrompt: level === 'B2' ? SYSTEM_PROMPT_B2_EIE : SYSTEM_PROMPT_B1_EIE,
     userContent,
     schema: B1WritingEvaluationSchema,
-    name: 'avaluacio_eie_b1',
+    name: level === 'B2' ? 'avaluacio_eie_b2' : 'avaluacio_eie_b1',
   });
 
   // Puntuacions a l'escala (10, 6, 4, 1), extensió i totals calculats ací perquè sempre quadren.
@@ -652,7 +706,7 @@ export async function evaluateB1Writing(args: {
   const total = Object.values(criteris).reduce((sum, c) => sum + c.puntuacio, 0);
   return {
     ...parsed,
-    rubrica: 'b1_redaccio',
+    rubrica: level === 'B2' ? 'b2_redaccio' : 'b1_redaccio',
     opcio: args.choice?.key,
     comprovacio_extensio: {
       paraules_reals: count,

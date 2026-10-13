@@ -579,6 +579,13 @@ const BAND_STYLE: Record<string, string> = {
 const A2_PASS_MARK = 4;
 // En el B1 val un 25 %: cal el 50 % de l'àrea (5 de 10), comptant les dos redaccions.
 export const B1_PASS_MARK = 5;
+// En el B2 val un 20 %: torna a ser el 40 % (4 de 10), amb la mitjana de les dos redaccions.
+export const B2_PASS_MARK = 4;
+export const passMarkOf = (evaluation: B1WritingEvaluation) =>
+  evaluation.rubrica === 'b2_redaccio' ? B2_PASS_MARK : B1_PASS_MARK;
+// Redacció avaluada amb la rúbrica del B1 o del B2 (mateix format).
+export const isB1OrB2Writing = (evaluation?: WritingEvaluation): evaluation is B1WritingEvaluation =>
+  evaluation?.rubrica === 'b1_redaccio' || evaluation?.rubrica === 'b2_redaccio';
 
 // Botó "Avaluar" i resultat de l'avaluació amb IA d'un exercici d'expressió escrita.
 export function WritingEvaluationPanel({
@@ -608,7 +615,7 @@ export function WritingEvaluationPanel({
       {error && <p className="rounded-2xl bg-coral/10 p-4 text-sm font-bold text-coral">{error}</p>}
 
       {evaluation && !loading && (
-        evaluation.rubrica === 'b1_redaccio' ? <B1Result evaluation={evaluation} />
+        isB1OrB2Writing(evaluation) ? <B1Result evaluation={evaluation} />
           : evaluation.rubrica === 'a2_redaccio' ? <A2Result evaluation={evaluation} />
           : <A1Result evaluation={evaluation} />
       )}
@@ -759,18 +766,20 @@ function ItemChecks({ labels, achieved }: { labels: Record<string, string>; achi
   );
 }
 
+// Redacció del B1 o del B2: mateix format; només canvien la rúbrica i el mínim de l'àrea.
 function B1Result({ evaluation }: { evaluation: B1WritingEvaluation }) {
   const mark = evaluation.mitjana_base_10;
+  const passMark = passMarkOf(evaluation);
   const { criteris: c, comprovacio_extensio: ext } = evaluation;
   return (
-    <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${mark >= B1_PASS_MARK ? 'border-teal/30' : 'border-coral/40'}`}>
+    <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${mark >= passMark ? 'border-teal/30' : 'border-coral/40'}`}>
       <ScoreHeader
         score={mark}
         max={10}
-        pass={mark >= B1_PASS_MARK}
+        pass={mark >= passMark}
         label={`Avaluació de la redacció${evaluation.opcio ? ` · Opció ${evaluation.opcio}` : ''}`}
-        verdict={mark >= B1_PASS_MARK ? '✅ Per damunt del mínim' : '⚠️ Per davall del mínim'}
-        note={`${evaluation.puntuacio_total_rubrica} de 50 punts en la rúbrica. L'àrea es decidix amb la mitjana de les dos redaccions (mínim ${B1_PASS_MARK} de 10).`}
+        verdict={mark >= passMark ? '✅ Per damunt del mínim' : '⚠️ Per davall del mínim'}
+        note={`${evaluation.puntuacio_total_rubrica} de 50 punts en la rúbrica. L'àrea es decidix amb la mitjana de les dos redaccions (mínim ${passMark} de 10).`}
       />
       <p className="rounded-2xl bg-cream p-4 font-bold">{evaluation.retorn_pedagogic}</p>
       <div className="flex flex-wrap items-center gap-2 text-sm">

@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa de ParlaVal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cabecera compacta, barra de filtros y recorridos, lienzo del grafo a la izquierda y ficha del nodo a la derecha (debajo en móvil). */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #18202e;
+  --muted: #5d6779;
+  --line: #d9dee7;
+  --edge: #b9c1cf;
+  --accent: #e8720c;          /* taronja */
+  --accent-ink: #ffffff;
+  --l-front: #2563c9;
+  --l-back: #d9620b;
+  --l-db: #148a5c;
+  --l-ext: #8a3fd1;
+  --l-shared: #6b7385;
+  --l-class: #c2347a;
+  --l-speech: #0f8a96;
+  --l-docs: #8a7a3a;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151d; --surface: #181e29; --ink: #e8ecf3; --muted: #9aa4b6; --line: #2a3242; --edge: #3a4456;
+  --accent: #ff8c2e; --accent-ink: #1a1206;
+  --l-front: #6ea2ff; --l-back: #ff9a4d; --l-db: #3ccf8e; --l-ext: #bd8cff; --l-shared: #a3abbb; --l-class: #ff7ab8; --l-speech: #3cc7d4; --l-docs: #d4c27a;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #11151d; --surface: #181e29; --ink: #e8ecf3; --muted: #9aa4b6; --line: #2a3242; --edge: #3a4456;
+  --accent: #ff8c2e; --accent-ink: #1a1206;
+  --l-front: #6ea2ff; --l-back: #ff9a4d; --l-db: #3ccf8e; --l-ext: #bd8cff; --l-shared: #a3abbb; --l-class: #ff7ab8; --l-speech: #3cc7d4; --l-docs: #d4c27a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-inline: 20px; padding-block: 18px 24px; display: flex; flex-direction: column; gap: 14px; min-height: 100%; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 1.9rem; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 span { color: var(--accent); }
+header p { margin: 0; color: var(--muted); max-width: 70ch; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.search { position: relative; flex: 0 1 260px; min-width: 0; }
+.search input { width: 100%; font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.search input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 0.82rem var(--f-body); display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.chip i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); display: inline-block; }
+.chip[aria-pressed="false"] { opacity: 0.45; }
+.chip[aria-pressed="false"] i { background: transparent; border: 1.5px solid var(--c); }
+.flows { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.flows .lbl, .lbl { font: 700 0.72rem var(--f-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.flow { font: 0.82rem var(--f-body); padding: 4px 10px; border-radius: 6px; border: 1px dashed var(--accent); background: transparent; color: var(--ink); cursor: pointer; }
+.flow[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-style: solid; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; flex: 1; min-height: 560px; }
+.stage { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-height: 560px; }
+.stage svg { display: block; width: 100%; height: 100%; position: absolute; inset: 0; cursor: grab; }
+.stage svg:active { cursor: grabbing; }
+.zoom { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.zoom button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 700 1rem var(--f-body); cursor: pointer; }
+.legend { position: absolute; left: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.75rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 88%, transparent); padding: 6px 10px; border-radius: 8px; max-width: calc(100% - 20px); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { position: static; width: 26px; height: 12px; }
+.hint { position: absolute; left: 10px; top: 10px; font-size: 0.78rem; color: var(--muted); }
+
+aside { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; overflow: auto; min-width: 0; max-height: calc(100vh - 40px); position: sticky; top: env(safe-area-inset-top, 0px); display: flex; flex-direction: column; gap: 14px; }
+.kind { display: flex; gap: 8px; align-items: center; font: 700 0.72rem var(--f-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--lc, var(--muted)); }
+.kind i { width: 9px; height: 9px; border-radius: 50%; background: var(--lc); }
+aside h2 { font-family: var(--f-display); font-weight: 700; font-size: 1.35rem; line-height: 1.2; margin: 0; overflow-wrap: anywhere; }
+.path { font: 0.78rem var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+aside p { margin: 0; }
+.desc { display: flex; flex-direction: column; gap: 8px; }
+.desc code, .steps code { font: 0.82em var(--f-mono); background: color-mix(in srgb, var(--accent) 10%, transparent); padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+.note { font-size: 0.85rem; border-left: 3px solid var(--accent); padding: 4px 0 4px 10px; color: var(--muted); }
+.group { display: flex; flex-direction: column; gap: 6px; }
+.links { display: flex; flex-wrap: wrap; gap: 5px; }
+.links button { font: 0.8rem var(--f-mono); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; text-align: left; display: inline-flex; align-items: center; gap: 6px; max-width: 100%; overflow-wrap: anywhere; }
+.links button i { width: 7px; height: 7px; border-radius: 50%; background: var(--lc); flex: none; }
+.links button:hover { border-color: var(--accent); }
+.links small { color: var(--muted); font-family: var(--f-body); }
+ol.steps { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 0; counter-reset: s; }
+ol.steps li { counter-increment: s; position: relative; padding: 0 0 12px 34px; font-size: 0.9rem; }
+ol.steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 700 0.75rem/22px var(--f-body); text-align: center; font-variant-numeric: tabular-nums; }
+ol.steps li:not(:last-child)::after { content: ""; position: absolute; left: 10.5px; top: 24px; bottom: 2px; width: 1px; background: var(--line); }
+ol.steps button { font: 500 0.8rem var(--f-mono); background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stats div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.stats b { font: 700 1.3rem var(--f-display); display: block; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 0.75rem; color: var(--muted); }
+
+svg text { font-family: var(--f-body); fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none; }
+svg text.mono { font-family: var(--f-mono); }
+.node { cursor: pointer; }
+.node .shape { stroke: var(--surface); stroke-width: 1.5px; }
+.node.folder .shape, .node.root .shape { stroke: var(--lc); stroke-width: 2.5px; fill: var(--surface); }
+.node.sel .shape { stroke: var(--accent); stroke-width: 3.5px; }
+.edge { fill: none; }
+.edge.contains { stroke: var(--edge); stroke-width: 1; }
+.edge.uses { stroke-width: 1.2; stroke-dasharray: 4 3; opacity: 0.35; }
+.dim { opacity: 0.1 !important; }
+.edge.hot { opacity: 0.95 !important; stroke-width: 2.2; }
+.edge.contains.hot { stroke: var(--muted); }
+
+@media (max-width: 900px) {
+  main { grid-template-columns: minmax(0, 1fr); }
+  .stage { min-height: 70vh; }
+  aside { position: static; max-height: none; }
+}
+@media (max-width: 480px) {
+  .wrap { padding-inline: 16px; }
+  h1 { font-size: 1.5rem; }
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Mapa de <span>ParlaVal</span></h1>
+    <p>Cada carpeta y archivo del proyecto como un nodo. Las líneas continuas indican «contiene»; las discontinuas, «llama a / usa». Pulsa un nodo para ver qué hace y con qué se conecta, o elige un recorrido para seguir una funcionalidad de punta a punta.</p>
+  </header>
+
+  <div class="bar">
+    <div class="search"><input id="q" type="search" placeholder="Buscar archivo o concepto…" aria-label="Buscar nodo" autocomplete="off"></div>
+    <div class="chips" id="chips" role="group" aria-label="Capas visibles"></div>
+  </div>
+  <div class="flows" id="flows"><span class="lbl">Recorridos</span></div>
+
+  <main>
+    <div class="stage" id="stage">
+      <svg id="svg" role="img" aria-label="Grafo del proyecto ParlaVal"></svg>
+      <div class="hint">Arrastra para moverte · rueda para hacer zoom</div>
+      <div class="zoom"><button id="zin" aria-label="Acercar">+</button><button id="zout" aria-label="Alejar">−</button><button id="zfit" aria-label="Encajar todo" title="Encajar todo">⤢</button></div>
+      <div class="legend">
+        <span><svg viewBox="0 0 26 12"><circle cx="6" cy="6" r="4.5" fill="none" stroke="var(--muted)" stroke-width="2"/></svg>carpeta</span>
+        <span><svg viewBox="0 0 26 12"><circle cx="6" cy="6" r="3.5" fill="var(--muted)"/></svg>archivo</span>
+        <span><svg viewBox="0 0 26 12"><rect x="1.5" y="1.5" width="9" height="9" rx="2" fill="var(--l-db)"/></svg>tablas BDD</span>
+        <span><svg viewBox="0 0 26 12"><path d="M6 0.5 L11.5 6 L6 11.5 L0.5 6Z" fill="var(--l-ext)"/></svg>servicio externo</span>
+        <span><svg viewBox="0 0 26 12"><line x1="0" y1="6" x2="26" y2="6" stroke="var(--muted)" stroke-dasharray="4 3" stroke-width="1.5"/></svg>usa</span>
+      </div>
+    </div>
+    <aside id="panel" aria-live="polite"></aside>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+const LAYERS = {
+  front:  { name: "Frontend (React)", c: "--l-front" },
+  back:   { name: "Backend (Express)", c: "--l-back" },
+  db:     { name: "Base de datos", c: "--l-db" },
+  ext:    { name: "Servicios externos", c: "--l-ext" },
+  shared: { name: "Compartido e infra", c: "--l-shared" },
+  class:  { name: "Clasificador", c: "--l-class" },
+  speech: { name: "Speech-lab", c: "--l-speech" },
+  docs:   { name: "Docs y assets", c: "--l-docs" },
+};
+
+// id = ruta; p = padre; t = tipo; l = capa; d = descripción (HTML permitido)
+const N = [
+  { id: "parlaval", label: "ParlaVal", t: "root", l: "shared", d: "Monorepo npm con <i>workspaces</i> (<code>shared</code>, <code>frontend</code>, <code>backend</code>, <code>speech-lab</code>). App para practicar valenciano con conversaciones situadas, lecciones infantiles (Nivel 0), práctica por destrezas, exámenes tipo JQCV y rutas de aprendizaje. <code>npm run dev</code> compila <code>shared</code> y lanza frontend (:5173) y backend (:3001) a la vez." },
+  { id: "package.json", p: "parlaval", t: "file", l: "shared", d: "Raíz del monorepo: declara los workspaces y los scripts globales (<code>dev</code>, <code>build</code>, <code>test</code>, <code>setup:speech</code>, <code>wer:speech</code>…)." },
+  { id: "docker-compose.yml", p: "parlaval", t: "file", l: "shared", d: "Despliegue autoalojado: servicios <code>web</code>, <code>api</code>, <code>classificador</code>, <code>db</code> (Postgres de Supabase) y <code>migrate</code>, que aplica las migraciones antes de arrancar la API." },
+  { id: "README.md", p: "parlaval", t: "file", l: "docs", d: "Puesta en marcha local (Supabase en Docker), arquitectura resumida y ajustes de rendimiento (timeouts de OpenAI, TTS diferido, saludos pregenerados)." },
+  { id: "DEPLOY.md", p: "parlaval", t: "file", l: "docs", d: "Guía de despliegue: Supabase Cloud, API en Render/Railway/Fly.io y web en Vercel, con variables de entorno y problemas típicos." },
+  { id: "ROBOT_AVATAR_CAMBIOS.md", p: "parlaval", t: "file", l: "docs", d: "Registro de cambios del avatar robot 3D. Todo lo añadido lleva la marca <code>[robot-avatar]</code> para poder localizarlo con grep." },
+  { id: "build_robot.py", p: "parlaval", t: "file", l: "docs", d: "Script de Blender (<code>bpy</code>) que construye el modelo del robot." },
+  { id: "sueltos", label: "archivos sueltos", p: "parlaval", t: "file", l: "docs", d: "<code>audio-bon-dia.wav</code>, <code>edge.deb</code> y <code>preview_0001.png</code> en la raíz.", note: "Parecen restos de pruebas: un instalador .deb y una captura no los usa el código. Candidatos a borrar o a mover a <code>assets-src/</code>." },
+
+  // ---------- shared ----------
+  { id: "shared", p: "parlaval", t: "folder", l: "shared", d: "Paquete común que importan frontend y backend. Se compila primero en cada <code>dev</code>/<code>build</code>." },
+  { id: "shared/src/index.ts", p: "shared", t: "file", l: "shared", d: "Fuente única de verdad de los <b>niveles</b> (<code>LEVELS</code>, <code>LEVEL_CEFR</code>, <code>isKidsLevel0</code>) y límites compartidos. Los escenarios ya no viven aquí: están en la tabla <code>resources</code>." },
+
+  // ---------- frontend ----------
+  { id: "frontend", p: "parlaval", t: "folder", l: "front", d: "Web React + Vite + Tailwind, <i>mobile-first</i>. Autenticación con Supabase, grabación de voz con MediaRecorder y reproducción del TTS." },
+  { id: "frontend/src/App.tsx", label: "App.tsx", p: "frontend", t: "file", l: "front", d: "Enrutador principal (react-router). Define todas las pantallas: inicio, auth, dashboard, chat <code>/xat/:scenario</code>, examen, práctica, errores, rutas, clases y el mundo infantil." },
+  { id: "frontend/public", label: "public/", p: "frontend", t: "folder", l: "front", d: "Estáticos servidos tal cual." },
+  { id: "public/audio", label: "audio/", p: "frontend/public", t: "folder", l: "front", d: "Audios pregenerados con el TTS matxa: saludos de escenarios, frases del Nivel 0 (<code>kids/</code>) y los audios de comprensión oral de los exámenes B2 (<code>Audio_B2_oct20XX.mp3</code>)." },
+  { id: "public/exams", label: "exams/", p: "frontend/public", t: "folder", l: "front", d: "Material de exámenes JQCV por convocatoria: <code>a1-juny-2026</code>, <code>b1-octubre-2024/2025</code>, <code>b2-octubre-2022…2025</code>." },
+  { id: "public/avatar-robot", label: "avatar-robot/", p: "frontend/public", t: "folder", l: "front", d: "Modelos GLB del robot 3D y sus imágenes de carga (más el decodificador <code>draco/</code>)." },
+  { id: "public/pictograms", label: "pictograms/ · images/", p: "frontend/public", t: "folder", l: "front", d: "Pictogramas ARASAAC (CC BY-NC-SA) de las lecciones infantiles, fondos de escenarios, logos institucionales." },
+
+  { id: "frontend/src/pages", label: "pages/", p: "frontend", t: "folder", l: "front", d: "Una pantalla por ruta." },
+  { id: "pages/HomePage.tsx", label: "HomePage.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Portada pública." },
+  { id: "pages/AuthPage.tsx", label: "AuthPage.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Login/registro con Supabase. Al entrar crea la sesión en el backend (o reutiliza la del dashboard)." },
+  { id: "pages/Dashboard.tsx", label: "Dashboard.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "El «aula»: tablero principal con el robot/profesor y el tutor conversacional (<code>/api/assistant/*</code>)." },
+  { id: "pages/Chat.tsx", label: "Chat.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Conversación con un personaje de un escenario. Toma voz, imagen de fondo y saludo inicial de <code>resources.metadata</code>. Envía cada turno a <code>/api/turn</code> y pide el audio aparte a <code>/api/tts</code>." },
+  { id: "pages/Summary.tsx", label: "Summary.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Resumen al acabar un chat. La evaluación pedagógica se hace en segundo plano y la pantalla la consulta cada pocos segundos." },
+  { id: "pages/ErrorPractice.tsx", label: "ErrorPractice.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Una tarjeta por error detectado: muestra la frase con la parte errónea resaltada y pide escribir la corrección. Si acierta, el error queda resuelto." },
+  { id: "pages/Exam.tsx", label: "Exam.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Simulacro de examen JQCV por áreas (el B2 añade «Estructuras lingüísticas»). El progreso se guarda en el navegador.", note: "Modificado en el árbol de trabajo actual (exámenes B2)." },
+  { id: "pages/Practice.tsx", label: "Practice.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Práctica por destrezas (comprensión, expresión…). Baraja las opciones de forma estable porque en la BDD la correcta siempre es la primera.", note: "Modificado en el árbol de trabajo actual." },
+  { id: "pages/LearningPath.tsx", label: "LearningPath.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Ruta personalizada generada por IA, en etapas aprender → practicar → aplicar → comprobar." },
+  { id: "pages/StudyPaths.tsx", label: "StudyPaths.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Rutas recomendadas predefinidas de A2 y B1." },
+  { id: "pages/MyClasses.tsx", label: "MyClasses.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Sección «Clase» del alumno: lo que el profesorado ha asignado." },
+  { id: "pages/TeacherClasses.tsx", label: "TeacherClasses.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Clases del profesorado: crear clase y código, seguimiento de alumnos, actividades y rutas." },
+  { id: "pages/TutorHistory.tsx", label: "TutorHistory.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Historial de conversaciones con el tutor, con títulos resumidos por el LLM y renombrables." },
+  { id: "pages/Profile.tsx", label: "Profile.tsx", p: "frontend/src/pages", t: "file", l: "front", d: "Perfil: nombre, nivel, lengua materna y ayuda con la traducción." },
+  { id: "pages/Kids*", label: "KidsLessons · KidsProgress · Lessons", p: "frontend/src/pages", t: "file", l: "front", d: "Pantallas infantiles: lecciones de la Taronjeta y guía Pre-A1, seguimiento para la familia (protegido con PIN) y tarjetas de vocabulario con audio." },
+
+  { id: "frontend/src/components", label: "components/", p: "frontend", t: "folder", l: "front", d: "Piezas de interfaz reutilizables." },
+  { id: "components/VoiceInput.tsx", label: "VoiceInput.tsx", p: "frontend/src/components", t: "file", l: "front", d: "Entrada por voz (push-to-talk) o texto. Modo <code>voiceOnly</code> para expresión oral." },
+  { id: "components/ExamExercises.tsx", label: "ExamExercises.tsx", p: "frontend/src/components", t: "file", l: "front", d: "Renderiza los ejercicios de un área del examen y marca aciertos/errores al corregir.", note: "Modificado en el árbol de trabajo actual." },
+  { id: "components/ScenarioSelect.tsx", label: "ScenarioSelect.tsx", p: "frontend/src/components", t: "file", l: "front", d: "Catálogo de actividades agrupado por categorías." },
+  { id: "components/Scene*", label: "SceneArt · ChatBubble · …", p: "frontend/src/components", t: "file", l: "front", d: "Escena del chat (fondo + personaje), burbujas bilingües, modales de historial y lección, avatar del profesor, logos institucionales y estados de carga." },
+  { id: "components/ChildAssistant.tsx", label: "ChildAssistant.tsx", p: "frontend/src/components", t: "file", l: "front", d: "Tutor infantil: habla como en A1 y adapta su tamaño a la pantalla." },
+
+  { id: "frontend/src/lib", label: "lib/", p: "frontend", t: "folder", l: "front", d: "Acceso a datos y utilidades transversales." },
+  { id: "lib/api.ts", label: "api.ts", p: "frontend/src/lib", t: "file", l: "front", d: "Cliente HTTP del backend: todas las llamadas <code>/api/*</code> pasan por aquí. Cachea el catálogo de actividades una vez por carga." },
+  { id: "lib/supabase.ts", label: "supabase.ts", p: "frontend/src/lib", t: "file", l: "front", d: "Cliente público de Supabase (clave anon). Algunas pantallas leen y escriben tablas directamente, protegidas por RLS." },
+  { id: "lib/localStore.ts", label: "localStore.ts", p: "frontend/src/lib", t: "file", l: "front", d: "Datos sensibles del usuario (lo que escribe o dice) guardados <b>solo en el navegador</b> (IndexedDB), nunca en el servidor." },
+  { id: "lib/types.ts", label: "types.ts · audioControl.ts", p: "frontend/src/lib", t: "file", l: "front", d: "Tipos de las filas de <code>resources</code> y control central del audio (<code>stopAllAudio()</code>)." },
+  { id: "frontend/src/data", label: "data/", p: "frontend", t: "folder", l: "front", d: "<code>content.ts</code>: rutas (<code>ROUTES</code>, <code>KIDS_ROUTES</code>) y perfil por defecto. <code>lessons.ts</code>: lecciones básicas con traducciones." },
+
+  { id: "frontend/src/features", label: "features/", p: "frontend", t: "folder", l: "front", d: "Módulos grandes agrupados por dominio." },
+  { id: "features/kids", label: "kids/", p: "frontend/src/features", t: "folder", l: "front", d: "<b>Nivel 0 infantil</b>: un mundo de islas con micro-sesiones de 3-5 min, álbum de cromos, lecciones, guía Pre-A1 y seguimiento para familia y profesorado. Todo se escucha: los niños aún no leen." },
+  { id: "kids/KidsHome.tsx", label: "KidsHome · KidsIsland · KidsAlbum", p: "features/kids", t: "file", l: "front", d: "Mapa de islas, una isla jugada por etapas (estrella al dominar el 80 % a la primera) y álbum de cromos decorable." },
+  { id: "kids/games", label: "games/", p: "features/kids", t: "folder", l: "front", d: "Minijuegos: elegir, arrastrar, memoria, ordenar, trazar letras y tareas estilo Cambridge Pre A1 Starters. <code>RoundView.tsx</code> elige el juego según el tipo de ronda." },
+  { id: "kids/content", label: "content · lessons · preA1", p: "features/kids", t: "file", l: "front", d: "Contenido del Nivel 0: islas, lecciones de la Taronjeta, guía Pre-A1, lecciones con pictogramas ARASAAC." },
+  { id: "kids/tracking.ts", label: "tracking · progress · parentPin", p: "features/kids", t: "file", l: "front", d: "Seguimiento: cada partida y palabra difícil, progreso de islas/lecciones y PIN familiar (el servidor solo guarda su hash). Escriben directamente en Supabase." },
+  { id: "kids/sound.ts", label: "sound.ts", p: "features/kids", t: "file", l: "front", d: "Voz del navegador si tiene una catalana de calidad; si no, frases pregeneradas en <code>public/audio/kids</code>." },
+  { id: "kids/i18n", label: "i18n/", p: "features/kids", t: "folder", l: "front", d: "Subtítulos en la lengua materna: en, es, fr, it, ro, uk. Se generan con <code>generate-kids-translations.ts</code>." },
+  { id: "features/paths", label: "paths/", p: "frontend/src/features", t: "folder", l: "front", d: "Rutas y clases: rutas creadas por la docente (<code>teacherPaths.ts</code>), actividades de una clase, vistas de ruta compartidas y unión a clases por código." },
+  { id: "features/activities", label: "activities/", p: "frontend/src/features", t: "folder", l: "front", d: "Biblioteca de actividades de la docente: plantillas cerradas (<code>drafts.ts</code>), editor (<code>ActivityEditor.tsx</code>) y previsualización con las mismas pantallas del alumnado." },
+  { id: "features/robot-avatar", label: "robot-avatar/", p: "frontend/src/features", t: "folder", l: "front", d: "Avatar robot 3D con three.js, cargado bajo demanda. Estados y clips de animación exportados de Blender; sustituye al personaje ilustrado del chat y al profesor del dashboard." },
+
+  // ---------- backend ----------
+  { id: "backend", p: "parlaval", t: "folder", l: "back", d: "API Express (:3001). Verifica el JWT de Supabase, obtiene contexto, llama a los LLM con salida JSON, persiste progreso y aplica XP. Con <code>Dockerfile</code> para desplegar." },
+  { id: "backend/src/index.ts", label: "index.ts", p: "backend", t: "file", l: "back", d: "Arranque del servidor: CORS, <code>trust proxy</code>, JSON hasta 12 MB, <code>/health</code> y montaje de los 9 routers." },
+  { id: "backend/src/middleware", label: "middleware/", p: "backend", t: "folder", l: "back", d: "Capa de seguridad delante de cada ruta." },
+  { id: "middleware/auth.ts", label: "auth.ts", p: "backend/src/middleware", t: "file", l: "back", d: "<code>requireAuth</code>: valida el token de Supabase. Con <code>ALLOW_DEMO=true</code> deja jugar sin cuenta." },
+  { id: "middleware/rateLimit.ts", label: "rateLimit.ts", p: "backend/src/middleware", t: "file", l: "back", d: "Limitador en memoria por usuario/IP, montado después de <code>requireAuth</code>. Tiene tests." },
+  { id: "backend/src/db.ts", label: "db.ts · schemas · validation", p: "backend", t: "file", l: "back", d: "Cliente Supabase con service role (y atajo para el usuario demo), esquemas Zod de entrada y respuesta 400 común." },
+
+  { id: "backend/src/routes", label: "routes/", p: "backend", t: "folder", l: "back", d: "Endpoints HTTP. Cada archivo es un router de Express." },
+  { id: "routes/turn.ts", label: "turn.ts", p: "backend/src/routes", t: "file", l: "back", d: "<code>POST /api/turn</code>: el corazón del chat. Audio → STT → agente → (TTS opcional) → BDD. Registra tiempos por etapa: <code>[turn] stt=… agente=… tts=… db=…</code>." },
+  { id: "routes/tts.ts", label: "tts.ts", p: "backend/src/routes", t: "file", l: "back", d: "<code>POST /api/tts</code>: sintetiza la respuesta con la voz del escenario." },
+  { id: "routes/sessions.ts", label: "sessions.ts", p: "backend/src/routes", t: "file", l: "back", d: "<code>/api/sessions</code>, <code>/finish</code>, <code>/:id/resources</code>. Al cerrar: evaluación pedagógica, objetivos del Nivel 0 y regeneración de la ruta en segundo plano." },
+  { id: "routes/resources.ts", label: "resources.ts", p: "backend/src/routes", t: "file", l: "back", d: "Catálogo, lecciones, práctica y exámenes: <code>GET /api/resources</code>, <code>/api/practice/:id</code>, <code>/api/exams/:id</code>, resultados y evaluación de ejercicios escritos.", note: "Modificado en el árbol de trabajo actual." },
+  { id: "routes/errors.ts", label: "errors.ts", p: "backend/src/routes", t: "file", l: "back", d: "<code>/api/errors</code>, <code>/analyze</code>, <code>/practice</code>, <code>/resolve</code>: detecta, lista y resuelve errores del usuario." },
+  { id: "routes/assistant.ts", label: "assistant.ts", p: "backend/src/routes", t: "file", l: "back", d: "Tutor del dashboard: <code>/api/assistant/open|restart|resume</code>. Saludo según nivel y lengua materna, títulos de conversación." },
+  { id: "routes/learningPath.ts", label: "learningPath.ts", p: "backend/src/routes", t: "file", l: "back", d: "<code>GET /api/learning-path</code>, <code>/regenerate</code>, <code>/api/activity-status</code>." },
+  { id: "routes/studyPaths.ts", label: "studyPaths.ts", p: "backend/src/routes", t: "file", l: "back", d: "<code>GET /api/study-paths</code>, <code>/api/my-classes</code>: rutas predefinidas y de clase." },
+  { id: "routes/teacherActivities.ts", label: "teacherActivities.ts", p: "backend/src/routes", t: "file", l: "back", d: "CRUD de actividades docentes y su asignación a clases: <code>/api/teacher/activities</code>, <code>/api/teacher/classes/:id/activities</code>." },
+
+  { id: "backend/src/services", label: "services/", p: "backend", t: "folder", l: "back", d: "Lógica de negocio y llamadas a IA. Las rutas son finas; el trabajo está aquí." },
+  { id: "services/agent.ts", label: "agent.ts", p: "backend/src/services", t: "file", l: "back", d: "Agente conversacional: construye el prompt del personaje y pide JSON a OpenAI con cadena de modelos de respaldo (<code>OPENAI_MODEL</code> + 2 reservas). Tests unitarios y de integración." },
+  { id: "services/voice.ts", label: "voice.ts", p: "backend/src/services", t: "file", l: "back", d: "Interfaces <code>SpeechToText</code> / <code>TextToSpeech</code>: el proveedor se cambia sin tocar las rutas. Hoy apunta al servidor DeepLab de la UJI (whisper + matxa)." },
+  { id: "services/scenarios.ts", label: "scenarios.ts", p: "backend/src/services", t: "file", l: "back", d: "Los escenarios viven en <code>resources</code> (category <code>escenari</code>). Añadir una fila con personaje hace jugable un escenario nuevo sin tocar código." },
+  { id: "services/catalog.ts", label: "catalog.ts", p: "backend/src/services", t: "file", l: "back", d: "Decide qué filas del catálogo son jugables (cada categoría tiene su pantalla)." },
+  { id: "services/subagentErrorDetector.ts", label: "subagentErrorDetector.ts", p: "backend/src/services", t: "file", l: "back", d: "Subagente que detecta y categoriza errores de valenciano usando las herramientas MCP (DNV, Softvalencià, Apertium)." },
+  { id: "services/subagentRecommendation.ts", label: "subagentRecommendation.ts", p: "backend/src/services", t: "file", l: "back", d: "Evaluación pedagógica al cerrar un chat. Recibe errores y evaluaciones anteriores del cliente; en el servidor solo se guarda el <code>priority_focus</code>." },
+  { id: "services/examWritingEvaluator.ts", label: "examWritingEvaluator.ts", p: "backend/src/services", t: "file", l: "back", d: "Corrige el Área 3 (expresión escrita) de los exámenes JQCV con la rúbrica oficial de cada nivel, usando las mismas herramientas MCP.", note: "Modificado en el árbol de trabajo actual." },
+  { id: "services/learningPath.ts", label: "learningPath.ts", p: "backend/src/services", t: "file", l: "back", d: "Ruta personalizada: el LLM elige 5-7 pasos del catálogo de tu nivel; el backend valida que no apunte a recursos inexistentes." },
+  { id: "services/learningSignals.ts", label: "learningSignals.ts", p: "backend/src/services", t: "file", l: "back", d: "Reúne las señales del usuario: foco de las últimas evaluaciones, errores sin resolver y resultados." },
+  { id: "services/kidsObjectives.ts", label: "kidsObjectives.ts", p: "backend/src/services", t: "file", l: "back", d: "Nivel 0: al acabar un escenario el LLM solo dice qué objetivos ha cumplido el niño. No busca errores." },
+  { id: "services/teacherActivities.ts", label: "teacherActivities.ts", p: "backend/src/services", t: "file", l: "back", d: "Valida las plantillas docentes y las traduce a filas de <code>resources</code> + ejercicios, para que se pinten con las mismas pantallas." },
+  { id: "services/assistantLevel.ts", label: "assistantLevel · motherTongue · conversationTitle", p: "backend/src/services", t: "file", l: "back", d: "Ajustes del tutor: pautas por tramo MECR, saludo bilingüe en la lengua materna y título corto de la conversación." },
+  { id: "services/classificador.ts", label: "classificador.ts", p: "backend/src/services", t: "file", l: "back", d: "Cliente HTTP del servicio clasificador de nivel (<code>classificador_llm</code>, :8000).", note: "Ninguna ruta lo importa todavía: está preparado pero sin conectar." },
+  { id: "backend/mcp", label: "mcp/ErrorDetector/", p: "backend", t: "folder", l: "back", d: "Servidor MCP con tres herramientas lingüísticas que usan los subagentes." },
+  { id: "mcp/index.ts", label: "index.ts", p: "backend/mcp", t: "file", l: "back", d: "Registra las herramientas en el <code>McpServer</code>." },
+  { id: "mcp/dnvClient.ts", label: "dnvClient.ts", p: "backend/mcp", t: "file", l: "back", d: "Consulta el Diccionari Normatiu Valencià (portal lexicval de la AVL)." },
+  { id: "mcp/softvalenciaClient.ts", label: "softvalenciaClient.ts", p: "backend/mcp", t: "file", l: "back", d: "Corrector ortográfico, gramatical y de estilo con criterios AVL." },
+  { id: "mcp/apertiumClient.ts", label: "apertiumClient.ts", p: "backend/mcp", t: "file", l: "back", d: "Traducción con Apertium, forzando la variante valenciana." },
+  { id: "backend/scripts", label: "scripts/", p: "backend", t: "folder", l: "back", d: "Generadores que se ejecutan a mano: audios del Nivel 0, de práctica oral y de saludos de escenarios (TTS matxa), traducciones infantiles (LLM) y descarga de pictogramas ARASAAC." },
+
+  // ---------- supabase ----------
+  { id: "supabase", p: "parlaval", t: "folder", l: "db", d: "Base de datos Postgres gestionada con Supabase (auth, REST, RLS)." },
+  { id: "supabase/migrations", label: "migrations/", p: "supabase", t: "folder", l: "db", d: "91 migraciones SQL que se aplican al arrancar: esquema, RLS, triggers de perfil, función de XP y <b>contenido</b> (escenarios, lecciones, ejercicios). Las 5 más recientes añaden práctica B2 y los exámenes B2 de octubre 2022-2025.", note: "Las 5 migraciones B2 aún no están en git." },
+  { id: "supabase/snippets", label: "snippets/", p: "supabase", t: "folder", l: "db", d: "Consultas sueltas del SQL Editor (muchas «Untitled query»). No se aplican automáticamente." },
+  { id: "db:catalogo", label: "Catálogo", p: "supabase", t: "table", l: "db", tables: "resources, practice_exercises, practice_passages", d: "Todas las actividades: escenarios, lecciones, prácticas y exámenes. <code>category</code> agrupa y <code>type</code> identifica; personaje, voz y fondo van en <code>metadata</code>." },
+  { id: "db:usuarios", label: "Usuarios y sesiones", p: "supabase", t: "table", l: "db", tables: "profiles, sessions, session_resource", d: "Perfil (nivel, XP, lengua materna, grupo de edad) y cada sesión/actividad abierta." },
+  { id: "db:aprendizaje", label: "Aprendizaje", p: "supabase", t: "table", l: "db", tables: "user_errors, user_evaluations, user_resource_results, learning_paths, learning_path_steps", d: "Errores detectados, evaluaciones, resultados de actividades y la ruta personalizada." },
+  { id: "db:clases", label: "Clases y rutas", p: "supabase", t: "table", l: "db", tables: "kids_classes, kids_class_members, study_paths, study_path_steps, teacher_activity_classes", d: "Clases del profesorado, miembros, rutas de clase y actividades asignadas." },
+  { id: "db:kids", label: "Nivel 0", p: "supabase", t: "table", l: "db", tables: "kids_sessions, kids_word_stats, kids_scenario_reviews, kids_parent_pins", d: "Partidas de las islas, palabras difíciles, revisión de objetivos de escenarios y hash del PIN familiar." },
+
+  // ---------- clasificador ----------
+  { id: "classificador_llm", p: "parlaval", t: "folder", l: "class", d: "Microservicio independiente (Docker, :8000) que asigna un nivel A1-C2 a un texto según la JQCV. Sin autenticación: nunca se expone a Internet, solo lo llama el backend." },
+  { id: "classificador_llm/src/servei.ts", label: "servei.ts", p: "classificador_llm", t: "file", l: "class", d: "API REST: <code>POST /classificar</code>." },
+  { id: "classificador_llm/src/classificador.ts", label: "classificador.ts", p: "classificador_llm", t: "file", l: "class", d: "Prompt few-shot a OpenAI que devuelve nivel y confianza." },
+  { id: "classificador_llm/src/nivells.ts", label: "nivells.ts", p: "classificador_llm", t: "file", l: "class", d: "Resumen de los «Quaderns de nivell» de la JQCV (2024) como contexto por nivel." },
+  { id: "classificador_llm/exemples", label: "exemples/", p: "classificador_llm", t: "folder", l: "class", d: "Tres textos de ejemplo por nivel (A1…C2) para el few-shot." },
+
+  // ---------- speech-lab ----------
+  { id: "speech-lab", p: "parlaval", t: "folder", l: "speech", d: "Laboratorio de voz en tiempo real (:3100), <b>independiente</b>: no toca frontend ni backend. Fases 0-2 y A completadas: Vosk en streaming, «modo llamada», faster-whisper catalán de Aina, TTS matxa y benchmark WER." },
+  { id: "speech-lab/src/streaming", label: "streaming/", p: "speech-lab", t: "folder", l: "speech", d: "Reconocimiento en streaming con Vosk vía sidecar Python (WebSocket)." },
+  { id: "speech-lab/src/batch", label: "batch/", p: "speech-lab", t: "folder", l: "speech", d: "Transcripción por lotes: Vosk o faster-whisper (sidecar)." },
+  { id: "speech-lab/src/tts", label: "tts/", p: "speech-lab", t: "folder", l: "speech", d: "TTS matxa remoto con registro de proveedores." },
+  { id: "speech-lab/src/bench", label: "bench/", p: "speech-lab", t: "folder", l: "speech", d: "Smoke test sin micrófono y cálculo de WER contra transcripciones de referencia." },
+  { id: "speech-lab/sidecar", label: "sidecar/", p: "speech-lab", t: "folder", l: "speech", d: "<code>vosk_stream.py</code> y <code>whisper_batch.py</code>: los modelos corren en Python." },
+  { id: "speech-lab/public", label: "public/", p: "speech-lab", t: "folder", l: "speech", d: "Página de pruebas en vivo y el <i>worklet</i> que convierte el micrófono a PCM16." },
+
+  // ---------- deploy / assets ----------
+  { id: "deploy", p: "parlaval", t: "folder", l: "shared", d: "Piezas del despliegue autoalojado: <code>Caddyfile</code> (proxy con las mismas rutas que Supabase Cloud), <code>db/migrate.sh</code> (aplica migraciones una vez cada una), <code>roles.sql</code> y <code>generate-secrets.mjs</code>." },
+  { id: "assets-src", p: "parlaval", t: "folder", l: "docs", d: "Fuentes que no se sirven: <code>avl/</code> (gramáticas GNV/GVB y quaderns B1 usados para escribir lecciones) y <code>robot-avatar/</code> (.blend, animaciones y exportador GLB)." },
+
+  // ---------- externos ----------
+  { id: "ext:openai", label: "OpenAI", t: "ext", l: "ext", d: "LLM principal (<code>OPENAI_MODEL</code>, por defecto gpt-4o-mini, con gpt-4o de respaldo). Lo usan el agente, los subagentes, la ruta, el evaluador de escritura y el clasificador." },
+  { id: "ext:deeplab", label: "DeepLab UJI", t: "ext", l: "ext", d: "Servidor de la UJI con API compatible con OpenAI: STT (whisper) y TTS <b>matxa</b> con voces valencianas (gina, lluc…)." },
+  { id: "ext:avl", label: "AVL · Softvalencià · Apertium", t: "ext", l: "ext", d: "Recursos lingüísticos normativos: diccionario DNV, corrector y traductor en variante valenciana." },
+  { id: "ext:supabase-auth", label: "Supabase Auth", t: "ext", l: "ext", d: "Registro, login y JWT. El backend verifica el token en cada petición." },
+  { id: "ext:arasaac", label: "ARASAAC", t: "ext", l: "ext", d: "Pictogramas para las lecciones infantiles (CC BY-NC-SA 4.0)." },
+];
+
+// Relaciones «usa»: [origen, destino, etiqueta]
+const U = [
+  ["frontend/src/App.tsx", "frontend/src/pages", "monta las rutas"],
+  ["frontend/src/App.tsx", "features/kids", "rutas infantiles"],
+  ["frontend", "shared/src/index.ts", "niveles"],
+  ["backend", "shared/src/index.ts", "niveles"],
+  ["pages/Chat.tsx", "components/VoiceInput.tsx", "graba voz"],
+  ["pages/Chat.tsx", "components/Scene*", "pinta la escena"],
+  ["pages/Chat.tsx", "lib/api.ts", "/api/turn, /api/tts"],
+  ["pages/Chat.tsx", "features/robot-avatar", "robot 3D"],
+  ["pages/Dashboard.tsx", "lib/api.ts", "/api/assistant"],
+  ["pages/Dashboard.tsx", "features/robot-avatar", "robot"],
+  ["pages/Summary.tsx", "lib/api.ts", "evaluación"],
+  ["pages/ErrorPractice.tsx", "lib/api.ts", "/api/errors"],
+  ["pages/Exam.tsx", "components/ExamExercises.tsx", "ejercicios"],
+  ["pages/Exam.tsx", "lib/api.ts", "/api/exams"],
+  ["pages/Exam.tsx", "public/exams", "material"],
+  ["pages/Exam.tsx", "public/audio", "audio comprensión"],
+  ["pages/Practice.tsx", "lib/api.ts", "/api/practice"],
+  ["pages/LearningPath.tsx", "lib/api.ts", "/api/learning-path"],
+  ["pages/StudyPaths.tsx", "lib/api.ts", "/api/study-paths"],
+  ["pages/MyClasses.tsx", "features/paths", "vistas de ruta"],
+  ["pages/TeacherClasses.tsx", "features/paths", "rutas de clase"],
+  ["pages/TeacherClasses.tsx", "features/activities", "actividades"],
+  ["pages/TeacherClasses.tsx", "lib/supabase.ts", "lee clases"],
+  ["pages/AuthPage.tsx", "lib/supabase.ts", "login"],
+  ["pages/TutorHistory.tsx", "lib/localStore.ts", "mensajes locales"],
+  ["pages/Kids*", "features/kids", "lecciones y progreso"],
+  ["components/ScenarioSelect.tsx", "lib/api.ts", "catálogo"],
+  ["features/activities", "lib/api.ts", "/api/teacher/*"],
+  ["features/paths", "lib/supabase.ts", "study_paths"],
+  ["kids/KidsHome.tsx", "kids/games", "juega rondas"],
+  ["kids/KidsHome.tsx", "kids/content", "islas"],
+  ["kids/games", "kids/sound.ts", "dice la consigna"],
+  ["kids/KidsHome.tsx", "kids/tracking.ts", "guarda partida"],
+  ["kids/sound.ts", "public/audio", "frases pregeneradas"],
+  ["kids/content", "public/pictograms", "pictogramas"],
+  ["kids/content", "kids/i18n", "subtítulos"],
+  ["kids/tracking.ts", "lib/supabase.ts", "escribe"],
+  ["lib/supabase.ts", "ext:supabase-auth", "sesión"],
+  ["lib/supabase.ts", "db:kids", "RLS"],
+  ["lib/supabase.ts", "db:clases", "RLS"],
+  ["lib/api.ts", "backend/src/index.ts", "HTTP :3001"],
+
+  ["backend/src/index.ts", "backend/src/routes", "monta routers"],
+  ["backend/src/routes", "backend/src/middleware", "requireAuth + rateLimit"],
+  ["middleware/auth.ts", "ext:supabase-auth", "verifica JWT"],
+  ["routes/turn.ts", "services/agent.ts", "respuesta"],
+  ["routes/turn.ts", "services/voice.ts", "STT/TTS"],
+  ["routes/turn.ts", "services/scenarios.ts", "personaje"],
+  ["routes/turn.ts", "services/assistantLevel.ts", "pautas"],
+  ["routes/turn.ts", "db:usuarios", "guarda turno"],
+  ["routes/tts.ts", "services/voice.ts", "sintetiza"],
+  ["routes/sessions.ts", "services/subagentRecommendation.ts", "evalúa"],
+  ["routes/sessions.ts", "services/kidsObjectives.ts", "objetivos"],
+  ["routes/sessions.ts", "services/learningPath.ts", "regenera ruta"],
+  ["routes/sessions.ts", "db:usuarios", "sesiones"],
+  ["routes/resources.ts", "services/catalog.ts", "jugables"],
+  ["routes/resources.ts", "services/examWritingEvaluator.ts", "corrige escritura"],
+  ["routes/resources.ts", "services/scenarios.ts", ""],
+  ["routes/resources.ts", "db:catalogo", "lee"],
+  ["routes/resources.ts", "db:aprendizaje", "resultados"],
+  ["routes/errors.ts", "services/subagentErrorDetector.ts", "detecta"],
+  ["routes/errors.ts", "db:aprendizaje", "user_errors"],
+  ["routes/assistant.ts", "services/assistantLevel.ts", "saludo"],
+  ["routes/assistant.ts", "db:usuarios", ""],
+  ["routes/learningPath.ts", "services/learningPath.ts", "genera"],
+  ["routes/learningPath.ts", "db:aprendizaje", ""],
+  ["routes/studyPaths.ts", "db:clases", ""],
+  ["routes/teacherActivities.ts", "services/teacherActivities.ts", "valida"],
+  ["services/teacherActivities.ts", "db:catalogo", "crea filas"],
+  ["services/teacherActivities.ts", "db:clases", "asigna"],
+  ["services/agent.ts", "ext:openai", "JSON"],
+  ["services/voice.ts", "ext:deeplab", "whisper + matxa"],
+  ["services/scenarios.ts", "db:catalogo", "escenari"],
+  ["services/subagentErrorDetector.ts", "backend/mcp", "herramientas MCP"],
+  ["services/subagentErrorDetector.ts", "ext:openai", ""],
+  ["services/subagentRecommendation.ts", "ext:openai", ""],
+  ["services/examWritingEvaluator.ts", "backend/mcp", "herramientas MCP"],
+  ["services/examWritingEvaluator.ts", "ext:openai", "rúbrica"],
+  ["services/learningPath.ts", "services/learningSignals.ts", "señales"],
+  ["services/learningPath.ts", "services/catalog.ts", ""],
+  ["services/learningPath.ts", "ext:openai", "elige pasos"],
+  ["services/learningPath.ts", "db:aprendizaje", "learning_paths"],
+  ["services/learningSignals.ts", "db:aprendizaje", ""],
+  ["services/kidsObjectives.ts", "ext:openai", ""],
+  ["services/kidsObjectives.ts", "db:kids", "reviews"],
+  ["services/classificador.ts", "classificador_llm/src/servei.ts", "HTTP :8000"],
+  ["mcp/index.ts", "mcp/dnvClient.ts", ""],
+  ["mcp/index.ts", "mcp/softvalenciaClient.ts", ""],
+  ["mcp/index.ts", "mcp/apertiumClient.ts", ""],
+  ["mcp/dnvClient.ts", "ext:avl", ""],
+  ["mcp/softvalenciaClient.ts", "ext:avl", ""],
+  ["mcp/apertiumClient.ts", "ext:avl", ""],
+  ["backend/scripts", "ext:deeplab", "genera audios"],
+  ["backend/scripts", "public/audio", "escribe .wav"],
+  ["backend/scripts", "kids/i18n", "traducciones"],
+  ["backend/scripts", "ext:arasaac", "descarga"],
+  ["backend/scripts", "public/pictograms", ""],
+
+  ["supabase/migrations", "db:catalogo", "crea + rellena"],
+  ["supabase/migrations", "db:usuarios", "crea"],
+  ["supabase/migrations", "db:aprendizaje", "crea"],
+  ["supabase/migrations", "db:clases", "crea"],
+  ["supabase/migrations", "db:kids", "crea"],
+  ["deploy", "supabase/migrations", "migrate.sh"],
+  ["docker-compose.yml", "deploy", ""],
+  ["docker-compose.yml", "classificador_llm", "servicio"],
+  ["docker-compose.yml", "backend", "api"],
+  ["docker-compose.yml", "frontend", "web"],
+
+  ["classificador_llm/src/servei.ts", "classificador_llm/src/classificador.ts", ""],
+  ["classificador_llm/src/classificador.ts", "classificador_llm/src/nivells.ts", "contexto"],
+  ["classificador_llm/src/classificador.ts", "classificador_llm/exemples", "few-shot"],
+  ["classificador_llm/src/classificador.ts", "ext:openai", ""],
+
+  ["speech-lab/src/streaming", "speech-lab/sidecar", "Vosk"],
+  ["speech-lab/src/batch", "speech-lab/sidecar", "whisper"],
+  ["speech-lab/src/tts", "ext:deeplab", "matxa"],
+  ["speech-lab/src/bench", "speech-lab/src/batch", "WER"],
+  ["speech-lab/public", "speech-lab/src/streaming", "WebSocket"],
+
+  ["build_robot.py", "assets-src", ""],
+  ["assets-src", "public/avatar-robot", "exporta GLB"],
+  ["features/robot-avatar", "public/avatar-robot", "carga GLB"],
+];
+
+const FLOWS = [
+  { id: "chat", name: "Conversar con un personaje", steps: [
+    ["pages/Chat.tsx", "El alumno abre un escenario. La pantalla lee personaje, voz y fondo del catálogo."],
+    ["components/VoiceInput.tsx", "Graba la voz (o texto) del turno."],
+    ["lib/api.ts", "Envía el audio a <code>POST /api/turn</code> con <code>include_audio: false</code>."],
+    ["middleware/auth.ts", "Se verifica el JWT y se aplica el límite de peticiones."],
+    ["routes/turn.ts", "Orquesta el turno y mide cada etapa."],
+    ["services/voice.ts", "Transcribe el audio con whisper en DeepLab."],
+    ["services/agent.ts", "Pide la respuesta del personaje a OpenAI, en JSON."],
+    ["db:usuarios", "Guarda el turno y el progreso."],
+    ["routes/tts.ts", "El cliente pide el audio aparte: el texto aparece antes."],
+    ["ext:deeplab", "matxa sintetiza la voz valenciana."],
+  ]},
+  { id: "errors", name: "Detectar y practicar errores", steps: [
+    ["pages/Summary.tsx", "Al acabar el chat se lanza el análisis."],
+    ["routes/errors.ts", "<code>POST /api/errors/analyze</code>."],
+    ["services/subagentErrorDetector.ts", "Un subagente LLM busca y clasifica errores."],
+    ["backend/mcp", "Consulta herramientas normativas por MCP."],
+    ["ext:avl", "DNV, Softvalencià y Apertium confirman la norma."],
+    ["db:aprendizaje", "Los errores quedan en <code>user_errors</code>."],
+    ["pages/ErrorPractice.tsx", "El alumno corrige cada error; si acierta, se marca resuelto."],
+  ]},
+  { id: "exam", name: "Hacer un examen JQCV", steps: [
+    ["supabase/migrations", "Las migraciones cargan cada convocatoria (p. ej. B2 octubre 2025)."],
+    ["pages/Exam.tsx", "Muestra las áreas y guarda el progreso en el navegador."],
+    ["components/ExamExercises.tsx", "Pinta los ejercicios y corrige los de opción múltiple."],
+    ["public/audio", "Audio de comprensión oral de la convocatoria."],
+    ["routes/resources.ts", "<code>GET /api/exams/:id</code> y evaluación de ejercicios escritos."],
+    ["services/examWritingEvaluator.ts", "Corrige la redacción con la rúbrica oficial."],
+    ["ext:openai", "El LLM aplica la rúbrica apoyado en las herramientas MCP."],
+  ]},
+  { id: "path", name: "Generar la ruta personalizada", steps: [
+    ["routes/sessions.ts", "Al cerrar una actividad se regenera la ruta en segundo plano."],
+    ["services/learningSignals.ts", "Reúne foco de evaluaciones, errores pendientes y resultados."],
+    ["services/catalog.ts", "Filtra el catálogo jugable del nivel."],
+    ["services/learningPath.ts", "Pide al LLM 5-7 pasos y valida la respuesta."],
+    ["ext:openai", "Elige el orden y el porqué."],
+    ["db:aprendizaje", "Se guarda en <code>learning_paths</code>."],
+    ["pages/LearningPath.tsx", "El alumno ve las etapas aprender → practicar → aplicar → comprobar."],
+  ]},
+  { id: "kids", name: "Jugar en el Nivel 0", steps: [
+    ["kids/KidsHome.tsx", "El niño toca una isla del mapa (todo se dice en voz alta)."],
+    ["kids/content", "Contenido de la isla, por etapas de ~5 rondas."],
+    ["kids/games", "Cada ronda es un minijuego."],
+    ["kids/sound.ts", "Dice la consigna con voz del navegador o audio pregenerado."],
+    ["backend/scripts", "Esos audios se generaron antes con el TTS matxa."],
+    ["kids/tracking.ts", "Guarda partida y palabras difíciles."],
+    ["db:kids", "Directamente en Supabase, protegido por RLS."],
+    ["pages/Kids*", "La familia ve el informe tras introducir su PIN."],
+  ]},
+  { id: "teacher", name: "La docente crea una actividad", steps: [
+    ["pages/TeacherClasses.tsx", "La docente gestiona sus clases."],
+    ["features/activities", "Rellena una plantilla cerrada en el editor."],
+    ["lib/api.ts", "<code>POST /api/teacher/activities</code>."],
+    ["routes/teacherActivities.ts", "Recibe y autoriza la petición."],
+    ["services/teacherActivities.ts", "Valida y la convierte en filas del catálogo."],
+    ["db:catalogo", "Queda como una actividad más."],
+    ["db:clases", "Se asigna a la clase."],
+    ["pages/MyClasses.tsx", "El alumnado la ve en «Clase»."],
+  ]},
+];
+
+// ---------- construcción ----------
+const byId = new Map(N.map(n => [n.id, n]));
+for (const n of N) { if (!n.label) n.label = n.id.split("/").pop(); }
+const E = [];
+for (const n of N) if (n.p) E.push({ source: n.p, target: n.id, k: "contains" });
+for (const [s, t, lab] of U) {
+  if (!byId.has(s) || !byId.has(t)) { console.warn("arista rota", s, t); continue; }
+  E.push({ source: s, target: t, k: "uses", lab });
+}
+const css = getComputedStyle(document.documentElement);
+const col = l => `var(${LAYERS[l].c})`;
+const R = n => n.t === "root" ? 20 : n.t === "folder" ? (n.p === "parlaval" ? 14 : 10) : n.t === "table" ? 11 : n.t === "ext" ? 12 : 5.5;
+
+// anclas por capa para que el grafo se agrupe
+const ANCHOR = {
+  front: [-520, 0], back: [60, 0], db: [520, -170], ext: [560, 200],
+  shared: [-60, -400], class: [300, 420], speech: [-260, 440], docs: [-560, -380],
+};
+const svg = d3.select("#svg");
+const g = svg.append("g");
+const gE = g.append("g"), gN = g.append("g");
+
+const sim = d3.forceSimulation(N)
+  .force("link", d3.forceLink(E).id(d => d.id)
+    .distance(e => e.k === "contains" ? (e.target.t === "file" ? 34 : 70) : 120)
+    .strength(e => e.k === "contains" ? 0.9 : 0.03))
+  .force("charge", d3.forceManyBody().strength(d => d.t === "file" ? -90 : -340))
+  .force("collide", d3.forceCollide(d => R(d) + 8))
+  .force("x", d3.forceX(d => ANCHOR[d.l][0]).strength(d => d.t === "root" ? 0.3 : 0.08))
+  .force("y", d3.forceY(d => ANCHOR[d.l][1]).strength(d => d.t === "root" ? 0.3 : 0.08))
+  .stop();
+const root = byId.get("parlaval"); root.fx = 0; root.fy = -180;
+for (let i = 0; i < 420; i++) sim.tick();
+
+const edgeSel = gE.selectAll("path").data(E).join("path")
+  .attr("class", e => "edge " + e.k)
+  .attr("stroke", e => e.k === "uses" ? col(e.source.l) : null);
+const nodeSel = gN.selectAll("g").data(N).join("g")
+  .attr("class", d => "node " + d.t)
+  .attr("tabindex", 0).attr("role", "button").attr("aria-label", d => d.label)
+  .style("--lc", d => col(d.l));
+nodeSel.each(function (d) {
+  const s = d3.select(this), r = R(d);
+  if (d.t === "table") s.append("rect").attr("class", "shape").attr("x", -r).attr("y", -r).attr("width", 2 * r).attr("height", 2 * r).attr("rx", 3).attr("fill", col(d.l));
+  else if (d.t === "ext") s.append("path").attr("class", "shape").attr("d", `M0 ${-r - 2}L${r + 2} 0L0 ${r + 2}L${-r - 2} 0Z`).attr("fill", col(d.l));
+  else s.append("circle").attr("class", "shape").attr("r", r).attr("fill", col(d.l));
+  s.append("text").attr("class", d.t === "file" ? "mono" : "")
+    .attr("x", r + 5).attr("dy", "0.35em")
+    .attr("font-size", d.t === "root" ? 17 : d.t === "file" ? 10.5 : 13)
+    .attr("font-weight", d.t === "file" ? 400 : 700)
+    .text(d.label);
+});
+function draw() {
+  edgeSel.attr("d", e => {
+    const { x: x1, y: y1 } = e.source, { x: x2, y: y2 } = e.target;
+    if (e.k === "contains") return `M${x1},${y1}L${x2},${y2}`;
+    const dx = x2 - x1, dy = y2 - y1, dr = Math.hypot(dx, dy) * 1.4;
+    return `M${x1},${y1}A${dr},${dr} 0 0,1 ${x2},${y2}`;
+  });
+  nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+}
+draw();
+
+// arrastrar nodos
+nodeSel.call(d3.drag()
+  .on("start", (ev, d) => { d.fx = d.x; d.fy = d.y; })
+  .on("drag", (ev, d) => { d.fx = d.x = ev.x; d.fy = d.y = ev.y; draw(); })
+  .on("end", (ev, d) => { if (d !== root) { d.fx = null; d.fy = null; } }));
+
+// zoom
+const zoom = d3.zoom().scaleExtent([0.2, 4]).on("zoom", ev => {
+  g.attr("transform", ev.transform);
+  labelVisibility(ev.transform.k);
+});
+svg.call(zoom).on("dblclick.zoom", null);
+function fit(nodes = N, pad = 40, dur = 500) {
+  const el = document.getElementById("stage"), W = el.clientWidth, H = el.clientHeight;
+  const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
+  const x0 = Math.min(...xs) - 30, x1 = Math.max(...xs) + 160, y0 = Math.min(...ys) - 30, y1 = Math.max(...ys) + 30;
+  const k = Math.min(2.2, Math.min((W - pad * 2) / (x1 - x0), (H - pad * 2) / (y1 - y0)));
+  const t = d3.zoomIdentity.translate(W / 2 - k * (x0 + x1) / 2, H / 2 - k * (y0 + y1) / 2).scale(k);
+  (matchMedia("(prefers-reduced-motion: reduce)").matches ? svg : svg.transition().duration(dur)).call(zoom.transform, t);
+}
+document.getElementById("zin").onclick = () => svg.transition().call(zoom.scaleBy, 1.4);
+document.getElementById("zout").onclick = () => svg.transition().call(zoom.scaleBy, 1 / 1.4);
+document.getElementById("zfit").onclick = () => fit();
+
+// ---------- estado: capas, selección, recorrido ----------
+const visible = new Set(Object.keys(LAYERS));
+let selected = null, flow = null, query = "";
+let hot = null; // Set de ids destacados
+
+function labelVisibility(k) {
+  nodeSel.select("text").attr("opacity", d => {
+    if (hot) return hot.has(d.id) ? 1 : 0;
+    return d.t === "file" && k < 0.9 ? 0 : 1;
+  });
+}
+function neighbors(id) {
+  const s = new Set([id]);
+  for (const e of E) { if (e.source.id === id) s.add(e.target.id); if (e.target.id === id) s.add(e.source.id); }
+  return s;
+}
+function refresh() {
+  hot = null;
+  if (flow) hot = new Set(flow.steps.map(s => s[0]));
+  else if (selected) hot = neighbors(selected);
+  else if (query) hot = new Set(N.filter(n => (n.label + " " + n.id + " " + (n.tables || "") + " " + n.d).toLowerCase().includes(query)).map(n => n.id));
+  const on = n => visible.has(n.l);
+  nodeSel.attr("display", d => on(d) ? null : "none")
+    .classed("dim", d => hot && !hot.has(d.id))
+    .classed("sel", d => d.id === selected || (flow && hot.has(d.id)));
+  edgeSel.attr("display", e => on(e.source) && on(e.target) ? null : "none")
+    .classed("hot", e => {
+      if (flow) { const ids = flow.steps.map(s => s[0]); const i = ids.indexOf(e.source.id); return i >= 0 && ids.includes(e.target.id) && e.k === "uses" || (i >= 0 && ids[i + 1] === e.target.id); }
+      return selected && (e.source.id === selected || e.target.id === selected);
+    })
+    .classed("dim", e => hot && !(hot.has(e.source.id) && hot.has(e.target.id)));
+  labelVisibility(d3.zoomTransform(svg.node()).k);
+  renderPanel();
+}
+
+// ---------- panel ----------
+const panel = document.getElementById("panel");
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function linkBtn(n, extra = "") {
+  return `<button data-go="${esc(n.id)}" style="--lc:${col(n.l)}"><i></i>${esc(n.label)}${extra ? ` <small>${esc(extra)}</small>` : ""}</button>`;
+}
+function renderPanel() {
+  if (flow) {
+    panel.innerHTML = `
+      <div class="kind" style="--lc:var(--accent)"><i></i>Recorrido</div>
+      <h2>${esc(flow.name)}</h2>
+      <ol class="steps">${flow.steps.map(([id, txt]) => `<li><button data-go="${esc(id)}">${esc(byId.get(id).label)}</button><br>${txt}</li>`).join("")}</ol>
+      <p class="note">Pulsa un paso para ver ese archivo, o vuelve a pulsar el recorrido para cerrarlo.</p>`;
+    return;
+  }
+  if (!selected) {
+    const counts = l => N.filter(n => n.l === l).length;
+    panel.innerHTML = `
+      <div class="kind" style="--lc:var(--accent)"><i></i>Vista general</div>
+      <h2>Cómo leer el mapa</h2>
+      <div class="stats">
+        <div><b>${N.length}</b><span>nodos</span></div>
+        <div><b>${U.length}</b><span>relaciones «usa»</span></div>
+        <div><b>${FLOWS.length}</b><span>recorridos</span></div>
+      </div>
+      <div class="desc">
+        <p>El proyecto tiene tres piezas que funcionan juntas y dos módulos aparte:</p>
+        <p><b style="color:var(--l-front)">Frontend</b> (izquierda) es lo que ve el usuario. Habla con el <b style="color:var(--l-back)">backend</b> (centro) por HTTP, y el backend lee y escribe en la <b style="color:var(--l-db)">base de datos</b> y llama a los <b style="color:var(--l-ext)">servicios externos</b> (OpenAI, voces de la UJI, recursos de la AVL).</p>
+        <p>Abajo quedan el <b style="color:var(--l-class)">clasificador de nivel</b> y el <b style="color:var(--l-speech)">speech-lab</b>, que se desarrollan por separado.</p>
+      </div>
+      <div class="group"><span class="lbl">Empieza por aquí</span><div class="links">
+        ${["frontend/src/App.tsx", "backend/src/index.ts", "routes/turn.ts", "supabase/migrations", "db:catalogo"].map(id => linkBtn(byId.get(id))).join("")}
+      </div></div>
+      <p class="note">Los archivos pequeños muestran su nombre al acercarte con la rueda o los botones.</p>`;
+    return;
+  }
+  const n = byId.get(selected);
+  const kids = N.filter(m => m.p === n.id);
+  const out = E.filter(e => e.k === "uses" && e.source.id === n.id);
+  const inc = E.filter(e => e.k === "uses" && e.target.id === n.id);
+  const parent = n.p && byId.get(n.p);
+  const kindName = { root: "Proyecto", folder: "Carpeta", file: "Archivo", table: "Tablas", ext: "Servicio externo" }[n.t];
+  panel.innerHTML = `
+    <div class="kind" style="--lc:${col(n.l)}"><i></i>${kindName} · ${LAYERS[n.l].name}</div>
+    <h2>${esc(n.label)}</h2>
+    ${n.t !== "ext" && n.t !== "table" && n.t !== "root" ? `<div class="path">${esc(n.id)}</div>` : ""}
+    <div class="desc"><p>${n.d}</p>${n.tables ? `<p class="path">${esc(n.tables)}</p>` : ""}</div>
+    ${n.note ? `<p class="note">${n.note}</p>` : ""}
+    ${parent ? `<div class="group"><span class="lbl">Dentro de</span><div class="links">${linkBtn(parent)}</div></div>` : ""}
+    ${kids.length ? `<div class="group"><span class="lbl">Contiene</span><div class="links">${kids.map(k => linkBtn(k)).join("")}</div></div>` : ""}
+    ${out.length ? `<div class="group"><span class="lbl">Usa</span><div class="links">${out.map(e => linkBtn(e.target, e.lab)).join("")}</div></div>` : ""}
+    ${inc.length ? `<div class="group"><span class="lbl">Lo usan</span><div class="links">${inc.map(e => linkBtn(e.source, e.lab)).join("")}</div></div>` : ""}
+    <div class="links"><button data-go="">← Vista general</button></div>`;
+}
+panel.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-go]"); if (!b) return;
+  const id = b.dataset.go;
+  if (!id) { selected = null; flow = null; setFlowButtons(); refresh(); fit(); return; }
+  select(id, true);
+});
+
+function select(id, center) {
+  flow = null; setFlowButtons();
+  selected = id;
+  const n = byId.get(id);
+  if (!visible.has(n.l)) { visible.add(n.l); setChips(); }
+  refresh();
+  if (center) fit([...neighbors(id)].map(i => byId.get(i)), 60);
+}
+nodeSel.on("click", (ev, d) => { ev.stopPropagation(); selected === d.id ? (selected = null, refresh()) : select(d.id, false); })
+  .on("keydown", (ev, d) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(d.id, true); } })
+  .on("mouseenter", function () { d3.select(this).select("text").attr("opacity", 1); })
+  .on("mouseleave", () => labelVisibility(d3.zoomTransform(svg.node()).k));
+svg.on("click", () => { if (selected || flow) { selected = null; flow = null; setFlowButtons(); refresh(); } });
+
+// ---------- chips de capa ----------
+const chips = document.getElementById("chips");
+function setChips() {
+  chips.innerHTML = Object.entries(LAYERS).map(([k, v]) =>
+    `<button class="chip" id="chip-${k}" data-l="${k}" aria-pressed="${visible.has(k)}" style="--c:var(${v.c})"><i></i>${v.name}</button>`).join("");
+}
+chips.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-l]"); if (!b) return;
+  const k = b.dataset.l;
+  visible.has(k) ? visible.delete(k) : visible.add(k);
+  if (visible.size === 0) Object.keys(LAYERS).forEach(l => visible.add(l));
+  setChips(); refresh();
+});
+setChips();
+
+// ---------- recorridos ----------
+const flowsEl = document.getElementById("flows");
+flowsEl.insertAdjacentHTML("beforeend", FLOWS.map(f => `<button class="flow" id="flow-${f.id}" data-f="${f.id}" aria-pressed="false">${f.name}</button>`).join(""));
+function setFlowButtons() { flowsEl.querySelectorAll("[data-f]").forEach(b => b.setAttribute("aria-pressed", flow && b.dataset.f === flow.id)); }
+flowsEl.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-f]"); if (!b) return;
+  const f = FLOWS.find(x => x.id === b.dataset.f);
+  flow = flow === f ? null : f; selected = null;
+  if (flow) flow.steps.forEach(([id]) => visible.add(byId.get(id).l));
+  setChips(); setFlowButtons(); refresh();
+  fit(flow ? flow.steps.map(s => byId.get(s[0])) : N, 60);
+});
+
+// ---------- búsqueda ----------
+const q = document.getElementById("q");
+q.addEventListener("input", () => { query = q.value.trim().toLowerCase(); selected = null; flow = null; setFlowButtons(); refresh(); });
+q.addEventListener("keydown", ev => {
+  if (ev.key !== "Enter") return;
+  const m = N.find(n => (n.label + " " + n.id).toLowerCase().includes(query));
+  if (m) { q.value = ""; query = ""; select(m.id, true); }
+});
+
+refresh();
+fit(N, 30, 0);
+
+</script>
+
+</html>

@@ -48,7 +48,8 @@ const asQuestion = (e: Extract<PracticeExercise, { kind: 'choice' }>, n: number)
 const writingMark = (evaluation: WritingEvaluation) => {
   switch (evaluation.rubrica) {
     case 'a2_redaccio': return { score: evaluation.mitjana_ponderada_base_10, total: 10 };
-    case 'b1_redaccio': return { score: evaluation.mitjana_base_10, total: 10 };
+    case 'b1_redaccio':
+    case 'b2_redaccio': return { score: evaluation.mitjana_base_10, total: 10 };
     default: return { score: evaluation.puntuacio_global, total: 15 };
   }
 };

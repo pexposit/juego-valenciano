@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Base de datos de ParlaVal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: diagrama entidad-relación por dominios (columnas) a la izquierda, ficha de la tabla a la derecha; debajo, funciones y hallazgos. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --sunk: #eef1f5;
+  --ink: #18202e;
+  --muted: #5d6779;
+  --line: #d9dee7;
+  --accent: #e8720c;
+  --accent-ink: #ffffff;
+  --warn: #b45309;
+  --d-id: #2563c9;
+  --d-ses: #d9620b;
+  --d-cat: #148a5c;
+  --d-seg: #8a3fd1;
+  --d-rut: #0f8a96;
+  --d-cla: #c2347a;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151d; --surface: #181e29; --sunk: #141922; --ink: #e8ecf3; --muted: #9aa4b6; --line: #2a3242;
+  --accent: #ff8c2e; --accent-ink: #1a1206; --warn: #f5a524;
+  --d-id: #6ea2ff; --d-ses: #ff9a4d; --d-cat: #3ccf8e; --d-seg: #bd8cff; --d-rut: #3cc7d4; --d-cla: #ff7ab8;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #11151d; --surface: #181e29; --sunk: #141922; --ink: #e8ecf3; --muted: #9aa4b6; --line: #2a3242;
+  --accent: #ff8c2e; --accent-ink: #1a1206; --warn: #f5a524;
+  --d-id: #6ea2ff; --d-ses: #ff9a4d; --d-cat: #3ccf8e; --d-seg: #bd8cff; --d-rut: #3cc7d4; --d-cla: #ff7ab8;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1500px; margin: 0 auto; padding-inline: 20px; padding-block: 18px 40px; display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 1.9rem; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 span { color: var(--accent); }
+header p { margin: 0; color: var(--muted); max-width: 75ch; }
+.lbl { font: 700 0.72rem var(--f-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+code, .mono { font-family: var(--f-mono); font-size: 0.85em; }
+p code, li code, td code { background: color-mix(in srgb, var(--accent) 10%, transparent); padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+button:focus-visible, .card:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.bar input { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); flex: 0 1 280px; min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--muted); align-items: center; }
+.badge { font: 700 0.62rem var(--f-mono); padding: 1px 4px; border-radius: 3px; letter-spacing: 0.02em; display: inline-block; line-height: 1.4; }
+.b-pk { background: var(--accent); color: var(--accent-ink); }
+.b-fk { border: 1px solid var(--muted); color: var(--muted); }
+.b-uq { border: 1px dashed var(--muted); color: var(--muted); }
+.zoom { display: flex; gap: 4px; margin-left: auto; }
+.zoom button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 700 1rem var(--f-body); cursor: pointer; }
+
+main { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; }
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: auto; max-height: calc(100vh - 40px); position: relative; }
+.diagram { position: relative; display: flex; gap: 56px; padding: 22px 26px 30px; width: max-content; }
+.diagram svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.col { display: flex; flex-direction: column; gap: 22px; width: 232px; position: relative; z-index: 1; }
+.col h3 { margin: 0; font: 700 0.78rem var(--f-body); text-transform: uppercase; letter-spacing: 0.09em; color: var(--dc); display: flex; align-items: center; gap: 8px; }
+.col h3::before { content: ""; width: 14px; height: 3px; background: var(--dc); border-radius: 2px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; cursor: pointer; box-shadow: 0 1px 0 var(--line); transition: opacity .15s, box-shadow .15s; }
+.card:hover { box-shadow: 0 0 0 1.5px var(--dc); }
+.card.sel { box-shadow: 0 0 0 2.5px var(--accent); }
+.card.dim { opacity: 0.25; }
+.card .hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 9px; background: color-mix(in srgb, var(--dc) 14%, var(--surface)); border-bottom: 1px solid var(--line); }
+.card .hd b { font: 700 0.82rem var(--f-mono); overflow-wrap: anywhere; }
+.card .hd span { font: 0.7rem var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.card.ext .hd { background: var(--sunk); }
+.card ul { list-style: none; margin: 0; padding: 3px 0; }
+.card li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px; align-items: center; padding: 1px 9px; font: 0.72rem/1.55 var(--f-mono); }
+.card li .t { color: var(--muted); font-size: 0.66rem; }
+.card li.k .n { font-weight: 700; }
+.card li .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rel { fill: none; stroke-width: 1.3; opacity: 0.4; transition: opacity .15s; }
+.rel.hot { opacity: 1; stroke-width: 2.2; }
+.rel.dim { opacity: 0.06; }
+
+aside { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; overflow: auto; max-height: calc(100vh - 40px); position: sticky; top: env(safe-area-inset-top, 0px); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.kind { display: flex; gap: 8px; align-items: center; font: 700 0.72rem var(--f-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--dc, var(--muted)); }
+.kind i { width: 9px; height: 9px; border-radius: 2px; background: var(--dc, var(--accent)); }
+aside h2 { font: 700 1.3rem var(--f-mono); margin: 0; overflow-wrap: anywhere; letter-spacing: -0.01em; }
+aside p { margin: 0; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.fact { font-size: 0.78rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.fact b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.fact.only { border-color: var(--d-ses); color: var(--d-ses); }
+.note { font-size: 0.86rem; border-left: 3px solid var(--warn); padding: 4px 0 4px 10px; }
+.group { display: flex; flex-direction: column; gap: 6px; }
+.cols { overflow-x: auto; }
+.cols table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.cols td { padding: 5px 6px 5px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.cols td:first-child { font: 500 0.78rem var(--f-mono); white-space: nowrap; }
+.cols td .t { display: block; color: var(--muted); font: 0.68rem var(--f-mono); }
+.links { display: flex; flex-wrap: wrap; gap: 5px; }
+.links button, .links span { font: 0.78rem var(--f-mono); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-align: left; overflow-wrap: anywhere; }
+.links button { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.links button i { width: 7px; height: 7px; border-radius: 2px; background: var(--dc); flex: none; }
+.links button:hover { border-color: var(--accent); }
+.links small { color: var(--muted); font-family: var(--f-body); }
+.access { display: grid; gap: 6px; }
+.access div { font-size: 0.85rem; display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 8px; }
+.access b { font: 700 0.7rem var(--f-body); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding-top: 2px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stats div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.stats b { font: 700 1.3rem var(--f-display); display: block; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 0.72rem; color: var(--muted); }
+
+section.below { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel h2 { font: 700 1.25rem var(--f-display); margin: 0; }
+.fn { display: grid; gap: 10px; }
+.fn div { display: grid; gap: 2px; padding-top: 10px; border-top: 1px solid var(--line); }
+.fn code { font-weight: 700; background: none; padding: 0; }
+.fn p { margin: 0; font-size: 0.88rem; color: var(--muted); }
+.fn .who { font-size: 0.78rem; }
+.find { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; }
+.find li::marker { color: var(--warn); }
+.find.ok li::marker { color: var(--d-cat); }
+
+@media (max-width: 1000px) {
+  main { grid-template-columns: minmax(0, 1fr); }
+  .stage { max-height: 75vh; }
+  aside { position: static; max-height: none; }
+}
+@media (max-width: 480px) {
+  .wrap { padding-inline: 16px; }
+  h1 { font-size: 1.5rem; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .zoom { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Base de datos de <span>ParlaVal</span></h1>
+    <p>Las 20 tablas del esquema <code>public</code> de Supabase, agrupadas por dominio. Las líneas van de cada clave foránea a la tabla a la que apunta. Pulsa una tabla para ver sus columnas, para qué sirve y qué código la lee o escribe.</p>
+  </header>
+
+  <div class="bar">
+    <input id="q" type="search" placeholder="Buscar tabla o columna…" aria-label="Buscar tabla o columna" autocomplete="off">
+    <div class="legend">
+      <span><span class="badge b-pk">PK</span> clave primaria</span>
+      <span><span class="badge b-fk">FK</span> clave foránea</span>
+      <span><span class="badge b-uq">UQ</span> única</span>
+      <span>· nº de filas en la BDD local</span>
+    </div>
+    <div class="zoom"><button id="zout" aria-label="Alejar">−</button><button id="zreset" aria-label="Tamaño normal" title="Tamaño normal">1:1</button><button id="zin" aria-label="Acercar">+</button></div>
+  </div>
+
+  <main>
+    <div class="stage" id="stage"><div class="diagram" id="diagram"><svg id="svg" aria-hidden="true"></svg></div></div>
+    <aside id="panel" aria-live="polite"></aside>
+  </main>
+
+  <section class="below">
+    <div class="panel">
+      <h2>Funciones y triggers</h2>
+      <p style="color:var(--muted);font-size:.9rem">Lógica que vive en Postgres. Las marcadas como <i>definer</i> se ejecutan con permisos del propietario: así el frontend puede hacer operaciones concretas sin tener acceso a la tabla entera.</p>
+      <div class="fn" id="fns"></div>
+    </div>
+    <div class="panel">
+      <h2>Lo que conviene saber</h2>
+      <ol class="find ok">
+        <li><b>Dos puertas de entrada.</b> El backend usa la clave <code>service_role</code>, que se salta la RLS. El frontend usa la clave pública y solo llega a lo que permiten las políticas o las funciones RPC. Por eso 10 tablas tienen RLS activada <b>sin ninguna política</b>: nadie las toca desde el navegador, solo el backend.</li>
+        <li><b>Los textos del usuario no se guardan en el servidor.</b> <code>user_errors</code> solo guarda la categoría del error y <code>user_evaluations</code> el foco prioritario. Lo que el alumno escribe o dice queda en el navegador (<code>lib/localStore.ts</code>, IndexedDB).</li>
+        <li><b>El contenido también es dato.</b> Escenarios, lecciones, prácticas y exámenes son filas de <code>resources</code> (236) con sus <code>practice_exercises</code> (5.477) y <code>practice_passages</code> (66), cargadas por migraciones. Añadir un escenario no requiere tocar código.</li>
+        <li><b>«kids_» no es solo infantil.</b> <code>kids_classes</code> y <code>kids_class_members</code> empezaron para el Nivel 0, pero ahora son las clases de cualquier nivel (las usan también alumnos adultos y las rutas de clase).</li>
+      </ol>
+      <ol class="find">
+        <li><b>Borrar un usuario puede fallar.</b> <code>session_resource.sesion_id → sessions</code> no tiene <code>ON DELETE CASCADE</code>. Al borrar un perfil se intentan borrar sus <code>sessions</code>, pero si alguna tiene filas en <code>session_resource</code>, Postgres lo impide.</li>
+        <li><b>Nombres mezclados.</b> <code>session_resource</code> usa <code>sesion_id</code> y <code>recurso_id</code> (castellano), mientras el resto del esquema está en inglés.</li>
+        <li><b>Tablas que ya no existen.</b> <code>conversation_sessions</code>, <code>conversation_messages</code> y <code>scenario_progress</code> aparecen en migraciones antiguas, pero se eliminaron después.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script>
+const DOM = {
+  id:  { name: "Identidad", c: "--d-id" },
+  ses: { name: "Sesiones", c: "--d-ses" },
+  cat: { name: "Catálogo", c: "--d-cat" },
+  seg: { name: "Seguimiento", c: "--d-seg" },
+  rut: { name: "Rutas", c: "--d-rut" },
+  cla: { name: "Clases y Nivel 0", c: "--d-cla" },
+};
+// columnas: [nombre, tipo, flags, nota]  flags: P=pk, N=admite null, U=parte de única
+const T = [
+  { id: "auth.users", d: "id", ext: true, rows: null, cols: [["id","uuid","P","Usuario de Supabase Auth (email, contraseña, metadatos del registro)."]],
+    what: "Tabla interna de <b>Supabase Auth</b>, fuera del esquema público. No la gestiona la app directamente: al registrarse alguien, el trigger <code>on_auth_user_created</code> le crea su fila en <code>profiles</code>.",
+    used: [["supabase-js", "login y registro (AuthPage.tsx)"], ["backend", "verifica el JWT (middleware/auth.ts)"]] },
+
+  { id: "profiles", d: "id", rows: 4, cols: [
+    ["id","uuid","P","Mismo id que en auth.users."],
+    ["display_name","text","N","Nombre visible."],
+    ["level","text","","nivell0, A1…C2. Por defecto A2. Los niños empiezan en nivell0."],
+    ["xp","integer","","Experiencia acumulada (≥ 0). La suma apply_turn_xp."],
+    ["streak_days","integer","","Días seguidos de práctica."],
+    ["last_active_on","date","N","Último día con actividad."],
+    ["badges","text[]","","Insignias conseguidas."],
+    ["created_at","timestamptz",""],
+    ["updated_at","timestamptz",""],
+    ["role","text","","user · teacher · admin. Un trigger impide cambiarlo desde la app."],
+    ["mother_tongue","text","N","es, en, fr, it, ro, uk, ca u other. Activa las traducciones de ayuda."],
+    ["age_group","text","","child o adult. Decide si entra al mundo infantil."],
+    ["show_mother_tongue","boolean","","Si se muestran las traducciones."],
+  ], what: "Un perfil por usuario: nivel, XP, rol y preferencias de idioma. Es el centro del esquema: casi todas las tablas de usuario cuelgan de aquí y se borran en cascada con él.",
+    rls: "Cada usuario lee y edita su propio perfil. El profesorado puede leer el de sus alumnos (<code>is_teacher_of</code>).",
+    used: [["routes/turn.ts","nivel y lengua materna en cada turno"],["routes/assistant.ts","saludo del tutor"],["routes/sessions.ts",""],["routes/errors.ts",""],["routes/studyPaths.ts",""],["routes/teacherActivities.ts","rol docente"],["services/learningPath.ts","nivel"],["App.tsx","carga el perfil"],["pages/AuthPage.tsx",""],["features/kids/progress.ts",""],["features/kids/tracking.ts","alumnos de una clase"]] },
+
+  { id: "kids_parent_pins", d: "id", rows: 0, cols: [
+    ["user_id","uuid","P","El niño (perfil infantil)."],
+    ["pin_hash","text","","Hash del PIN de 4 cifras; nunca el PIN en claro."],
+    ["fails","smallint","","Intentos fallidos seguidos."],
+    ["locked_until","timestamptz","N","Bloqueo temporal tras demasiados fallos."],
+    ["updated_at","timestamptz",""],
+  ], what: "PIN de la familia que protege el informe de seguimiento del niño. La persona adulta lo elige al crear la cuenta infantil.",
+    rls: "Sin políticas: nadie la lee directamente. Solo se accede mediante las funciones <code>kids_set_pin</code>, <code>kids_check_pin</code>, <code>kids_has_pin</code> y <code>kids_reset_pin</code>.",
+    used: [["features/kids/parentPin.ts","vía RPC"]] },
+
+  { id: "sessions", d: "ses", rows: 5, cols: [
+    ["id","uuid","P",""],
+    ["user_id","uuid","","Quién juega."],
+    ["started_at","timestamptz","","Se crea al hacer login, antes de elegir actividad."],
+    ["ended_at","timestamptz","N","Al cerrar la sesión."],
+    ["level_at_start","text","","Nivel del usuario al empezar."],
+    ["xp_earned","integer","","XP ganada en esta sesión (apply_turn_xp)."],
+    ["world_type","boolean","N","Siempre false al crearla; parece un resto sin uso."],
+  ], what: "Una visita del usuario a la app. Agrupa todas las actividades que abre en ese rato.",
+    rls: "Cada usuario gestiona sus propias sesiones.",
+    used: [["routes/sessions.ts","crea y cierra"],["routes/turn.ts",""],["routes/assistant.ts",""]] },
+
+  { id: "session_resource", d: "ses", rows: 6, cols: [
+    ["id","uuid","P",""],
+    ["sesion_id","uuid","","Sesión en la que se abrió."],
+    ["recurso_id","uuid","","Actividad abierta (resources)."],
+    ["resolved","boolean","N","Si la actividad se completó."],
+  ], what: "Cada vez que se abre una actividad (un chat, una práctica) dentro de una sesión. Es la «partida» concreta: los errores, las evaluaciones y la revisión del Nivel 0 se cuelgan de ella.",
+    rls: "El usuario solo puede enlazar recursos a sus propias sesiones (INSERT). El resto lo hace el backend.",
+    note: "<code>sesion_id</code> no tiene <code>ON DELETE CASCADE</code>: puede bloquear el borrado de un usuario. Además, sus nombres de columna están en castellano.",
+    used: [["routes/sessions.ts","crea al abrir"],["routes/turn.ts",""],["routes/errors.ts",""],["routes/assistant.ts","conversaciones del tutor"],["routes/learningPath.ts","estado de actividades"]] },
+
+  { id: "resources", d: "cat", rows: 236, cols: [
+    ["id","uuid","P",""],
+    ["name","varchar","","Título visible, p. ej. «3.1.4. Menjar i beure»."],
+    ["type","varchar","","Clave dentro de la categoría, p. ej. a2_menjar."],
+    ["category","varchar","","escenari, examen, morfosintaxi, comprensio_oral, expressio_escrita, assistent…"],
+    ["difficulty","text","","nivell0, A1…C2."],
+    ["url","text","N",""],
+    ["content","text","N","Descripción o consigna."],
+    ["metadata","jsonb","N","Todo lo específico de la categoría: personaje, voz, prompt, fondo, objetivos, lección, examen…"],
+    ["xp_earned","smallint","","XP que da completarla."],
+    ["img","text","N","Imagen de la tarjeta."],
+    ["sort_order","smallint","","Orden dentro de la categoría."],
+    ["teacher_id","uuid","N","Si la creó una docente; null en el catálogo oficial."],
+    ["created_at","timestamptz",""],
+  ], what: "El <b>catálogo de actividades</b>: escenarios de conversación, lecciones de gramática, prácticas por destrezas, exámenes JQCV y el tutor. Todo lo jugable es una fila de aquí, y las actividades de las docentes también.",
+    rls: "Sin políticas: solo el backend la lee y la sirve filtrada por <code>/api/resources</code>.",
+    extra: "<b>Claves de <code>metadata</code> según categoría.</b> <code>escenari</code>: character, character_role, voice, system_prompt, initial_prompt, greeting_audio, background, objectius, translations. <code>examen</code>: exam, certificate_level, exam_body, evaluation_criteria, time_limit_seconds, pdf_source. Lecciones: lesson, section_name, icon, color.",
+    used: [["routes/resources.ts","catálogo, prácticas, exámenes"],["services/scenarios.ts","escenarios"],["services/catalog.ts","qué es jugable"],["services/learningPath.ts","catálogo del nivel"],["services/teacherActivities.ts","crea actividades docentes"],["services/kidsObjectives.ts","objetivos del escenario"],["routes/sessions.ts",""],["routes/assistant.ts",""],["routes/learningPath.ts",""],["scripts/generate-scenario-audio.ts","saludos en audio"],["supabase/migrations","carga todo el contenido"]] },
+
+  { id: "practice_passages", d: "cat", rows: 66, cols: [
+    ["id","uuid","P",""],
+    ["resource_id","uuid","U","Práctica o examen al que pertenece."],
+    ["level","text","U","A1…C2."],
+    ["position","smallint","U","Orden dentro del recurso."],
+    ["media","text","","text o audio."],
+    ["title","text","N",""],
+    ["lines","jsonb","","Lista de frases: [{speaker, text, voice}]. Si es audio, es la transcripción."],
+    ["audio_url","text","N","Audio pregenerado (generate-practice-audio.ts)."],
+  ], what: "Textos y audios de comprensión: el pasaje que se lee o escucha antes de responder varias preguntas.",
+    rls: "Sin políticas: solo backend.",
+    used: [["routes/resources.ts","vía /api/practice y /api/exams"],["routes/teacherActivities.ts","docentes"],["scripts/generate-practice-audio.ts","sintetiza el audio"]] },
+
+  { id: "practice_exercises", d: "cat", rows: 5477, cols: [
+    ["id","uuid","P",""],
+    ["resource_id","uuid","U","Práctica o examen."],
+    ["level","text","U","A1…C2."],
+    ["position","smallint","U","Orden."],
+    ["kind","text","","choice (4.943) · fill (488) · writing (44) · form (2)."],
+    ["prompt","text","","Enunciado."],
+    ["options","text[]","N","Opciones; la correcta va siempre primera y el frontend las baraja."],
+    ["answers","text[]","N","Respuestas válidas."],
+    ["explanation","text","N","Explicación tras corregir."],
+    ["passage_id","uuid","N","Pasaje asociado, si es de comprensión."],
+    ["task","jsonb","N","Para writing: min_words, max_words, words. Para form: fields."],
+  ], what: "Cada pregunta de una práctica o examen. Es la tabla más grande con diferencia. Varias restricciones CHECK garantizan que un ejercicio de opción múltiple tenga al menos 2 opciones y la respuesta esté entre ellas.",
+    rls: "Sin políticas: solo backend. Así las respuestas correctas no llegan al navegador antes de tiempo.",
+    used: [["routes/resources.ts","sirve y corrige"],["services/catalog.ts","cuenta ejercicios por recurso"],["routes/errors.ts","errores de práctica"],["routes/teacherActivities.ts","docentes"],["supabase/migrations","contenido"]] },
+
+  { id: "user_errors", d: "seg", rows: 3, cols: [
+    ["id","uuid","P",""],
+    ["user_id","uuid","",""],
+    ["category","text","","Tipo de error (p. ej. «Articles, demostratius i possessius»)."],
+    ["source","text","","chat · practice · writing."],
+    ["resolved","boolean","","Si ya lo corrigió en ErrorPractice."],
+    ["resolved_at","timestamptz","N",""],
+    ["session_resource_id","uuid","N","Partida en la que salió (chat)."],
+    ["resource_id","uuid","N","Actividad."],
+    ["exercise_id","uuid","N","Ejercicio fallado (práctica). Único mientras esté pendiente."],
+    ["created_at","timestamptz",""],
+  ], what: "Errores detectados al alumno, para practicarlos después y para orientar su ruta. No guarda el texto erróneo: ese se queda en el navegador.",
+    rls: "Sin políticas: solo backend.",
+    used: [["routes/errors.ts","detecta, lista y resuelve"],["services/learningSignals.ts","errores pendientes por categoría"],["services/learningPath.ts",""],["routes/learningPath.ts",""]] },
+
+  { id: "user_evaluations", d: "seg", rows: 0, cols: [
+    ["id","uuid","P",""],
+    ["user_id","uuid","N",""],
+    ["session_resource_id","uuid","N","Chat evaluado."],
+    ["priority_focus","text","","Lo que más debe trabajar, según el LLM."],
+    ["created_at","timestamptz",""],
+  ], what: "Resultado de la evaluación pedagógica al cerrar un chat (<code>subagentRecommendation.ts</code>). Del informe completo solo se guarda el foco prioritario.",
+    rls: "Sin políticas: solo backend.",
+    used: [["routes/sessions.ts","guarda al cerrar"],["services/learningSignals.ts","últimos focos"],["services/learningPath.ts",""],["pages/Summary.tsx","la consulta (vía API)"]] },
+
+  { id: "user_resource_results", d: "seg", rows: 7, cols: [
+    ["id","uuid","P",""],
+    ["user_id","uuid","",""],
+    ["resource_id","uuid","",""],
+    ["kind","text","","practice · exam · chat."],
+    ["level","text","N",""],
+    ["score","numeric","N","Aciertos (0 ≤ score ≤ total)."],
+    ["total","numeric","N",""],
+    ["details","jsonb","","Detalle libre, p. ej. {answered: 10}."],
+    ["created_at","timestamptz",""],
+  ], what: "Resultado de cada actividad terminada. Sirve para marcar pasos de ruta como hechos y para que la IA sepa qué domina el alumno.",
+    rls: "Sin políticas: solo backend.",
+    used: [["routes/resources.ts","/results de práctica y examen"],["routes/learningPath.ts","estado de actividades"],["routes/studyPaths.ts","progreso de rutas"],["services/learningSignals.ts",""],["services/learningPath.ts",""]] },
+
+  { id: "learning_paths", d: "rut", rows: 2, cols: [
+    ["id","uuid","P",""],
+    ["user_id","uuid","",""],
+    ["level","text","","Nivel para el que se generó."],
+    ["status","text","","active · archived. Solo una activa por usuario."],
+    ["focus","text[]","","Categorías que trabaja."],
+    ["rationale","text","","Explicación del LLM de por qué esta ruta."],
+    ["source_focus","text","N","Foco de evaluación que la originó."],
+    ["created_at","timestamptz",""],
+  ], what: "La <b>ruta personalizada</b> que genera la IA a partir de errores, evaluaciones y resultados. Al regenerarla, la anterior pasa a archived.",
+    rls: "Sin políticas: solo backend.",
+    used: [["services/learningPath.ts","genera y guarda"],["routes/learningPath.ts","GET /api/learning-path"]] },
+
+  { id: "learning_path_steps", d: "rut", rows: 11, cols: [
+    ["id","uuid","P",""],
+    ["path_id","uuid","U",""],
+    ["position","smallint","U","Orden del paso."],
+    ["resource_id","uuid","U","Actividad del paso (no se repite en la ruta)."],
+    ["stage","text","","aprendre · practicar · aplicar · comprovar."],
+    ["reason","text","","Por qué este paso."],
+    ["status","text","","pending · done · skipped."],
+    ["completed_at","timestamptz","N",""],
+  ], what: "Los 5-7 pasos de una ruta personalizada, cada uno con su etapa del ciclo y su motivo.",
+    rls: "Sin políticas: solo backend.",
+    used: [["services/learningPath.ts",""],["pages/LearningPath.tsx","los muestra (vía API)"]] },
+
+  { id: "study_paths", d: "rut", rows: 14, cols: [
+    ["id","uuid","P",""],
+    ["level","text","","A1…B2."],
+    ["title","text","","1-80 caracteres."],
+    ["description","text","","Hasta 400 caracteres."],
+    ["teacher_id","uuid","N","Null = ruta predefinida."],
+    ["class_id","uuid","N","Clase a la que va. Va junto con teacher_id: o los dos o ninguno."],
+    ["sort_order","smallint",""],
+    ["created_at","timestamptz",""],
+    ["updated_at","timestamptz",""],
+  ], what: "Rutas de estudio fijas: las <b>predefinidas</b> de cada nivel (A2, B1…) y las que crea una <b>docente</b> para su clase.",
+    rls: "Se ven las predefinidas, las propias y las de las clases a las que perteneces. La docente borra las suyas; para guardar se usa <code>save_study_path</code>.",
+    used: [["routes/studyPaths.ts","GET /api/study-paths"],["features/paths/teacherPaths.ts","docentes, directo y vía RPC"]] },
+
+  { id: "study_path_steps", d: "rut", rows: 148, cols: [
+    ["path_id","uuid","P",""],
+    ["position","smallint","P","Desde 1."],
+    ["resource_id","uuid","U","Actividad del paso."],
+  ], what: "Las actividades de una ruta de estudio, en orden.",
+    rls: "Visibles si lo es su ruta.",
+    used: [["routes/studyPaths.ts",""],["routes/teacherActivities.ts","al borrar una actividad"],["features/paths/teacherPaths.ts",""]] },
+
+  { id: "kids_classes", d: "cla", rows: 0, cols: [
+    ["id","uuid","P",""],
+    ["teacher_id","uuid","","Docente propietaria."],
+    ["name","text","","1-60 caracteres."],
+    ["code","text","U","Código de 6 caracteres sin letras confusas (sin I, O, 0, 1)."],
+    ["levels","text[]","","Niveles de la clase."],
+    ["created_at","timestamptz",""],
+  ], what: "Las clases del profesorado. La docente la crea y recibe un código; alumnos o familias se unen con él.",
+    rls: "La ven la docente y sus miembros; solo la docente la renombra o borra. Se crea con <code>kids_create_class</code>.",
+    used: [["features/kids/tracking.ts","crear, unirse, listar"],["routes/teacherActivities.ts",""],["pages/TeacherClasses.tsx",""]] },
+
+  { id: "kids_class_members", d: "cla", rows: 0, cols: [
+    ["class_id","uuid","P",""],
+    ["student_id","uuid","P",""],
+    ["joined_at","timestamptz",""],
+  ], what: "Quién está en cada clase (alumnos adultos o perfiles infantiles).",
+    rls: "La ven el alumno y la docente; cualquiera de los dos puede quitar la membresía. Para unirse se usa <code>kids_join_class</code>.",
+    used: [["features/kids/tracking.ts",""],["routes/studyPaths.ts","/api/my-classes"],["services/teacherActivities.ts","quién ve una actividad"]] },
+
+  { id: "teacher_activity_classes", d: "cla", rows: 0, cols: [
+    ["resource_id","uuid","P","Actividad (de la docente o del catálogo)."],
+    ["class_id","uuid","P",""],
+    ["assigned_at","timestamptz",""],
+  ], what: "Qué actividades ha asignado la docente a cada clase.",
+    rls: "Sin políticas: solo backend.",
+    used: [["routes/teacherActivities.ts","asignar y quitar"],["services/teacherActivities.ts",""],["routes/studyPaths.ts",""]] },
+
+  { id: "kids_sessions", d: "cla", rows: 0, cols: [
+    ["id","uuid","P",""],
+    ["user_id","uuid","",""],
+    ["island","text","","Isla jugada."],
+    ["stage","smallint","N","Etapa dentro de la isla."],
+    ["rounds","smallint","","Rondas jugadas (> 0)."],
+    ["first_try","smallint","","Acertadas a la primera."],
+    ["misses","smallint","","Fallos."],
+    ["easy","boolean","","Modo fácil."],
+    ["seconds","integer","","Duración."],
+    ["created_at","timestamptz",""],
+  ], what: "Cada partida de una isla del Nivel 0. Con esto se calcula el informe para familia y profesorado.",
+    rls: "La ven el niño (su cuenta) y su docente. Se escribe con <code>kids_finish_session</code>.",
+    used: [["features/kids/tracking.ts","guarda y lee"],["features/kids/report.ts","informe"]] },
+
+  { id: "kids_word_stats", d: "cla", rows: 0, cols: [
+    ["user_id","uuid","P",""],
+    ["item_id","text","P","Palabra o tarjeta."],
+    ["word","text","",""],
+    ["emoji","text","",""],
+    ["island","text","",""],
+    ["attempts","integer","","Veces preguntada."],
+    ["misses","integer","","Veces fallada (≤ attempts)."],
+    ["last_seen","timestamptz",""],
+  ], what: "Qué palabras le cuestan a cada niño. Se acumula al final de cada partida.",
+    rls: "La ven el niño y su docente. Se escribe con <code>kids_finish_session</code>.",
+    used: [["features/kids/tracking.ts",""]] },
+
+  { id: "kids_scenario_reviews", d: "cla", rows: 0, cols: [
+    ["session_resource_id","uuid","P","La conversación revisada."],
+    ["user_id","uuid","",""],
+    ["resource_id","uuid","","Escenario."],
+    ["scenario_name","text","",""],
+    ["objectives","jsonb","","Objetivos del escenario y si los cumplió."],
+    ["turns","smallint","","Turnos de la conversación."],
+    ["seconds","integer","",""],
+    ["created_at","timestamptz",""],
+  ], what: "Revisión de una conversación del Nivel 0: el LLM solo dice qué objetivos cumplió el niño, sin buscar errores.",
+    rls: "La ven el niño y su docente; la escribe el backend.",
+    used: [["services/kidsObjectives.ts","la genera"],["features/kids/tracking.ts","la lee"],["features/kids/ConversationView.tsx",""]] },
+];
+
+const FK = [
+  ["profiles","id","auth.users","cascade"],
+  ["kids_parent_pins","user_id","profiles","cascade"],
+  ["sessions","user_id","profiles","cascade"],
+  ["session_resource","sesion_id","sessions","no action"],
+  ["session_resource","recurso_id","resources","cascade"],
+  ["resources","teacher_id","profiles","cascade"],
+  ["practice_passages","resource_id","resources","cascade"],
+  ["practice_exercises","resource_id","resources","cascade"],
+  ["practice_exercises","passage_id","practice_passages","cascade"],
+  ["user_errors","user_id","profiles","cascade"],
+  ["user_errors","session_resource_id","session_resource","cascade"],
+  ["user_errors","resource_id","resources","cascade"],
+  ["user_errors","exercise_id","practice_exercises","cascade"],
+  ["user_evaluations","user_id","profiles","cascade"],
+  ["user_evaluations","session_resource_id","session_resource","cascade"],
+  ["user_resource_results","user_id","profiles","cascade"],
+  ["user_resource_results","resource_id","resources","cascade"],
+  ["learning_paths","user_id","profiles","cascade"],
+  ["learning_path_steps","path_id","learning_paths","cascade"],
+  ["learning_path_steps","resource_id","resources","cascade"],
+  ["study_paths","teacher_id","profiles","cascade"],
+  ["study_paths","class_id","kids_classes","cascade"],
+  ["study_path_steps","path_id","study_paths","cascade"],
+  ["study_path_steps","resource_id","resources","cascade"],
+  ["kids_classes","teacher_id","profiles","cascade"],
+  ["kids_class_members","class_id","kids_classes","cascade"],
+  ["kids_class_members","student_id","profiles","cascade"],
+  ["teacher_activity_classes","resource_id","resources","cascade"],
+  ["teacher_activity_classes","class_id","kids_classes","cascade"],
+  ["kids_sessions","user_id","profiles","cascade"],
+  ["kids_word_stats","user_id","profiles","cascade"],
+  ["kids_scenario_reviews","session_resource_id","session_resource","cascade"],
+  ["kids_scenario_reviews","user_id","profiles","cascade"],
+  ["kids_scenario_reviews","resource_id","resources","cascade"],
+];
+
+const FNS = [
+  ["handle_new_user()", "trigger · definer", "Al registrarse alguien en auth.users, crea su perfil: grupo de edad, nivel inicial (los niños siempre en nivell0) y lengua materna, a partir de los datos del formulario.", "trigger on_auth_user_created"],
+  ["profiles_protect_role()", "trigger", "Impide que un usuario se asigne rol de teacher o admin desde la app. Solo el backend o el SQL Editor pueden cambiar el rol.", "BEFORE INSERT/UPDATE en profiles"],
+  ["apply_turn_xp(user, session, delta)", "definer", "Suma XP al perfil y a la sesión en una sola llamada.", "routes/turn.ts"],
+  ["is_teacher_of(student) · is_member_of(class)", "definer", "Ayudantes de las políticas RLS: ¿soy docente de este alumno? ¿pertenezco a esta clase?", "políticas RLS"],
+  ["kids_create_class(name, levels) · kids_join_class(code)", "definer", "Crear una clase con código único y unirse a ella con ese código.", "features/kids/tracking.ts"],
+  ["kids_finish_session(island, stage, rounds, …, words)", "definer", "Guarda una partida del Nivel 0 y actualiza las estadísticas de cada palabra en una transacción.", "features/kids/tracking.ts"],
+  ["kids_set_pin · kids_check_pin · kids_has_pin · kids_reset_pin", "definer", "Gestionan el PIN familiar: lo guardan con hash, cuentan los fallos y bloquean tras varios intentos. El reinicio pide la contraseña de la cuenta.", "features/kids/parentPin.ts"],
+  ["save_study_path(id, class, level, title, desc, resources[])", "definer", "Guarda una ruta de clase con sus pasos, comprobando que la clase es de la docente.", "features/paths/teacherPaths.ts"],
+  ["cefr_of · level_label · valid_class_levels", "", "Utilidades de niveles: nivel MECR, nombre visible y validación de la lista de niveles de una clase.", "CHECK de kids_classes"],
+];
+
+// ---------- render ----------
+const byId = new Map(T.map(t => [t.id, t]));
+const colorOf = t => `var(${DOM[t.d].c})`;
+const fkOf = new Map(); FK.forEach(([t, c, ref]) => fkOf.set(t + "." + c, ref));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = n => n == null ? "" : n.toLocaleString("es-ES");
+
+const diagram = document.getElementById("diagram");
+const svg = document.getElementById("svg");
+const ORDER = { id: ["auth.users","profiles","kids_parent_pins"], ses: ["sessions","session_resource"], cat: ["resources","practice_passages","practice_exercises"], seg: ["user_errors","user_evaluations","user_resource_results"], rut: ["learning_paths","learning_path_steps","study_paths","study_path_steps"], cla: ["kids_classes","kids_class_members","teacher_activity_classes","kids_sessions","kids_word_stats","kids_scenario_reviews"] };
+for (const [d, ids] of Object.entries(ORDER)) {
+  const col = document.createElement("div");
+  col.className = "col"; col.style.setProperty("--dc", `var(${DOM[d].c})`);
+  col.innerHTML = `<h3>${DOM[d].name}</h3>` + ids.map(id => {
+    const t = byId.get(id);
+    return `<div class="card${t.ext ? " ext" : ""}" id="card-${id.replace(".", "-")}" data-t="${id}" tabindex="0" role="button" aria-label="Tabla ${id}">
+      <div class="hd"><b>${id}</b><span>${t.rows == null ? "auth" : fmt(t.rows) + " filas"}</span></div>
+      <ul>${t.cols.map(([n, ty, f]) => {
+        const fk = fkOf.has(id + "." + n);
+        const b = f.includes("P") ? `<span class="badge b-pk">PK</span>` : fk ? `<span class="badge b-fk">FK</span>` : f.includes("U") ? `<span class="badge b-uq">UQ</span>` : "";
+        return `<li class="${f.includes("P") || fk ? "k" : ""}" data-c="${n}">${b || "<span></span>"}<span class="n">${n}</span><span class="t">${ty}</span></li>`;
+      }).join("")}</ul></div>`;
+  }).join("");
+  diagram.appendChild(col);
+}
+
+function rel(el) { // posición relativa al diagrama, sin efecto del zoom
+  let x = 0, y = 0, e = el;
+  while (e && e !== diagram) { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; }
+  return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+}
+let paths = [];
+function drawLines() {
+  svg.innerHTML = "";
+  svg.setAttribute("viewBox", `0 0 ${diagram.offsetWidth} ${diagram.offsetHeight}`);
+  paths = FK.map(([t, c, ref, del]) => {
+    const card = document.querySelector(`[data-t="${t}"]`), row = card.querySelector(`[data-c="${c}"]`);
+    const target = document.querySelector(`[data-t="${ref}"]`);
+    const a = rel(row), ac = rel(card), b = rel(target);
+    const y1 = a.y + a.h / 2, y2 = b.y + 14;
+    let x1, x2, d;
+    if (Math.abs((ac.x) - b.x) < 5) { // misma columna: curva por la izquierda
+      x1 = ac.x; x2 = b.x; const bend = 22 + Math.min(40, Math.abs(y2 - y1) / 10);
+      d = `M${x1},${y1} C${x1 - bend},${y1} ${x2 - bend},${y2} ${x2},${y2}`;
+    } else if (ac.x > b.x) {
+      x1 = ac.x; x2 = b.x + b.w; const m = (x1 - x2) / 2;
+      d = `M${x1},${y1} C${x1 - m},${y1} ${x2 + m},${y2} ${x2},${y2}`;
+    } else {
+      x1 = ac.x + ac.w; x2 = b.x; const m = (x2 - x1) / 2;
+      d = `M${x1},${y1} C${x1 + m},${y1} ${x2 - m},${y2} ${x2},${y2}`;
+    }
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("d", d); p.setAttribute("class", "rel");
+    p.setAttribute("stroke", colorOf(byId.get(t)));
+    if (del === "no action") { p.setAttribute("stroke-dasharray", "5 3"); }
+    p.dataset.from = t; p.dataset.to = ref;
+    svg.appendChild(p);
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("cx", x2); dot.setAttribute("cy", y2); dot.setAttribute("r", 3); dot.setAttribute("fill", colorOf(byId.get(t)));
+    dot.setAttribute("class", "rel"); dot.dataset.from = t; dot.dataset.to = ref;
+    svg.appendChild(dot);
+    return p;
+  });
+  applyState();
+}
+
+// ---------- estado ----------
+let selected = null, query = "";
+function related(id) {
+  const s = new Set([id]);
+  FK.forEach(([t, , ref]) => { if (t === id) s.add(ref); if (ref === id) s.add(t); });
+  return s;
+}
+function applyState() {
+  let hot = null;
+  if (selected) hot = related(selected);
+  else if (query) hot = new Set(T.filter(t => (t.id + " " + t.cols.map(c => c[0] + " " + (c[3] || "")).join(" ") + " " + t.what).toLowerCase().includes(query)).map(t => t.id));
+  document.querySelectorAll(".card").forEach(c => {
+    c.classList.toggle("sel", c.dataset.t === selected);
+    c.classList.toggle("dim", !!hot && !hot.has(c.dataset.t));
+  });
+  svg.querySelectorAll(".rel").forEach(p => {
+    const on = selected && (p.dataset.from === selected || p.dataset.to === selected);
+    p.classList.toggle("hot", !!on);
+    p.classList.toggle("dim", !!hot && !on && !(query && hot.has(p.dataset.from) && hot.has(p.dataset.to)));
+  });
+  renderPanel();
+}
+
+const panel = document.getElementById("panel");
+const tBtn = (id, extra) => `<button data-go="${id}" style="--dc:${colorOf(byId.get(id))}"><i></i>${id}${extra ? ` <small>${esc(extra)}</small>` : ""}</button>`;
+function renderPanel() {
+  if (!selected) {
+    const rows = T.reduce((a, t) => a + (t.rows || 0), 0);
+    panel.innerHTML = `
+      <div class="kind"><i></i>Vista general</div>
+      <h2 style="font-family:var(--f-display)">Cómo está organizada</h2>
+      <div class="stats">
+        <div><b>20</b><span>tablas</span></div>
+        <div><b>${FK.length}</b><span>claves foráneas</span></div>
+        <div><b>16</b><span>funciones</span></div>
+        <div><b>${fmt(rows)}</b><span>filas (local)</span></div>
+      </div>
+      <p>Todo gira alrededor de dos tablas: <code>profiles</code> (quién) y <code>resources</code> (qué). Casi cualquier otra tabla apunta a una de ellas o a las dos.</p>
+      <div class="group"><span class="lbl">Por dominio</span>
+        ${Object.entries(ORDER).map(([d, ids]) => `<div class="links">${ids.map(id => tBtn(id)).join("")}</div>`).join("")}
+      </div>
+      <p style="font-size:.85rem;color:var(--muted)">La línea discontinua marca la única clave foránea sin borrado en cascada. Los recuentos de filas son de tu Supabase local a 13/10/2026.</p>`;
+    return;
+  }
+  const t = byId.get(selected);
+  const out = FK.filter(f => f[0] === t.id), inc = FK.filter(f => f[2] === t.id);
+  const backendOnly = t.rls && t.rls.startsWith("Sin políticas: solo");
+  panel.innerHTML = `
+    <div class="kind" style="--dc:${colorOf(t)}"><i></i>${DOM[t.d].name}</div>
+    <h2>${t.id}</h2>
+    <div class="facts">
+      ${t.rows != null ? `<span class="fact"><b>${fmt(t.rows)}</b> filas</span>` : ""}
+      <span class="fact"><b>${t.cols.length}</b> columnas</span>
+      ${backendOnly ? `<span class="fact only">solo backend</span>` : t.ext ? "" : `<span class="fact">accesible desde el frontend con RLS</span>`}
+    </div>
+    <p>${t.what}</p>
+    ${t.note ? `<p class="note">${t.note}</p>` : ""}
+    ${t.extra ? `<p style="font-size:.88rem">${t.extra}</p>` : ""}
+    <div class="group"><span class="lbl">Columnas</span><div class="cols"><table><tbody>
+      ${t.cols.map(([n, ty, f, note]) => {
+        const ref = fkOf.get(t.id + "." + n);
+        const b = [f.includes("P") ? `<span class="badge b-pk">PK</span>` : "", ref ? `<span class="badge b-fk">FK</span>` : "", f.includes("U") && !f.includes("P") ? `<span class="badge b-uq">UQ</span>` : ""].join(" ");
+        return `<tr><td>${n}<span class="t">${ty}${f.includes("N") ? " · null" : ""}</span></td><td>${b} ${note ? esc(note) : ""}${ref ? ` → <button class="linkish" data-go="${ref}" style="font:inherit;background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline">${ref}</button>` : ""}</td></tr>`;
+      }).join("")}
+    </tbody></table></div></div>
+    ${out.length ? `<div class="group"><span class="lbl">Apunta a</span><div class="links">${out.map(f => tBtn(f[2], f[1])).join("")}</div></div>` : ""}
+    ${inc.length ? `<div class="group"><span class="lbl">La referencian</span><div class="links">${inc.map(f => tBtn(f[0], f[1])).join("")}</div></div>` : ""}
+    ${t.rls ? `<div class="access"><div><b>Seguridad</b><span>${t.rls}</span></div></div>` : ""}
+    <div class="group"><span class="lbl">Dónde se usa</span><div class="links">${t.used.map(([f, why]) => `<span>${esc(f)}${why ? ` <small>${esc(why)}</small>` : ""}</span>`).join("")}</div></div>
+    <div class="links"><button data-go="">← Vista general</button></div>`;
+}
+
+function select(id, scroll) {
+  selected = id || null; applyState();
+  if (scroll && id) document.querySelector(`[data-t="${id}"]`).scrollIntoView({ block: "nearest", inline: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+diagram.addEventListener("click", e => {
+  const c = e.target.closest(".card");
+  if (!c) { select(null); return; }
+  select(c.dataset.t === selected ? null : c.dataset.t);
+});
+diagram.addEventListener("keydown", e => {
+  const c = e.target.closest(".card");
+  if (c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); select(c.dataset.t); }
+});
+panel.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) select(b.dataset.go, true); });
+const q = document.getElementById("q");
+q.addEventListener("input", () => { query = q.value.trim().toLowerCase(); selected = null; applyState(); });
+
+// zoom
+let z = 1;
+const setZoom = v => { z = Math.max(0.5, Math.min(1.5, v)); diagram.style.zoom = z; };
+document.getElementById("zin").onclick = () => setZoom(z + 0.1);
+document.getElementById("zout").onclick = () => setZoom(z - 0.1);
+document.getElementById("zreset").onclick = () => setZoom(1);
+
+document.getElementById("fns").innerHTML = FNS.map(([n, k, d, who]) =>
+  `<div><code>${esc(n)}</code>${k ? `<span class="lbl" style="font-size:.66rem">${k}</span>` : ""}<p>${d}</p><span class="who mono" style="color:var(--muted)">↳ ${esc(who)}</span></div>`).join("");
+
+drawLines();
+document.fonts && document.fonts.ready.then(drawLines);
+addEventListener("resize", drawLines);
+</script>
+</body>
+</html>

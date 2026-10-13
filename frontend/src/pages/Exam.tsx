@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Clock, ExternalLink, Headphones, Mic, PenLine, RotateCcw } from 'lucide-react';
+import { BookOpen, Clock, ExternalLink, Headphones, Mic, PenLine, Puzzle, RotateCcw } from 'lucide-react';
 import { Logo } from '../components/ui';
-import { B1_PASS_MARK, BinaryExercise, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
+import { B1_PASS_MARK, B2_PASS_MARK, BinaryExercise, isB1OrB2Writing, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
 import { evaluateExamWriting, saveActivityResult } from '../lib/api';
 import type { Exam as ExamResource, ExamArea, ExamExercise, ExamQuestion, ExamScoring, WritingEvaluation } from '../lib/types';
 
-const AREA_ICONS = [Headphones, BookOpen, PenLine, Mic];
+// Icona de cada àrea segons el títol: el B2 té una àrea més (Estructures lingüístiques).
+const areaIcon = (title: string) =>
+  /oral/i.test(title) ? (/comprensi/i.test(title) ? Headphones : Mic)
+    : /escrit/i.test(title) ? (/comprensi/i.test(title) ? BookOpen : PenLine)
+    : Puzzle;
 
 type Progress = {
   answers: Record<number, string>;
@@ -44,10 +48,10 @@ const pointsOf = (scoring: ExamScoring, byExercise: ExerciseScore[]) =>
   Math.round(byExercise.reduce((sum, e) => sum + e.correct * pointsPerCorrect(scoring, e.n), 0));
 const passes = (scoring: ExamScoring, points: number) => points >= scoring.pass_points;
 
-// Exercicis amb rúbrica d'avaluació amb IA: el formulari de l'A1 i les redaccions de l'A2 i el B1.
+// Exercicis amb rúbrica d'avaluació amb IA: el formulari de l'A1 i les redaccions de l'A2, el B1 i el B2.
 type EvaluableExercise = Extract<ExamExercise, { kind: 'form' | 'writing' }>;
 const evaluable = (level: string, e: ExamExercise): e is EvaluableExercise =>
-  (level === 'A1' && e.kind === 'form') || ((level === 'A2' || level === 'B1') && e.kind === 'writing');
+  (level === 'A1' && e.kind === 'form') || ((level === 'A2' || level === 'B1' || level === 'B2') && e.kind === 'writing');
 // El text de cada redacció es guarda a `form` amb esta clau (vegeu ExerciseBody).
 const writingKey = (n: number) => `writing-${n}`;
 const evaluationBody = (e: EvaluableExercise, form: Record<string, string>) =>
@@ -167,9 +171,9 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
               </p>
             </div>
           </div>
-          <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {exam.areas.map((a, i) => {
-              const Icon = AREA_ICONS[(a.n - 1) % AREA_ICONS.length];
+          <div className={`relative mt-6 grid grid-cols-2 gap-3 ${exam.areas.length > 4 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
+            {exam.areas.map(a => {
+              const Icon = areaIcon(a.title);
               return (
                 <div key={a.n} className="rounded-2xl bg-white/10 p-3">
                   <Icon size={18} className="text-mustard" />
@@ -204,9 +208,12 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
         </section>
 
         {/* Navegació per àrees */}
-        <nav className="sticky top-2 z-20 grid grid-cols-4 gap-2 rounded-2xl bg-white/90 p-2 shadow-md backdrop-blur">
+        <nav
+          className="sticky top-2 z-20 grid gap-2 rounded-2xl bg-white/90 p-2 shadow-md backdrop-blur"
+          style={{ gridTemplateColumns: `repeat(${exam.areas.length}, minmax(0, 1fr))` }}
+        >
           {exam.areas.map((a, i) => {
-            const Icon = AREA_ICONS[(a.n - 1) % AREA_ICONS.length];
+            const Icon = areaIcon(a.title);
             const total = questionsOf(a).length;
             const done = progress.checked.includes(a.n);
             return (
@@ -247,12 +254,18 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
           />
         )}
 
-        {/* Resultat de l'Àrea 3 del B1: mitjana de les dos redaccions avaluades amb IA */}
-        {exam.level === 'B1' && (() => {
+        {/* Resultat de l'àrea d'expressió escrita del B1 i del B2: mitjana de les dos redaccions avaluades amb IA */}
+        {(exam.level === 'B1' || exam.level === 'B2') && (() => {
           const writings = area.exercises.filter(e => evaluable(exam.level, e));
-          const marks = writings.map(e => progress.evaluations[e.n]).flatMap(ev => ev?.rubrica === 'b1_redaccio' ? [ev.mitjana_base_10] : []);
+          const marks = writings.map(e => progress.evaluations[e.n]).flatMap(ev => isB1OrB2Writing(ev) ? [ev.mitjana_base_10] : []);
           if (writings.length < 2 || marks.length < writings.length) return null;
-          return <WritingAreaResult area={area} marks={writings.map((e, i) => ({ n: e.n, mark: marks[i] }))} />;
+          return (
+            <WritingAreaResult
+              area={area}
+              marks={writings.map((e, i) => ({ n: e.n, mark: marks[i] }))}
+              passMark={exam.level === 'B2' ? B2_PASS_MARK : B1_PASS_MARK}
+            />
+          );
         })()}
 
         <section>
@@ -467,10 +480,11 @@ function AreaResult({
   );
 }
 
-// Veredicte de l'Àrea 3 del B1: la mitjana de les dos redaccions ha d'arribar al 50 %.
-function WritingAreaResult({ area, marks }: { area: ExamArea; marks: { n: number; mark: number }[] }) {
+// Veredicte de l'àrea d'expressió escrita: la mitjana de les dos redaccions ha d'arribar al mínim
+// (el 50 % en el B1 i el 40 % en el B2).
+function WritingAreaResult({ area, marks, passMark }: { area: ExamArea; marks: { n: number; mark: number }[]; passMark: number }) {
   const average = Math.round((marks.reduce((sum, m) => sum + m.mark, 0) / marks.length) * 10) / 10;
-  const pass = average >= B1_PASS_MARK;
+  const pass = average >= passMark;
   return (
     <section className={`fade-up flex flex-wrap items-center gap-6 rounded-[1.75rem] border-2 bg-white p-6 ${pass ? 'border-teal/30' : 'border-coral/40'}`}>
       <div
@@ -488,7 +502,7 @@ function WritingAreaResult({ area, marks }: { area: ExamArea; marks: { n: number
       <div className="min-w-[12rem] flex-1">
         <p className={`text-sm font-black uppercase tracking-wide ${pass ? 'text-teal' : 'text-coral'}`}>Àrea {area.n} avaluada</p>
         <p className="text-2xl font-black">{pass ? '✅ Apte · Continues en la prova' : '❌ No apte · Quedes fora de la prova'}</p>
-        <p className="mt-1 text-sm opacity-70">Mitjana de les dos redaccions. Mínim per a continuar: {B1_PASS_MARK} de 10 (el 50 % de l'àrea).</p>
+        <p className="mt-1 text-sm opacity-70">Mitjana de les dos redaccions. Mínim per a continuar: {passMark} de 10 (el {passMark * 10} % de l'àrea).</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {marks.map(m => (
             <span key={m.n} className="rounded-full bg-cream px-3 py-1 text-xs font-black">
