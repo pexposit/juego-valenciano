@@ -102,7 +102,7 @@ const SCENES = {
   platja: {
     background: 'linear-gradient(180deg, #BAE6FD 0 34%, #38BDF8 34% 62%, #FDE68A 62% 100%)',
     zones: [
-      zone('cel', 'el cel', '☁️', 2, 2, 96, 30),
+      zone('cel', 'el cel', '🕊️', 2, 2, 96, 30),
       zone('mar', 'el mar', '🌊', 2, 36, 96, 24),
       zone('sorra', 'la sorra', '⛱️', 2, 64, 96, 34),
     ],
@@ -111,17 +111,17 @@ const SCENES = {
     background: 'linear-gradient(180deg, #FFF7ED, #FFEDD5)',
     zones: [
       zone('cuina', 'la cuina', '🍳', 2, 2, 47, 47, '#FEF3C7'),
-      zone('salo', 'el saló', '🛋️', 51, 2, 47, 47, '#DCFCE7'),
+      zone('salo', 'el saló', '🛋️📺', 51, 2, 47, 47, '#DCFCE7'),
       zone('bany', 'el bany', '🚽', 2, 51, 47, 47, '#DBEAFE'),
-      zone('dormitori', 'el dormitori', '🛏️', 51, 51, 47, 47, '#FCE7F3'),
+      zone('dormitori', 'el dormitori', '🛌', 51, 51, 47, 47, '#FCE7F3'),
     ],
   },
   casaJardi: {
     background: 'linear-gradient(180deg, #FFF7ED, #FFEDD5)',
     zones: [
       zone('cuina', 'la cuina', '🍳', 2, 2, 47, 47, '#FEF3C7'),
-      zone('salo', 'el saló', '🛋️', 51, 2, 47, 47, '#DCFCE7'),
-      zone('dormitori', 'el dormitori', '🛏️', 2, 51, 47, 47, '#FCE7F3'),
+      zone('salo', 'el saló', '🛋️📺', 51, 2, 47, 47, '#DCFCE7'),
+      zone('dormitori', 'el dormitori', '🛌', 2, 51, 47, 47, '#FCE7F3'),
       zone('jardi', 'el jardí', '🌳', 51, 51, 47, 47, '#BBF7D0'),
     ],
   },
@@ -130,7 +130,7 @@ const SCENES = {
     zones: [
       zone('plat', 'el plat', '🍽️', 4, 20, 30, 60, '#FFFFFF'),
       zone('cistella', 'la cistella', '🧺', 36, 20, 28, 60, '#FEF3C7'),
-      zone('got', 'el got', '🥛', 66, 20, 30, 60, '#E0F2FE'),
+      zone('got', 'el got', '🫗', 66, 20, 30, 60, '#E0F2FE'),
     ],
   },
   parc: {
@@ -248,7 +248,7 @@ const PA2: Lesson = {
       ['🐘', "L'elefant és molt gran i té la trompa llarga."],
       ['🐒', 'La mona salta i salta, de branca en branca!'],
       ['🐍', 'La serp fa sss, sss, i no té cames.'],
-      ['🦁', 'Al zoo, al zoo, anem tots al zoo!'],
+      ['🦓', 'Al zoo, al zoo, anem tots al zoo!'],
     ]),
     explain('Per a preguntar què és una cosa, diem: Què és açò? I contestem: És un tigre! És una zebra!', [queEs, tigre, zebra]),
     yesno([
@@ -296,9 +296,9 @@ const PA3: Lesson = {
     explain('Per a dir les parts del cos, diem: Tinc dos ulls, un nas i una boca. Tinc dues mans i dos peus!', [body('ulls'), body('nas'), body('boca'), mans, peus]),
     chant([
       ['🧑', 'Cap, espatlles, genolls i peus, genolls i peus!'],
-      ['🧑', 'Cap, espatlles, genolls i peus, genolls i peus!'],
+      ['🙆', 'Cap, espatlles, genolls i peus, genolls i peus!'],
       ['👀', 'Ulls, orelles, boca i nas!'],
-      ['🧑', 'Cap, espatlles, genolls i peus, genolls i peus!'],
+      ['🦶', 'Cap, espatlles, genolls i peus, genolls i peus!'],
     ]),
     SIMON_RULES,
     simon([body('nas'), body('boca'), body('orelles'), body('ulls'), body('mà'), body('peu')], [
@@ -332,7 +332,7 @@ const motxilla = it('🎒', 'la motxilla');
 const bolso = it('👜', 'el bolso');
 const barretSol = it('👒', 'el barret');
 const bufanda = cloth('bufanda');
-const porte = it('🧍', 'porte', { say: 'Jo porte una samarreta!' });
+const porte = it('🧒👕', 'porte', { say: 'Jo porte una samarreta!' });
 const fred = it('🥶', 'fa fred');
 const calor = it('🥵', 'fa calor');
 const ROBA = [cloth('samarreta'), cloth('pantalons'), pantalonsCurts, vestit, camisa, cloth('jaqueta'), barretSol, gorra, cloth('sabates'), botes, cloth('calcetins'), cloth('ulleres'), bufanda, cloth('guants')];
@@ -396,9 +396,9 @@ const PA5: Lesson = {
     explain('Per a preguntar el color, diem: De quin color és? I contestem: És roig! És blau!', [deQuin, color('roig'), color('blau')]),
     chant([
       ['🌈', "Roig, taronja, groc i verd, l'arc de Sant Martí!"],
-      ['🌈', 'Blau i morat, i ja està: quin arc més bonic!'],
-      ['☀️', 'Quan plou i fa sol alhora, mira cap al cel!'],
-      ['🌈', "Roig, taronja, groc i verd, l'arc de Sant Martí!"],
+      ['💜', 'Blau i morat, i ja està: quin arc més bonic!'],
+      ['🌦️', 'Quan plou i fa sol alhora, mira cap al cel!'],
+      ['🎨', "Roig, taronja, groc i verd, l'arc de Sant Martí!"],
     ]),
     explain('Ara jugarem a «Escolta i pinta». Primer, toca un color. Després, toca el dibuix que diu la veu!', [color('roig'), pilota]),
     paint([pilota, globus, cotxe, estrela, flor], [
@@ -426,13 +426,13 @@ const PA5: Lesson = {
 const cosi = it('🧑‍🦱', 'el cosí');
 const cosina = it('👱‍♀️', 'la cosina');
 const amic = it('🧑‍🤝‍🧑', "l'amic");
-const company = it('🏫', 'el company de classe');
+const company = it('🧑‍🎓', 'el company de classe');
 const home_ = it('👨', "l'home");
 const dona = it('👩', 'la dona');
 const xiquet = it('👦', 'el xiquet');
 const xiqueta = it('👧', 'la xiqueta');
 const jove = it('🧒', 'jove');
-const vell = it('👴', 'vell');
+const vell = it('🧓', 'vell');
 const esteEs = it('👨', 'este és el meu pare', { say: 'Este és el meu pare!' });
 const estaEs = it('👩', 'esta és la meua mare', { say: 'Esta és la meua mare!' });
 const autobus = it('🚌', "l'autobús");
@@ -547,9 +547,9 @@ const PA7: Lesson = {
 
 /* ═══ 8. La meua casa ═════════════════════════════════════════════════════ */
 
-const saloSofa = it('🛋️', 'el saló');
+const saloSofa = it('🛋️📺', 'el saló', { stack: true });
 const bany = it('🚽', 'el bany');
-const dormitori = it('🛏️', 'el dormitori');
+const dormitori = it('🛌', 'el dormitori');
 const menjador = it('🍽️', 'el menjador');
 const jardi = it('🌷', 'el jardí');
 const llit = home('llit');
@@ -605,7 +605,7 @@ const PA8: Lesson = {
     quiz(q('On és la televisió de Pau?'), saloSofa, [dormitori, bany]),
     diff([llit, cadira, llum, quadre, osset], [[3, rellotge]]),
     game(() => memoryRound([llit, sofa, cadira, llum, tele, rellotge, finestra], 4)),
-    summary('Molt bé! Ja coneixes la casa: la cuina, el saló, el bany, el dormitori i el jardí. I saps dir: hi ha!', [home('cuina'), saloSofa, bany, dormitori, jardi, llit, sofa, taula, cadira]),
+    summary('Molt bé! Ja coneixes la casa: la cuina, el saló, el bany, el dormitori i el jardí. I saps dir: hi ha!', [home('cuina'), saloSofa, bany, dormitori, jardi, hiHa, taula, cadira]),
   ],
 };
 
@@ -624,9 +624,9 @@ const escolta = it('👂', 'escolta');
 const mira = it('👀', 'mira');
 const llig = it('📖', 'llig');
 const escriu = it('✍️', 'escriu');
-const dibuixa = it('🖼️', 'dibuixa');
+const dibuixa = it('✏️📄', 'dibuixa', { stack: true });
 const pinta = it('🎨', 'pinta');
-const seu = it('💺', 'seu');
+const seu = it('🪑', 'seu');
 const alcat = it('🧍', "alça't");
 const alcaMa = it('🙋', 'alça la mà');
 const silenci = it('🤫', 'silenci');
@@ -747,7 +747,7 @@ const aPeu = it('🚶', 'a peu');
 const cel = it('☁️', 'pel cel');
 const terra = it('🛣️', 'per terra');
 const mar = it('🌊', 'pel mar');
-const vaig = it('🧒', 'vaig amb...', { say: "Vaig a l'escola amb bici!" });
+const vaig = it('🧒🚲', 'vaig amb...', { say: "Vaig a l'escola amb bici!" });
 const TRANSPORT = [cotxe, autobus, trenRapid, bici, moto, camio, avio, helicopter, vaixellGran, tractor, aPeu];
 
 const PA11: Lesson = {
@@ -800,7 +800,7 @@ const beisbol = it('⚾', 'el beisbol');
 const badminton = it('🏸', 'el bàdminton');
 const hoquei = it('🏑', "l'hoquei");
 const monopati = it('🛹', 'el monopatí');
-const xutar = it('🦵', 'xutar');
+const xutar = it('🦵⚽', 'xutar');
 const llancar = it('🤾', 'llançar');
 const pescar = it('🎣', 'pescar');
 const foto = it('📸', 'fer fotos');

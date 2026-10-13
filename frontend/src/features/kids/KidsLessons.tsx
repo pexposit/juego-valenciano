@@ -448,7 +448,8 @@ export function KidsLesson({ id, uid, onLessons, onIsland }: {
         <div className="kid-lesson-progress" aria-label={`Pàgina ${Math.min(index + 1, lesson.pages.length)} de ${lesson.pages.length}`}>
           <span style={{ width: `${((finished ? lesson.pages.length : index) / lesson.pages.length) * 100}%` }} />
         </div>
-        <span className="kids-island-badge" aria-hidden="true">{lesson.emoji}</span>
+        {/* En la portada de la lliçó l'emoji ja es veu en gran: no el repetim a dalt. */}
+        <span className="kids-island-badge" aria-hidden="true" style={!finished && page.kind === 'intro' ? { visibility: 'hidden' } : undefined}>{lesson.emoji}</span>
       </header>
 
       {!finished ? (

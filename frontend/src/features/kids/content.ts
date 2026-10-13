@@ -261,14 +261,14 @@ const FOOD_BINS: KidsItem[] = [
 export const ACTIONS: (KidsItem & { does: string })[] = [
   { id: 'acc-menjar', word: 'menjar', emoji: '😋', does: 'menja' },
   { id: 'acc-beure', word: 'beure', emoji: '🥤', does: 'beu' },
-  { id: 'acc-dormir', word: 'dormir', emoji: '😴', does: 'dorm' },
+  { id: 'acc-dormir', word: 'dormir', emoji: '🛌', does: 'dorm' },
   { id: 'acc-correr', word: 'córrer', emoji: '🏃', does: 'corre' },
   { id: 'acc-saltar', word: 'saltar', emoji: '🤸', does: 'salta' },
   { id: 'acc-nadar', word: 'nadar', emoji: '🏊', does: 'nada' },
   { id: 'acc-ballar', word: 'ballar', emoji: '💃', does: 'balla' },
   { id: 'acc-cantar', word: 'cantar', emoji: '🎤', does: 'canta' },
   { id: 'acc-pintar', word: 'pintar', emoji: '🎨', does: 'pinta' },
-  { id: 'acc-llegir', word: 'llegir', emoji: '📖', does: 'llig' },
+  { id: 'acc-llegir', word: 'llegir', emoji: '🧒📖', does: 'llig' },
   { id: 'acc-plorar', word: 'plorar', emoji: '😭', does: 'plora' },
   { id: 'acc-riure', word: 'riure', emoji: '😂', does: 'riu' },
 ];

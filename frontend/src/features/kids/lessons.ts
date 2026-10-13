@@ -156,7 +156,7 @@ const PRESENTAR: Lesson = {
     ]),
     quiz(p('Qui té tres anys? Compta les espelmes!'), anys(3), [anys(5), anys(7)]),
     quiz(p("Vols saber el nom d'una amiga. Què li preguntes?"), comEtDius, [quantsAnys, onVius], { picture: '👧' }),
-    quiz(p('Vols saber quants anys té el teu amic. Què li preguntes?'), quantsAnys, [comEtDius, onVius], { picture: '🎂' }),
+    quiz(p('Vols saber quants anys té el teu amic. Què li preguntes?'), quantsAnys, [comEtDius, onVius], { picture: '🧑‍🤝‍🧑' }),
     summary(
       'Fantàstic! Ja et saps presentar: em dic..., tinc... anys, visc a... I saps preguntar: com et dius?, quants anys tens? i on vius?',
       [emDic, xiquet, xiqueta, anys(5), visc, comEtDius, quantsAnys, onVius, encantat],
@@ -191,13 +191,13 @@ const PRESENTAR_ILLA = islandFor(PRESENTAR, { emoji: '🏷️', name: 'La target
   ask(p("Vols saber el nom d'una amiga. Què li preguntes?"), comEtDius, [quantsAnys, onVius], { picture: '👧' }),
   ask(p('Pep et pregunta: Com et dius? Què li contestes?'), emDic, [quantsAnys, visc], { picture: '🐸' }),
   howOld,
-  ask(p('Vols saber quants anys té el teu amic. Què li preguntes?'), quantsAnys, [comEtDius, onVius], { picture: '🎂' }),
+  ask(p('Vols saber quants anys té el teu amic. Què li preguntes?'), quantsAnys, [comEtDius, onVius], { picture: '🧑‍🤝‍🧑' }),
   oneOf(
     ask(p('Pau és un xiquet. Què diu Pau?'), xiquet, [xiqueta]),
     ask(p('Laia és una xiqueta. Què diu Laia?'), xiqueta, [xiquet]),
   ),
   friendsAges,
-  ask(p('Vols saber on viu la teua amiga. Què li preguntes?'), onVius, [comEtDius, quantsAnys], { picture: '🗺️' }),
+  ask(p('Vols saber on viu la teua amiga. Què li preguntes?'), onVius, [comEtDius, quantsAnys], { picture: '🧑‍🤝‍🧑' }),
   ask(p('Pep et pregunta: On vius? Què li contestes?'), visc, [emDic, comEtDius], { picture: '🐸' }),
   () => memoryRound(ME, 3),
   ask(p('Coneixes una amiga nova. Què li dius?'), encantat, [perdo, bonaNit], { picture: '👋' }),
@@ -225,7 +225,7 @@ const llapis = byId(INTRUDERS, 'llapis');
 const pilota = byId(INTRUDERS, 'pilota');
 const casa = byId(HOME_PLACES, 'casa');
 const llibre = it('📖', 'el llibre');
-const taula = it('🪑', 'la taula');
+const taula = it('🪵', 'la taula');
 const gossos = it('🐕', 'els gossos', { count: 3 });
 const gats = it('🐈', 'els gats', { count: 3 });
 const pomes = it('🍎', 'les pomes', { count: 3 });
@@ -653,8 +653,8 @@ const enfadat = it('😠', 'estic enfadat');
 const sorpres = it('😲', 'estic sorprès');
 const cansat = it('🥱', 'estic cansat');
 const malalt = it('🤒', 'estic malalt');
-const cansatXic = it('👦', 'estic cansat');
-const cansadaXica = it('👧', 'estic cansada');
+const cansatXic = it('👦🥱', 'estic cansat');
+const cansadaXica = it('👧🥱', 'estic cansada');
 const por = it('😨', 'tinc por');
 const son = it('😴', 'tinc son');
 const fam = it('🤤', 'tinc fam');
@@ -746,10 +746,10 @@ const EMOCIONS_ILLA = islandFor(EMOCIONS, { emoji: '🥰', name: 'La cara conten
 /* ── 9. Què fem? (les accions) ────────────────────────────────────────── */
 
 const jugar = it('⚽', 'jugar');
-const joMenge = it('😋', 'jo menge');
-const joBec = it('🥤', 'jo bec');
-const joDorm = it('😴', 'jo dorm');
-const joJugue = it('⚽', 'jo jugue');
+const joMenge = it('🧒🍎', 'jo menge');
+const joBec = it('🧒🥛', 'jo bec');
+const joDorm = it('🧒💤', 'jo dorm');
+const joJugue = it('🧒⚽', 'jo jugue');
 const gatDorm = it('🐈', 'el gat dorm');
 const peixNada = it('🐟', 'el peix nada');
 const ocellCanta = it('🐦', "l'ocell canta");
