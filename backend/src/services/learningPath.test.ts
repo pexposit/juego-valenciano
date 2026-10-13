@@ -25,6 +25,9 @@ describe('focusOf', () => {
     expect(focusOf({ category: 'fonetica_ortografia', type: 'b1_fon_accentuacio' })).toEqual(['accentuació']);
     expect(focusOf({ category: 'morfosintaxi', type: 'b1_mor_regim' })).toEqual(['preposicions']);
     expect(focusOf({ category: 'lexic_semantica', type: 'b1_vocab_salut' })).toEqual(['lèxic']);
+    expect(focusOf({ category: 'fonetica_ortografia', type: 'b2_fon_dieresi_guionet' })).toEqual(['accentuació', 'apostrofació']);
+    expect(focusOf({ category: 'morfosintaxi', type: 'b2_mor_combinacions' })).toEqual(['pronoms']);
+    expect(focusOf({ category: 'morfosintaxi', type: 'b2_mor_ser_estar' })).toEqual(['morfologia']);
   });
 
   it('no asigna foco a las destrezas ni a los escenarios', () => {

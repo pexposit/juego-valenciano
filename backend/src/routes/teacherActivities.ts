@@ -1,7 +1,7 @@
 import { Router, type NextFunction, type Response } from 'express';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
-import { classAcceptsLearner, isLevel0Class, learnerLevelOf, type CefrLevel, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
+import { classAcceptsLearner, isLevel0Class, type CefrLevel, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
@@ -32,7 +32,7 @@ const toActivity = (row: ActivityRow): TeacherActivity => {
   return {
     id: row.id,
     created_at: row.created_at,
-    level: row.metadata?.cefr_level ?? (row.difficulty === 'principiant' ? 'A2' : 'B1'),
+    level: row.metadata?.cefr_level ?? (row.difficulty as CefrLevel),
     title: row.metadata?.section_name ?? '',
     // En els escenaris sense descripció, resources.content és la situació.
     description: content.kind === 'scenario' && row.content === content.situation ? '' : row.content ?? '',
@@ -145,7 +145,7 @@ teacherActivitiesRouter.put('/api/teacher/activities/:id', requireAuth, requireT
     const problem = await classProblem(client, req.userId!, input);
     if (problem) return res.status(403).json({ error: problem });
     // Una activitat que ja és en alguna ruta no pot canviar de nivell: la ruta quedaria amb activitats d'un altre.
-    if (learnerLevelOf(current.level) !== learnerLevelOf(input.level)) {
+    if (current.level !== input.level) {
       const { count } = await client.from('study_path_steps').select('path_id', { count: 'exact', head: true }).eq('resource_id', id);
       if (count) return res.status(409).json({ error: "No pots canviar el nivell: l'activitat és en alguna ruta" });
     }

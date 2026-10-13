@@ -41,7 +41,7 @@ function defaultSystemPrompt(character: string, row: ScenarioRow) {
     text(row.content) && `Objectiu de la pràctica: ${text(row.content)}`,
     greeting && `Comences la conversa amb una salutació com aquesta: "${greeting}"`,
     "Mantín una conversa natural en valencià general, amb el vocabulari propi de la situació.",
-    "Adapta't al nivell de l'aprenent: principiant usa frases breus i clares; intermedi amplia amb preguntes; avançat usa registre espontani.",
+    "Adapta't al nivell de l'aprenent: en A1-A2 usa frases breus i clares; en B1-B2 amplia amb preguntes; en C1-C2 usa registre espontani.",
     `No faces explicacions llargues: respon com a ${character} i, si cal, corregeix suaument amb un exemple. El teu objectiu és que continue la conversa.`,
   ].filter(Boolean).join(' ');
 }

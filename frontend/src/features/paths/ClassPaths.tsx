@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LEVEL_CEFR } from '@parlaval/shared';
 import { ArrowDown, ArrowUp, Pencil, Plus, Route, Trash2, X } from 'lucide-react';
 import { categoryLabel } from '../../components/ScenarioSelect';
 import { ActivityPicker } from './ActivityPicker';
@@ -15,12 +14,12 @@ const messageOf = (error: unknown) => (error as { message?: string } | null)?.me
 type Draft = { id?: string; level: string; title: string; description: string; resources: string[] };
 
 /**
- * Rutes d'aprenentatge que la docent crea per a una classe (A2 o B1). L'alumnat de la classe
+ * Rutes d'aprenentatge que la docent crea per a una classe (de l'A1 al B2). L'alumnat de la classe
  * les veu en «La meua ruta», al costat de les rutes predefinides del seu nivell.
  */
 export function ClassPaths({ classId, classLevels, onSaved }: { classId: string; classLevels: string[]; onSaved?: () => void }) {
-  // Les rutes són per a l'A2 i el B1: només els d'estos nivells que té la classe.
-  const levels = PATH_LEVELS.filter(l => LEVEL_CEFR[l.value].some(c => classLevels.includes(c)));
+  // Les rutes són de l'A1 al B2: només els d'estos nivells que té la classe.
+  const levels = PATH_LEVELS.filter(l => classLevels.includes(l.value));
   const [paths, setPaths] = useState<ClassPath[]>();
   const [catalog, setCatalog] = useState<Resource[]>([]);
   const [draft, setDraft] = useState<Draft>();

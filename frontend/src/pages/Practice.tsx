@@ -92,7 +92,7 @@ function paginate(groups: Group[]): Group[][] {
 // pantalla, però no s'envia ni es guarda res (ni errors, ni resultats, ni progrés) i les
 // redaccions no s'avaluen amb el LLM fins que l'activitat està guardada.
 export function Practice({ practice, userLevel, onBack, preview = false }: { practice: PracticeResource; userLevel: string; onBack: () => void; preview?: boolean }) {
-  // Només els nivells del MECR de l'aprenent (A1-A2, B1-B2 o C1-C2); si el
+  // Només el nivell del MECR de l'aprenent (profiles.level); si el
   // contingut no en té cap (p. ex. un enllaç directe), es mostren tots.
   // ?pregunta=<id> (enllaç des de «Errors»): s'obri el nivell i la pàgina d'eixa pregunta i es ressalta.
   const [searchParams] = useSearchParams();

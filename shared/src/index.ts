@@ -4,8 +4,10 @@
  * es defineixen a la taula resources de la BDD.
  */
 
-// 'nivell0' és el més bàsic: per a xiquets que encara no llegixen (món d'illes infantil).
-export const LEVELS = ['nivell0', 'principiant', 'intermedi', 'avancat'] as const;
+// Els nivells de l'aprenent són els del MECR (A1-C2), més el 'nivell0', el més bàsic: per a
+// xiquets que encara no llegixen (món d'illes infantil). profiles.level i resources.difficulty
+// fan servir estos mateixos valors.
+export const LEVELS = ['nivell0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 
 export type LevelKey = (typeof LEVELS)[number];
 
@@ -13,17 +15,24 @@ export type LevelKey = (typeof LEVELS)[number];
 export const isKidsLevel0 = (profile: { level?: string | null; age_group?: string | null }) =>
   profile.level === 'nivell0' && profile.age_group === 'child';
 
-/** Nivells del MECR (els de practice_exercises i dels exàmens) de cada nivell de l'aprenent. */
+/** Nivells del MECR (els de practice_exercises i dels exàmens) de cada nivell de l'aprenent: el seu. */
 export const LEVEL_CEFR: Record<LevelKey, readonly string[]> = {
   nivell0: [], // previ al MECR: no té exercicis del temari
-  principiant: ['A1', 'A2'],
-  intermedi: ['B1', 'B2'],
-  avancat: ['C1', 'C2'],
+  A1: ['A1'],
+  A2: ['A2'],
+  B1: ['B1'],
+  B2: ['B2'],
+  C1: ['C1'],
+  C2: ['C2'],
 };
+
+/** Tram del MECR d'un nivell (A: bàsic, B: independent, C: competent), per a adaptar el registre. */
+export const levelBand = (level: string | null | undefined): 'A' | 'B' | 'C' | null =>
+  level && /^[ABC][12]$/.test(level) ? (level[0] as 'A' | 'B' | 'C') : null;
 
 /* ── Rutes d'aprenentatge ─────────────────────────────────────────────── */
 /** Nivells amb rutes predefinides (i del professorat) en lloc de la ruta generada per la IA. */
-export const PREDEFINED_PATH_LEVELS: readonly string[] = ['principiant', 'intermedi'];
+export const PREDEFINED_PATH_LEVELS: readonly string[] = ['A2', 'B1'];
 export const hasPredefinedPaths = (level: string | null | undefined) => !!level && PREDEFINED_PATH_LEVELS.includes(level);
 
 /* ── Límits de l'historial de conversa ────────────────────────────────── */
@@ -238,18 +247,13 @@ export type TeacherActivityInput = {
 export type TeacherActivity = TeacherActivityInput & { id: string; created_at: string };
 
 /* ── Nivells de les classes i de les activitats del professorat ──────── */
-// Nivells del MECR. El perfil de l'alumnat té els nivells de l'app (LEVEL_CEFR diu quins del MECR
-// cobrix cadascun); les classes i les activitats de la docent van per nivells del MECR.
+// Nivells del MECR: els del perfil de l'alumnat (a banda del Nivell 0), de les classes i de les
+// activitats de la docent.
 export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 export type CefrLevel = (typeof CEFR_LEVELS)[number];
 
-/** El nivell de l'app que cobrix un nivell del MECR (A1 → principiant...). */
-export const learnerLevelOf = (cefr: string): LevelKey =>
-  (Object.entries(LEVEL_CEFR).find(([, list]) => list.includes(cefr))?.[0] as LevelKey | undefined) ?? 'nivell0';
-
-/** Nom visible d'un nivell, siga de l'app (principiant → A1-A2) o del MECR (B1). */
-export const levelLabel = (level: string) =>
-  level === 'nivell0' ? 'Nivell 0' : LEVEL_CEFR[level as LevelKey]?.join('-') || level;
+/** Nom visible d'un nivell: «Nivell 0» o el del MECR (B1). */
+export const levelLabel = (level: string) => (level === 'nivell0' ? 'Nivell 0' : level);
 
 // Una classe és del Nivell 0 (infantil, sense activitats ni rutes de la docent) o d'un o dos
 // nivells contigus del MECR (com valid_class_levels a la BDD).
@@ -260,9 +264,8 @@ export const CLASS_LEVELS: readonly { value: string; label: string }[] = [
 export const classLevelLabel = (level: string) => (level === 'nivell0' ? 'Nivell 0' : level);
 export const isLevel0Class = (levels: readonly string[]) => levels.includes('nivell0');
 
-/** Un alumne d'este nivell de l'app pot entrar en una classe d'estos nivells? */
-export const classAcceptsLearner = (levels: readonly string[], learner: string) =>
-  learner === 'nivell0' ? levels.includes('nivell0') : (LEVEL_CEFR[learner as LevelKey] ?? []).some(l => levels.includes(l));
+/** Un alumne (o una activitat del catàleg) d'este nivell pot entrar en una classe d'estos nivells? */
+export const classAcceptsLearner = (levels: readonly string[], learner: string) => levels.includes(learner);
 
 /** Tria o desfà la tria d'un nivell: el Nivell 0 sol, o com a molt dos del MECR contigus. */
 export function toggleClassLevel(selected: readonly string[], level: string): string[] {

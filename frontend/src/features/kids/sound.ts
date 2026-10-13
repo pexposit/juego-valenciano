@@ -4,8 +4,9 @@ import { KIDS_AUDIO } from './content';
 import { LESSON_AUDIO } from './lessons';
 
 /**
- * So del Nivell 0: frases pregenerades amb el TTS (/audio/kids/<clau>.wav; si en falta
- * alguna, la demana al servidor en el moment) i
+ * So del Nivell 0: les frases les diu la veu del navegador si en té una de catalana de
+ * qualitat (sona natural i no ha d'esperar cap descàrrega); si no, frases pregenerades
+ * amb el TTS (/audio/kids/<clau>.wav; si en falta alguna, la demana al servidor) i
  * efectes sintetitzats amb Web Audio (sense fitxers): arpa i campanetes quan
  * s'encerta, un «boing» suau quan no, i sons curts per a bambolles i comptes.
  */
@@ -61,8 +62,9 @@ function play(src: string): Promise<boolean> {
 
 /**
  * Diu una frase. Para la que sonava. Es resol quan acaba (o si falla) amb true
- * si ningú l'ha interrompuda. Els xiquets no llegixen: si falta el fitxer, la frase
- * es demana al TTS del servidor i, si tampoc respon, la diu la veu del navegador.
+ * si ningú l'ha interrompuda. Els xiquets no llegixen: primer prova la veu catalana del
+ * navegador; si no n'hi ha, el fitxer; si falta el fitxer, el TTS del servidor i, si tampoc
+ * respon, qualsevol veu del navegador.
  */
 export function say(key: string): Promise<boolean> {
   release();
@@ -71,9 +73,13 @@ export function say(key: string): Promise<boolean> {
   const live = () => mine === token;
   setVoiceState('loading');
   return (async () => {
+    const text = phraseText(key);
+    const voice = text ? await catalanVoice() : null;
+    if (!live()) return false;
+    if (voice && (await speak(text, voice, live))) return live();
+    if (!live()) return false;
     if (await play(`/audio/kids/${encodeURIComponent(key)}.wav`)) return live();
     if (!live()) return false;
-    const text = phraseText(key);
     const url = text ? await serverVoice(key, text) : null;
     if (url && live() && (await play(url))) return live();
     if (live()) {
@@ -110,6 +116,81 @@ const serverVoice = (key: string, text: string) => {
   }
   return fromServer.get(key)!;
 };
+
+// Veus del navegador: algunes (Chrome) no les tenen fins que salta «voiceschanged».
+let voicesReady: Promise<SpeechSynthesisVoice[]> | null = null;
+const loadVoices = () => {
+  voicesReady ??= new Promise(resolve => {
+    const synth = window.speechSynthesis;
+    if (!synth) return resolve([]);
+    const now = synth.getVoices();
+    if (now.length) return resolve(now);
+    const done = () => {
+      synth.removeEventListener('voiceschanged', done);
+      resolve(synth.getVoices());
+    };
+    synth.addEventListener('voiceschanged', done);
+    window.setTimeout(done, 1500);
+  });
+  return voicesReady;
+};
+
+// La veu catalana més natural que hi haja. Les d'eSpeak (les de Linux per defecte) sonen
+// molt robòtiques: amb eixes, millor els fitxers pregenerats.
+let chosen: Promise<SpeechSynthesisVoice | null> | null = null;
+const catalanVoice = () => {
+  chosen ??= loadVoices().then(voices => {
+    const catalan = voices.filter(v => /^(ca|va)([-_]|$)/i.test(v.lang) && !/espeak/i.test(v.name));
+    const score = (v: SpeechSynthesisVoice) => (/natural|neural|online|google|enhanced|premium/i.test(v.name) ? 2 : 0) + (v.localService ? 0 : 1);
+    return catalan.sort((a, b) => score(b) - score(a))[0] ?? null;
+  });
+  return chosen;
+};
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  void loadVoices();
+  // Les veus en línia (Edge) poden arribar més tard: es torna a triar amb la llista nova.
+  window.speechSynthesis.addEventListener('voiceschanged', () => {
+    voicesReady = null;
+    chosen = null;
+  });
+}
+
+/**
+ * Diu el text amb la veu triada. Es resol amb false si no arriba a començar (el navegador
+ * la bloqueja o no respon), perquè es puga provar amb el fitxer.
+ */
+function speak(text: string, voice: SpeechSynthesisVoice, live: () => boolean): Promise<boolean> {
+  return new Promise(resolve => {
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+    utterance.rate = 0.9; // un poc més a poc a poc, per als xiquets
+    let started = false;
+    let timer = 0;
+    const end = (ok: boolean) => {
+      window.clearTimeout(timer);
+      utterance.onstart = utterance.onend = utterance.onerror = null;
+      resolve(ok);
+    };
+    // Si no comença prompte, no hi ha veu de veritat: es passa als fitxers.
+    timer = window.setTimeout(() => {
+      if (live()) synth.cancel();
+      end(false);
+    }, 3000);
+    utterance.onstart = () => {
+      started = true;
+      if (live()) setVoiceState('playing');
+      // Hi ha navegadors que mai avisen que han acabat: no es queda esperant.
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => end(true), 3000 + text.length * 120);
+    };
+    utterance.onend = () => end(true);
+    // Si s'ha interromput (cancel), compta com a dita; si no ha arribat a començar, ha fallat.
+    utterance.onerror = () => end(started);
+    synth.speak(utterance);
+  });
+}
 
 // L'última opció: la veu del navegador, en català si n'hi ha i, si no, en castellà
 // (pronuncia el valencià prou millor que el silenci o una veu anglesa).

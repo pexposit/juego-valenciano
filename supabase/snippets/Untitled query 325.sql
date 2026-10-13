@@ -1,1 +1,1 @@
-Select * from profiles;
+select * from auth.users;

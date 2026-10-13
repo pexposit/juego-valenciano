@@ -11,14 +11,14 @@ import type { ChildData, ConversationRow, SessionRow } from './tracking';
 const DAY = 86_400_000;
 
 /**
- * Com va una illa, segons els encerts a la primera: li costa (50 % o menys), ho domina
- * (el 80 % o més i totes les etapes fetes, el mateix llindar que el joc demana per a passar
- * d'etapa) o a practicar (la resta: entre el 50 % i el 80 %, el 80 % o més però amb etapes
- * per fer, o encara no hi ha jugat).
+ * Com va una illa. Acabada (totes les etapes, les tres estrelles) és que la domina, siga
+ * quina siga la mitjana: cada etapa ja s'ha superat amb el 80 % en una partida, i als
+ * xiquets no se'ls diu que han de repassar el que ja han guanyat. Si no està acabada, segons
+ * els encerts a la primera: li costa (50 % o menys) o a practicar (la resta, o encara no hi ha jugat).
  */
 export type Mastery = 'costa' | 'practicar' | 'domina';
 export const masteryOf = (accuracy: number | null, complete: boolean): Mastery =>
-  accuracy === null ? 'practicar' : accuracy <= 0.5 ? 'costa' : accuracy >= STAGE_PASS && complete ? 'domina' : 'practicar';
+  complete ? 'domina' : accuracy !== null && accuracy <= 0.5 ? 'costa' : 'practicar';
 
 const COUNT = ['una', 'dues', 'tres', 'quatre', 'cinc'];
 /**

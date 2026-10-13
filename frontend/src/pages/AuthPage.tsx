@@ -28,7 +28,7 @@ async function updateLastActive(client: NonNullable<typeof supabase>, userId: st
 export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [level, setLevel] = useState('principiant');
+  const [level, setLevel] = useState('A2');
   const [ageGroup, setAgeGroup] = useState('');
   const [motherTongue, setMotherTongue] = useState('');
   // Comptes infantils: el PIN de la família, que protegix el seguiment del xiquet.

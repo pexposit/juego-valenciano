@@ -32,11 +32,12 @@ const RECENT_DAYS = 7;
 const FOCUS_BY_TYPE: [RegExp, string[]][] = [
   [/accentuacio|tonicitat|sillaba|vocals/, ['accentuació']],
   [/apostrof/, ['apostrofació']],
+  [/dieresi/, ['accentuació', 'apostrofació']],
   [/alfabet|grafi|alveolars|palatals|laterals|rotiques|oclusives|majuscules|puntuacio|elocucio/, ['ortografia']],
   [/genere_nombre|substantius|adjectius|determinants|numerals|quantit/, ['concordança', 'morfologia']],
-  [/pronoms|interrogatius/, ['pronoms']],
+  [/pronoms|interrogatius|relatius|combinacions/, ['pronoms']],
   [/preposicions|regim/, ['preposicions']],
-  [/verb|modes|perifrasis/, ['morfologia']],
+  [/verb|modes|subjuntiu|ser_estar|infinitiu|perifrasis/, ['morfologia']],
   [/adverbis|conjuncions|connectors/, ['sintaxi']],
 ];
 

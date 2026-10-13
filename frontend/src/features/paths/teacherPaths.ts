@@ -14,12 +14,8 @@ export type ClassPath = {
   resources: string[]; // ids de resources, en ordre
 };
 
-// Nivells de l'app per als quals el professorat pot crear rutes (com en PREDEFINED_PATH_LEVELS):
-// cada un cobrix dos nivells del MECR.
-export const PATH_LEVELS = [
-  { value: 'principiant', label: 'A1-A2' },
-  { value: 'intermedi', label: 'B1-B2' },
-] as const;
+// Nivells del MECR per als quals el professorat pot crear rutes (com save_study_path a la BDD).
+export const PATH_LEVELS = (['A1', 'A2', 'B1', 'B2'] as const).map(l => ({ value: l, label: l }));
 
 const need = () => {
   if (!supabase) throw new Error('Cal connexió amb el servidor');

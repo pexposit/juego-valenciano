@@ -10,8 +10,8 @@ import { addMessages } from '../lib/localStore';
 
 type Message = AssistantConversation['messages'][number];
 
-// Els xiquets comencen en principiant (és el que fixa el registre infantil).
-const CHILD_LEVEL = 'principiant';
+// El tutor dels xiquets parla com en l'A1 (és el que fixa el registre infantil).
+const CHILD_LEVEL = 'A1';
 const VOICE_MESSAGE_LABEL = '🎙️ Missatge de veu';
 const ERROR_REPLY = "No t'he sentit bé, pots repetir-ho?";
 const TTS_ATTEMPTS = 2;

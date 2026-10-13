@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pencil, Plus, Target, Trash2, X } from 'lucide-react';
-import { learnerLevelOf, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
+import { type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { categoryLabel } from '../../components/ScenarioSelect';
 import { deleteTeacherActivity, fetchTeacherActivities } from '../../lib/api';
 import { Practice } from '../../pages/Practice';
@@ -55,7 +55,7 @@ export function TeacherActivities({ classes }: { classes: KidsClass[] }) {
           </button>
         </div>
         {practice ? (
-          <Practice practice={practice} userLevel={learnerLevelOf(preview.level)} onBack={() => setPreview(undefined)} preview />
+          <Practice practice={practice} userLevel={preview.level} onBack={() => setPreview(undefined)} preview />
         ) : preview.content.kind === 'scenario' && <ScenarioPreview activity={preview} />}
       </div>
     );

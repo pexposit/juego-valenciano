@@ -1,4 +1,4 @@
-import { CHAT_CATEGORIES, isPracticeArea, MOTHER_TONGUES } from '@parlaval/shared';
+import { CEFR_LEVELS, CHAT_CATEGORIES, isPracticeArea, MOTHER_TONGUES } from '@parlaval/shared';
 import type { Resource, Scenario } from '../lib/types';
 
 export type Page = 'home' | 'auth' | 'dashboard' | 'learningpath' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'errors' | 'tutorhistory' | 'lessons' | 'summary' | 'profile' | 'progress' | 'classes' | 'myclasses';
@@ -58,12 +58,10 @@ export const GREETING_BY_VOICE: Record<string, string> = {
 
 export const LEVEL_OPTIONS = [
   { value: 'nivell0', label: 'Nivell 0' },
-  { value: 'principiant', label: 'Principiant' },
-  { value: 'intermedi', label: 'Intermedi' },
-  { value: 'avancat', label: 'Avançat' },
+  ...CEFR_LEVELS.map(l => ({ value: l, label: l })),
 ];
 
-/* Públic de l'aprenent (profiles.age_group). Els xiquets no trien nivell: comencen en principiant. */
+/* Públic de l'aprenent (profiles.age_group). Els xiquets no trien nivell: comencen en el Nivell 0. */
 export const AGE_GROUP_OPTIONS = [
   { value: 'child', label: 'Xiquet o xiqueta' },
   { value: 'adult', label: 'Persona adulta' },
@@ -73,7 +71,7 @@ export const AGE_GROUP_OPTIONS = [
 export const MOTHER_TONGUE_OPTIONS = MOTHER_TONGUES;
 
 /* Valors del perfil demo (sense sessió de Supabase). */
-export const DEFAULT_PROFILE = { name: 'Aina', level: 'principiant', xp: 35, ageGroup: 'adult' };
+export const DEFAULT_PROFILE = { name: 'Aina', level: 'A2', xp: 35, ageGroup: 'adult' };
 
 export const HOME_IMAGES = [
   {

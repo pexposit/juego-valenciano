@@ -37,7 +37,7 @@ export function ProgressReport({ data, name, onLesson, onOpenConversation }: {
 
       <Group
         title="Li costa"
-        hint="Illes on encerta a la primera la meitat de les rondes o menys (50 % o menys)."
+        hint="Illes que encara no ha acabat on encerta a la primera la meitat de les rondes o menys (50 % o menys)."
         empty="Cap illa, de moment. 🎉"
         tone="coral"
         islands={report.costa}
@@ -45,7 +45,7 @@ export function ProgressReport({ data, name, onLesson, onOpenConversation }: {
       />
       <Group
         title="A practicar"
-        hint="Illes amb més del 50 % i menys del 80 % d'encerts, les que van bé però encara no ha acabat i les que encara no ha jugat."
+        hint="Illes que encara no ha acabat amb més del 50 % d'encerts, i les que encara no ha jugat."
         empty="Cap: totes les illes jugades van molt bé o costen."
         tone="amber"
         islands={report.practicar}
@@ -53,7 +53,7 @@ export function ProgressReport({ data, name, onLesson, onOpenConversation }: {
       />
       <Group
         title="Ho domina"
-        hint="Illes acabades (totes les etapes) on encerta a la primera el 80 % de les rondes o més."
+        hint="Illes acabades: ha superat totes les etapes (cada una amb el 80 % d'encerts o més en una partida)."
         empty="Encara cap: cal jugar-hi unes quantes vegades."
         tone="teal"
         islands={report.domina}

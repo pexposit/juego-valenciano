@@ -474,7 +474,7 @@ export async function fetchKidsConversation(id: string): Promise<TutorMessage[]>
 }
 // Reobri una conversa anterior com a l'actual; en tornar al tauler el professor la continua.
 export async function resumeTutorConversation(id: string): Promise<void> {
-  const sessionId = await ensureSession('principiant');
+  const sessionId = await ensureSession('A1');
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/resume`, {
     method: 'POST',

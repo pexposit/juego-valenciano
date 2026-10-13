@@ -44,7 +44,7 @@ const openConversation = (restart: boolean) => async (req: AuthRequest, res: Res
     return res.json({
       session_id: parsed.data.session_id,
       session_resource_id: crypto.randomUUID(),
-      greeting: assistantGreeting('principiant'),
+      greeting: assistantGreeting('A1'),
     });
   }
 

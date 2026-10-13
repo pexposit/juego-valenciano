@@ -53,7 +53,7 @@ function jsonReply(partial: Record<string, unknown> = {}) {
 
 const defaultArgs = {
   scenario: { character: 'Maria, cambrera', systemPrompt: "Ets Maria, una cambrera propera d'un bar valencià." },
-  level: 'intermedi',
+  level: 'B1',
   message: 'Hola, em poses una cervesa?',
   history: [] as { role: string; content_text: string }[],
 };
@@ -164,7 +164,7 @@ describe('estado de la petición enviada a OpenAI', () => {
       const [system, user] = body.messages;
 
       expect(system.role).toBe('system');
-      expect(system.content).toContain("Nivell de referència de l'aprenent: intermedi");
+      expect(system.content).toContain("Nivell de referència de l'aprenent: B1");
       expect(user.role).toBe('user');
       expect(user.content).toContain('Maria, cambrera: Hola! Què et poses?');
       expect(user.content).toContain('Aprenent: Hola!');

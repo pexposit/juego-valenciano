@@ -154,7 +154,7 @@ export function ScenarioSelect({
   const preloadScenario = (type: string) => { if (robotChat) preloadRobotAvatar(type); };
 
   // Només les activitats del nivell de l'aprenent: resources.difficulty fa servir
-  // els mateixos valors que profiles.level (principiant, intermedi, avancat). Les del
+  // els mateixos valors que profiles.level (A1...C2). Les del
   // professorat es mostren totes: les ha triades la docent per a la classe.
   const categories = useMemo(() => groupResources(resources ?? [], level), [resources, level]);
   const current = categories.find(c => c.id === selected) ?? categories[0];
