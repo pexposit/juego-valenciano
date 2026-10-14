@@ -288,3 +288,14 @@ export async function latestEvaluations(limit: number): Promise<LocalEvaluation[
   if (!userId) return [];
   return (await getAllBy('evaluations', 'userId', userId)).sort((a, b) => byDate(b, a)).slice(0, limit);
 }
+
+/* ── Canvi de nivell ──────────────────────────────────────────────────── */
+
+/** En canviar de nivell, el servidor esborra els errors pendients i les avaluacions: ací
+ * s'esborren també el seu text, perquè no tornen a eixir ni s'envien com a context. */
+export async function forgetLevelData() {
+  const userId = await currentUserId();
+  if (!userId) return;
+  await deleteKeys('errors', (await listErrors()).filter(e => !e.resolved).map(e => e.id));
+  await deleteKeys('evaluations', (await getAllBy('evaluations', 'userId', userId)).map(e => e.id));
+}

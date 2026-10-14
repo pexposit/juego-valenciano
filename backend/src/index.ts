@@ -10,6 +10,7 @@ import { assistantRouter } from './routes/assistant.js';
 import { learningPathRouter } from './routes/learningPath.js';
 import { studyPathsRouter } from './routes/studyPaths.js';
 import { teacherActivitiesRouter } from './routes/teacherActivities.js';
+import { profileRouter } from './routes/profile.js';
 
 const app = express();
 
@@ -33,6 +34,6 @@ app.use(cors({
 app.use(express.json({ limit: '12mb' }));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
-app.use(resourcesRouter, learningPathRouter, ttsRouter, sessionsRouter, turnRouter, errorsRouter, assistantRouter, studyPathsRouter, teacherActivitiesRouter);
+app.use(resourcesRouter, learningPathRouter, ttsRouter, sessionsRouter, turnRouter, errorsRouter, assistantRouter, studyPathsRouter, teacherActivitiesRouter, profileRouter);
 
 app.listen(Number(process.env.PORT) || 3001, () => console.log('ParlaVal agent listening'));

@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { z } from 'zod';
-import { hasPredefinedPaths } from '@parlaval/shared';
+import { hasAiPath } from '@parlaval/shared';
 import { isPlayable, type Metadata } from './catalog.js';
 import { loadLearningSignals, type LearningSignals } from './learningSignals.js';
 
@@ -208,8 +208,9 @@ export function generateLearningPath(client: any, userId: string): Promise<boole
     const { data: profile, error } = await client.from('profiles').select('level').eq('id', userId).single();
     if (error) throw error;
     const level: string = profile.level;
-    // L'A2 i el B1 tenen rutes predefinides (study_paths): no se'ls genera cap ruta amb la IA.
-    if (hasPredefinedPaths(level)) return false;
+    // Només el B1 i el B2 tenen ruta de la IA (l'A2 té només les predefinides; la resta de
+    // nivells encara no tenen continguts de llengua al catàleg).
+    if (!hasAiPath(level)) return false;
 
     const [signals, catalog, previous] = await Promise.all([
       loadLearningSignals(client, userId),

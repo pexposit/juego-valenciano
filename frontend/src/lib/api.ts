@@ -1,10 +1,7 @@
 import type { ActivityResult, Exam, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, WritingEvaluation } from './types';
 import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
 import { supabase } from './supabase';
-import {
-  addErrors, addEvaluation, addMessages, getMessages, latestEvaluations, listConversations, listErrors, markErrorsResolved,
-  setCurrentTutorConversation, updateConversation, type LocalError,
-} from './localStore';
+import { addErrors, addEvaluation, addMessages, getMessages, latestEvaluations, listConversations, listErrors, markErrorsResolved, setCurrentTutorConversation, updateConversation, type LocalError, forgetLevelData } from './localStore';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
 // Catàleg d'activitats de la BDD (taula resources). Es demana una sola vegada
 // per càrrega de la pàgina: el comparteixen la selecció d'activitats i el xat.
@@ -648,11 +645,59 @@ export async function regenerateLearningPath(): Promise<LearningPath> {
   return payload;
 }
 
-// Rutes de l'A2 i el B1 (les predefinides i les del professorat de les classes de l'usuari), amb el progrés.
+// Rutes de l'A2, el B1 i el B2 (les predefinides i les del professorat de les classes de l'usuari), amb el progrés.
 export async function fetchStudyPaths(): Promise<{ level: string; paths: StudyPath[] }> {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/study-paths`, { headers: await authHeaders() });
   const payload = await res.json().catch(() => null);
   if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut carregar les rutes');
+  return payload;
+}
+
+/* ── Nivell i prova de nivell ─────────────────────────────────────────── */
+// Canvia el nivell de l'usuari (el client no pot escriure profiles.level). Torna les classes on
+// està que no són del nivell nou, per a avisar-ne.
+export async function changeLevel(level: string, reason: 'manual' | 'placement' = 'manual'): Promise<{ level: string; classes_outside: string[] }> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/profile/level`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ level, reason }),
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut canviar el nivell');
+  invalidateResources();
+  // El servidor ha esborrat els errors pendients i les avaluacions del nivell anterior.
+  await forgetLevelData().catch(err => console.error('Error esborrant les dades locals del nivell anterior:', err));
+  return payload;
+}
+
+export type PlacementTest = {
+  writing: { prompt: string; min_words: number; max_words: number };
+  questions: { id: string; level: string; prompt: string; options: string[] }[];
+};
+
+export type PlacementResult = {
+  suggested: string;
+  questions: { level: string; per_level: Record<string, { correct: number; total: number }> };
+  // Redacció avaluada amb la rúbrica de l'Expressió escrita del nivell actual (nota sobre 10).
+  text: { rubric: string; mark: number; pass_mark: number; passed: boolean; feedback: string } | null;
+  text_status: 'ok' | 'short' | 'unavailable' | 'not_needed';
+};
+
+export async function fetchPlacementTest(): Promise<PlacementTest> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/placement-test`, { headers: await authHeaders() });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut preparar la prova de nivell');
+  return payload;
+}
+
+export async function submitPlacementTest(answers: { exercise_id: string; answer: string }[], text: string): Promise<PlacementResult> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/placement-test`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ answers, text }),
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(res.status === 429 ? 'Has enviat massa proves seguides. Espera un minut.' : payload?.error ?? 'No hem pogut corregir la prova');
   return payload;
 }
 

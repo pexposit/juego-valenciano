@@ -29,6 +29,9 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [level, setLevel] = useState('A2');
+  // Adults que no saben el seu nivell: comencen en l'A2 i, en entrar, se'ls obri la prova de nivell,
+  // que proposa un nivell. Després el poden canviar des del perfil.
+  const [wantsPlacement, setWantsPlacement] = useState(false);
   const [ageGroup, setAgeGroup] = useState('');
   const [motherTongue, setMotherTongue] = useState('');
   // Comptes infantils: el PIN de la família, que protegix el seguiment del xiquet.
@@ -65,7 +68,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
     if (supabase && asksMotherTongue && !motherTongue) return setNotice('Tria la teua llengua materna.');
     if (ageGroup === 'child' && !isPin(familyPin)) return setNotice('Tria un PIN de la família de 4 xifres.');
     // Només les persones adultes trien nivell; els xiquets comencen en el Nivell 0.
-    const startLevel = ageGroup === 'child' ? 'nivell0' : level;
+    const startLevel = ageGroup === 'child' ? 'nivell0' : wantsPlacement ? 'A2' : level;
     return withAuth(async client => {
       const { data, error } = await client.auth.signUp({
         email,
@@ -84,7 +87,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
       }
       setNotice('Compte creat! Entrant...');
       await recordLogin(startLevel);
-      setPage('dashboard');
+      setPage(ageGroup === 'adult' && wantsPlacement && data.session ? 'placement' : 'dashboard');
     });
   };
 
@@ -167,14 +170,28 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
             {ageGroup === 'adult' && (
               <>
                 <label className="mt-4 block text-sm font-extrabold mb-1" htmlFor="auth-level">El teu nivell</label>
-                <select
-                  value={level}
-                  onChange={e => setLevel(e.target.value)}
-                  id="auth-level"
-                  className={`${INPUT_CLASS} bg-white`}
-                >
-                  {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                {wantsPlacement ? (
+                  <div className="rounded-2xl border-2 border-[#0F47AF]/30 bg-[#0F47AF]/5 p-3 text-sm">
+                    <p className="font-bold text-[#0B3785]">En entrar faràs una prova de nivell curta i et proposarem el teu nivell.</p>
+                    <button type="button" onClick={() => setWantsPlacement(false)} id="auth-placement-cancel" className="mt-1 font-bold text-gray-500 underline-offset-2 hover:underline">
+                      Prefereixo triar-lo jo
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      value={level}
+                      onChange={e => setLevel(e.target.value)}
+                      id="auth-level"
+                      className={`${INPUT_CLASS} bg-white`}
+                    >
+                      {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <button type="button" onClick={() => setWantsPlacement(true)} id="auth-placement" className="mt-2 text-sm font-bold text-[#0F47AF] underline-offset-2 hover:underline">
+                      No saps el teu nivell? Fes una prova de nivell
+                    </button>
+                  </>
+                )}
               </>
             )}
 

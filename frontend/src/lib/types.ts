@@ -150,7 +150,7 @@ export type LatestEvaluation = { summary: string; weaknesses: string[]; priority
 // Resultat d'una pràctica o d'un examen per a la ruta d'aprenentatge.
 export type ActivityResult = { level?: string | null; score?: number | null; total?: number | null; details?: Record<string, unknown> };
 
-// Ruta predefinida o del professorat (GET /api/study-paths), per a l'A2 i el B1. `class_name`:
+// Ruta predefinida o del professorat (GET /api/study-paths), per a l'A2, el B1 i el B2. `class_name`:
 // la classe per a la qual l'ha creada la docent (null si és predefinida).
 export type StudyPath = {
   id: string;

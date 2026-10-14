@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { ChevronRight, Sparkles } from 'lucide-react';
 import { levelLabel } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { LessonModal } from '../components/LessonModal';
@@ -7,11 +8,11 @@ import { PathCard, PathDetail } from '../features/paths/PathViews';
 import type { Resource, StudyPath } from '../lib/types';
 
 /**
- * Rutes recomanades de l'A2 i el B1 (substituïxen la ruta generada per la IA): les predefinides
- * del nivell. Les rutes del professorat són en «Classe». Un pas està fet quan l'usuari ha acabat
- * l'activitat alguna vegada.
+ * Rutes recomanades de l'A2, el B1 i el B2: les predefinides del nivell. Les rutes del professorat
+ * són en «Classe». Un pas està fet quan l'usuari ha acabat l'activitat alguna vegada. En el B1 i
+ * el B2, a més, s'hi enllaça la ruta personalitzada de la IA (`onAiPath`).
  */
-export function StudyPaths({ onOpen, onBack }: { onOpen: (resource: Resource) => void; onBack: () => void }) {
+export function StudyPaths({ onOpen, onBack, onAiPath }: { onOpen: (resource: Resource) => void; onBack: () => void; onAiPath?: () => void }) {
   // undefined = carregant; null = error.
   const [data, setData] = useState<{ level: string; paths: StudyPath[] } | null>();
   const [error, setError] = useState<string>();
@@ -75,6 +76,22 @@ export function StudyPaths({ onOpen, onBack }: { onOpen: (resource: Resource) =>
                 </p>
               </div>
             </section>
+
+            {onAiPath && (
+              <button
+                onClick={onAiPath}
+                className="btn-press flex items-center gap-4 rounded-3xl border-2 border-teal bg-white p-5 text-left shadow-sm transition-colors hover:bg-teal/5"
+              >
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal text-white" aria-hidden="true">
+                  <Sparkles size={24} />
+                </span>
+                <span className="flex-1">
+                  <span className="block text-lg font-black">La teua ruta personalitzada</span>
+                  <span className="block text-sm opacity-70">Una ruta feta a partir dels teus errors i resultats. La generes quan vulgues.</span>
+                </span>
+                <ChevronRight className="shrink-0 text-teal" aria-hidden="true" />
+              </button>
+            )}
 
             <ul className="flex flex-col gap-3">
               {data.paths.map(path => <PathCard key={path.id} path={path} onSelect={() => setSelectedId(path.id)} />)}

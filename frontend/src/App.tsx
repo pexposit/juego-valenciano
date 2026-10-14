@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { CHAT_CATEGORIES, hasPredefinedPaths, isKidsLevel0, isTranslatedTongue } from '@parlaval/shared';
+import { CHAT_CATEGORIES, hasAiPath, hasPredefinedPaths, isKidsLevel0, isTranslatedTongue } from '@parlaval/shared';
 import type { User } from '@supabase/supabase-js';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
 import { SceneLoading, useDashboardAssets, useSceneAssets } from './components/SceneLoading';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
-import { endSession, fetchExam, fetchPractice, fetchResources, finishAbandonedResources, forgetSession, invalidateResources } from './lib/api';
+import { changeLevel, endSession, fetchExam, fetchPractice, fetchResources, finishAbandonedResources, forgetSession, invalidateResources } from './lib/api';
 import type { Exam as ExamResource, Practice as PracticeResource, Resource } from './lib/types';
-import { activityRoute, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from './data/content';
+import { activityRoute, AI_PATH_ROUTE, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
@@ -25,6 +25,7 @@ import { TutorHistory } from './pages/TutorHistory';
 import { Lessons } from './pages/Lessons';
 import { Summary } from './pages/Summary';
 import { Profile } from './pages/Profile';
+import { PlacementTest } from './pages/PlacementTest';
 import { KidsAlbum } from './features/kids/KidsAlbum';
 import { KidsHome } from './features/kids/KidsHome';
 import { KidsIsland } from './features/kids/KidsIsland';
@@ -327,6 +328,14 @@ export function App() {
     void saveProfile({ mother_tongue });
   };
 
+  // El nivell el canvia el backend (el client no pot escriure profiles.level). Torna les classes
+  // de l'usuari que no són del nivell nou, per a avisar-ne.
+  const updateLevel = async (next: string, reason: 'manual' | 'placement' = 'manual') => {
+    const { level: saved, classes_outside } = await changeLevel(next, reason);
+    setLevel(saved);
+    return classes_outside;
+  };
+
   const updateShowMotherTongue = (show_mother_tongue: boolean) => {
     setShowMotherTongue(show_mother_tongue);
     void saveProfile({ show_mother_tongue });
@@ -383,7 +392,7 @@ export function App() {
           path={ROUTES.learningpath}
           element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
             <PageTransition>
-              {/* A2 i B1: rutes predefinides i del professorat; la resta de nivells, la ruta de la IA. */}
+              {/* A2, B1 i B2: rutes predefinides (en el B1 i el B2, amb un enllaç a la de la IA); la resta de nivells, la ruta de la IA. */}
               {hasPredefinedPaths(level) ? (
                 <StudyPaths
                   onOpen={resource => {
@@ -391,6 +400,7 @@ export function App() {
                     if (route) navigate(route);
                   }}
                   onBack={goDashboard}
+                  onAiPath={hasAiPath(level) ? () => navigate(AI_PATH_ROUTE) : undefined}
                 />
               ) : (
                 <LearningPath
@@ -401,6 +411,21 @@ export function App() {
                   onBack={goDashboard}
                 />
               )}
+            </PageTransition>
+          )}
+        />
+        <Route
+          path={AI_PATH_ROUTE}
+          // Fins que no es carrega el perfil no se sap el nivell: no es redirigix abans d'hora.
+          element={!profileReady ? null : kids || !hasAiPath(level) ? <Navigate to={ROUTES.learningpath} replace /> : (
+            <PageTransition>
+              <LearningPath
+                onOpen={resource => {
+                  const route = activityRoute(resource);
+                  if (route) navigate(route);
+                }}
+                onBack={() => navigate(ROUTES.learningpath)}
+              />
             </PageTransition>
           )}
         />
@@ -444,6 +469,7 @@ export function App() {
                 name={name}
                 setName={updateName}
                 level={level}
+                setLevel={next => updateLevel(next)}
                 xp={xp}
                 back={() => navigate(-1)}
                 onLogOut={logOut}
@@ -460,6 +486,15 @@ export function App() {
               />
             </PageTransition>
           }
+        />
+        <Route
+          path={ROUTES.placement}
+          // Només per a adults: el món infantil depén del Nivell 0.
+          element={!profileReady ? null : ageGroup === 'child' ? <Navigate to={ROUTES.dashboard} replace /> : (
+            <PageTransition>
+              <PlacementTest level={level} onAccept={next => updateLevel(next, 'placement')} onDone={goDashboard} />
+            </PageTransition>
+          )}
         />
         <Route
           path={ROUTES.summary}

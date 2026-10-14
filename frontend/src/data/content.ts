@@ -1,7 +1,7 @@
 import { CEFR_LEVELS, CHAT_CATEGORIES, isPracticeArea, MOTHER_TONGUES } from '@parlaval/shared';
 import type { Resource, Scenario } from '../lib/types';
 
-export type Page = 'home' | 'auth' | 'dashboard' | 'learningpath' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'errors' | 'tutorhistory' | 'lessons' | 'summary' | 'profile' | 'progress' | 'classes' | 'myclasses';
+export type Page = 'home' | 'auth' | 'dashboard' | 'learningpath' | 'scenarioselect' | 'chat' | 'exam' | 'practice' | 'errors' | 'tutorhistory' | 'lessons' | 'summary' | 'profile' | 'progress' | 'classes' | 'myclasses' | 'placement';
 
 /* Rutes URL de cada pàgina. La de xat porta l'escenari com a paràmetre de ruta
  * (/xat/:scenario): l'entrada `chat` és només un valor per defecte, no s'hi
@@ -25,7 +25,12 @@ export const ROUTES: Record<Page, string> = {
   classes: '/classes',
   // Secció «Classe» de l'alumne: el que el professorat ha posat a les seues classes.
   myclasses: '/classe',
+  // Prova de nivell (adults): proposa un nivell, que l'usuari pot acceptar o no.
+  placement: '/prova-nivell',
 };
+
+// Ruta personalitzada de la IA en els nivells que també tenen rutes predefinides (B1 i B2).
+export const AI_PATH_ROUTE = `${ROUTES.learningpath}/personalitzada`;
 
 // Món d'illes del Nivell 0 (xiquets): el tauler i les activitats hi redirigixen.
 export const KIDS_ROUTES = { home: '/xiquets', island: '/xiquets/illa', album: '/xiquets/album', lessons: '/xiquets/llicons', lesson: '/xiquets/llico' };

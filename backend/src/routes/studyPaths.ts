@@ -35,7 +35,7 @@ type PathRow = {
   study_path_steps: { position: number; resource_id: string }[];
 };
 
-// Rutes recomanades de l'usuari (A2 i B1): les predefinides del seu nivell. Les que el professorat
+// Rutes recomanades de l'usuari (A2, B1 i B2): les predefinides del seu nivell. Les que el professorat
 // crea per a les classes són en /api/my-classes. Cada pas diu si ja l'ha fet (si té algun resultat
 // d'eixa activitat): el progrés es calcula ací perquè user_resource_results només el llig el backend.
 studyPathsRouter.get('/api/study-paths', requireAuth, async (req: AuthRequest, res) => {

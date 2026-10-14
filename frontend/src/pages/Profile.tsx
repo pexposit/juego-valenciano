@@ -10,12 +10,14 @@ const FIELD_CLASS = 'mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 text-2
 const levelLabel = (value: string) => LEVEL_OPTIONS.find(o => o.value === value)?.label ?? value;
 
 export function Profile({
-  name, setName, level, xp, back, onLogOut, isDemo, ageGroup, motherTongue, setMotherTongue, showMotherTongue, setShowMotherTongue,
+  name, setName, level, setLevel, xp, back, onLogOut, isDemo, ageGroup, motherTongue, setMotherTongue, showMotherTongue, setShowMotherTongue,
   onProgress, isTeacher, onClasses, uid,
 }: {
   name: string;
   setName: (v: string) => void;
   level: string;
+  // Canvia el nivell (backend) i torna les classes de l'usuari que no són del nivell nou.
+  setLevel: (v: string) => Promise<string[]>;
   xp: number;
   back: () => void;
   onLogOut: () => void;
@@ -39,17 +41,40 @@ export function Profile({
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(name);
   const [draftTongue, setDraftTongue] = useState(motherTongue ?? '');
+  const [draftLevel, setDraftLevel] = useState(level);
+  const [saving, setSaving] = useState(false);
+  // Avís després de canviar el nivell (classes d'un altre nivell) o error en fer-ho.
+  const [levelNotice, setLevelNotice] = useState<{ text: string; error?: boolean }>();
+  // Els comptes infantils no canvien de nivell: el món d'illes depén del Nivell 0.
+  const canChangeLevel = !isChild && !isTeacher;
 
   const startEditing = () => {
     setDraftName(name);
     setDraftTongue(motherTongue ?? '');
+    setDraftLevel(level);
+    setLevelNotice(undefined);
     setEditing(true);
   };
 
-  const confirmEditing = () => {
+  const confirmEditing = async () => {
+    const changesLevel = canChangeLevel && draftLevel !== level;
+    if (changesLevel && !confirm(`Vols passar al nivell ${levelLabel(draftLevel)}? Les activitats i les rutes seran les d'eixe nivell, i s'esborraran la teua ruta personalitzada i els errors que tens pendents. Ho pots tornar a canviar quan vulgues.`)) return;
     const trimmed = draftName.trim();
     if (trimmed && trimmed !== name) setName(trimmed);
     if (hasHelp && draftTongue && draftTongue !== motherTongue) setMotherTongue(draftTongue);
+    if (changesLevel) {
+      setSaving(true);
+      try {
+        const outside = await setLevel(draftLevel);
+        setLevelNotice(outside.length
+          ? { text: `Ara estàs en el nivell ${levelLabel(draftLevel)}. ${outside.length === 1 ? 'La classe' : 'Les classes'} «${outside.join('», «')}» no ${outside.length === 1 ? 'és' : 'són'} d'este nivell: continues dins, però potser cal que en parles amb la docent.` }
+          : { text: `Ara estàs en el nivell ${levelLabel(draftLevel)}.` });
+      } catch (err) {
+        setLevelNotice({ text: err instanceof Error ? err.message : 'No hem pogut canviar el nivell', error: true });
+      } finally {
+        setSaving(false);
+      }
+    }
     setEditing(false);
   };
 
@@ -95,7 +120,7 @@ export function Profile({
               <input
                 value={draftName}
                 onChange={e => setDraftName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') confirmEditing(); }}
+                onKeyDown={e => { if (e.key === 'Enter') void confirmEditing(); }}
                 id="profile-name"
                 autoFocus
                 className={FIELD_CLASS}
@@ -108,10 +133,30 @@ export function Profile({
             </div>
           )}
 
-          <div>
-            <span className="block font-extrabold text-xl">Nivell</span>
-            <span id="profile-level" className="mt-1 block p-3 text-2xl font-normal">{isChild ? 'Xiquet' : levelLabel(level)}</span>
-          </div>
+          {editing && canChangeLevel ? (
+            <label className="block font-extrabold text-xl">
+              Nivell
+              <select
+                value={draftLevel}
+                onChange={e => setDraftLevel(e.target.value)}
+                id="profile-level"
+                className={`${FIELD_CLASS} bg-white`}
+              >
+                {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </label>
+          ) : (
+            <div>
+              <span className="block font-extrabold text-xl">Nivell</span>
+              <span id="profile-level" className="mt-1 block p-3 text-2xl font-normal">{isChild ? 'Xiquet' : levelLabel(level)}</span>
+            </div>
+          )}
+
+          {levelNotice && !editing && (
+            <p role="status" className={`rounded-2xl px-4 py-3 font-semibold ${levelNotice.error ? 'bg-coral/10 text-coral' : 'bg-teal/10 text-teal'}`}>
+              {levelNotice.text}
+            </p>
+          )}
 
           {hasHelp && (
             editing ? (
@@ -138,7 +183,8 @@ export function Profile({
           {editing && (
             <div className="flex flex-wrap gap-3 pt-2">
               <button
-                onClick={confirmEditing}
+                onClick={() => void confirmEditing()}
+                disabled={saving}
                 id="profile-confirm"
                 className="btn-press inline-flex items-center gap-2 rounded-full bg-[#0F47AF] px-6 py-3 text-lg font-black text-white shadow hover:bg-[#0F47AF]/90 transition-colors"
               >
