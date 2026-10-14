@@ -7,6 +7,7 @@ import type {
 } from 'openai/resources/chat/completions';
 import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { contentsForPrompt, LANGUAGE_AREAS, type LevelContent } from './levelContents.js';
 
 // Variables de entorno
 const UJI_HOST = process.env.UJI_HOST;
@@ -80,25 +81,11 @@ export async function getMcpTools(): Promise<{ client: Client; tools: ChatComple
 // -------------------------------------------------------------
 // DEFINICIÓN DE ESQUEMA Y TIPOS INFERIDOS (Evita error ts(2322))
 // -------------------------------------------------------------
-export const ErrorCategoryEnum = z.enum([
-  'accentuació',
-  'apostrofació',
-  'concordança',
-  'morfologia',
-  'sintaxi',
-  'lèxic',
-  'preposicions',
-  'pronoms',
-  'ortografia',
-  'altres',
-]);
-
-export type ErrorCategory = z.infer<typeof ErrorCategoryEnum>;
-
 export const DetectedErrorSchema = z.object({
   error_text: z.string().describe('El fragment erroni original.'),
   correction: z.string().describe('La correcció proposada segons la normativa AVL.'),
-  category: ErrorCategoryEnum.describe("La categoria lingüística de l'error."),
+  area: z.enum(LANGUAGE_AREAS).describe("L'àrea de l'error: fonetica_ortografia, morfosintaxi o lexic_semantica."),
+  contingut: z.string().describe("El codi (c1, c2...) del contingut del nivell de l'aprenent on encaixa l'error; buit si no se'n proporciona cap llista."),
   explanation: z.string().describe('Explicació succinta de la regla gramatical aplicada.'),
 });
 
@@ -170,7 +157,28 @@ EIXIDA:
 Genera directament l'eixida estructurada en JSON segons l'esquema requerit, sense preàmbuls ni texts meta-comunicatius.`
 
 
-export async function analyzeErrorsWithLocalLLM(content: string): Promise<DetectedError[]> {
+// Classificació segons el nivell de l'aprenent: cada error va a l'àrea i al contingut del seu
+// nivell on encaixa; els que són d'un nivell superior no es comuniquen.
+function levelInstructions(level: string, contents: LevelContent[]): string {
+  if (!contents.length) {
+    return `\n\n==================================================\nCLASSIFICACIÓ\n==================================================\nPer a cada error, indica l'àrea (fonetica_ortografia, morfosintaxi o lexic_semantica) i deixa el camp «contingut» buit.`;
+  }
+  return `\n\n==================================================
+NIVELL DE L'APRENENT I CLASSIFICACIÓ
+==================================================
+L'aprenent té el nivell ${level}. Estos són els continguts de llengua del seu nivell:
+${contentsForPrompt(contents)}
+
+- Classifica cada error en l'àrea i el contingut (codi «c..») de la llista on encaixa millor.
+- Un error bàsic, propi d'un nivell inferior (p. ex. una falta d'accentuació o de concordança elemental), també és un error: comunica'l i classifica'l en el contingut de la llista que més s'hi assemble.
+- NO comuniques els errors o les millores que corresponguen a un nivell superior al ${level} i que no encaixen en cap contingut de la llista (p. ex. matisos d'estil o de registre avançats): no són exigibles a este aprenent.
+- El camp «contingut» ha de ser exactament un codi de la llista.`;
+}
+
+export async function analyzeErrorsWithLocalLLM(
+  content: string,
+  { level, contents }: { level: string; contents: LevelContent[] },
+): Promise<DetectedError[]> {
   const trimmed = content.trim();
   if (!trimmed) return [];
 
@@ -180,7 +188,7 @@ export async function analyzeErrorsWithLocalLLM(content: string): Promise<Detect
     const { client: mcp, tools } = await getMcpTools();
 
     const messages: ChatCompletionMessageParam[] = [
-      { role: 'system', content: SYSTEM_PROMPT_AVL },
+      { role: 'system', content: SYSTEM_PROMPT_AVL + levelInstructions(level, contents) },
       { role: 'user', content: `Analitza lingüísticament el text següent:\n"${trimmed}"` },
     ];
 

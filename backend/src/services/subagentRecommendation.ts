@@ -28,13 +28,13 @@ export const EvaluationReportSchema = z.object({
   priority_focus: z
     .string()
     .describe(
-      "L'àrea o concepte crític prioritari que ha d'atacar de manera immediata la següent ruta d'aprenentatge."
+      "El contingut (subcategoria) amb més errors, escrit exactament com en el camp 'subcategory' dels errors; si cap error no en té, l'àrea ('category')."
     ),
 });
 
 export type EvaluationReport = z.infer<typeof EvaluationReportSchema>;
 
-export type EvaluationError = { error_text: string; correction: string; category: string; explanation: string };
+export type EvaluationError = { error_text: string; correction: string; category: string; subcategory?: string | null; explanation: string };
 export type PreviousEvaluation = { summary: string; weaknesses: string[]; priority_focus: string; created_at: string };
 
 // -------------------------------------------------------------
@@ -44,19 +44,19 @@ export const SYSTEM_PROMPT_RECOMMENDATION = `
 PROTOCOL D'AVALUACIÓ:
 
 DADES QUE REPS
-- errors: els errors pendents del recurs que s'acaba de tancar (error_text, correction, category, explanation).
+- errors: els errors pendents del recurs que s'acaba de tancar (error_text, correction, category = àrea, subcategory = contingut del catàleg del seu nivell on encaixa, explanation).
 - avaluacions_anteriors: les últimes avaluacions de l'usuari (pot estar buida).
 
 PAS 1: ANÀLISI DIRECTA
-- Compta quina 'category' és la més freqüent entre els errors rebuts.
+- Compta quina 'subcategory' és la més freqüent entre els errors rebuts (si cap error no en té, compta la 'category').
 - Compara amb el 'priority_focus' de l'avaluació anterior més recent:
-  * Si coincidixen, indica en el resum que el bloqueig en eixa categoria persistix.
-  * Si no, indica que el focus canvia cap a la nova categoria predominant.
+  * Si coincidixen, indica en el resum que el bloqueig en eixe contingut persistix.
+  * Si no, indica que el focus canvia cap al nou contingut predominant.
 
 PAS 2: VEREDICTE
-- 'priority_focus': serà exactament el nom de la categoria amb més errors no resolts.
+- 'priority_focus': serà exactament el text de la 'subcategory' amb més errors no resolts (o el de la 'category', si cap error no té subcategoria).
 - 'weaknesses': Selecciona els errors més greus o bloquejants per a la comunicació diària que han d'anar primers a la ruta (format: "error -> correcció").
-- 'summary': Un paràgraf explicant com evoluciona i quina categoria concentra les fallades.`;
+- 'summary': Un paràgraf explicant com evoluciona i quin contingut concentra les fallades.`;
 
 // -------------------------------------------------------------
 // FUNCIÓ PRINCIPAL D'EXECUCIÓ DEL SUBAGENT

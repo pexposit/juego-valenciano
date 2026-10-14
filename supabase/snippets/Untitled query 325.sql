@@ -1,1 +1,1 @@
-select * from auth.users;
+select * from user_evaluations;

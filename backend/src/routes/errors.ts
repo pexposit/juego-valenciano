@@ -7,12 +7,14 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { analyzeSchema } from '../schemas.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
+import { classify, loadLevelContents, type LevelContent } from '../services/levelContents.js';
 
 export const errorsRouter = Router();
 
 // Els errors de l'usuari es guarden en dos llocs amb el mateix id:
-//   * al servidor (user_errors), només les metadades: categoria, origen i si està resolt. És el
-//     que fa servir la ruta d'aprenentatge, i on es marquen com a resolts.
+//   * al servidor (user_errors), només les metadades: àrea (category), contingut del catàleg
+//     (content_id), origen i si està resolt. És el que fa servir la ruta d'aprenentatge, i on es
+//     marquen com a resolts.
 //   * al navegador de l'usuari (IndexedDB), el text: la frase, la correcció, l'explicació i el
 //     context. Per això cada endpoint que crea errors els torna al client perquè els guarde.
 export type ClientError = {
@@ -20,7 +22,10 @@ export type ClientError = {
   source: 'chat' | 'practice' | 'writing';
   error_text: string;
   correction: string;
+  // Àrea general (fonetica_ortografia, morfosintaxi, lexic_semantica o la de l'activitat).
   category: string;
+  // Nom del contingut (subcategoria) on encaixa; null si no en té.
+  subcategory: string | null;
   explanation: string;
   // La frase/enunciat on es va cometre l'error (per als xats, el missatge sencer).
   context: string | null;
@@ -32,7 +37,7 @@ export type ClientError = {
   created_at: string;
 };
 
-type NewError = Omit<ClientError, 'id' | 'created_at' | 'resource_id'> & { resource_id?: string | null; session_resource_id?: string | null };
+type NewError = Omit<ClientError, 'id' | 'created_at' | 'resource_id'> & { resource_id?: string | null; session_resource_id?: string | null; content_id: string | null };
 
 // Guarda les metadades dels errors i torna cada error amb el seu id, per al client.
 async function insertErrors(client: any, userId: string, errors: NewError[]): Promise<ClientError[]> {
@@ -45,12 +50,13 @@ async function insertErrors(client: any, userId: string, errors: NewError[]): Pr
       category: e.category,
       resource_id: e.resource_id ?? null,
       session_resource_id: e.session_resource_id ?? null,
+      content_id: e.content_id,
       exercise_id: e.exercise_id,
     })))
     .select('id, created_at');
   if (error) throw error;
   return (data as { id: string; created_at: string }[]).map((row, i) => {
-    const { resource_id, session_resource_id: _s, ...e } = errors[i];
+    const { resource_id, session_resource_id: _s, content_id: _c, ...e } = errors[i];
     return { ...e, resource_id: resource_id ?? null, id: row.id, created_at: row.created_at };
   });
 }
@@ -130,21 +136,30 @@ errorsRouter.post('/api/errors/analyze', requireAuth, rateLimit(ANALYZE_RATE_LIM
 
     // Nivell 0 (xiquets): no es busquen errors gramaticals de la conversa.
     const { data: profile } = await client.from('profiles').select('level').eq('id', req.userId).maybeSingle();
-    if (profile?.level === 'nivell0') return res.json([]);
+    if (!profile || profile.level === 'nivell0') return res.json([]);
 
+    // Els errors es classifiquen en els continguts del nivell de l'alumne.
     const start = Date.now();
-    const detected = await analyzeErrorsWithLocalLLM(text);
-    const saved = await insertErrors(client, req.userId, detected.map(e => ({
-      source: 'chat',
+    const contents = await loadLevelContents(client, profile.level);
+    const detected = await analyzeErrorsWithLocalLLM(text, { level: profile.level, contents });
+    const saved = await insertErrors(client, req.userId, detected.flatMap(e => {
+      const { category, content_id, subcategory } = classify(contents, e.area, e.contingut);
+      // Amb llista de continguts, un error que no encaixa en cap és d'un nivell superior.
+      if (contents.length && !content_id) return [];
+      return [{
+      source: 'chat' as const,
       session_resource_id,
       error_text: e.error_text,
       correction: e.correction,
-      category: e.category,
+      category,
+      subcategory,
+      content_id,
       explanation: e.explanation,
       context: text,
       options: null,
       exercise_id: null,
-    })));
+      }];
+    }));
     console.log(`[analyze] ${saved.length} errors en ${Date.now() - start}ms`);
     res.json(saved);
   } catch (error: any) {
@@ -169,7 +184,7 @@ errorsRouter.post('/api/errors/practice', requireAuth, async (req: AuthRequest, 
 
   const { data: exercises, error } = await client
     .from('practice_exercises')
-    .select('id, kind, prompt, options, answers, explanation, resource_id, resources(name)')
+    .select('id, kind, prompt, options, answers, explanation, resource_id, resources(name, category, metadata)')
     .in('id', parsed.data.answers.map(a => a.exercise_id))
     .in('kind', ['choice', 'fill']);
 
@@ -193,7 +208,10 @@ errorsRouter.post('/api/errors/practice', requireAuth, async (req: AuthRequest, 
         exercise_id,
         error_text: answer.trim(),
         correction: exercise.answers[0],
-        category: exercise.resources?.name ?? 'Pràctica',
+        // L'àrea de l'activitat, i l'activitat mateix com a contingut.
+        category: exercise.resources?.category ?? 'practica',
+        subcategory: exercise.resources?.metadata?.section_name ?? exercise.resources?.name ?? null,
+        content_id: exercise.resource_id,
         explanation: exercise.explanation ?? '',
         context: exercise.prompt,
         options: exercise.kind === 'choice' ? exercise.options : null,
@@ -232,27 +250,43 @@ errorsRouter.post('/api/errors/practice', requireAuth, async (req: AuthRequest, 
   res.json({ ok: true, wrong: wrong.length, right: right.length, errors: saved });
 });
 
-type WritingError = { original: string; correction: string; category: string };
+type WritingError = { original: string; correction: string; category: string; contingut: string | null };
 
 // Errors que el LLM assenyala en avaluar una redacció o un formulari (A1: errors_destacats;
 // A2/B1: errors_detectats), guardats perquè es puguen practicar.
 export function writingErrorsOf(evaluation: any): WritingError[] {
-  const a1 = (evaluation?.errors_destacats ?? []).map((e: any) => ({ original: e.element_original, correction: e.correccio_suggerida, category: e.tipus }));
-  const a2 = (evaluation?.errors_detectats ?? []).map((e: any) => ({ original: e.segment_original, correction: e.proposta_correccio, category: e.categoria }));
+  const a1 = (evaluation?.errors_destacats ?? []).map((e: any) => ({ original: e.element_original, correction: e.correccio_suggerida, category: e.tipus, contingut: e.contingut ?? null }));
+  const a2 = (evaluation?.errors_detectats ?? []).map((e: any) => ({ original: e.segment_original, correction: e.proposta_correccio, category: e.categoria, contingut: e.contingut ?? null }));
   return [...a1, ...a2].filter(
     (e: WritingError) => typeof e.original === 'string' && e.original.trim() && typeof e.correction === 'string' && e.correction.trim(),
   );
 }
 
+// Àrea de les categories de les rúbriques de redacció (A1: tipus; A2, B1 i B2: categoria).
+const WRITING_AREAS: Record<string, string> = {
+  'lèxic': 'lexic_semantica',
+  ortografia: 'fonetica_ortografia',
+  morfologia: 'morfosintaxi',
+  morfosintaxi: 'morfosintaxi',
+  'concordança': 'morfosintaxi',
+  connector: 'morfosintaxi',
+};
+
 // Guarda les metadades dels errors d'una redacció i els torna amb el text, per al client.
+// `contents`: els continguts del nivell de l'alumne que s'han passat a l'avaluador; amb llista,
+// només es guarden els errors que encaixen en algun (els altres són d'un nivell superior).
 export async function saveWritingErrors(
   userId: string | undefined,
-  exercise: { resource_id: string; resources?: { name?: string } | null },
+  exercise: { resource_id: string },
   evaluation: unknown,
   text: string,
+  contents: LevelContent[],
 ): Promise<ClientError[]> {
   const client = db(userId);
-  const errors = writingErrorsOf(evaluation);
+  const errors = writingErrorsOf(evaluation).flatMap(e => {
+    const classified = classify(contents, WRITING_AREAS[e.category] ?? 'morfosintaxi', e.contingut);
+    return contents.length && !classified.content_id ? [] : [{ ...e, ...classified }];
+  });
   if (!client || !userId || errors.length === 0) return [];
 
   try {
@@ -261,8 +295,10 @@ export async function saveWritingErrors(
       resource_id: exercise.resource_id,
       error_text: e.original.trim(),
       correction: e.correction.trim(),
-      category: e.category || exercise.resources?.name || 'Expressió escrita',
-      explanation: e.category ? `Error de ${e.category}` : "Errada detectada en l'avaluació de la redacció",
+      category: e.category,
+      subcategory: e.subcategory,
+      content_id: e.content_id,
+      explanation: e.subcategory ? `Error de ${e.subcategory}` : "Errada detectada en l'avaluació de la redacció",
       context: text,
       options: null,
       exercise_id: null,

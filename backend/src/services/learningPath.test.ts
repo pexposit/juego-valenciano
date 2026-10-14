@@ -1,62 +1,21 @@
 /**
  * Pruebas unitarias de la ruta de aprendizaje (backend/src/services/learningPath.ts):
- * - focusOf: categorías de error que trabaja cada contenido según su `type`.
- * - errorCategoriesOf: categoría común de un error de chat, práctica o redacción.
  * - validatePlan: la respuesta del LLM solo puede usar recursos del catálogo enviado,
  *   sin repetir, y con entre 5 y 7 pasos.
  * - diagnosticPlan: ruta fija cuando aún no hay datos del usuario.
  * No se hace ninguna llamada al LLM ni a la base de datos.
  */
 import { describe, expect, it } from 'vitest';
-import { diagnosticPlan, focusOf, validatePlan, type CatalogItem, type Plan } from './learningPath.js';
-import { errorCategoriesOf } from './errorCategories.js';
+import { diagnosticPlan, validatePlan, type CatalogItem, type Plan } from './learningPath.js';
 
 const item = (id: string, category: string, extra: Partial<CatalogItem> = {}): CatalogItem => ({
-  id, category, type: id, section: id, name: id, content: null, focus: [], has_lesson: false, sort_order: 1, ...extra,
+  id, category, type: id, section: id, name: id, content: null, has_lesson: false, sort_order: 1, ...extra,
 });
 
 const plan = (ids: string[]): Plan => ({
   rationale: 'Treballarem els pronoms febles.',
   focus: ['pronoms'],
   steps: ids.map(id => ({ resource_id: id, stage: 'practicar', reason: 'Per a reforçar-ho.' })),
-});
-
-describe('focusOf', () => {
-  it('deduce el foco de los contenidos de lengua por su type', () => {
-    expect(focusOf({ category: 'morfosintaxi', type: 'b1_mor_pronoms_cd_ci' })).toEqual(['pronoms']);
-    expect(focusOf({ category: 'fonetica_ortografia', type: 'b1_fon_accentuacio' })).toEqual(['accentuació']);
-    expect(focusOf({ category: 'morfosintaxi', type: 'b1_mor_regim' })).toEqual(['preposicions']);
-    expect(focusOf({ category: 'lexic_semantica', type: 'b1_vocab_salut' })).toEqual(['lèxic']);
-    expect(focusOf({ category: 'fonetica_ortografia', type: 'b2_fon_dieresi_guionet' })).toEqual(['accentuació', 'apostrofació']);
-    expect(focusOf({ category: 'morfosintaxi', type: 'b2_mor_combinacions' })).toEqual(['pronoms']);
-    expect(focusOf({ category: 'morfosintaxi', type: 'b2_mor_ser_estar' })).toEqual(['morfologia']);
-  });
-
-  it('no asigna foco a las destrezas ni a los escenarios', () => {
-    expect(focusOf({ category: 'comprensio_oral', type: 'b1_co_converses' })).toEqual([]);
-    expect(focusOf({ category: 'escenari', type: 'b1_persones' })).toEqual([]);
-  });
-});
-
-describe('errorCategoriesOf', () => {
-  it('deja tal cual la categoría de los errores de chat', () => {
-    expect(errorCategoriesOf({ source: 'chat', category: 'pronoms' })).toEqual(['pronoms']);
-  });
-
-  it('traduce los errores de práctica al foco de su contenido', () => {
-    const resources = { category: 'morfosintaxi', type: 'b2_mor_combinacions' };
-    expect(errorCategoriesOf({ source: 'practice', category: 'Combinacions de pronoms febles', resources })).toEqual(['pronoms']);
-    // Una pregunta de comprensión no es un error de lengua.
-    expect(errorCategoriesOf({ source: 'practice', category: 'Converses', resources: { category: 'comprensio_oral', type: 'b1_co_converses' } })).toEqual([]);
-    expect(errorCategoriesOf({ source: 'practice', category: 'Sense recurs', resources: null })).toEqual([]);
-  });
-
-  it('traduce las categorías de las rúbricas de redacción', () => {
-    expect(errorCategoriesOf({ source: 'writing', category: 'morfosintaxi' })).toEqual(['morfologia']);
-    expect(errorCategoriesOf({ source: 'writing', category: 'connector' })).toEqual(['sintaxi']);
-    expect(errorCategoriesOf({ source: 'writing', category: 'ortografia' })).toEqual(['ortografia']);
-    expect(errorCategoriesOf({ source: 'writing', category: 'Expressió escrita' })).toEqual([]);
-  });
 });
 
 describe('validatePlan', () => {

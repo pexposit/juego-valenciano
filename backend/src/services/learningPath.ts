@@ -5,9 +5,6 @@ import { z } from 'zod';
 import { hasPredefinedPaths } from '@parlaval/shared';
 import { isPlayable, type Metadata } from './catalog.js';
 import { loadLearningSignals, type LearningSignals } from './learningSignals.js';
-import { errorCategoriesOf, focusOf, type ErrorRow } from './errorCategories.js';
-
-export { focusOf };
 
 // Ruta d'aprenentatge personalitzada. El LLM rep les dades de l'usuari
 // (learningSignals) i el catàleg jugable del seu nivell, i tria 5-7 passos amb
@@ -22,7 +19,7 @@ const openai = () => (openaiClient ??= new OpenAI({ apiKey: process.env.OPENAI_A
 export const STAGES = ['aprendre', 'practicar', 'aplicar', 'comprovar'] as const;
 export const MIN_STEPS = 5;
 export const MAX_STEPS = 7;
-// Una pràctica amb un 80 % d'encerts dona per resolts els errors del seu focus.
+// Una pràctica amb un 80 % d'encerts dona per resolts els errors classificats en eixe contingut.
 const MASTERY_RATIO = 0.8;
 const RECENT_DAYS = 7;
 
@@ -34,7 +31,6 @@ export type CatalogItem = {
   section: string;
   name: string;
   content: string | null;
-  focus: string[];
   has_lesson: boolean;
   sort_order: number;
 };
@@ -61,7 +57,6 @@ async function loadCatalog(client: any, level: string): Promise<CatalogItem[]> {
     section: typeof r.metadata?.section_name === 'string' ? r.metadata.section_name : r.name,
     name: r.name,
     content: r.content,
-    focus: focusOf(r),
     has_lesson: Boolean(r.metadata?.lesson),
     sort_order: r.sort_order ?? 0,
   }));
@@ -94,12 +89,12 @@ export function validatePlan(plan: Plan, catalogIds: ReadonlySet<string>): strin
 const SYSTEM_PROMPT = `Ets un tutor de valencià que prepara aprenents per als certificats de la JQCV. Has de dissenyar la ruta d'aprenentatge personalitzada dels pròxims dies per a un aprenent, a partir de les seues dades i del catàleg d'activitats del seu nivell.
 
 DADES QUE REPS
-- avaluacions: focus de les seues últimes converses (priority_focus = categoria d'error prioritària de cada una).
-- errors_pendents: recompte d'errors encara no resolts per categoria (accentuació, apostrofació, concordança, morfologia, sintaxi, lèxic, preposicions, pronoms, ortografia, altres).
+- avaluacions: focus de les seues últimes converses (priority_focus = el contingut amb més errors de cada una; en les antigues, una categoria d'error solta).
+- errors_pendents: recompte d'errors encara no resolts per contingut: area (fonetica_ortografia, morfosintaxi, lexic_semantica o l'àrea de l'activitat), contingut (el codi «r..» del catàleg que el treballa, o null si no hi és) i quantitat.
 - arees: per a cada àrea, quantes activitats ha fet i la mitjana d'encerts (0-1; null si no té nota).
 - recents: últims recursos fets (id, àrea, nota).
 - passos_fets: recursos de la ruta anterior que ja ha completat.
-- cataleg: les ÚNIQUES activitats que pots triar (id = codi curt com «r12», category, section, name, content, focus = categories d'error que treballa, has_lesson = té una lliçó de teoria).
+- cataleg: les ÚNIQUES activitats que pots triar (id = codi curt com «r12», category, section, name, content, has_lesson = té una lliçó de teoria).
 
 CATEGORIES DEL CATÀLEG
 - fonetica_ortografia, morfosintaxi, lexic_semantica: exercicis de llengua (molts amb lliçó).
@@ -110,7 +105,7 @@ CATEGORIES DEL CATÀLEG
 
 COM HA DE SER LA RUTA
 1. Entre ${MIN_STEPS} i ${MAX_STEPS} passos, en ordre, seguint el cicle: «aprendre» (un contingut amb has_lesson = true: primer la teoria i després la pràctica) → «practicar» (exercicis de llengua o de comprensió) → «aplicar» (expressió escrita, expressió oral o escenari, per a usar el que ha treballat) → «comprovar» (un examen o una activitat de comprensió per a veure el progrés). Pots repetir etapes, però comença per aprendre o practicar i acaba aplicant o comprovant.
-2. Prioritza el priority_focus de l'última avaluació i les categories amb més errors pendents: tria continguts amb eixe focus. Si no hi ha avaluacions ni errors, fes una ruta diagnòstica variada.
+2. Prioritza els continguts amb més errors pendents (el seu codi «contingut» és directament l'activitat que els treballa) i el priority_focus de l'última avaluació (el nom d'un contingut: tria el de la mateixa section). Si no hi ha avaluacions ni errors, fes una ruta diagnòstica variada.
 3. Reforça les àrees amb una mitjana baixa (< 0,6) i inclou alguna àrea que no haja fet mai.
 4. Inclou almenys una activitat de comprensió (oral o escrita) i una d'expressió (escrita, oral o escenari).
 5. No repetisques recursos de passos_fets ni dels recents dels últims ${RECENT_DAYS} dies, tret que hi haja tret menys de 0,5 i vulgues que el reforce.
@@ -253,7 +248,7 @@ function modelInput(signals: LearningSignals, catalog: CatalogItem[], previous: 
   const refOf = new Map(catalog.map((c, i) => [c.id, `r${i + 1}`]));
   return {
     avaluacions: signals.evaluations,
-    errors_pendents: signals.errorCounts,
+    errors_pendents: signals.errorCounts.map(e => ({ area: e.area, contingut: e.content_id ? refOf.get(e.content_id) ?? null : null, quantitat: e.count })),
     arees: signals.areaStats,
     recents: signals.recent.map(r => ({ id: refOf.get(r.resource_id) ?? null, area: r.category, nota: r.score !== null && r.total ? Math.round((r.score / r.total) * 100) / 100 : null, data: r.created_at.slice(0, 10) })),
     passos_fets: previous?.learning_path_steps.filter(s => s.status === 'done').flatMap(s => refOf.get(s.resource_id) ?? []) ?? [],
@@ -298,28 +293,15 @@ export async function getLearningPath(client: any, userId: string) {
   };
 }
 
-// Errors pendents de l'usuari en les categories indicades, de qualsevol origen (xat, pràctica
-// o redacció), per a donar-los per resolts.
-async function resolveErrors(client: any, userId: string, categories: string[]) {
-  if (!categories.length) return;
-  const { data, error } = await client
+// Errors pendents de l'usuari classificats en un contingut, per a donar-los per resolts.
+async function resolveContentErrors(client: any, userId: string, contentId: string) {
+  const { error } = await client
     .from('user_errors')
-    .select('id, source, category, resources(category, type)')
+    .update({ resolved: true, resolved_at: new Date().toISOString() })
     .eq('user_id', userId)
-    .eq('resolved', false)
-    .limit(2000);
+    .eq('content_id', contentId)
+    .eq('resolved', false);
   if (error) throw error;
-  const ids = (data as (ErrorRow & { id: string })[])
-    .filter(e => errorCategoriesOf(e).some(c => categories.includes(c)))
-    .map(e => e.id);
-  // Per tandes: una llista d'ids massa llarga no cap en la URL de la petició.
-  for (let i = 0; i < ids.length; i += 200) {
-    const { error: updateError } = await client
-      .from('user_errors')
-      .update({ resolved: true, resolved_at: new Date().toISOString() })
-      .in('id', ids.slice(i, i + 200));
-    if (updateError) throw updateError;
-  }
 }
 
 export type ResourceResult = {
@@ -351,9 +333,8 @@ export async function onResourceFinished(client: any, userId: string, result: Re
     await client.from('learning_path_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', step.id);
   }
 
-  // Domini d'un contingut de llengua: els errors del seu focus deixen de comptar.
+  // Domini d'un contingut: els errors classificats en ell (de xats, pràctica o redaccions) deixen de comptar.
   if (result.score != null && result.total && result.score / result.total >= MASTERY_RATIO) {
-    const { data: resource } = await client.from('resources').select('category, type').eq('id', result.resourceId).maybeSingle();
-    if (resource) await resolveErrors(client, userId, focusOf(resource));
+    await resolveContentErrors(client, userId, result.resourceId);
   }
 }

@@ -304,7 +304,8 @@ const T = [
   { id: "user_errors", d: "seg", rows: 3, cols: [
     ["id","uuid","P",""],
     ["user_id","uuid","",""],
-    ["category","text","","Tipo de error (p. ej. «Articles, demostratius i possessius»)."],
+    ["category","text","","Área general: fonetica_ortografia · morfosintaxi · lexic_semantica (en práctica, la del área de la actividad)."],
+    ["content_id","uuid","N","Contenido del catálogo del nivel del alumno donde encaja (subcategoría): la actividad que lo trabaja."],
     ["source","text","","chat · practice · writing."],
     ["resolved","boolean","","Si ya lo corrigió en ErrorPractice."],
     ["resolved_at","timestamptz","N",""],
@@ -314,7 +315,7 @@ const T = [
     ["created_at","timestamptz",""],
   ], what: "Errores detectados al alumno, para practicarlos después y para orientar su ruta. No guarda el texto erróneo: ese se queda en el navegador.",
     rls: "Sin políticas: solo backend.",
-    used: [["routes/errors.ts","detecta, lista y resuelve"],["services/learningSignals.ts","errores pendientes por categoría"],["services/learningPath.ts",""],["routes/learningPath.ts",""]] },
+    used: [["routes/errors.ts","detecta, lista y resuelve"],["services/learningSignals.ts","errores pendientes por área y contenido"],["services/learningPath.ts",""],["routes/learningPath.ts",""]] },
 
   { id: "user_evaluations", d: "seg", rows: 0, cols: [
     ["id","uuid","P",""],

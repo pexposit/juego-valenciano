@@ -4,6 +4,7 @@ import { getAdmin, requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
 import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing } from '../services/examWritingEvaluator.js';
+import { loadLevelContents } from '../services/levelContents.js';
 import { characterOf, isScenarioPlayable } from '../services/scenarios.js';
 import { ASSISTANT_CATEGORY, CHAT_CATEGORIES, FORM_FIELD_MAX_CHARS, isPracticeArea, WRITING_MAX_CHARS } from '@parlaval/shared';
 import { saveWritingErrors } from './errors.js';
@@ -312,12 +313,16 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
     ? [passage.title, ...passage.lines.map(l => (l.speaker ? `${l.speaker}: ${l.text}` : l.text))].filter(Boolean).join('\n')
     : undefined;
 
+  // Els errors que es guarden es classifiquen en els continguts del nivell de l'alumne.
+  const { data: profile } = await client.from('profiles').select('level').eq('id', req.userId).maybeSingle();
+  const contents = profile?.level && profile.level !== 'nivell0' ? await loadLevelContents(client, profile.level).catch(() => []) : [];
+
   let evaluate: () => Promise<unknown>;
   if (exercise?.kind === 'form') {
     const fields: string[] = exercise.task.fields;
     const answers = parsedBody.data.answers ?? {};
     if (!fields.some(f => answers[f]?.trim())) return res.status(400).json({ error: 'Omple el formulari abans d’avaluar-lo' });
-    evaluate = () => evaluateA1Writing({ instructions: exercise.prompt, fields, answers });
+    evaluate = () => evaluateA1Writing({ instructions: exercise.prompt, fields, answers, contents });
   } else if (exercise?.kind === 'writing') {
     const text = parsedBody.data.text?.trim();
     if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
@@ -331,6 +336,7 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
           text,
           minWords: task.min_words,
           maxWords: task.max_words,
+          contents,
         })
       : evaluateA2Writing({
           instructions: exercise.prompt,
@@ -339,6 +345,7 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
           maxWords: task.max_words,
           words: task.words ?? [],
           minWordsUsed: task.min_words_used ?? 0,
+          contents,
         });
   } else {
     return res.status(404).json({ error: "Este exercici no es pot avaluar" });
@@ -349,7 +356,7 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
     // Els errors que assenyala el LLM es guarden perquè es puguen practicar a la pestanya «Errors»:
     // al servidor les metadades i, el text, en el navegador (es tornen en `saved_errors`).
     const written = exercise.kind === 'form' ? Object.values(parsedBody.data.answers ?? {}).join(' · ') : parsedBody.data.text ?? '';
-    const savedErrors = await saveWritingErrors(req.userId, exercise, evaluation, written);
+    const savedErrors = await saveWritingErrors(req.userId, exercise, evaluation, written, contents);
     res.json({ ...(evaluation as object), saved_errors: savedErrors });
   } catch (err) {
     console.error('[practice] Error avaluant l’exercici:', err);

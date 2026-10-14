@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
 import { normalizeAnswer } from '@parlaval/shared';
 import { Logo } from '../components/ui';
+import { categoryLabel } from '../components/ScenarioSelect';
 import { practiceRoute } from '../data/content';
 import { fetchUserErrors, resolveUserError, type UserError } from '../lib/api';
 
@@ -39,7 +40,7 @@ function ErrorCard({ error, n, total, onFixed }: { error: UserError; n: number; 
   return (
     <article className="rounded-3xl bg-white p-6 shadow-lg">
       <p className="text-sm font-extrabold uppercase tracking-wider opacity-55">
-        Error {n} de {total} · {error.category}
+        Error {n} de {total} · {categoryLabel(error.category)}{error.subcategory ? ` · ${error.subcategory}` : ''}
       </p>
       {error.message && (
         <div className="mt-4 rounded-2xl bg-cream px-4 py-3">

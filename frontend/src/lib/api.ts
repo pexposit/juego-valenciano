@@ -275,7 +275,7 @@ async function sendFinishResource(
         messages: messages.map(m => ({ role: m.role, text: m.text, created_at: m.createdAt })),
         errors: errors
           .filter(e => e.sessionResourceId === sessionResourceId && !e.resolved)
-          .map(e => ({ error_text: e.errorText, correction: e.correction, category: e.category, explanation: e.explanation })),
+          .map(e => ({ error_text: e.errorText, correction: e.correction, category: e.category, subcategory: e.subcategory ?? null, explanation: e.explanation })),
         evaluations: evaluations.map(e => ({ summary: e.summary, weaknesses: e.weaknesses, priority_focus: e.priorityFocus, created_at: e.createdAt })),
       }),
     },
@@ -363,7 +363,7 @@ export async function startSessionResource(sessionId: string, scenario: Scenario
 
 // Errors tal com els torna el servidor en crear-los (amb el text, que només es guarda ací).
 type ServerError = {
-  id: string; source: LocalError['source']; error_text: string; correction: string; category: string; explanation: string;
+  id: string; source: LocalError['source']; error_text: string; correction: string; category: string; subcategory: string | null; explanation: string;
   context: string | null; options: string[] | null; exercise_id: string | null; resource_id?: string | null; created_at: string;
 };
 
@@ -377,6 +377,7 @@ async function storeErrors(
     errorText: e.error_text,
     correction: e.correction,
     category: e.category,
+    subcategory: e.subcategory ?? null,
     explanation: e.explanation,
     context: e.context,
     options: e.options,
@@ -416,7 +417,7 @@ export function analyzeMessage(
 
 // Errors sense resoldre de l'usuari, per a la pestanya de pràctica d'errors. El text és en este
 // navegador; el servidor diu quins continuen pendents (la ruta en pot donar per resolts).
-export type UserError = { id: string; error_text: string; correction: string; category: string; explanation: string; message: string | null; scenario: string | null; source: 'chat' | 'practice' | 'writing'; options: string[] | null; resource_id: string | null; exercise_id: string | null };
+export type UserError = { id: string; error_text: string; correction: string; category: string; subcategory: string | null; explanation: string; message: string | null; scenario: string | null; source: 'chat' | 'practice' | 'writing'; options: string[] | null; resource_id: string | null; exercise_id: string | null };
 const errorKey = (e: Pick<LocalError, 'errorText' | 'correction'>) => `${e.errorText.trim().toLowerCase()}|${e.correction.trim().toLowerCase()}`;
 export async function fetchUserErrors(): Promise<UserError[]> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -446,6 +447,7 @@ export async function fetchUserErrors(): Promise<UserError[]> {
       error_text: e.errorText,
       correction: e.correction,
       category: e.category,
+      subcategory: e.subcategory ?? null,
       explanation: e.explanation,
       message: e.context,
       scenario: e.scenario,

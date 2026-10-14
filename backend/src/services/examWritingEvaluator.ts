@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { contentsForPrompt, type LevelContent } from './levelContents.js';
 import { z } from 'zod';
 import { countWords, usedRequiredWords } from '@parlaval/shared';
 import { getMcpTools } from './subagentErrorDetector.js';
@@ -38,6 +39,7 @@ export const WritingEvaluationSchema = z.object({
     correccio_suggerida: z.string(),
     tipus: z.enum(['lèxic', 'morfologia', 'ortografia', 'concordança']),
     gravetat: z.enum(['lleu', 'greu']),
+    contingut: z.string().describe("Codi (c1, c2...) del contingut del nivell de l'aprenent on encaixa l'error; buit si no es proporciona la llista o si l'error és d'un nivell superior."),
   })),
   retorn_pedagogic: z.string(),
 });
@@ -148,6 +150,16 @@ Retorna exclusivament un objecte JSON vàlid amb l'estructura següent:
 }
 \`\`\``;
 
+// Continguts del nivell de l'aprenent per a classificar els errors que es guarden (pràctica):
+// s'afigen a l'entrada i no a la rúbrica, perquè no han d'influir en la puntuació.
+function contentsSection(contents: LevelContent[] | undefined): string {
+  if (!contents?.length) return `## CLASSIFICACIÓ DELS ERRORS\nDeixa buit el camp «contingut» de cada error.`;
+  return `## CLASSIFICACIÓ DELS ERRORS (no afecta la puntuació)
+Per a cada error que assenyales, indica en «contingut» el codi del contingut del nivell de l'aprenent on encaixa millor:
+${contentsForPrompt(contents)}
+Un error bàsic, propi d'un nivell inferior, va al contingut de la llista que més s'hi assemble. Si un error correspon a un nivell superior i no encaixa en cap contingut, deixa «contingut» buit.`;
+}
+
 // Crida el LLM amb la rúbrica i resol les consultes a les eines MCP que demane,
 // fins que retorna l'avaluació amb l'esquema demanat.
 async function runEvaluation<T extends z.ZodTypeAny>(args: {
@@ -208,6 +220,7 @@ export async function evaluateA1Writing(args: {
   instructions: string;
   fields: string[];
   answers: Record<string, string>;
+  contents?: LevelContent[]; // per a classificar els errors (pràctica)
 }): Promise<A1WritingEvaluation & { rubrica: 'a1_formulari' }> {
   // Els camps en blanc també s'envien: l'adequació depén de si s'ha completat la tasca.
   const form = args.fields
@@ -216,7 +229,7 @@ export async function evaluateA1Writing(args: {
 
   const parsed = await runEvaluation({
     systemPrompt: SYSTEM_PROMPT_A1_EIE,
-    userContent: `Consigna de l'exercici 7:\n${args.instructions}\n\nFormulari omplit per l'aspirant:\n${form}`,
+    userContent: `Consigna de l'exercici 7:\n${args.instructions}\n\nFormulari omplit per l'aspirant:\n${form}\n\n${contentsSection(args.contents)}`,
     schema: WritingEvaluationSchema,
     name: 'avaluacio_eie_a1',
   });
@@ -255,6 +268,7 @@ export const A2WritingEvaluationSchema = z.object({
     proposta_correccio: z.string(),
     categoria: z.enum(['lèxic', 'morfosintaxi', 'ortografia', 'connector']),
     sistematic: z.boolean(),
+    contingut: z.string().describe("Codi (c1, c2...) del contingut del nivell de l'aprenent on encaixa l'error; buit si no es proporciona la llista o si l'error és d'un nivell superior."),
   })),
   comentari_global: z.string(),
 });
@@ -393,6 +407,7 @@ export async function evaluateA2Writing(args: {
   maxWords: number;
   words: string[];
   minWordsUsed: number;
+  contents?: LevelContent[]; // per a classificar els errors (pràctica)
 }): Promise<A2WritingEvaluation & { rubrica: 'a2_redaccio'; recompte_paraules: number }> {
   const count = countWords(args.text);
   const detected = usedRequiredWords(args.text, args.words);
@@ -406,6 +421,7 @@ export async function evaluateA2Writing(args: {
       `Recompte automàtic: ${count} paraules (${count >= args.minWords && count <= args.maxWords ? 'dins' : 'fora'} del rang). ` +
         `Paraules de la llista detectades (${detected.length}): ${detected.join(', ') || 'cap'}.`,
       `Text de l'aspirant:\n"""\n${args.text.trim()}\n"""`,
+      contentsSection(args.contents),
     ].join('\n\n'),
     schema: A2WritingEvaluationSchema,
     name: 'avaluacio_eie_a2',
@@ -450,6 +466,7 @@ export const B1WritingEvaluationSchema = z.object({
     proposta_correccio: z.string(),
     categoria: z.enum(['lèxic', 'morfosintaxi', 'ortografia']),
     sistematic: z.boolean(),
+    contingut: z.string().describe("Codi (c1, c2...) del contingut del nivell de l'aprenent on encaixa l'error; buit si no es proporciona la llista o si l'error és d'un nivell superior."),
   })),
   retorn_pedagogic: z.string(),
 });
@@ -704,6 +721,7 @@ export async function evaluateB1Writing(args: {
   text: string;
   minWords: number;
   maxWords: number;
+  contents?: LevelContent[]; // per a classificar els errors (pràctica)
 }): Promise<B1WritingEvaluation & { rubrica: 'b1_redaccio' | 'b2_redaccio'; opcio?: string }> {
   const level = args.level ?? 'B1';
   const count = countWords(args.text);
@@ -734,6 +752,7 @@ export async function evaluateB1Writing(args: {
     `## EXTENSIÓ\nDemanada: entre ${args.minWords} i ${args.maxWords} paraules (marge del ±10 %: ${marginMin}-${marginMax}).\n` +
       `Recompte automàtic: ${count} paraules (${inRange ? 'dins del rang' : inMargin ? 'fora del rang, però dins del marge del ±10 %' : 'fora del marge del ±10 %'}).`,
     `## TEXT DE L'ASPIRANT (l'únic text que has d'avaluar)\n"""\n${args.text.trim()}\n"""`,
+    contentsSection(args.contents),
   ].join('\n\n');
   // EXAM_EVAL_DEBUG=1 mostra al log exactament què rep l'avaluador.
   if (process.env.EXAM_EVAL_DEBUG) console.log(`[exam-eval] Entrada ${level}:\n${userContent}`);

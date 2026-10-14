@@ -55,13 +55,14 @@ export const clientErrorSchema = z.object({
   error_text: clientText,
   correction: clientText,
   category: z.string().max(100),
+  subcategory: z.string().max(200).nullable().optional(),
   explanation: clientText,
 });
 
 export const clientEvaluationSchema = z.object({
   summary: z.string().max(4000),
   weaknesses: z.array(clientText).max(30),
-  priority_focus: z.string().max(100),
+  priority_focus: z.string().max(200),
   created_at: z.string().datetime(),
 });
 

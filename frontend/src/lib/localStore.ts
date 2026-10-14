@@ -52,7 +52,10 @@ export type LocalError = {
   source: 'chat' | 'practice' | 'writing';
   errorText: string;
   correction: string;
+  // Àrea general (fonetica_ortografia, morfosintaxi, lexic_semantica o la de l'activitat).
   category: string;
+  // Contingut del catàleg on encaixa (subcategoria); els errors antics no en tenen.
+  subcategory?: string | null;
   explanation: string;
   context: string | null;
   options: string[] | null;

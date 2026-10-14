@@ -3,15 +3,14 @@
 // resultats dels recursos acabats (pràctica, exàmens i xats). Al servidor no hi ha cap
 // text de l'usuari: el resum de les avaluacions i el text dels errors els guarda el client.
 
-import { errorCategoriesOf, type ErrorRow } from './errorCategories.js';
-
 export type EvaluationSignal = { priority_focus: string; created_at: string };
 export type ResultSignal = { resource_id: string; category: string; kind: string; score: number | null; total: number | null; created_at: string };
 export type AreaStat = { category: string; attempts: number; average: number | null };
 
 export type LearningSignals = {
   evaluations: EvaluationSignal[];
-  errorCounts: { category: string; count: number }[];
+  // Errors pendents per àrea i contingut (content_id: l'activitat del catàleg que els treballa).
+  errorCounts: { area: string; content_id: string | null; count: number }[];
   areaStats: AreaStat[];
   recent: ResultSignal[];
 };
@@ -38,7 +37,7 @@ export async function loadLearningSignals(client: any, userId: string): Promise<
     // Errors pendents de tots els orígens (xats, pràctica i redaccions), els més recents.
     client
       .from('user_errors')
-      .select('source, category, resources(category, type)')
+      .select('category, content_id')
       .eq('user_id', userId)
       .eq('resolved', false)
       .order('created_at', { ascending: false })
@@ -52,12 +51,12 @@ export async function loadLearningSignals(client: any, userId: string): Promise<
   ]);
   for (const { error } of [evaluations, errors, results]) if (error) throw error;
 
-  // Per la categoria principal, comuna a tots els orígens (errorCategoriesOf). Els que no
-  // en tenen (preguntes de comprensió) no hi compten: ja es veuen en la nota de l'àrea.
-  const errorCounts = new Map<string, number>();
-  for (const error of errors.data as ErrorRow[]) {
-    const [category] = errorCategoriesOf(error);
-    if (category) errorCounts.set(category, (errorCounts.get(category) ?? 0) + 1);
+  const errorCounts = new Map<string, { area: string; content_id: string | null; count: number }>();
+  for (const { category, content_id } of errors.data as { category: string; content_id: string | null }[]) {
+    const key = `${category}|${content_id ?? ''}`;
+    const entry = errorCounts.get(key) ?? { area: category, content_id, count: 0 };
+    entry.count += 1;
+    errorCounts.set(key, entry);
   }
 
   const recent: ResultSignal[] = (results.data as any[]).map(r => ({
@@ -95,7 +94,7 @@ export async function loadLearningSignals(client: any, userId: string): Promise<
 
   return {
     evaluations: evaluations.data as EvaluationSignal[],
-    errorCounts: [...errorCounts].map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count),
+    errorCounts: [...errorCounts.values()].sort((a, b) => b.count - a.count),
     areaStats,
     recent,
   };
