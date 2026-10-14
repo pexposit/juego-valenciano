@@ -5,8 +5,9 @@
  *  - `remot:<veu>`      matxa-tts de la UJI (el mateix que el joc).
  *  - `matxa:base:<spk>` checkpoint base de Matxa multiaccent en local.
  *  - `matxa:<run>:<spk>` fine-tunes de tts/runs/<run>/ (scripts/finetune-matxa.py).
- *  - `rvc:<nom>`        gina (Matxa base) + conversió RVC del personatge
- *                       (scripts/entrena-rvc.sh), com scripts/parla.sh.
+ *  - `rvc:<nom>`        Matxa base (gina, o el locutor «base» de
+ *                       scripts/rvc-personatges.json) + conversió RVC del
+ *                       personatge (scripts/entrena-rvc.sh), com scripts/parla.sh.
  *
  * El catàleg es llig del disc a cada petició: un entrenament nou apareix sense
  * reiniciar el laboratori.
@@ -34,8 +35,12 @@ export type TtsModel = {
   /** Checkpoints triables (fine-tunes i RVC) i el que es fa servir si no se'n tria cap. */
   checkpoints?: string[]
   defaultCheckpoint?: string
-  /** Semitons que es puja gina abans de la conversió (només RVC). */
+  /** Semitons que es mou la veu de partida abans de la conversió (només RVC). */
   pitch?: number
+  /** Locutor de Matxa base que es converteix (només RVC). */
+  baseSpeaker?: number
+  /** Pes per defecte del fitxer .index (només RVC). */
+  indexRate?: number
 };
 
 export type LocalTtsRequest = {
@@ -152,15 +157,17 @@ export function localTtsModels(): TtsModel[] {
     }
   }
 
-  const characters = readJson<Record<string, { to?: number }>>(config.localTts.rvcCharacters) ?? {};
+  const characters = readJson<Record<string, { base?: number, to?: number, index?: number }>>(config.localTts.rvcCharacters) ?? {};
   if (existsSync(config.localTts.baseCheckpoint)) {
     for (const name of listDir(path.join(config.localTts.applioDir, 'logs')).sort()) {
       const weights = rvcWeights(name);
       if (!weights.length) continue;
+      const baseSpeaker = characters[name]?.base ?? GINA;
       models.push({
-        id: `rvc:${name}`, label: `${name[0]!.toUpperCase()}${name.slice(1)} (gina + RVC)`,
+        id: `rvc:${name}`,
+        label: `${name[0]!.toUpperCase()}${name.slice(1)} (${BASE_SPEAKERS[baseSpeaker] ?? `spk${baseSpeaker}`} + RVC)`,
         group: 'Matxa + RVC (personatges)', checkpoints: weights, defaultCheckpoint: weights.at(-1),
-        pitch: characters[name]?.to ?? 0,
+        pitch: characters[name]?.to ?? 0, baseSpeaker, indexRate: characters[name]?.index ?? 0.6,
       });
     }
   }
@@ -198,7 +205,7 @@ export async function synthesizeLocal(request: LocalTtsRequest): Promise<LocalTt
       ? path.join(config.localTts.runsDir, name, 'checkpoints', checkpoint!)
       : config.localTts.baseCheckpoint;
     const synth = await matxa.request({
-      ckpt, spk: kind === 'rvc' ? GINA : Number(spk), text: request.text, out: matxaWav,
+      ckpt, spk: kind === 'rvc' ? model.baseSpeaker ?? GINA : Number(spk), text: request.text, out: matxaWav,
       temperatura: request.temperature, velocitat: request.speed,
     });
     if (kind !== 'rvc') {
@@ -214,7 +221,7 @@ export async function synthesizeLocal(request: LocalTtsRequest): Promise<LocalTt
     const converted = await rvc.request({
       input: matxaWav, output: rvcWav, pth: path.join(logs, checkpoint!),
       index: index ? path.join(logs, index) : '',
-      pitch: request.pitch ?? model.pitch ?? 0, index_rate: request.indexRate ?? 0.6,
+      pitch: request.pitch ?? model.pitch ?? 0, index_rate: request.indexRate ?? model.indexRate ?? 0.6,
     });
     return {
       audio: await readFile(rvcWav), model: model.id, checkpoint, matxaMs: synth.compute_ms,

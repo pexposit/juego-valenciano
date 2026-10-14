@@ -157,8 +157,10 @@ también `batchProvider`, `batchModel` y `ttsProvider`):
   entrenamiento nuevo aparece sin reiniciar): `remot:<voz>` (matxa-tts UJI),
   `matxa:base:<spk>` (Matxa multiaccent local), `matxa:<run>:<spk>` (fine-tunes
   de `tts/runs/`, con `veus.json` opcional para nombrar locutores y elegir el
-  checkpoint recomendado) y `rvc:<nombre>` (gina + RVC de
-  `tts/rvc/Applio/logs/`, tono por defecto en `scripts/rvc-personatges.json`).
+  checkpoint recomendado) y `rvc:<nombre>` (Matxa base + RVC de
+  `tts/rvc/Applio/logs/`; voz de partida —`base`, gina por defecto, lluc para
+  voces de hombre—, tono, peso del `.index` y carpeta de clips en
+  `scripts/rvc-personatges.json`).
 
 ### Página: generació d'àudio
 

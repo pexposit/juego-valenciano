@@ -1102,7 +1102,9 @@ function syncGenControls() {
   if (model?.defaultCheckpoint) genUi.checkpoint.value = model.defaultCheckpoint;
   if (kind === 'rvc') {
     genUi.pitch.value = String(model.pitch ?? 0);
+    genUi.index.value = String(model.indexRate ?? 0.6);
     genUi.pitch.dispatchEvent(new Event('input'));
+    genUi.index.dispatchEvent(new Event('input'));
   }
 }
 
