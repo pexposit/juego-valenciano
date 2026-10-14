@@ -1230,6 +1230,10 @@ genUi.btn.addEventListener('click', async () => {
 });
 
 void loadGenModels();
+// El catàleg canvia quan acaba un entrenament: es torna a llegir en tornar a la pestanya.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !genUi.btn.disabled) void loadGenModels();
+});
 
 showMetrics({ audioMs: 0, firstPartialMs: null, finalMs: null, computeMs: 0, rtf: null });
 listDevices().catch(() => log('no hem pogut llistar els dispositius d\'entrada'));
