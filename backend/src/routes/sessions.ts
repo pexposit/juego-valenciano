@@ -188,7 +188,7 @@ sessionsRouter.post(
       // Blindatge: el session_resource ha d'existir i pertànyer a una sessió de l'usuari autenticat.
       const { data: sessionResource, error: sessionResourceError } = await client
         .from('session_resource')
-        .select('id, sesion_id, recurso_id, sessions!inner(id, user_id)')
+        .select('id, sesion_id, recurso_id, resolved, sessions!inner(id, user_id)')
         .eq('id', sessionResourceId)
         .eq('sesion_id', sessionId)
         .eq('sessions.user_id', req.userId)
@@ -202,6 +202,9 @@ sessionsRouter.post(
       if (!sessionResource) {
         return res.status(404).json({ error: 'Recurs de sessió no trobat o no autoritzat' });
       }
+
+      // Ja tancat (p. ex. el navegador el reintenta en recuperar un escenari abandonat): no es torna a avaluar.
+      if (sessionResource.resolved) return res.json({ ok: true, evaluation: null });
 
       const { error: updateError } = await client
         .from('session_resource')
@@ -238,7 +241,7 @@ sessionsRouter.post(
       }
       res.json({ ok: true, evaluation });
 
-      // Després de l'avaluació (que pot canviar el focus prioritari) s'actualitza la ruta.
+      // Es guarda el resultat i es marca el pas de la ruta (la ruta no es regenera: només quan l'usuari ho demana).
       void onResourceFinished(client, userId, { resourceId: sessionResource.recurso_id, kind: 'chat' })
         .catch((err: Error) => console.error('[learning-path] Error actualitzant la ruta:', err.message));
     } catch (error) {

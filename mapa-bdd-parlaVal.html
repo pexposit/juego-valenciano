@@ -347,9 +347,8 @@ const T = [
     ["status","text","","active · archived. Solo una activa por usuario."],
     ["focus","text[]","","Categorías que trabaja."],
     ["rationale","text","","Explicación del LLM de por qué esta ruta."],
-    ["source_focus","text","N","Foco de evaluación que la originó."],
     ["created_at","timestamptz",""],
-  ], what: "La <b>ruta personalizada</b> que genera la IA a partir de errores, evaluaciones y resultados. Al regenerarla, la anterior pasa a archived.",
+  ], what: "La <b>ruta personalizada</b> que genera la IA a partir de errores, evaluaciones y resultados, solo cuando el usuario pulsa el botón. Al regenerarla, la anterior pasa a archived.",
     rls: "Sin políticas: solo backend.",
     used: [["services/learningPath.ts","genera y guarda"],["routes/learningPath.ts","GET /api/learning-path"]] },
 

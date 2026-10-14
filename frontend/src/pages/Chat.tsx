@@ -4,7 +4,7 @@ import { AudioLoading, useDelayedFlag } from '../components/AudioLoading';
 import { SceneArt } from '../components/SceneArt';
 import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
-import { analyzeMessage, ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, type HistoryItem } from '../lib/api';
+import { analyzeMessage, ensureSession, fetchTts, finishSessionResource, sendTurn, startSessionResource, trackOpenResource, type HistoryItem } from '../lib/api';
 import { addMessages } from '../lib/localStore';
 import type { Mood, Scenario, ScenarioTranslation } from '../lib/types';
 import { GREETING_BY_VOICE } from '../data/content';
@@ -92,6 +92,7 @@ ${translation.initial_prompt}` : text;
       const sessionId = await ensureSession(level);
       const { id } = await startSessionResource(sessionId, scenario, category);
       openedActivity.current = { sessionId, sessionResourceId: id };
+      void trackOpenResource(sessionId, id, level === 'nivell0');
       return openedActivity.current;
     })().catch(error => {
       // Permet tornar-ho a provar en el següent torn.
@@ -136,6 +137,7 @@ ${translation.initial_prompt}` : text;
   // pedagògica. En el Nivell 0 s'envia la conversa, per a revisar-ne els objectius.
   const finishActivity = () => {
     const opened = openedActivity.current;
+    openedActivity.current = undefined; // es tanca una sola vegada (botó i, després, eixida de la pantalla)
     if (opened) {
       void finishSessionResource(opened.sessionId, opened.sessionResourceId, { includeMessages: level === 'nivell0' })
         .catch(error => console.error("Error tancant l'escenari:", error));
@@ -185,8 +187,11 @@ ${translation.initial_prompt}` : text;
   }, [scenario, voice]);
 
   // En entrar a l'escenari es crea la seua entrada a session_resource.
+  // En eixir de la pantalla sense els botons (enrere del navegador, un enllaç...) també es tanca.
+  // En StrictMode la neteja falsa s'executa abans que l'escenari s'haja obert: no tanca res.
   useEffect(() => {
     openActivity().catch(error => console.error('Error obrint l\'escenari:', error));
+    return finishActivity;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -202,6 +207,7 @@ ${translation.initial_prompt}` : text;
     setLoading(true);
     try {
       const { sessionId, sessionResourceId } = await openActivity();
+      void trackOpenResource(sessionId, sessionResourceId, level === 'nivell0'); // encara està actiu
       // El personatge ha de recordar el que s'ha dit: li enviem el context de la
       // conversa actual (el primer missatge inclou el salut inicial del personatge).
       const context: HistoryItem[] = history.length > 0

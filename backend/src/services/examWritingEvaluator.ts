@@ -496,7 +496,36 @@ Has d'avaluar 5 criteris independents. Cada criteri s'ha de puntuar exclusivamen
   - **4 punts:** Complix **un** dels dos ítems següents: objectiu o extensió.
   - **1 punt:** No complix **cap** dels ítems següents: objectiu, extensió.
 
----
+### 3. ELEMENTS DEL NIVELL B1 (Quadern B1 de la JQCV, 3.2)
+La rúbrica remet al programa per a l'Ortografia (3.2.1), la Morfosintaxi (3.2.2) i el Lèxic (3.2.3): són els elements d'estes llistes. Valora només els elements que apareixen en el text (o que la tasca exigix de manera evident): un text breu no els pot mostrar tots, i l'absència d'un element no és un error. El que compta és si els que usa els usa bé i si els errors són sistemàtics (es repetixen) o aïllats. No penalitzes l'aspirant per no usar elements de nivells superiors.
+
+**3.2.1. Fonètica, elocució i ortografia** (criteri d'Ortografia)
+- Grafies: lletres simples i modificades, dígrafs (rr, ll, l·l, ny, gu, qu, ss, tj, tg, tz) i geminacions del vocabulari familiar; síl·labes, diftongs i hiats; paraules agudes, planes i esdrúixoles.
+- Vocals: a/e (Miquelet, afaitar), o/u (cobert, Joan, Josep); e inicial en em-, en-, es-, eix- (embastar, entendre, estendre, eixugar); alternances e/i, o/u en verbs irregulars (llig/llegim, ixes/eixim; puc/pot, vullga/volia); vocals obertes i tancades.
+- Normes generals d'accentuació (Ramon, camió, fareu; fenomen, plàstic, féreu; fàbrica, justícia); normes bàsiques de la dièresi i del guionet.
+- Apostrofació i contracció: el/la i de (l'ase, l'era, l'illa, l'home, l'ungla; la infermera, la universitat; d'amo, d'Isabel); apòstrof en pronoms febles units al verb i en combinacions bàsiques.
+- Oclusives i labiodentals: alternances de les oclusives finals en la flexió i la derivació (llop/lloba, cunyat/cunyada, verd/verda, groc/groga, llarg/llargues; rep/rebem); paraules acabades en oclusiva (àrab, covard, sang); cu-/qu- (cua/quota, evacuar/adequar); -xc- i -cc- (excés/accés); -v- en l'imperfet de la primera conjugació (trobava, trobàvem).
+- Alveolars: c/ç en la flexió (pinça, pinces; vençut, véncer; forçar, forcem); -ança, -ença (esperança, complaença); x i cc (taxa; examen, exèrcit; acció); -esa, -essa (bellesa, timidesa; alcaldessa, metgessa); gentilicis en -és (xinés, xinesa, xinesos, xineses); derivats d'agudes en vocal + s (gos, gossa; pas, passos; calorós, calorosa; mes, mesos); -sc- (piscina, escena, ascens).
+- Palatals: g, j, tg, tj, ig (gener, jove, platja, mitges; raig, fuig) i excepcions (objecte, Jesús); consonant + x (planxa), tx entre vocals (fitxa), x- inicial (xica, xarop); j/tj + a, o, u i g/tg + e, i (boja, bojos, platja; boges, platges); derivats de -tx i -ig (escabetxar, despatxos; rojor, lletja).
+- Laterals, nasals, ròtiques i h: l·l (al·l-, col·l-, il·l-, -el·la, -il·la) i tl/tll (ametla, ratlla); m davant de b, p, m (umbracle, irrompre, immens); -ny final (disseny, puny); r inicial i en grups (rosa, parlar, Enric); h inicial i intercalada (harmonia; ahir, vehement); haver en els temps compostos (m'ha agradat).
+- Convencions: normes bàsiques de majúscules i minúscules; punt i coma, dos punts, punts suspensius i parèntesis.
+
+**3.2.2. Morfosintaxi** (criteri de Morfosintaxi)
+- Substantius i adjectius: gènere (secretari/secretària; cavall/egua; cantaire, homicida) i nombre (llengua/llengües); adjectius d'una i de dos terminacions; gruixut i gros; concordança de l'article amb el nom i l'adjectiu; graus (-íssim; -et, -ó; millor/pitjor, el millor; bo, roín, regular).
+- Determinants: article definit i indefinit; contracció i apostrofació (l'amiga, l'infermer, la infermera; del mercat, a l'estadi); demostratius simples i reforçats (este/aquest, eixe/aqueix); possessius tònics i àtons habituals (ta mare, son iaio, sa casa).
+- Pronoms: forts (gènere, nombre i persona); febles (morfologia i col·locació, apostrofació i guionet); febles de complement directe i indirecte; combinació CI + CD; interrogatius (què, qui, quin, a on, com; quan/quant).
+- Quantificadors: cardinals (catorze, trenta-dos, tres-cents, un milió) i ordinals (primer, quart, cinqué/quint, sisena/sexta, vinté); quant i prou; locucions (bona cosa de, gens ni mica de, un grapat de, un muntó de, un fum de); indefinits (diversos, diferents, qualsevol, tal, tothom, alguna cosa); res, gens i cap/ningun.
+- Preposicions i locucions prepositives de mitjà (a, amb, a través de), de tema (de, sobre), de causa (amb motiu de, a causa de, arran de, per culpa de, gràcies a) i de relació (per, en comptes de, en lloc de); a davant de topònims i de classe, casa...; sense a davant del complement directe (Han vist el mestre).
+- Adverbis d'afirmació (sens dubte, de veres, prou, i tant) i de negació (de cap manera); adverbis en -ment; comparatius (més/menys que, tant/tan com).
+- Connectors: adversatius i concessius (encara que, sinó, tot i que), consecutius (doncs, per tant, així), temporals (quan, mentres, cada vegada que, sempre que, abans que, després que) i condicionals (si, en cas que).
+- Verbs: regulars (present, passat simple i perifràstic, perfet, plusquamperfet, futur, present i imperfet de subjuntiu, condicional); irregulars (nàixer, córrer, saber, voler, ser, vore, anar, estar, fer, dir-se, poder, tindre, conéixer, omplir, obrir, tossir); règim preposicional (atrevir-se a, començar a, decidir-se a, negar-se a, pensar en, confiar en); indicatiu, subjuntiu i imperatiu; ser i estar locatius; semblar; obligació (haver de, deure, caldre + infinitiu) i probabilitat (deure + infinitiu).
+
+**3.2.3. Lèxic i semàntica** (criteri de Lèxic)
+- Vocabulari usual: família i parentiu; habitatge; treball; el camp i la ciutat; vehicles, trànsit, transports i viatges; plantes, animals, paisatge i oratge; jocs i esports; esdeveniments actuals; música, cinema i teatre; diners, negocis i tecnologia; descripció de persones, objectes, caràcters i estats d'ànim.
+- Creació lèxica: derivació (prefixos i sufixos principals) i composició.
+- Locucions i frases fetes més usuals.
+- Precisió lèxica i genuïnitat: alternatives als barbarismes més usuals.
+- Relacions semàntiques: sinonímia, antonímia, hiperonímia i hiponímia del vocabulari usual.
 
 ---
 
@@ -537,6 +566,40 @@ Has d'avaluar 5 criteris independents. Cada criteri s'ha de puntuar exclusivamen
   - **6 punts:** Complix l'objectiu de la tasca i el text respecta les indicacions d'extensió amb un marge del ±10 %.
   - **4 punts:** Complix **un** dels dos ítems següents: objectiu o extensió.
   - **1 punt:** No complix **cap** dels ítems següents: objectiu, extensió.
+
+### 3. ELEMENTS DEL NIVELL B2 (Quadern B2 de la JQCV, 3.2)
+La rúbrica remet als «elements del nivell» de l'Ortografia (3.2.1), la Morfosintaxi (3.2.2) i el Lèxic (3.2.3): són els d'estes llistes. Per a decidir si l'aspirant en domina almenys la mitat, valora només els elements que apareixen en el text (o que la tasca exigix de manera evident): un text breu no els pot mostrar tots, i l'absència d'un element no és un error. El que compta és si els que usa els usa bé i si els errors són sistemàtics (es repetixen) o aïllats.
+
+**3.2.1. Fonètica, elocució i ortografia** (criteri d'Ortografia)
+- Grafies: lletres simples i modificades, dígrafs (rr, ll, l·l, ny, gu, qu, ss, tj, tg, tz) i geminacions; diftongs, hiats i triftongs; imperfet d'indicatiu (feia, reies...).
+- Vocals: a/e (avaria, afaitar), o/u (cobert, Joan, Josep); e inicial en em-, en-, es-, eix- (embastar, entendre, estendre, eixugar); alternances e/i, o/u en verbs irregulars (llig/llegim, ixes/eixim; puc/pot, vullga/volia).
+- Accentuació d'homòfons i parònims (patí/pati; mitjà/mitja; mà/ma/m'ha) i els quinze diacrítics (bé, déu, és, mà, més, món, pèl, què, sé, sí, sòl, són, té, ús, vós).
+- Dièresi (güe, güi, qüe, qüi; hiats com veïna; verbs en -air, -eir, -oir, -uir) i guionet (numerals; verb + pronom); apostrofació.
+- Oclusives i labiodentals: gerundis en -t; -etud, -itud; ab-, ob-, sub-, cap-; b/p (sap/saber, cap/cabut); v/u (neu/nevar); mb i nv (ambició, embolic; convent, invent).
+- Alveolars: s sorda i sonora (rosa/rossa; casar/caçar; posar/passar, colze); c/ç en la flexió (pinça, pinces; vençut, véncer; forçar, forcem); -ança, -ença; -esa, -essa (bellesa, timidesa; alcaldessa, metgessa); gentilicis en -és (xinés, xinesa, xinesos, xineses); x i cc (taxa, examen, exèrcit, acció); derivats d'agudes en vocal + s (gos, gossa; pas, passos; calorós, calorosa; mes, mesos); -sc- (piscina, escena, ascens).
+- Palatals: j/tj + a, o, u i g/tg + e, i (boja, bojos, platja; boges, platges); derivats de -tx i -ig (capritxós, despatxos; rojor, lletja).
+- Laterals, nasals, ròtiques i h: l·l i tl/tll (col·legi, pel·lícula, intel·ligent; ametla, ratlla); h inicial i interior (harmonia, hidratar, hora; alcohol, ahir, tothom, prohibir); homòfons a/ha/ah, em/hem, i/hi.
+- Convencions: majúscules i minúscules segons la puntuació; punt i coma, dos punts, punts suspensius, parèntesis, guió de diàleg i cometes en les citacions.
+
+**3.2.2. Morfosintaxi** (criteri de Morfosintaxi)
+- Substantius i adjectius: gènere i nombre irregular i invariable (ase/somera, cavall/egua; fisioterapeuta, homicida); canvis de significat segons el gènere (llum, pols, terra, clau); adjectius en -aç, -iç, -oç (capaç/capaços/capaces); -leg/-loga; concordança (anàlisi clínica, estudiant tenaç).
+- Determinants: article neutre i construccions alternatives; demostratius (sistema binari i ternari); possessius tònics i àtons.
+- Pronoms forts (mi, si, vosté, vostés; sense mi, amb tu).
+- Pronoms febles: morfologia i col·locació (apostrofació i guionet); funció d'atribut i de complement circumstancial; combinacions binàries (reflexiu + CD, reflexiu + atribut, CI + CC, CD + CC, CI + CD); anar-se'n, tornar-se'n, eixir-se'n.
+- Interrogatius i exclamatius: quin/quina/quins/quines, qui, què, com, a on, quan, quant, per què.
+- Relatius: que, què, qual, a on, qui; neutres (amb la qual cosa, cosa que, fet que); subordinades substantives, adjectives (especificatives i explicatives) i adverbials.
+- Quantificadors: ordinals i partitius (mig, terç, quart, una quinta part); abreviatures d'ordinals (1r, 1a, 2n, 3r, 4t, 8é, 6a, 1rs); quant i prou; locucions (bona cosa de, gens ni mica de, un grapat de, un muntó de, un fum de); indefinits (diversos, diferents, qualsevol, tal, tothom, alguna cosa); res, gens i cap/ningun.
+- Preposicions: amb/en, a/en; davant de parts del dia, mesos, estacions i festes; sense, per i per a davant de sintagma nominal; caiguda de la preposició davant de que àton.
+- Adverbis d'afirmació (sí, també, fins i tot/inclús, prou) i de dubte (potser).
+- Connectors: adversatius i concessius (en canvi, per contra, no obstant això), distributius (així com, no sols/solament), causals (a causa de, per culpa de, com que, ja que); que a l'inici d'interrogatives i exclamatives.
+- Verbs: irregulars velaritzats (córrer, verbs en -ndre, vocal + -ure i -ldre, i derivats); canvis vocàlics (collir, bollir/bullir, tossir); imperfet d'indicatiu (veia, queia, réieu); usos del subjuntiu i ordes en negatiu (no + subjuntiu); ser i estar atributius o locatius; perífrasis incoatives, de probabilitat, de realització recent i d'aproximació; infinitiu (agramatical amb valor d'imperatiu, com *No passar; article davant d'infinitiu substantivat).
+
+**3.2.3. Lèxic i semàntica** (criteri de Lèxic)
+- Vocabulari general: àmbits docent i professional; documents formals (cartes, correus electrònics, sol·licituds); menjar, dieta, restauració, salut i esport; tecnologia i ciències de la naturalesa; contes, rondalles i cançons tradicionals; llengües i gentilicis; descripció espacial, física i de personalitat.
+- Formació del lèxic: derivació (prefixació i derivació, canvis de categoria, canvis ortogràfics, canvi de posició de l'accent, flexió de la paraula resultant) i composició.
+- Locucions i frases fetes d'ús freqüent.
+- Precisió lèxica i genuïnitat: polisèmia i homonímia; alternatives als barbarismes; comparació, metàfora i metonímia.
+- Relacions semàntiques: sinonímia i antonímia; relacions lexicosemàntiques textuals bàsiques.
 
 ---
 

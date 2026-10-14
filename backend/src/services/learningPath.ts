@@ -5,6 +5,9 @@ import { z } from 'zod';
 import { hasPredefinedPaths } from '@parlaval/shared';
 import { isPlayable, type Metadata } from './catalog.js';
 import { loadLearningSignals, type LearningSignals } from './learningSignals.js';
+import { errorCategoriesOf, focusOf, type ErrorRow } from './errorCategories.js';
+
+export { focusOf };
 
 // Ruta d'aprenentatge personalitzada. El LLM rep les dades de l'usuari
 // (learningSignals) i el catàleg jugable del seu nivell, i tria 5-7 passos amb
@@ -19,33 +22,9 @@ const openai = () => (openaiClient ??= new OpenAI({ apiKey: process.env.OPENAI_A
 export const STAGES = ['aprendre', 'practicar', 'aplicar', 'comprovar'] as const;
 export const MIN_STEPS = 5;
 export const MAX_STEPS = 7;
-// Una ruta es renova quan l'usuari n'ha fet el 70 % o canvia el focus prioritari.
-const REGENERATE_RATIO = 0.7;
 // Una pràctica amb un 80 % d'encerts dona per resolts els errors del seu focus.
 const MASTERY_RATIO = 0.8;
 const RECENT_DAYS = 7;
-
-/* ── Focus de cada contingut ──────────────────────────────────────────── */
-// Categories d'error del detector (subagentErrorDetector) que treballa cada
-// contingut, deduïdes del `type`. Van en codi i no a metadata perquè les
-// migracions del catàleg reescriuen metadata en cada aplicació.
-const FOCUS_BY_TYPE: [RegExp, string[]][] = [
-  [/accentuacio|tonicitat|sillaba|vocals/, ['accentuació']],
-  [/apostrof/, ['apostrofació']],
-  [/dieresi/, ['accentuació', 'apostrofació']],
-  [/alfabet|grafi|alveolars|palatals|laterals|rotiques|oclusives|majuscules|puntuacio|elocucio/, ['ortografia']],
-  [/genere_nombre|substantius|adjectius|determinants|numerals|quantit/, ['concordança', 'morfologia']],
-  [/pronoms|interrogatius|relatius|combinacions/, ['pronoms']],
-  [/preposicions|regim/, ['preposicions']],
-  [/verb|modes|subjuntiu|ser_estar|infinitiu|perifrasis/, ['morfologia']],
-  [/adverbis|conjuncions|connectors/, ['sintaxi']],
-];
-
-export function focusOf(resource: { category: string; type: string }): string[] {
-  if (resource.category === 'lexic_semantica') return ['lèxic'];
-  if (!['fonetica_ortografia', 'morfosintaxi'].includes(resource.category)) return [];
-  return FOCUS_BY_TYPE.find(([pattern]) => pattern.test(resource.type))?.[1] ?? [];
-}
 
 /* ── Catàleg que es passa al LLM ──────────────────────────────────────── */
 export type CatalogItem = {
@@ -191,18 +170,18 @@ export function diagnosticPlan(catalog: CatalogItem[]): Plan | null {
 async function activePath(client: any, userId: string) {
   const { data, error } = await client
     .from('learning_paths')
-    .select('id, level, focus, rationale, source_focus, created_at, learning_path_steps(id, position, resource_id, stage, reason, status, completed_at)')
+    .select('id, level, focus, rationale, created_at, learning_path_steps(id, position, resource_id, stage, reason, status, completed_at)')
     .eq('user_id', userId)
     .eq('status', 'active')
     .maybeSingle();
   if (error) throw error;
   return data as null | {
-    id: string; level: string; focus: string[]; rationale: string; source_focus: string | null; created_at: string;
+    id: string; level: string; focus: string[]; rationale: string; created_at: string;
     learning_path_steps: { id: string; position: number; resource_id: string; stage: string; reason: string; status: string; completed_at: string | null }[];
   };
 }
 
-async function savePath(client: any, userId: string, level: string, plan: Plan, sourceFocus: string | null) {
+async function savePath(client: any, userId: string, level: string, plan: Plan) {
   const { error: archiveError } = await client
     .from('learning_paths')
     .update({ status: 'archived' })
@@ -212,7 +191,7 @@ async function savePath(client: any, userId: string, level: string, plan: Plan, 
 
   const { data: path, error } = await client
     .from('learning_paths')
-    .insert({ user_id: userId, level, focus: plan.focus, rationale: plan.rationale, source_focus: sourceFocus })
+    .insert({ user_id: userId, level, focus: plan.focus, rationale: plan.rationale })
     .select('id')
     .single();
   if (error) throw error;
@@ -244,7 +223,6 @@ export function generateLearningPath(client: any, userId: string): Promise<boole
     ]);
     // El LLM treballa amb codis curts (r1, r2...): copia malament els UUID.
     const refs = new Map(catalog.map((c, i) => [`r${i + 1}`, c.id]));
-    const sourceFocus = signals.evaluations[0]?.priority_focus ?? null;
     const hasData = signals.evaluations.length > 0 || signals.recent.length > 0;
 
     let plan: Plan | null = null;
@@ -260,7 +238,7 @@ export function generateLearningPath(client: any, userId: string): Promise<boole
     if (!plan && !previous) plan = diagnosticPlan(catalog);
     if (!plan) return false;
 
-    await savePath(client, userId, level, plan, sourceFocus);
+    await savePath(client, userId, level, plan);
     console.log(`[learning-path] Ruta nova per a ${userId}: ${plan.steps.length} passos (${plan.focus.join(', ')})`);
     return true;
   })().finally(() => generating.delete(userId));
@@ -284,13 +262,10 @@ function modelInput(signals: LearningSignals, catalog: CatalogItem[], previous: 
 }
 
 /* ── Consultes i esdeveniments ────────────────────────────────────────── */
-// Ruta activa amb les dades de cada recurs per a pintar-la. Si encara no en té, la genera.
+// Ruta activa amb les dades de cada recurs per a pintar-la, o null si encara no en té. No la genera:
+// només es genera quan l'usuari ho demana (POST /api/learning-path/regenerate), perquè crida el LLM.
 export async function getLearningPath(client: any, userId: string) {
-  let path = await activePath(client, userId);
-  if (!path) {
-    await generateLearningPath(client, userId);
-    path = await activePath(client, userId);
-  }
+  const path = await activePath(client, userId);
   if (!path) return null;
 
   const ids = path.learning_path_steps.map(s => s.resource_id);
@@ -301,7 +276,7 @@ export async function getLearningPath(client: any, userId: string) {
   if (error) throw error;
   const byId = new Map((resources as { id: string; name: string; type: string; category: string; content: string | null; metadata: Metadata }[]).map(r => [r.id, r]));
 
-  const { learning_path_steps: steps, source_focus: _source, ...rest } = path;
+  const { learning_path_steps: steps, ...rest } = path;
   return {
     ...rest,
     steps: steps
@@ -323,34 +298,28 @@ export async function getLearningPath(client: any, userId: string) {
   };
 }
 
-async function shouldRegenerate(client: any, userId: string): Promise<boolean> {
-  const path = await activePath(client, userId);
-  if (!path) return true;
-  const steps = path.learning_path_steps;
-  if (steps.length && steps.filter(s => s.status === 'done').length / steps.length >= REGENERATE_RATIO) return true;
-
-  const { data: latest } = await client
-    .from('user_evaluations')
-    .select('priority_focus, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return Boolean(latest && latest.created_at > path.created_at && latest.priority_focus !== path.source_focus);
-}
-
-// Errors pendents de l'usuari en les categories indicades, per a donar-los per resolts.
+// Errors pendents de l'usuari en les categories indicades, de qualsevol origen (xat, pràctica
+// o redacció), per a donar-los per resolts.
 async function resolveErrors(client: any, userId: string, categories: string[]) {
   if (!categories.length) return;
   const { data, error } = await client
     .from('user_errors')
-    .select('id, session_resource!inner(sessions!inner(user_id))')
+    .select('id, source, category, resources(category, type)')
+    .eq('user_id', userId)
     .eq('resolved', false)
-    .in('category', categories)
-    .eq('session_resource.sessions.user_id', userId);
+    .limit(2000);
   if (error) throw error;
-  const ids = (data as { id: string }[]).map(e => e.id);
-  if (ids.length) await client.from('user_errors').update({ resolved: true }).in('id', ids);
+  const ids = (data as (ErrorRow & { id: string })[])
+    .filter(e => errorCategoriesOf(e).some(c => categories.includes(c)))
+    .map(e => e.id);
+  // Per tandes: una llista d'ids massa llarga no cap en la URL de la petició.
+  for (let i = 0; i < ids.length; i += 200) {
+    const { error: updateError } = await client
+      .from('user_errors')
+      .update({ resolved: true, resolved_at: new Date().toISOString() })
+      .in('id', ids.slice(i, i + 200));
+    if (updateError) throw updateError;
+  }
 }
 
 export type ResourceResult = {
@@ -362,8 +331,8 @@ export type ResourceResult = {
   details?: Record<string, unknown>;
 };
 
-// Un usuari ha acabat un recurs: es guarda el resultat, es marca el pas de la
-// ruta i, si toca, se'n genera una de nova. Pensat per a cridar-lo en segon pla.
+// Un usuari ha acabat un recurs: es guarda el resultat i es marca el pas de la ruta. La ruta
+// no es regenera ací: només quan l'usuari ho demana. Pensat per a cridar-lo en segon pla.
 export async function onResourceFinished(client: any, userId: string, result: ResourceResult) {
   const { error } = await client.from('user_resource_results').insert({
     user_id: userId,
@@ -387,6 +356,4 @@ export async function onResourceFinished(client: any, userId: string, result: Re
     const { data: resource } = await client.from('resources').select('category, type').eq('id', result.resourceId).maybeSingle();
     if (resource) await resolveErrors(client, userId, focusOf(resource));
   }
-
-  if (await shouldRegenerate(client, userId)) await generateLearningPath(client, userId);
 }

@@ -235,10 +235,25 @@ export type SessionResource = { id: string; sesion_id: string; recurso_id: strin
 // backend en fa l'avaluació pedagògica. Les dades per a avaluar-lo són en este navegador: els
 // errors pendents del recurs i les últimes avaluacions (o, en el Nivell 0, la conversa, per a
 // revisar-ne els objectius). L'avaluació que torna es guarda ací.
-export async function finishSessionResource(
+// Si es crida dues vegades per al mateix recurs (botó i eixida de la pantalla), es fa una sola petició.
+const finishing = new Map<string, Promise<void>>();
+export function finishSessionResource(
   sessionId: string,
   sessionResourceId: string,
-  { includeMessages = false }: { includeMessages?: boolean } = {},
+  options: { includeMessages?: boolean } = {},
+): Promise<void> {
+  let run = finishing.get(sessionResourceId);
+  if (!run) {
+    run = sendFinishResource(sessionId, sessionResourceId, options).finally(() => finishing.delete(sessionResourceId));
+    finishing.set(sessionResourceId, run);
+  }
+  return run;
+}
+
+async function sendFinishResource(
+  sessionId: string,
+  sessionResourceId: string,
+  { includeMessages = false }: { includeMessages?: boolean },
 ): Promise<void> {
   // Primer, que acaben les anàlisis d'errors encara en curs d'este recurs.
   await Promise.allSettled([...(pendingAnalyses.get(sessionResourceId) ?? [])]);
@@ -265,6 +280,8 @@ export async function finishSessionResource(
       }),
     },
   );
+  // 404: el recurs ja no existix o no és d'este usuari; no té sentit tornar-ho a provar.
+  if (res.ok || res.status === 404) forgetOpenResource(sessionResourceId);
   if (!res.ok) return console.warn(`[finishSessionResource] El backend ha respost amb codi ${res.status}`);
   const { evaluation } = await res.json() as { evaluation?: LatestEvaluation | null };
   if (evaluation) {
@@ -275,6 +292,56 @@ export async function finishSessionResource(
       priorityFocus: evaluation.priority_focus,
       createdAt: evaluation.created_at,
     });
+  }
+}
+
+// Escenaris oberts i encara no tancats. Si l'usuari tanca la pestanya, perd la connexió o la
+// pàgina es recarrega, no s'arriba a cridar finishSessionResource: es queden ací (localStorage,
+// perquè sobrevisquen a tancar la pestanya) i es tanquen en la pròxima càrrega de l'app, amb
+// les dades que hi ha en este navegador. Només es tanquen els que porten un temps sense
+// activitat, per a no tancar un escenari que l'usuari té obert en una altra pestanya.
+const OPEN_RESOURCES_KEY = 'parlaval:open-resources';
+const ABANDONED_AFTER_MS = 15 * 60 * 1000;
+type OpenResource = { userId: string; sessionId: string; sessionResourceId: string; includeMessages: boolean; touchedAt: number };
+
+function readOpenResources(): OpenResource[] {
+  try {
+    const raw = localStorage.getItem(OPEN_RESOURCES_KEY);
+    return raw ? JSON.parse(raw) as OpenResource[] : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeOpenResources(rows: OpenResource[]) {
+  try {
+    if (rows.length > 0) localStorage.setItem(OPEN_RESOURCES_KEY, JSON.stringify(rows));
+    else localStorage.removeItem(OPEN_RESOURCES_KEY);
+  } catch {
+    // Sense storage: un escenari abandonat no es podrà tancar després.
+  }
+}
+
+/** Apunta (o refresca, en cada torn) un escenari obert, per a tancar-lo després si s'abandona. */
+export async function trackOpenResource(sessionId: string, sessionResourceId: string, includeMessages: boolean) {
+  const userId = await sessionOwner();
+  const others = readOpenResources().filter(r => r.sessionResourceId !== sessionResourceId);
+  writeOpenResources([...others, { userId, sessionId, sessionResourceId, includeMessages, touchedAt: Date.now() }]);
+}
+
+function forgetOpenResource(sessionResourceId: string) {
+  writeOpenResources(readOpenResources().filter(r => r.sessionResourceId !== sessionResourceId));
+}
+
+/** Tanca (i avalua) els escenaris de l'usuari actual que es van quedar oberts sense activitat. */
+export async function finishAbandonedResources(): Promise<void> {
+  const userId = await sessionOwner();
+  const abandoned = readOpenResources()
+    .filter(r => r.userId === userId && Date.now() - r.touchedAt > ABANDONED_AFTER_MS);
+  // Un a un: cada avaluació llig les anteriors, que s'acaben de guardar.
+  for (const r of abandoned) {
+    await finishSessionResource(r.sessionId, r.sessionResourceId, { includeMessages: r.includeMessages })
+      .catch(error => console.warn('[finishAbandonedResources] No s\'ha pogut tancar un escenari:', error));
   }
 }
 
@@ -564,8 +631,8 @@ const authHeaders = async (): Promise<Record<string, string>> => {
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 };
 
-// Ruta activa de l'usuari. La primera vegada el backend la genera (pot tardar uns segons).
-export async function fetchLearningPath(): Promise<LearningPath> {
+// Ruta activa de l'usuari, o null si encara no en té (es genera amb regenerateLearningPath).
+export async function fetchLearningPath(): Promise<LearningPath | null> {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/learning-path`, { headers: await authHeaders() });
   const payload = await res.json().catch(() => null);
   if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut carregar la ruta');

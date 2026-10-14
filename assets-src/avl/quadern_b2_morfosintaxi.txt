@@ -1,0 +1,54 @@
+3.2.2. Morfosintaxi
+
+• Substantius i adjectius
+  • Flexió de gènere i nombre del substantiu: irregular i invariable (ase/somera, cavall/egua; fisioterapeuta, astronauta, colombaire, homicida...).
+  • Canvis de significat segons el gènere gramatical (llum, pols, terra, clau, etc.).
+  • Adjectius acabats en -aç, -iç i -oç (capaç/capaços/capaces...).
+  • Alternança -leg/-loga (psicòleg/psicòloga).
+  • Concordança del substantiu amb l'adjectiu (anàlisi clínica, estudiant tenaç...).
+
+• Determinants
+  • Article neutre. Forma i usos més corrents de l'article amb valor neutre. Valor abstractiu i construccions alternatives.
+  • Sistema binari i ternari dels determinants demostratius.
+  • Formes tòniques i àtones dels possessius.
+
+• Pronoms
+  • Pronoms personals forts (mi, si, vosté, vostés...). Pronoms forts darrere de preposició (sense mi, amb tu...).
+  • Morfologia i col·locació de pronoms febles (apostrofació i guionet) en combinacions binàries.
+  • Ús de pronoms febles en funció d'atribut i de complement circumstancial.
+  • Combinacions binàries de pronoms febles (reflexius + complement directe, reflexius + atribut, complement indirecte + complement circumstancial, complement directe + complement circumstancial, complement indirecte + complement directe).
+  • Combinació de pronoms febles en la conjugació dels verbs anar-se'n, tornar-se'n i eixir-se'n.
+  • Pronoms interrogatius i exclamatius: usos de quin/quina/quins/quines, qui, què, com, a on, quan, quant i per què.
+  • Pronoms relatius. Usos de que, què, qual, a on i qui.
+  • Pronoms relatius neutres: casos habituals (amb la qual cosa, cosa que, fet que...).
+  • Usos dels relatius segons la classe de subordinades de relatiu: substantives (Els qui vullguen vindre, que ho diguen. El que diu no té sentit); adjectives (L'ordinador que m'he comprat és compacte); adjectives especificatives i explicatives (Els alumnes que han llegit el llibre han superat la prova. / Els alumnes, que han llegit el llibre, han superat la prova); adverbials (He anat a on m'havies dit).
+
+• Quantificadors
+  • Numerals: ordinals i partitius (mig, terç, quart, una quinta part).
+  • Abreviatures de numerals ordinals (1r, 1a, 2n, 3r, 4t, 8é, 6a, 1rs...) i perífrasis equivalents (la que fa dotze).
+  • Quantitatius variables i invariables. Ús de quant i prou.
+  • Locucions més freqüents que fan funció de quantitatiu (bona cosa de, gens ni mica/miqueta de, un grapat de, un muntó de, un fum de...).
+  • Indefinits variables i invariables (diversos, diferents, qualsevol, tal, tothom, alguna cosa...).
+  • Distinció entre res, gens i cap/ningun (No vol res. No queda gens de vi. No tinc cap/ninguna objecció a fer).
+
+• Preposicions
+  • Usos habituals de amb/en, a/en.
+  • Preposicions que precedixen parts del dia, mesos de l'any, estacions i festes.
+  • Preposicions sense, per i per a davant de sintagma nominal.
+  • Caiguda de la preposició davant de que àton.
+
+• Adverbis
+  • Adverbis i locucions adverbials d'afirmació (sí, també, fins i tot/inclús, prou...) i de dubte (potser).
+
+• Conjuncions i altres connectors d'ús general en registres estàndard
+  • Adversatives i concessives (en canvi, per contra, no obstant, no obstant això, això no obstant...), distributives (així com, no sols/solament...), causals (a causa de, per culpa de, com que, ja que...).
+  • Conjunció que a començament d'oracions interrogatives i exclamatives.
+
+• Verbs
+  • Verbs irregulars velaritzats més habituals (verb córrer i derivats, verbs acabats en -ndre, vocal + -ure i -ldre, i derivats).
+  • Verbs irregulars amb canvis vocàlics (collir, bollir/bullir, tossir...).
+  • Imperfet d'indicatiu regular i irregular (veia, queia, réieu...).
+  • Usos del subjuntiu. Ordes en negatiu (no + subjuntiu).
+  • Verbs ser i estar amb valor atributiu o locatiu.
+  • Perífrasis incoatives, de probabilitat, de realització recent i d'aproximació.
+  • Formes no personals dels verbs. Usos de l'infinitiu: construccions agramaticals d'infinitiu amb valor d'imperatiu (*No passar), i presència o absència d'article davant d'infinitiu substantivat.

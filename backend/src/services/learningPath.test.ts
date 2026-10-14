@@ -1,6 +1,7 @@
 /**
  * Pruebas unitarias de la ruta de aprendizaje (backend/src/services/learningPath.ts):
  * - focusOf: categorías de error que trabaja cada contenido según su `type`.
+ * - errorCategoriesOf: categoría común de un error de chat, práctica o redacción.
  * - validatePlan: la respuesta del LLM solo puede usar recursos del catálogo enviado,
  *   sin repetir, y con entre 5 y 7 pasos.
  * - diagnosticPlan: ruta fija cuando aún no hay datos del usuario.
@@ -8,6 +9,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { diagnosticPlan, focusOf, validatePlan, type CatalogItem, type Plan } from './learningPath.js';
+import { errorCategoriesOf } from './errorCategories.js';
 
 const item = (id: string, category: string, extra: Partial<CatalogItem> = {}): CatalogItem => ({
   id, category, type: id, section: id, name: id, content: null, focus: [], has_lesson: false, sort_order: 1, ...extra,
@@ -33,6 +35,27 @@ describe('focusOf', () => {
   it('no asigna foco a las destrezas ni a los escenarios', () => {
     expect(focusOf({ category: 'comprensio_oral', type: 'b1_co_converses' })).toEqual([]);
     expect(focusOf({ category: 'escenari', type: 'b1_persones' })).toEqual([]);
+  });
+});
+
+describe('errorCategoriesOf', () => {
+  it('deja tal cual la categoría de los errores de chat', () => {
+    expect(errorCategoriesOf({ source: 'chat', category: 'pronoms' })).toEqual(['pronoms']);
+  });
+
+  it('traduce los errores de práctica al foco de su contenido', () => {
+    const resources = { category: 'morfosintaxi', type: 'b2_mor_combinacions' };
+    expect(errorCategoriesOf({ source: 'practice', category: 'Combinacions de pronoms febles', resources })).toEqual(['pronoms']);
+    // Una pregunta de comprensión no es un error de lengua.
+    expect(errorCategoriesOf({ source: 'practice', category: 'Converses', resources: { category: 'comprensio_oral', type: 'b1_co_converses' } })).toEqual([]);
+    expect(errorCategoriesOf({ source: 'practice', category: 'Sense recurs', resources: null })).toEqual([]);
+  });
+
+  it('traduce las categorías de las rúbricas de redacción', () => {
+    expect(errorCategoriesOf({ source: 'writing', category: 'morfosintaxi' })).toEqual(['morfologia']);
+    expect(errorCategoriesOf({ source: 'writing', category: 'connector' })).toEqual(['sintaxi']);
+    expect(errorCategoriesOf({ source: 'writing', category: 'ortografia' })).toEqual(['ortografia']);
+    expect(errorCategoriesOf({ source: 'writing', category: 'Expressió escrita' })).toEqual([]);
   });
 });
 

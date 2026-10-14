@@ -1,4 +1,4 @@
-# Gramàtiques de l'AVL i Quadern B1 (fonts de les lliçons)
+# Gramàtiques de l'AVL i Quaderns B1 i B2 (fonts de les lliçons i de l'avaluació)
 
 Còpia local, descarregada una sola vegada l'1 d'octubre de 2026, de les fonts amb què
 s'han redactat les lliçons fixes («Aprendre lliçó») del B1 i del B2 de Morfosintaxi i de Fonètica,
@@ -15,5 +15,7 @@ elocució i ortografia. L'app no consulta l'AVL: el contingut de cada lliçó es
 | `gvb.txt`, `gnv.txt` | Les mateixes gramàtiques en text pla, amb els números d'apartat (`#`, `##`, `###`), exemples (`>`), observacions (`[OBS]`) i taules (`|`) | Generats a partir dels HTML |
 | `quadern_b1_morfosintaxi.txt` | Apartat 3.2.2 Morfosintaxi del Quadern de nivell B1 (2024) |
 | `quadern_b1_fonetica.txt` | Apartat 3.2.1 Fonètica, elocució i ortografia del Quadern de nivell B1 (2024) | [JQCV](https://jqcv.gva.es/va/nivell-b1) |
+| `quadern_b1_lexic.txt` | Apartat 3.2.3 Lèxic i semàntica del Quadern de nivell B1 (2024) | [JQCV](https://jqcv.gva.es/va/nivell-b1) |
+| `quadern_b2_fonetica.txt`, `quadern_b2_morfosintaxi.txt`, `quadern_b2_lexic.txt` | Apartats 3.2.1, 3.2.2 i 3.2.3 del Quadern de nivell B2. Un resum dels del B1 i del B2 és en les rúbriques de `backend/src/services/examWritingEvaluator.ts` («elements del nivell») | JQCV |
 
 Enllaç públic a una fitxa: `https://www.avl.gva.es/gnv/buscador.jsp?gramatica=GVB&index=<clau>`.

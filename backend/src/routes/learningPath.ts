@@ -90,9 +90,8 @@ learningPathRouter.get('/api/learning-path', requireAuth, async (req: AuthReques
   const client = db(req.userId);
   if (!client) return res.status(401).json({ error: 'Inicia sessió per a tindre una ruta personalitzada' });
   try {
-    const path = await getLearningPath(client, req.userId!);
-    if (!path) return res.status(404).json({ error: 'Encara no hi ha activitats per al teu nivell' });
-    res.json(path);
+    // null: encara no en té cap (es genera quan l'usuari ho demana).
+    res.json(await getLearningPath(client, req.userId!));
   } catch (error) {
     console.error('[learning-path] Error carregant la ruta:', error);
     res.status(500).json({ error: 'No hem pogut carregar la ruta' });
@@ -104,15 +103,17 @@ learningPathRouter.post('/api/learning-path/regenerate', requireAuth, rateLimit(
   if (!client) return res.status(401).json({ error: 'Inicia sessió per a tindre una ruta personalitzada' });
   try {
     await generateLearningPath(client, req.userId!);
-    res.json(await getLearningPath(client, req.userId!));
+    const path = await getLearningPath(client, req.userId!);
+    if (!path) return res.status(404).json({ error: 'Encara no hi ha activitats per al teu nivell' });
+    res.json(path);
   } catch (error) {
     console.error('[learning-path] Error regenerant la ruta:', error);
     res.status(503).json({ error: 'No hem pogut generar una ruta nova. Torna-ho a provar.' });
   }
 });
 
-// Resultat d'una pràctica o d'un examen acabat. Es respon de seguida: marcar el
-// pas i regenerar la ruta (amb el LLM) es fa en segon pla.
+// Resultat d'una pràctica o d'un examen acabat. Es respon de seguida: guardar-lo i marcar
+// el pas de la ruta es fa en segon pla (la ruta no es regenera: només quan l'usuari ho demana).
 function resultRoute(kind: 'practice' | 'exam', matches: (category: string) => boolean) {
   return async (req: AuthRequest, res: import('express').Response) => {
     const parsed = resultSchema.safeParse(req.body);

@@ -6,7 +6,7 @@ import { ScenarioSelect } from './components/ScenarioSelect';
 import { SceneLoading, useDashboardAssets, useSceneAssets } from './components/SceneLoading';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
-import { endSession, fetchExam, fetchPractice, fetchResources, forgetSession, invalidateResources } from './lib/api';
+import { endSession, fetchExam, fetchPractice, fetchResources, finishAbandonedResources, forgetSession, invalidateResources } from './lib/api';
 import type { Exam as ExamResource, Practice as PracticeResource, Resource } from './lib/types';
 import { activityRoute, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
@@ -301,6 +301,11 @@ export function App() {
     return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Escenaris que es van quedar oberts (pestanya tancada, sense connexió...): es tanquen i s'avaluen ara.
+  useEffect(() => {
+    if (user) void finishAbandonedResources();
+  }, [user?.id]);
 
   // Actualitza l'estat local a l'instant i desa el canvi a Supabase si hi ha sessió.
   const saveProfile = async (fields: ProfileFields) => {

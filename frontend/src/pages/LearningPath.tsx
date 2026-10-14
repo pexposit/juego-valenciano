@@ -15,15 +15,15 @@ const STAGES: Record<LearningStage, { label: string; color: string }> = {
 };
 
 export function LearningPath({ onOpen, onBack }: { onOpen: (resource: Resource) => void; onBack: () => void }) {
-  // undefined = carregant.
+  // undefined = carregant; null = encara no en té (o no s'ha pogut carregar, si hi ha `error`).
   const [path, setPath] = useState<Path | null>();
   const [error, setError] = useState<string>();
   const [regenerating, setRegenerating] = useState(false);
   const [catalog, setCatalog] = useState<Map<string, Resource>>(new Map());
   const [lesson, setLesson] = useState<Resource>();
 
-  // El backend actualitza la ruta en segon pla en acabar cada activitat: es torna
-  // a demanar en entrar a la pàgina i quan la pestanya recupera el focus.
+  // El backend marca els passos fets en acabar cada activitat (la ruta només es genera
+  // quan l'usuari ho demana): es torna a demanar en entrar i quan la pestanya recupera el focus.
   const load = useCallback(() => {
     fetchLearningPath()
       .then(data => { setPath(data); setError(undefined); })
@@ -81,12 +81,31 @@ export function LearningPath({ onOpen, onBack }: { onOpen: (resource: Resource) 
         {path === undefined && (
           <section className="grid place-items-center gap-4 rounded-[2rem] bg-white p-10 text-center shadow-sm" aria-live="polite">
             <Sparkles size={36} className="animate-pulse text-teal" />
-            <p className="text-xl font-black">Preparant la teua ruta…</p>
-            <p className="opacity-60">Estem revisant les teues últimes activitats. Pot tardar uns segons.</p>
+            <p className="text-xl font-black">Carregant la teua ruta…</p>
           </section>
         )}
 
-        {path === null && (
+        {path === null && !error && (
+          <section className="grid place-items-center gap-4 rounded-[2rem] bg-white p-10 text-center shadow-sm" aria-live="polite">
+            <Sparkles size={36} className={regenerating ? 'animate-pulse text-teal' : 'text-teal'} />
+            <p className="text-xl font-black">{regenerating ? 'Preparant la teua ruta…' : 'Encara no tens cap ruta personalitzada'}</p>
+            <p className="max-w-md opacity-60">
+              {regenerating
+                ? 'Estem revisant les teues últimes activitats. Pot tardar uns segons.'
+                : 'La crearem a partir de les teues activitats i errors. Si encara no has fet res, serà una ruta variada per a començar.'}
+            </p>
+            <button
+              onClick={regenerate}
+              disabled={regenerating}
+              className="btn-press flex items-center gap-2 rounded-full bg-teal px-6 py-3 font-black text-white hover:bg-teal/90 disabled:opacity-60"
+            >
+              <Sparkles size={18} />
+              {regenerating ? 'Generant…' : 'Generar la meua ruta'}
+            </button>
+          </section>
+        )}
+
+        {path === null && error && (
           <section className="rounded-[2rem] bg-white p-8 text-center shadow-sm">
             <p className="text-xl font-black">{error}</p>
             <button onClick={load} className="btn-press mt-4 rounded-full bg-teal px-6 py-3 font-black text-white hover:bg-teal/90">
@@ -191,7 +210,7 @@ export function LearningPath({ onOpen, onBack }: { onOpen: (resource: Resource) 
                 {regenerating ? 'Generant una ruta nova…' : 'Generar una ruta nova'}
               </button>
               <p className="max-w-md text-sm opacity-60">
-                La ruta s'actualitza sola quan acabes activitats. Pots generar-ne una de nova si vols canviar de tema.
+                La ruta no canvia sola. Quan l'acabes o vulgues canviar de tema, genera'n una de nova.
               </p>
             </div>
           </>
