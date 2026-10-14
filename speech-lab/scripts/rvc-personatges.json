@@ -1,5 +1,5 @@
 {
   "doraemon": { "base": 7, "to": 5 },
   "nobita": { "base": 7, "to": 6 },
-  "narrador": { "base": 6, "to": -9, "index": 0, "clips": "voz-dataset/clips" }
+  "narrador": { "base": 6, "to": -6, "index": 0, "clips": "voz-dataset/clips" }
 }
