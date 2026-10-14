@@ -30,6 +30,11 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 falla() { echo "[rvc:$NOM] ha fallat: $1" >&2; exit 1; }
 LOGS=$APPLIO/logs/$NOM
 
+# Sense CUDA, Applio entrena en CPU sense avisar (~15 vegades més lent). En este
+# portàtil passa després de suspendre'l: cal reiniciar o recarregar nvidia_uvm.
+"$PY" -c "import torch; torch.zeros(1).cuda()" 2>/dev/null \
+  || falla "CUDA no funciona (si el portàtil s'ha suspès: sudo rmmod nvidia_uvm && sudo modprobe nvidia_uvm, o reinicia)"
+
 if [[ $REPRENDRE != 1 ]]; then
   rm -rf "$DADES"
   mkdir -p "$DADES"
