@@ -208,12 +208,12 @@ type EvaluableExercise = {
   n: number; kind: string; instructions: string;
   fields?: string[];
   min_words?: number; max_words?: number; words?: string[]; min_words_used?: number;
-  choices?: { key: string; text: string; points?: string[] }[];
-  image_text?: string; // transcripció de la imatge de suport, per a l'avaluador
+  choices?: { key: string; text: string; points?: string[]; image_text?: string }[];
+  image_text?: string; // transcripció de la imatge de suport (de l'exercici o de l'opció), per a l'avaluador
 };
 
 // Avaluació amb LLM de l'Àrea 3 (Expressió escrita): el formulari de l'A1 i les
-// redaccions de l'A2, el B1 i el B2, cadascun amb la seua rúbrica. La consigna, els camps i les
+// redaccions de l'A2, el B1, el B2 i el C1, cadascun amb la seua rúbrica. La consigna, els camps i les
 // paraules obligatòries es lligen de la BDD, no del client.
 resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLimit(EVALUATE_RATE_LIMIT), async (req, res) => {
   const parsedBody = evaluateSchema.safeParse(req.body);
@@ -256,18 +256,18 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
       words: exercise.words ?? [],
       minWordsUsed: exercise.min_words_used ?? 0,
     });
-  } else if ((exam?.level === 'B1' || exam?.level === 'B2') && exercise?.kind === 'writing' && exercise.min_words && exercise.max_words) {
+  } else if ((exam?.level === 'B1' || exam?.level === 'B2' || exam?.level === 'C1') && exercise?.kind === 'writing' && exercise.min_words && exercise.max_words) {
     const text = parsedBody.data.text?.trim();
     if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
     // Amb opcions A/B, l'avaluador necessita la consigna de l'opció triada.
     const choice = exercise.choices?.find(c => c.key === parsedBody.data.choice);
     if (exercise.choices?.length && !choice) return res.status(400).json({ error: 'Tria una de les opcions abans d’avaluar' });
     evaluate = () => evaluateB1Writing({
-      level: exam.level as 'B1' | 'B2',
+      level: exam.level as 'B1' | 'B2' | 'C1',
       exerciseN: exercise.n,
       instructions: exercise.instructions,
       choice,
-      imageText: exercise.image_text,
+      imageText: choice?.image_text ?? exercise.image_text,
       text,
       minWords: exercise.min_words!,
       maxWords: exercise.max_words!,
@@ -305,7 +305,7 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
   if (exercise && !(await canSeeResource(client, req.userId ?? null, { id: exercise.resource_id, teacher_id: exercise.resources?.teacher_id ?? null }))) {
     return res.status(404).json({ error: "Este exercici no es pot avaluar" });
   }
-  // Del B1 amunt s'avalua amb la rúbrica del B1 (o la del B2, del B2 amunt) i, si la tasca
+  // Del B1 amunt s'avalua amb la rúbrica del nivell (B1, B2 o C1; el C2, amb la del C1) i, si la tasca
   // parteix d'un text o d'un àudio (paràfrasi, apunts...), l'avaluador en rep la transcripció.
   const intermediate = exercise && !['A1', 'A2'].includes(exercise.level);
   const passage = exercise?.practice_passages as { title: string | null; lines: { text: string; speaker?: string }[] } | null;
@@ -329,7 +329,7 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
     const task = exercise.task as { min_words: number; max_words: number; words?: string[]; min_words_used?: number };
     evaluate = () => intermediate
       ? evaluateB1Writing({
-          level: exercise.level === 'B1' ? 'B1' : 'B2',
+          level: exercise.level === 'B1' || exercise.level === 'B2' ? exercise.level : 'C1',
           exerciseN: 7,
           instructions: exercise.prompt,
           sourceText,

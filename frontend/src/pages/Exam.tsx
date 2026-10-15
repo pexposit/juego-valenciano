@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Clock, ExternalLink, Headphones, Mic, PenLine, Puzzle, RotateCcw } from 'lucide-react';
 import { Logo } from '../components/ui';
-import { B1_PASS_MARK, B2_PASS_MARK, BinaryExercise, isB1OrB2Writing, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
+import { BinaryExercise, isB1OrB2Writing, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingEvaluationPanel, WritingExercise, writingPassMark } from '../components/ExamExercises';
 import { evaluateExamWriting, saveActivityResult } from '../lib/api';
 import type { Exam as ExamResource, ExamArea, ExamExercise, ExamQuestion, ExamScoring, WritingEvaluation } from '../lib/types';
 
@@ -48,10 +48,10 @@ const pointsOf = (scoring: ExamScoring, byExercise: ExerciseScore[]) =>
   Math.round(byExercise.reduce((sum, e) => sum + e.correct * pointsPerCorrect(scoring, e.n), 0));
 const passes = (scoring: ExamScoring, points: number) => points >= scoring.pass_points;
 
-// Exercicis amb rúbrica d'avaluació amb IA: el formulari de l'A1 i les redaccions de l'A2, el B1 i el B2.
+// Exercicis amb rúbrica d'avaluació amb IA: el formulari de l'A1 i les redaccions de l'A2, el B1, el B2 i el C1.
 type EvaluableExercise = Extract<ExamExercise, { kind: 'form' | 'writing' }>;
 const evaluable = (level: string, e: ExamExercise): e is EvaluableExercise =>
-  (level === 'A1' && e.kind === 'form') || ((level === 'A2' || level === 'B1' || level === 'B2') && e.kind === 'writing');
+  (level === 'A1' && e.kind === 'form') || (['A2', 'B1', 'B2', 'C1'].includes(level) && e.kind === 'writing');
 // El text de cada redacció es guarda a `form` amb esta clau (vegeu ExerciseBody).
 const writingKey = (n: number) => `writing-${n}`;
 const evaluationBody = (e: EvaluableExercise, form: Record<string, string>) =>
@@ -254,8 +254,8 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
           />
         )}
 
-        {/* Resultat de l'àrea d'expressió escrita del B1 i del B2: mitjana de les dos redaccions avaluades amb IA */}
-        {(exam.level === 'B1' || exam.level === 'B2') && (() => {
+        {/* Resultat de l'àrea d'expressió escrita del B1, el B2 i el C1: mitjana de les dos redaccions avaluades amb IA */}
+        {['B1', 'B2', 'C1'].includes(exam.level) && (() => {
           const writings = area.exercises.filter(e => evaluable(exam.level, e));
           const marks = writings.map(e => progress.evaluations[e.n]).flatMap(ev => isB1OrB2Writing(ev) ? [ev.mitjana_base_10] : []);
           if (writings.length < 2 || marks.length < writings.length) return null;
@@ -263,7 +263,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
             <WritingAreaResult
               area={area}
               marks={writings.map((e, i) => ({ n: e.n, mark: marks[i] }))}
-              passMark={exam.level === 'B2' ? B2_PASS_MARK : B1_PASS_MARK}
+              passMark={writingPassMark(exam.level)}
             />
           );
         })()}

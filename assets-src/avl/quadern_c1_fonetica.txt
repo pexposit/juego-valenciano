@@ -1,0 +1,64 @@
+3.2.1. Fonètica, elocució i ortografia
+
+• Elocució i fonètica sintàctica
+  • Pronunciació estàndard de vocals i consonants. Vocalisme i consonantisme dels dialectes: casos generals.
+  • Processos fonològics: ensordiment (fred: fre[t], demagog: demago[k], aljub: alju[p]); sonoritzacions (els autors: el[z] autors); assimilació (tanmateix: ta[m]mateix); alternança vocàlica en els verbs (vullgues/volgueres).
+  • Geminació en les grafies mm i pp (imminent: i[mm]inent, cappare: ca[pp]are).
+  • Pronunciació que evite les assimilacions, dissimilacions i metàtesis no recomanables en àmbits formals (*crompar: comprar, *pedricar: predicar).
+  • Pronunciació que evite la supressió o l'addició de sons no recomanables de l'àmbit formal (*aülla: agulla, *roa: roda, *nyèrvit: nervi).
+  • Pronunciació que evite la modificació de consonants contrària a les normes d'elocució formal (*Iordi: Jordi, *lliteratura: literatura, *consevol: qualsevol).
+
+• Síl·laba, diftong, hiat i vocals
+  • Vocals en paraules amb un cert grau de dificultat ortogràfica: alternances vocàliques entre veus patrimonials i els corresponents pseudoderivats d'ús general (món/mundial, hòmens/humà, corba/curvilini).
+  • Ortografia vocàlica contrastiva amb la d'altres llengües (*avurrir-se: avorrir-se, *afeitar-se: afaitar-se, *metro [mesura de longitud]: metre, *línea: línia).
+  • Paraules que, col·loquialment, es pronuncien amb vocal distinta (*au(b)rir: obrir, *puguera: poguera).
+  • Separació de paraules en síl·labes tenint en compte els dígrafs (in-no-cent, set-ma-na, ma-reig, es-que-ma, ho-rit-zó...), les lletres compostes i les geminacions (cot-na, set-ze...), i els elements d'un derivat o compost (*be-nes-tar: ben-es-tar, *de-sai-re: des-ai-re, *vo-sal-tres: vos-al-tres).
+
+• Accent, dièresi i guionet
+  • Domini de les regles d'accentuació. Accent obert i tancat. Accent diacrític. Accentuació de paraules compostes i derivades (sud-americà, pèl-roig, fisicoquímic, útilment). Accent en paraules cultes i préstecs d'altres llengües.
+  • Accent tancat de la e atenent a la pronunciació i l'ortografia tradicionals del valencià (café, anglés, amén, atén, pésol, terratrémol, conéixer, créixer, convéncer, fényer, aniré, féiem, créieu).
+  • Accent obert i tancat d'acord amb les regles habituals i els usos excepcionals més comuns (arròs, açò, això, allò, església, cérvola, llémena, Dénia, Énguera, fórmula, pólvora, tómbola, tórtora, góndola...).
+  • Casos d'accent obert, encara que la pronunciació sempre és tancada (què, perquè, València), llevat de però, que admet doble pronunciació: [péɾo] o [peɾɔ́].
+  • Domini de les regles d'ús de la dièresi, que inclouen les excepcions principals i l'estalvi de la dièresi.
+  • Usos del guionet: el guionet i l'absència de guionet en paraules no simples.
+  • Modificacions de la forma dels pronoms febles en els canvis de posició davant o darrere del verb (el porta, l'ha portat, portar-lo, porta'l).
+
+• Apostrofació i contracció
+  • Apostrofació de l'article i excepcions (la una en punt, ni l'una ni l'altra, la ira, la eme, l'11).
+  • Regles avançades de l'ús de l'apòstrof i la contracció. Parònims amb unió per mitjà de l'apòstrof (descriure, d'escriure; banyat, banya't). Contraccions entre els articles el, els i les preposicions a, de, per i la paraula apocopada ca(sa).
+
+• Consonants oclusives i labiodentals
+  • Oclusives en posició final de síl·laba (sonores [b, d, g]: cabdill, admetre, cognom; sordes [p]: apte, dissabte, sobte, substitució).
+  • Oclusives en posició final de paraula evitant la vocal de suport (*absurde: absurd, *immunde: immund), i tenint en compte terminacions com ara -etud, -itud (quietud, solitud), -leg (diàleg, psicòleg) i la resta d'excepcions a la regla general.
+  • Homòfons i parònims diversos amb oclusives (quan/quant; ordenant/ordenand; tan/tant; multiplicant/multiplicand; cub/cup).
+  • Regles avançades de les grafies b/v: usos contrastius amb altres llengües ('arriver': arribar; 'travailler': treballar; 'reventar': rebentar; 'trouver', 'trovar': trobar; 'móvil': mòbil; 'revolcar': rebolcar; 'cobarde': covard; 'grabar': gravar; 'labio': llavi; 'trébol': trèvol...); usos excepcionals (tramvia, circumval·lar), etc.
+  • Escriptura d'homòfons i de parònims amb les grafies b/v (abans/avanç; abís/avís; baca/vaca; hibernar/hivernar; probable/provable).
+
+• Consonants alveolars
+  • Regles avançades de l'ortografia de les alveolars: verbs que acaben en -issar, -isar, -itzar (acarnissar-se, matisar, polititzar); usos de la grafia -tz- (Natzaret); usos excepcionals de la -z- (espermatozoide, trapezi); paraules en vocal + -si (oasi, tesi, crisi, dosi, emfiteusi); arabismes (safrà, tassa).
+  • Flexió de les paraules acabades en -s (pis: pisos, obés: obesos; arcabús: arcabussos, os: ossos); grafies dels cultismes (decisió; terminacions -gressió, -pressió, -missió); compostos i derivats amb s/ss (aerosol, asèptic; pressentir, assenyalar).
+  • Distinció d'homòfons (cella, sella; cent, sent; cessió, sessió) i parònims (abraçar, abrasar; braça, brasa; caça, casa; cinc, zinc; dessolar, desolar; peces, peses; sona, zona).
+
+• Consonants palatals
+  • Regles avançades de l'ortografia de les palatals: escriptura dels verbs que acaben en -tjar/-jar (hostatjar; marejar); ortografia excepcional de j + e (-jecc-, -ject-: injecció, injectable; altres casos: jeroglífic, jerarquia, jersei, majestat, jesuïta).
+  • Diversos valors de la grafia x, inclosos els que no són palatals (taxa: ta[ks]a, examen: e[gz]amen), i l'ortografia de la x amb so fricatiu a començament de paraula (Xàbia, Xaló, Xàtiva, Xixona, xerografia, xilòfon).
+  • Ús de les grafies palatals i oclusives evitant confusions per influència del castellà (*burgués: burgés, *distinguir: distingir).
+
+• Consonants laterals i nasals
+  • Regles avançades de l'ortografia de les consonants laterals: l·l en paraules començades per al-, col-, il-, mil-, sil- + l (al·legoria, col·lecció, il·legal, mil·lèsim, síl·laba) i en les acabades en -el·la, -il·la (mortadel·la, til·la); derivació amb l·l de paraules amb l o ll (caramel: acaramel·lar, estel: estel·lar, ocel: ocel·lar; metall: metàl·lic, moll: mol·lície, cristall: cristal·lí).
+  • Cultismes amb l- inicial (laboral, lingüista) i amb -l·l- (cèl·lula, cal·ligrafia).
+  • Pronunciació que evite la iodització de la [ʎ].
+  • Usos diferents dels d'altres llengües (*sinfonia: simfonia, *alemana: alemanya, *canyó: canó [excepte les entrades de canyó del DNV], *imprenta: impremta); escriptura dels grups -mpt-, -mpc-, -mt-, -nt-, -mn- (assumpte, exempció, compte/comte/conte, condemnar).
+  • Homòfons i parònims amb nasals (també/tan bé).
+
+• Consonants ròtiques i la h
+  • Usos diferents dels d'altres llengües ('blusa': brusa, 'fraile': frare, 'escolta': escorta); r medial muda del verb prendre i derivats (comprendre...), i altres casos (cerndre); cultismes (derogar), etc.
+  • Emmudiment o pronunciació de la r: dima(r)ts/dimar(t)s, soco(r)s/socors, dine(r)s/diners, a(r)bre/arbre.
+  • Regles generals de la grafia h: usos diferents dels d'altres llengües (*armonia: harmonia, *horxata: orxata; *cohet: coet, *truhà: truà; *subasta: subhasta); la grafia h en els cultismes (hèlix, hemorràgia, híbrid, hídric), etc.
+
+• Convencions
+  • Les majúscules i les minúscules. Funció demarcativa i funció distintiva (en els casos d'ús més general).
+  • Signes de puntuació: regles d'ús de tots els signes.
+  • Abreviacions: abreviatures (Sr., Sra., c. o c/, etc., núm., 4t, tel.), símbols (km, min, ha, Kw, N, %, €), sigles (IVAM, DNI, PIB) i acrònims (IVAJ, Benelux, CIVAL) d'ús freqüent.
+
+• Entonació i comunicació no verbal

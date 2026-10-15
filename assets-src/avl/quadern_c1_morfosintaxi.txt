@@ -1,0 +1,61 @@
+3.2.2. Morfosintaxi
+
+• Substantius i adjectius
+  • Flexió de gènere i nombre del substantiu: alternança -e, -o, -u / -a (pediatre/pediatra, monjo/monja, europeu/europea). Substantius abstractes acabats en -or (clamor, esplendor, amargor...).
+  • Remarques sobre el gènere d'alguns substantius en què s'observa interferència morfològica (els afores, el corrent, el deute, el dubte, els espinacs...).
+  • Casos especials de flexió de nombre (sofà/sofàs, café/cafés...) i plurals invariables (llapis, cactus, dilluns...); plurals gràfics (els apèndixs, les falçs...).
+  • Substantius de doble gènere amb significat diferent (canal, capital, còlera...).
+  • Epicens (fardatxo mascle, fardatxo femella).
+  • Flexió de gènere i nombre de l'adjectiu: casos amb terminacions en hiat o en diftong creixent (promiscu/promíscua; inic/iniqua). Casos que diferixen del castellà (verd/verda...). Pluralia tantum (les ulleres, els escacs, les postres...). Usos contrastius amb el castellà (bon dia, els diners, el gratacel, el parabrisa, el parafang...).
+  • Remarques i casos amb dificultat (pobre/pobra, comú/comuna, covard/covarda, mallorquí/mallorquina, amargant).
+  • Col·locació de l'adjectiu respecte al substantiu.
+
+• Determinants
+  • Ús de l'article davant de l'infinitiu: restricció de la substantivació de l'infinitiu (*El saber això m'alegra a muntó: Saber això m'alegra a muntó. No té els sabers necessaris per al treball que li han encomanat).
+  • Presència i absència d'article (Parar taula. Vingué/Vindrà dilluns. El dia de Tots Sants. Ja s'acosta Nadal).
+  • Article neutre: valor abstractiu i valor intensiu. Modismes que presenten interferències amb l'article neutre lo. Alternatives a l'ús de l'article neutre en les construccions abstractives i intensives. Construcció al més + adverbi + possible.
+  • Ús i abús dels possessius. Possessius referits a inanimats.
+
+• Pronoms
+  • Pronoms febles: ús dels pronoms febles en funció de complement del nom (Vicent consulta la taula de preus / Vicent en consulta la taula); de subjecte (—Han arribat ja els convidats? —Només n'han arribat dos); de complement de règim verbal (Parlen de literatura / En parlen).
+  • Precisió en l'ús dels pronoms febles quant a la forma i la funció: pronom se davant de verbs començats per [s] (se celebra); en i hi quan són gramaticalment necessaris (En vol més. No hi havia ningú); usos lexicalitzats de en i hi (Me'n vaig a casa. Vine-te'n al teatre. No m'hi veig).
+  • Combinacions de pronoms; combinacions pròpies de registres formals enfront de col·loquials o interferides (Li ho vaig dir).
+  • Usos pleonàstics (duplicació pronominal) acceptables (Li ho vaig dir a ell) i no admesos (*N'hi ha poc de pa: Hi ha poc de pa).
+  • Concordança del participi amb els pronoms acusatius de tercera persona.
+  • Pronoms relatius: concepte i classe de funció sintàctica. Ús de pronoms relatius: àton que, tònic què, personal qui, adverbial (a) on, variable qual. Relatiu neutre la qual cosa / cosa que. Relatiu possessiu. Estructures article + que. Pleonasmes habituals.
+  • Precisió en l'ús dels exclamatius; funcions de quins, quant, que, com; la construcció quin + substantiu + més + adjectiu; oracions exclamatives completades pel relatiu que (Que valent que és!).
+
+• Quantificadors
+  • Cardinals: concordança dels cardinals amb el substantiu que modifiquen (u/un). Numerals amb xifra o amb lletres (La pàgina 13. Ho has repetit cent vegades).
+  • Cardinals escrits en xifres romanes usats amb el valor dels ordinals quan es posposen a un nom propi i són superiors a deu: Joan III (tercer), però Joan XXIII (vint-i-tres).
+  • Flexió de gènere dels numerals multiplicatius: ús variable i ús invariable. Perífrasis equivalents als multiplicatius (tres voltes més lluny).
+  • Numerals col·lectius més habituals (parell, dotzena, centenar, miler...).
+  • Morfologia i usos d'alguns numerals i indefinits (qualsevol, hom, cada u/cadascú, la resta...).
+  • Morfologia i usos dels quantitatius invariables (gens, massa, menys/manco, més, prou...). Expressió de la quantitat mitjançant fraseologia i locucions quantitatives (com més; com menys; com a màxim, com a molt, a tot estirar, pel cap alt; si més no, pel cap baix).
+  • Ús de les preposicions amb els indefinits: la preposició partitiva de (Això no té res de transcendent) i altres estructures fraseològiques (No tenen res a fer).
+
+• Preposicions
+  • Precisió en l'ús de les preposicions tòniques i àtones, així com en l'ús de les locucions prepositives.
+  • Les preposicions compostes (cap a, fins a, com a, per a): usos generals.
+  • Preposició en i contracció al en la construcció temporal d'infinitiu (A l'arribar / En arribar a casa dinà); usos diversos de les preposicions a, de, en, amb, etc.
+  • Elisió i canvi de les preposicions àtones.
+
+• Adverbis
+  • Adverbis i locucions modals (de dubte, probabilitat o possibilitat: potser, tal volta, tal vegada, qui sap, possiblement, probablement, segurament, si de cas...), d'afirmació (sí, també, efectivament, sens dubte, de veres/veritat...) i de negació (no, tampoc, de cap/ninguna manera, en absolut, no gens...). Potser + verb en indicatiu: Potser vindrà demà; pot ser que + verb en subjuntiu: Pot ser que vinga demà; no amb paraules negatives: —Què t'abellix? —Res. / —No res.
+  • Coordinació dels adverbis acabats en -ment.
+  • Precisió en l'ús de baix, davall, sota; sols, solament, a soles, només ≠ no més.
+
+• Conjuncions i altres connectors
+  • Precisió en l'ús de les conjuncions i locucions conjuntives, i presentació d'alternatives als usos que són impropis del valencià formal: distinció entre per què, perquè i per a què (—Per què no has vingut? —Perquè estava malalt. Els motius per què ho he fet. No arribí a entendre el perquè. Per a què vols el martell?).
+  • Usos formals de les conjuncions causals i consecutives (Ha suspés perquè no havia estudiat. —Dius que plourà? —Doncs agafa el paraigua); la conjunció adversativa sinó i la condicional negativa si + no (No has de parlar amb este advocat, sinó amb l'altre. Si no aproves, no vindràs de viatge); les locucions conjuntives condicionals (T'ho diré sempre que et comprometes a callar. Els ho confessà amb la condició que no ho contaren a ningú).
+  • Ús dels connectors com a mecanisme de cohesió discursiva: connectors distributius i lògics d'addició, de contrast, de reformulació, d'exemplificació, de conseqüència, de resum, de conclusió, etc.
+
+• Verbs
+  • Conjugació dels verbs irregulars velaritzats. Verbs que presenten interferències en la conjugació (admetre, concebre, ocórrer, garantir, telefonar, trair, rebre, percebre, florir...), inclosos els acabats en -metre, -córrer, -fondre, -batre, -rompre i -cloure. Remarques sobre la conjugació irregular de cabre, caldre, saber, vore, etc.
+  • Ús de la morfologia verbal adequada als contextos formals. Formes poc usuals de verbs irregulars (complaure, cruixir, escopir, fondre, imprimir, jaure, lluir, moldre, morir, oir, romandre, rostir...). Conjugació dels verbs que admeten el model pur i l'incoatiu (afig/afegix). Verbs de la segona i la tercera conjugacions que en el present d'indicatiu, el present de subjuntiu i l'imperatiu presenten formes sense velaritzar (dorm, perd, sent; dorma, perda, senta).
+  • Variació diatòpica de les desinències verbals (cante = canto = cant = canti).
+  • Usos verbals en construccions transitives i intransitives, personals i impersonals, pronominals i no pronominals.
+  • Perífrasis verbals i altres construccions d'obligació: haver de + infinitiu, deure + infinitiu, caldre + infinitiu, caldre + que + subjuntiu, tindre de + infinitiu. Perífrasi de probabilitat: deure + infinitiu. Perífrasi d'imminència: estar a punt de + infinitiu.
+  • Usos de ser i estar.
+  • Ús adequat de les formes no personals del verb d'acord amb els usos del valencià: restricció de la substantivació de l'infinitiu (*El saber això m'alegra a muntó: Saber això m'alegra a muntó. No té els sabers necessaris per al treball que li han encomanat); participis irregulars (admés, confós, detingut, distret, exclòs...); concordança del participi (—Queden mandonguilles? —No, me les he acabades al migdia. La pregunta, l'he compresa); ús incorrecte del gerundi de posterioritat (*Caigué trencant-se la cama: Caigué i es va trencar la cama); formes irregulars del gerundi (bevent, traent/traient, estenent...).
+  • Concordança temporal (Si haguera estudiat més, hauria aprovat. Si estudiara més, aprovaria. Quan/Si estudie més, aprovaré. Quan/Si estudie, aprove...).

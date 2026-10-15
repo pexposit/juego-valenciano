@@ -344,6 +344,7 @@ export function WritingExercise({
   const countColor = count === 0 ? 'bg-white/20' : inRange ? 'bg-white text-teal' : 'bg-coral';
 
   const picked = choices.find(c => c.key === choice);
+  const supportImage = picked?.image ?? image;
 
   const editor = (
     <div className="flex flex-col gap-4">
@@ -422,9 +423,9 @@ export function WritingExercise({
 
       {choices.length > 0 && !picked ? (
         <p className="rounded-2xl bg-cream p-4 text-center text-sm font-bold opacity-70">Tria una opció per a començar a escriure.</p>
-      ) : image ? (
+      ) : supportImage ? (
         <div className="grid gap-4 md:grid-cols-[minmax(0,16rem)_1fr]">
-          <img src={image} alt="Imatge de suport de l'exercici" className="w-full rounded-2xl shadow-sm" />
+          <img src={supportImage} alt="Imatge de suport de l'exercici" className="w-full rounded-2xl shadow-sm" />
           {editor}
         </div>
       ) : (
@@ -581,11 +582,14 @@ const A2_PASS_MARK = 4;
 export const B1_PASS_MARK = 5;
 // En el B2 val un 20 %: torna a ser el 40 % (4 de 10), amb la mitjana de les dos redaccions.
 export const B2_PASS_MARK = 4;
+// En el C1 val un 35 %: cal el 50 % de l'àrea (5 de 10), amb la mitjana de les dos redaccions.
+export const C1_PASS_MARK = 5;
 export const passMarkOf = (evaluation: B1WritingEvaluation) =>
-  evaluation.rubrica === 'b2_redaccio' ? B2_PASS_MARK : B1_PASS_MARK;
-// Redacció avaluada amb la rúbrica del B1 o del B2 (mateix format).
+  ({ b1_redaccio: B1_PASS_MARK, b2_redaccio: B2_PASS_MARK, c1_redaccio: C1_PASS_MARK })[evaluation.rubrica];
+export const writingPassMark = (level: string) => (level === 'B1' ? B1_PASS_MARK : level === 'B2' ? B2_PASS_MARK : C1_PASS_MARK);
+// Redacció avaluada amb la rúbrica del B1, del B2 o del C1 (mateix format).
 export const isB1OrB2Writing = (evaluation?: WritingEvaluation): evaluation is B1WritingEvaluation =>
-  evaluation?.rubrica === 'b1_redaccio' || evaluation?.rubrica === 'b2_redaccio';
+  evaluation?.rubrica === 'b1_redaccio' || evaluation?.rubrica === 'b2_redaccio' || evaluation?.rubrica === 'c1_redaccio';
 
 // Botó "Avaluar" i resultat de l'avaluació amb IA d'un exercici d'expressió escrita.
 export function WritingEvaluationPanel({

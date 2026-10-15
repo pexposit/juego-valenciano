@@ -56,7 +56,8 @@ export type ExamOption = { key: string; text?: string; image?: string; sign?: { 
 export type ExamQuestion = { n: number; prompt?: string; image?: string; options?: ExamOption[]; answer: string; scored?: boolean };
 export type ExamCriterion = { title: string; items: { name: string; description: string }[] };
 // Consigna alternativa d'una redacció (opció A o B), amb els punts que cal incloure.
-export type ExamWritingChoice = { key: string; text: string; points?: string[] };
+// Una opció pot portar la seua imatge de suport (p. ex. la infografia de l'opció en el C1).
+export type ExamWritingChoice = { key: string; text: string; points?: string[]; image?: string };
 // Text de lectura que acompanya un exercici de comprensió escrita.
 export type ExamReading = { title?: string; paragraphs: string[] };
 export type ExamProposal = {
@@ -115,7 +116,7 @@ export type A2WritingEvaluation = {
 // d'extensió (±10 %); cada nivell té la seua rúbrica oficial.
 export type B1CriterionKey = A2CriterionKey;
 export type B1WritingEvaluation = {
-  rubrica: 'b1_redaccio' | 'b2_redaccio';
+  rubrica: 'b1_redaccio' | 'b2_redaccio' | 'c1_redaccio';
   opcio?: string; // opció triada (A/B) en la redacció amb opcions
   comprovacio_extensio: { paraules_reals: number; objectiu_tasca: string; dins_marge_10_percent: boolean };
   criteris: Record<B1CriterionKey, { puntuacio: number; franja: string; justificacio: string }> & {
