@@ -1,6 +1,7 @@
 import type { ActivityResult, Exam, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, WritingEvaluation } from './types';
 import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
 import { supabase } from './supabase';
+import { userKey } from './progressStorage';
 import { addErrors, addEvaluation, addMessages, getMessages, latestEvaluations, listConversations, listErrors, markErrorsResolved, setCurrentTutorConversation, updateConversation, type LocalError, forgetLevelData } from './localStore';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
 // Catàleg d'activitats de la BDD (taula resources). Es demana una sola vegada
@@ -470,13 +471,13 @@ export async function resolveUserError(id: string): Promise<void> {
   // La pantalla d'exercicis guarda les respostes en este navegador: se li deixa dit quines preguntes s'han
   // corregit ací, perquè en obrir-la no les mostre com a errònies.
   try {
-    for (const e of local) if (ids.includes(e.id) && e.exerciseId) localStorage.setItem(`${FIXED_PREFIX}${e.exerciseId}`, '1');
+    for (const e of local) if (ids.includes(e.id) && e.exerciseId) localStorage.setItem(fixedKey(e.exerciseId), '1');
   } catch {
     // Sense storage: l'exercici mostrarà la resposta antiga fins que es torne a fer.
   }
 }
 /** Marca (a localStorage) d'una pregunta de pràctica corregida des de la pestanya «Errors»; la llig Practice. */
-export const FIXED_PREFIX = 'parlaval:practice-fixed:';
+export const fixedKey = (exerciseId: string) => userKey(`practice-fixed:${exerciseId}`);
 // Envia les respostes d'una tanda d'exercicis de pràctica: el backend corregix i torna els errors,
 // que es guarden ací per a la pestanya «Errors».
 export async function recordPracticeAnswers(answers: { exercise_id: string; answer: string }[], scenario: string | null = null): Promise<void> {

@@ -81,7 +81,7 @@ profileRouter.get('/api/placement-test', requireAuth, async (_req, res) => {
 });
 
 const placementSchema = z.object({
-  answers: z.array(z.object({ exercise_id: z.string().uuid(), answer: z.string().max(500) })).max(30).default([]),
+  answers: z.array(z.object({ exercise_id: z.string().uuid(), answer: z.string().max(500) })).max(60).default([]),
   text: z.string().max(WRITING_MAX_CHARS).optional().default(''),
 });
 

@@ -1,3 +1,4 @@
+import { userKey } from '../lib/progressStorage';
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Clock, ExternalLink, Headphones, Mic, PenLine, Puzzle, RotateCcw } from 'lucide-react';
 import { Logo } from '../components/ui';
@@ -21,7 +22,7 @@ type Progress = {
 const EMPTY: Progress = { answers: {}, checked: [], form: {}, evaluations: {} };
 
 // El progrés es guarda al navegador perquè no es perda en recarregar la pàgina.
-const storageKey = (id: string) => `parlaval:exam:${id}`;
+const storageKey = (id: string) => userKey(`exam:${id}`);
 function loadProgress(id: string): Progress {
   try {
     const raw = localStorage.getItem(storageKey(id));

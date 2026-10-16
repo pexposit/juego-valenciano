@@ -10,7 +10,7 @@ const PRIMARY = `${BUTTON} bg-[#0F47AF] text-white hover:bg-[#0F47AF]/90`;
 const SECONDARY = `${BUTTON} bg-gray-100 text-gray-600 hover:bg-gray-200`;
 
 /**
- * Prova de nivell per a adults: preguntes tancades de l'A2 al B2 i una redacció breu que s'avalua
+ * Prova de nivell per a adults: preguntes tancades de l'A2 al C1 i una redacció breu que s'avalua
  * amb la rúbrica de l'Expressió escrita del nivell actual. El resultat és una proposta: l'usuari
  * decidix si canvia de nivell.
  */
@@ -74,8 +74,8 @@ export function PlacementTest({ level, onAccept, onDone }: {
           <div className="rounded-3xl bg-white p-8 shadow-lg">
             <h2 className="text-2xl font-black">Quin és el teu nivell?</h2>
             <p className="mt-3 text-lg">
-              Contestaràs 15 preguntes de gramàtica i vocabulari, de més fàcils a més difícils, i escriuràs un text breu sobre tu.
-              Tardaràs uns 10 minuts.
+              Contestaràs 40 preguntes de gramàtica i vocabulari (10 de cada nivell, de l'A2 al C1, de més fàcils a més difícils) i escriuràs un text breu sobre tu.
+              Tardaràs uns 25 minuts.
             </p>
             <p className="mt-3 text-lg">
               Al final et proposarem un nivell i <strong>tu decidixes</strong> si el vols. De moment tens el nivell <strong>{levelLabel(level)}</strong>,

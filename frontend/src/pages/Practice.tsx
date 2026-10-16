@@ -1,10 +1,11 @@
+import { userKey } from '../lib/progressStorage';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Headphones, Lightbulb, RotateCcw } from 'lucide-react';
 import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type PracticeArea } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
-import { evaluatePracticeExercise, FIXED_PREFIX, fetchUserErrors, recordPracticeAnswers, saveActivityResult } from '../lib/api';
+import { evaluatePracticeExercise, fixedKey, fetchUserErrors, recordPracticeAnswers, saveActivityResult } from '../lib/api';
 import type { ExamQuestion, Practice as PracticeResource, PracticeExercise, PracticePassage, WritingEvaluation } from '../lib/types';
 
 type Progress = {
@@ -18,7 +19,7 @@ type Progress = {
 const EMPTY: Progress = { answers: {}, checked: false, retry: {}, writings: {}, forms: {}, evaluations: {} };
 
 // El progrés es guarda al navegador per nivell, com el dels exàmens.
-const storageKey = (id: string, level: string) => `parlaval:practice:${id}:${level}`;
+const storageKey = (id: string, level: string) => userKey(`practice:${id}:${level}`);
 function loadProgress(id: string, level: string): Progress {
   try {
     const raw = localStorage.getItem(storageKey(id, level));
@@ -114,7 +115,7 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
     for (const e of practice.exercises) {
       if (e.level !== forLevel || !isGradable(e)) continue;
       try {
-        if (localStorage.getItem(`${FIXED_PREFIX}${e.id}`) === null) continue;
+        if (localStorage.getItem(fixedKey(e.id)) === null) continue;
         const right = e.kind === 'choice' ? asQuestion(e, 0).options?.find(o => o.text === e.answers[0])?.key : e.answers[0];
         if (right) answers[e.id] = right;
       } catch {
@@ -130,7 +131,7 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
   useEffect(() => {
     if (preview) return;
     try {
-      for (const e of practice.exercises) if (e.level === level) localStorage.removeItem(`${FIXED_PREFIX}${e.id}`);
+      for (const e of practice.exercises) if (e.level === level) localStorage.removeItem(fixedKey(e.id));
     } catch {
       // Sense storage: res a esborrar.
     }

@@ -1,19 +1,19 @@
 import { countWords, normalizeAnswer } from '@parlaval/shared';
-import { evaluateA2Writing, evaluateB1Writing } from './examWritingEvaluator.js';
+import { evaluateA2Writing, evaluateB1Writing, evaluateC1Writing } from './examWritingEvaluator.js';
 
-// Prova de nivell: unes poques preguntes tancades del catàleg (morfosintaxi i lèxic de l'A2, el
-// B1 i el B2) i una redacció breu que s'avalua com les de l'Expressió escrita, amb la rúbrica
+// Prova de nivell: preguntes tancades del catàleg (morfosintaxi i lèxic de l'A2, el B1, el B2 i el
+// C1) i una redacció breu que s'avalua com les de l'Expressió escrita, amb la rúbrica
 // del nivell actual de l'usuari. El resultat és només una proposta: l'usuari decidix si canvia
 // de nivell (POST /api/profile/level). No es guarda res: ni les respostes ni el text, ni els
 // errors de la redacció.
 
 // Nivells amb continguts de llengua al catàleg: per davall de l'A2 la proposta és l'A1, i no
-// se'n pot proposar cap per damunt del B2.
-export const PLACEMENT_LEVELS = ['A2', 'B1', 'B2'] as const;
+// se'n pot proposar cap per damunt del C1.
+export const PLACEMENT_LEVELS = ['A2', 'B1', 'B2', 'C1'] as const;
 const AREAS = ['morfosintaxi', 'lexic_semantica'] as const;
-// Preguntes de cada àrea per nivell: 5 per nivell, 15 en total.
-const PER_AREA: Record<(typeof AREAS)[number], number> = { morfosintaxi: 3, lexic_semantica: 2 };
-// Un nivell es dona per superat amb el 75 % d'encerts (4 de 5).
+// Preguntes de cada àrea per nivell: 10 per nivell, 40 en total.
+const PER_AREA: Record<(typeof AREAS)[number], number> = { morfosintaxi: 6, lexic_semantica: 4 };
+// Un nivell es dona per superat amb el 75 % d'encerts (8 de 10).
 const PASS_RATIO = 0.75;
 
 export const PLACEMENT_WRITING = {
@@ -30,16 +30,18 @@ const lower = (a: string, b: string) => (rank(a) <= rank(b) ? a : b);
 const below = (level: string) => ORDER[Math.max(rank('A1'), rank(level) - 1)];
 
 // Rúbrica de la redacció per al nivell de l'usuari, com en la pràctica d'Expressió escrita: la de
-// l'A2 per a l'A1 i l'A2 (la de l'A1 és per a formularis), la del B1 i la del B2 per al B2 i amunt.
+// l'A2 per a l'A1 i l'A2 (la de l'A1 és per a formularis), i la del B1, la del B2 i la del C1 per a cada un
+// (el C2 amb la del C1).
 // La nota mínima és la de l'àrea en l'examen (la mitjana sobre 10 de la rúbrica).
 const RUBRICS = {
   A2: { pass: 4 },
   B1: { pass: 5 },
   B2: { pass: 4 },
+  C1: { pass: 5 },
 } as const;
 type RubricLevel = keyof typeof RUBRICS;
 const rubricFor = (level: string): RubricLevel | null =>
-  level === 'nivell0' ? null : rank(level) <= rank('A2') ? 'A2' : level === 'B1' ? 'B1' : 'B2';
+  level === 'nivell0' ? null : rank(level) <= rank('A2') ? 'A2' : level === 'B1' ? 'B1' : level === 'B2' ? 'B2' : 'C1';
 
 function shuffle<T>(items: T[]): T[] {
   const out = [...items];
@@ -136,9 +138,9 @@ export async function gradePlacementTest(
     questionsLevel = level;
   }
 
-  // Les preguntes arriben fins al B2: si l'usuari ja està per damunt i les supera totes, no
+  // Les preguntes arriben fins al C1: si l'usuari és del C2 i les supera totes, no
   // diuen res en contra del seu nivell.
-  if (questionsLevel === 'B2' && rank(currentLevel) > rank('B2')) questionsLevel = currentLevel;
+  if (questionsLevel === 'C1' && rank(currentLevel) > rank('C1')) questionsLevel = currentLevel;
 
   const rubric = rubricFor(currentLevel);
   let textResult: PlacementResult['text'] = null;
@@ -169,6 +171,10 @@ async function evaluateWriting(rubric: RubricLevel, text: string): Promise<NonNu
   if (rubric === 'A2') {
     const r = await evaluateA2Writing({ ...task, words: [], minWordsUsed: 0 });
     return { rubric, mark: r.mitjana_ponderada_base_10, pass_mark, passed: r.mitjana_ponderada_base_10 >= pass_mark, feedback: r.comentari_global };
+  }
+  if (rubric === 'C1') {
+    const r = await evaluateC1Writing({ ...task, exerciseN: 7 });
+    return { rubric, mark: r.mitjana_base_10, pass_mark, passed: r.mitjana_base_10 >= pass_mark, feedback: r.retorn_pedagogic };
   }
   const r = await evaluateB1Writing({ ...task, level: rubric, exerciseN: 7 });
   return { rubric, mark: r.mitjana_base_10, pass_mark, passed: r.mitjana_base_10 >= pass_mark, feedback: r.retorn_pedagogic };

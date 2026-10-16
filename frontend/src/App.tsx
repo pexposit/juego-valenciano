@@ -20,6 +20,7 @@ import { MyClasses } from './pages/MyClasses';
 import { Chat } from './pages/Chat';
 import { Exam } from './pages/Exam';
 import { Practice } from './pages/Practice';
+import { clearLegacyProgress, setProgressUser } from './lib/progressStorage';
 import { ErrorPractice } from './pages/ErrorPractice';
 import { TutorHistory } from './pages/TutorHistory';
 import { Lessons } from './pages/Lessons';
@@ -210,6 +211,9 @@ export function App() {
   const [motherTongue, setMotherTongue] = useState<string | null>(null);
   const [showMotherTongue, setShowMotherTongue] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  // Les claus del progrés guardat en el navegador porten l'usuari (vegeu progressStorage).
+  setProgressUser(user?.id);
+  useEffect(clearLegacyProgress, []);
   // false mentre es comprova la sessió i es carrega el perfil (sense Supabase, ja està).
   const [profileReady, setProfileReady] = useState(!supabase);
   const loadedProfileFor = useRef<string>();
@@ -504,8 +508,8 @@ export function App() {
           path={`${ROUTES.chat}/:scenario`}
           element={<ChatRoute level={level} xp={xp} onXpGained={delta => setXp(x => x + delta)} onBack={() => navigate(-1)} />}
         />
-        <Route path={`${ROUTES.exam}/:id`} element={<ExamRoute onBack={() => navigate(-1)} />} />
-        <Route path={`${ROUTES.practice}/:id`} element={<PracticeRoute level={level} onBack={() => navigate(-1)} />} />
+        <Route path={`${ROUTES.exam}/:id`} element={!profileReady ? null : <ExamRoute onBack={() => navigate(-1)} />} />
+        <Route path={`${ROUTES.practice}/:id`} element={!profileReady ? null : <PracticeRoute level={level} onBack={() => navigate(-1)} />} />
         <Route path={ROUTES.errors} element={<PageTransition><ErrorPractice onBack={() => navigate(-1)} /></PageTransition>} />
         <Route path={ROUTES.tutorhistory} element={<PageTransition><TutorHistory onBack={() => navigate(-1)} onResume={goDashboard}showHelp={showMotherTongue} /></PageTransition>} />
         <Route path={ROUTES.lessons} element={<PageTransition><KidsLessons uid={user?.id} onBack={() => navigate(ROUTES.dashboard)} onOpenLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>} />
