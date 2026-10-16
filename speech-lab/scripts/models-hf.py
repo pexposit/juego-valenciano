@@ -30,7 +30,20 @@ LAB = Path(__file__).resolve().parent.parent
 MANIFEST = LAB / "scripts" / "models.json"
 SUMES = "SHA256SUMS"
 
-LLEGEIX = """# Models de veu de speech-lab (ús intern)
+# La capçalera YAML és la «model card» que espera Hugging Face (sense ella avisa).
+LLEGEIX = """---
+language:
+- ca
+license: other
+license_name: us-intern
+tags:
+- rvc
+- matxa
+- text-to-speech
+- valencian
+---
+
+# Models de veu de speech-lab (ús intern)
 
 Models entrenats del laboratori de veu de ParlaVal: RVC de cada personatge
 (Applio) i fine-tunes de Matxa. **Repositori privat**: les veus són de doblatges i
