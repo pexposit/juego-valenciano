@@ -199,19 +199,26 @@ export function localTtsModels(): TtsModel[] {
     }
   }
 
+  // Els personatges RVC van primer: són les veus recomanades (s'entenen millor
+  // que els fine-tunes de Matxa en totes les proves) i la pàgina tria el primer.
+  return [...rvcModels(), ...models];
+}
+
+/** `rvc:<nom>`: Matxa base + conversió RVC de cada personatge entrenat en Applio. */
+function rvcModels(): TtsModel[] {
+  if (!existsSync(config.localTts.baseCheckpoint)) return [];
   const characters = readJson<Record<string, { base?: number, to?: number, index?: number }>>(config.localTts.rvcCharacters) ?? {};
-  if (existsSync(config.localTts.baseCheckpoint)) {
-    for (const name of listDir(path.join(config.localTts.applioDir, 'logs')).sort()) {
-      const weights = rvcWeights(name);
-      if (!weights.length) continue;
-      const baseSpeaker = characters[name]?.base ?? GINA;
-      models.push({
-        id: `rvc:${name}`,
-        label: `${name[0]!.toUpperCase()}${name.slice(1)} (${BASE_SPEAKERS[baseSpeaker] ?? `spk${baseSpeaker}`} + RVC)`,
-        group: 'Matxa + RVC (personatges)', checkpoints: weights, defaultCheckpoint: weights.at(-1),
-        pitch: characters[name]?.to ?? 0, baseSpeaker, indexRate: characters[name]?.index ?? 0.6,
-      });
-    }
+  const models: TtsModel[] = [];
+  for (const name of listDir(path.join(config.localTts.applioDir, 'logs')).sort()) {
+    const weights = rvcWeights(name);
+    if (!weights.length) continue;
+    const baseSpeaker = characters[name]?.base ?? GINA;
+    models.push({
+      id: `rvc:${name}`,
+      label: `${name[0]!.toUpperCase()}${name.slice(1)} (${BASE_SPEAKERS[baseSpeaker] ?? `spk${baseSpeaker}`} + RVC)`,
+      group: 'Personatges · Matxa + RVC (recomanat)', checkpoints: weights, defaultCheckpoint: weights.at(-1),
+      pitch: characters[name]?.to ?? 0, baseSpeaker, indexRate: characters[name]?.index ?? 0.6,
+    });
   }
   return models;
 }

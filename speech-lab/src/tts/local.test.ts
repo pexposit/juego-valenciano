@@ -8,7 +8,15 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { config } from '../config.js';
-import { derivedVoiceModels, type DerivedVoice } from './local.js';
+import { derivedVoiceModels, localTtsModels, type DerivedVoice } from './local.js';
+
+describe('localTtsModels', () => {
+  // Depén dels models que hi haja en disc: sense cap RVC, la prova no comprova res.
+  it('els personatges RVC van abans que la resta de models', () => {
+    const kinds = localTtsModels().map((m) => m.id.startsWith('rvc:'));
+    expect(kinds).toEqual([...kinds].sort((a, b) => Number(b) - Number(a)));
+  });
+});
 
 describe('derivedVoiceModels', () => {
   it('sense camps, és gina amb els valors de Matxa sense tocar', () => {

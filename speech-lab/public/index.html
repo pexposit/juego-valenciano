@@ -356,6 +356,17 @@
     <div class="row" style="margin-top:8px">
       <button id="genBtn">Generar</button>
     </div>
+    <details class="hint" style="margin-top:8px">
+      <summary>Què és RVC i per què els personatges van primer?</summary>
+      <p>RVC (<em>Retrieval-based Voice Conversion</em>) no llig text: canvia el timbre
+        d'una veu ja gravada pel d'una altra persona. Ací Matxa diu la frase en valencià
+        amb una veu neta (gina o lluc), que posa la pronunciació i l'entonació, i el model
+        RVC del personatge li posa la seua veu. Com que només ha d'aprendre el timbre, en
+        té prou amb 5–30 minuts de veu, i en totes les proves s'entén millor que un
+        fine-tune de Matxa entrenat amb el mateix material. Per això són els models
+        recomanats. «To» mou la veu de partida en semitons abans de convertir-la, i «Índex»
+        diu quant s'acosta el timbre als clips reals del personatge.</p>
+    </details>
     <p id="genState" class="hint">Tria un model i prem «Generar». La primera vegada que
       uses un model local tarda uns segons a carregar-lo; després va en temps real.</p>
     <audio id="genAudio" controls style="width:100%" hidden></audio>

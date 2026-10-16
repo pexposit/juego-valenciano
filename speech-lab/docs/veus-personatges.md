@@ -15,6 +15,18 @@ Dos maneras de conseguir la voz de un personaje, las dos sobre Matxa
 | **Matxa + RVC** (recomendado) | Matxa base habla con una voz limpia (gina, spk 7, o lluc, spk 6) y RVC (Applio) le cambia solo el timbre | Con poco material (5–30 min). Se entiende mejor en todas las pruebas |
 | Fine-tune de Matxa | Matxa aprende la voz entera | Solo con mucho material limpio (el narrador del audiolibro, ~400 clips). Con voces de dibujos sale robótico |
 
+**Qué es RVC.** *Retrieval-based Voice Conversion*: un modelo que no lee texto,
+sino que convierte un audio hablado a la voz de otra persona. Extrae lo que se
+dice sin el timbre (ContentVec) y el tono (RMVPE), y un generador HiFi-GAN lo
+vuelve a decir con el timbre aprendido. El `.index` guarda rasgos de los clips
+reales; con «Índex» > 0 el resultado se acerca más a ellos, pero a veces se
+entiende peor (narrador y narradora usan 0). En Applio, entrenar un personaje es
+`scripts/entrena-rvc.sh`; usarlo, `scripts/parla.sh` o el laboratorio.
+
+Por eso RVC tiene **prioridad**: el catálogo del laboratorio pone los
+personajes RVC los primeros y la página elige uno por defecto. Los fine-tunes de
+Matxa quedan para comparar.
+
 Regla práctica: voz femenina o infantil → base gina (7); voz masculina o
 grave → base lluc (6). El tono se ajusta con `to` (semitonos):
 `12·log2(f0 del personaje / f0 de la voz base)`.

@@ -80,6 +80,32 @@ y un `AudioWorklet`):
 
 ## Generación de audio
 
+### Qué es RVC y por qué tiene prioridad
+
+**RVC** (*Retrieval-based Voice Conversion*) es un modelo de **conversión de
+voz**: no lee texto, sino que cambia el timbre de un audio ya hablado por el de
+otra persona. Aquí se encadena con Matxa:
+
+```
+texto ──► Matxa (gina o lluc, voz valenciana limpia) ──► WAV ──► RVC del personaje ──► voz del personaje
+```
+
+Matxa pone la pronunciación valenciana y la entonación; RVC solo cambia «quién
+habla». Usa ContentVec para quedarse con lo que se dice sin el timbre, RMVPE para
+el tono y, opcionalmente, un `.index` con rasgos de los clips reales para
+acercarse más a la voz original. Como solo aprende el timbre, le bastan 5–30
+minutos de voz. Un fine-tune de Matxa tiene que aprender a hablar entero con ese
+mismo material y suena más robótico.
+
+En todas las pruebas (Doraemon, Nobita, narradora, Heidi) Matxa + RVC se entiende
+mejor que el fine-tune de Matxa (WER de Whisper: Heidi 16 % frente a 30 %,
+narradora 9 % frente a 14 %). Por eso los personajes RVC son los **modelos
+recomendados**: salen los primeros en el catálogo y la página elige uno por
+defecto. Los fine-tunes de Matxa solo compensan con mucho audio limpio, como el
+narrador del audiolibro.
+
+### Catálogo
+
 Se elige un modelo del catálogo (`GET /api/tts/models`, leído del disco en cada
 petición: un entrenamiento nuevo aparece sin reiniciar), el checkpoint si hay
 varios y sus parámetros. Cada generación queda en un historial con sus tiempos
@@ -87,10 +113,10 @@ para comparar de oído.
 
 | Id del modelo | Qué es | Parámetros |
 |---|---|---|
+| **`rvc:<nombre>`** (recomendado, sale el primero) | Matxa base + timbre del personaje con RVC (`doraemon`, `nobita`, `narrador`, `narradora`, `heidi`) | tono (semitonos), peso del índice |
 | `remot:<voz>` | matxa-tts de la UJI (gina, lluc) | — |
 | `matxa:base:<spk>` | Matxa multiaccent local; locutores valencianos gina (7) y lluc (6) | temperatura, duración |
 | `matxa:<run>:<spk>` | fine-tunes de `tts/runs/` (`narrador-v1`, `doraemon-v1`, `veus-v1`) | checkpoint, temperatura, duración |
-| `rvc:<nombre>` | Matxa base + timbre del personaje con RVC (`doraemon`, `nobita`, `narrador`, `narradora`, `heidi`) | tono (semitonos), peso del índice |
 | `veu:<nombre>` | gina transformada por DSP (`narradora`, `nena`; experimento) | tono, formantes |
 
 Los modelos locales viven en dos sidecars que arrancan con la primera petición
@@ -99,10 +125,7 @@ no caben junto a un entrenamiento en la GPU de 6 GB.
 
 Desde la terminal: `scripts/parla.sh <personaje> "text"` → WAV en `tts/rvc/eixida/`.
 
-La recomendación tras medir inteligibilidad (WER de Whisper) y parecido: para
-personajes con poco material, **Matxa + RVC**; el fine-tune de Matxa solo
-compensa con mucho audio limpio (el narrador del audiolibro). Detalle y cifras
-en [docs/veus-personatges.md](docs/veus-personatges.md).
+Cifras completas y cómo entrenar un personaje nuevo: [docs/veus-personatges.md](docs/veus-personatges.md).
 
 ## API HTTP
 
