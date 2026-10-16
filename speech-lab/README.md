@@ -129,6 +129,9 @@ debajo de 1 (el motor va ~15× más rápido que el habla).
 
 ## Modelos de voz (fase A)
 
+> Guía de las voces de personajes (canalización, mapa de carpetas, copia de
+> seguridad y limpieza): [docs/veus-personatges.md](docs/veus-personatges.md).
+
 El laboratorio ya no es «solo Vosk»: el servidor expone tres familias detrás
 de tres registros (`src/streaming/`, `src/batch/`, `src/tts/`), cada una con
 su sidecar y su protocolo testeado sin arrancar Python.
@@ -547,7 +550,10 @@ speech-lab/
 │       ├── wer.ts              # WER (Levenshtein por palabra) + normalización
 │       └── werBench.ts         # bench: cada WAV contra su .txt, por proveedor
 ├── public/                     # página de pruebas (index.html, lab.js, worklet/)
-├── scripts/                    # setup-vosk.sh, setup-aina.sh, convert-samples.sh
+├── scripts/                    # setup-*.sh y canalización de voces (ver docs/veus-personatges.md)
+├── docs/                       # estado del arte y guía de voces de personajes
+├── tts/                        # Matxa, RVC (Applio) y modelos entrenados (casi todo fuera de git)
+├── voz-dataset/                # audio separado, clips y logs (fuera de git, tiene derechos)
 └── bench/samples/              # WAV a 16 kHz (generados, ignorados por git) + .txt
 ```
 

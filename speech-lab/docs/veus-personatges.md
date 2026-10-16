@@ -1,0 +1,147 @@
+# Voces de personajes: guía completa
+
+Cómo se fabrican, dónde están y cómo se recuperan las voces valencianas de
+personajes del laboratorio (Doraemon, Nobita, narrador, narradora, Heidi...).
+El resumen de resultados y medidas está en el [README](../README.md#modelos-de-voz-fase-a);
+aquí está el mapa de carpetas y el procedimiento paso a paso.
+
+## Idea general
+
+Dos maneras de conseguir la voz de un personaje, las dos sobre Matxa
+(TTS valenciano de Projecte AINA, modelo multiaccent):
+
+| Método | Qué aprende | Cuándo sirve |
+|---|---|---|
+| **Matxa + RVC** (recomendado) | Matxa base habla con una voz limpia (gina, spk 7, o lluc, spk 6) y RVC (Applio) le cambia solo el timbre | Con poco material (5–30 min). Se entiende mejor en todas las pruebas |
+| Fine-tune de Matxa | Matxa aprende la voz entera | Solo con mucho material limpio (el narrador del audiolibro, ~400 clips). Con voces de dibujos sale robótico |
+
+Regla práctica: voz femenina o infantil → base gina (7); voz masculina o
+grave → base lluc (6). El tono se ajusta con `to` (semitonos):
+`12·log2(f0 del personaje / f0 de la voz base)`.
+
+## Canalización paso a paso
+
+```
+audios/<fuente>/*.wav                    capítulos originales (YouTube), no versionados
+   │  Demucs (htdemucs)
+   ▼
+voz-dataset/separat*/htdemucs/<cap>/vocals.wav     voz sin música
+   │  scripts/separa-personatges.py      agrupa por hablante (ECAPA)
+   ▼
+voz-dataset/personatges*/parlant_NN/     un grupo por voz; resum.tsv dice minutos
+   │  scripts/extrau-personatge.py       (opcional) quita los tramos dudosos
+   ▼
+voz-dataset/personatges*/<nom>/          voz limpia de un personaje
+   │  scripts/segmenta-veu.py            clips de 2–12 s + transcripción Whisper
+   ▼
+voz-dataset/clips-<nom>/                 wavs/ + metadata.csv
+   │                                  ╲
+   │  scripts/entrena-rvc.sh <nom>     ╲ scripts/prepara-matxa.py + finetune-matxa.py
+   ▼                                    ▼
+tts/rvc/Applio/logs/<nom>/           tts/runs/<run>/checkpoints/
+   │
+   ▼  scripts/rvc-personatges.json (base, to, index)
+laboratorio: «Generació d'àudio» → rvc:<nom>      ·  terminal: scripts/parla.sh <nom> "text"
+```
+
+### Ejemplo: personaje nuevo a partir de un grupo de hablante
+
+```bash
+cd speech-lab
+# 1. Clips transcritos (usa la GPU; ~3 min por capítulo)
+.venv/bin/python scripts/segmenta-veu.py \
+  --entrada voz-dataset/personatges-heidi/parlant_04 --eixida voz-dataset/clips-parlant04
+# 2. Alta en scripts/rvc-personatges.json, p. ej. "parlant04": { "base": 6, "to": 0 }
+# 3. Entrenamiento RVC sin que el portátil se suspenda (pierde CUDA al hibernar)
+systemd-inhibit --what=sleep:idle scripts/entrena-rvc.sh parlant04 200
+# 4. Prueba
+scripts/parla.sh parlant04 "Bon dia, com estàs?"
+```
+
+El laboratorio lee el catálogo del disco: el modelo aparece en
+«Generació d'àudio» sin reiniciar.
+
+## Modelos actuales
+
+| Modelo | Fuente | Base | Tono | Estado |
+|---|---|---|---|---|
+| `rvc:doraemon` | Doraemon (6 capítulos, ~8 min) | gina | +5 | 300 épocas |
+| `rvc:nobita` | Doraemon (~5 min) | gina | +6 | 300 épocas; se entiende algo peor |
+| `rvc:narrador` | audiolibro (`voz-dataset/clips`) | lluc | −6 | 100 épocas; para el narrador va mejor el fine-tune `narrador-v1` |
+| `rvc:narradora` | «La contacontes Yolanda» (54 min) | gina | +3 | 100 épocas, índice 0 |
+| `rvc:heidi` | Heidi ep. 1–15 (31 min) | gina | +9 | 100 épocas |
+| `rvc:parlant04` | Heidi, grupo 04 (~20 min, voz grave, f0 ≈ 121 Hz; parece el narrador de la serie) | lluc | por medir | en preparación (2026-10-16) |
+| `matxa:narrador-v1:6` | audiolibro | — | — | fine-tune, recomendado `last.ckpt` |
+| `matxa:doraemon-v1:7/3` | Doraemon / Nobita | — | — | fine-tune, robótico (descartado) |
+| `matxa:veus-v1:7/3` | narradora / Heidi | — | — | fine-tune, recomendado `epoch=0199.ckpt` |
+
+## Mapa de carpetas
+
+| Ruta | Qué es | ¿Git? | ¿Se puede regenerar? |
+|---|---|---|---|
+| `scripts/` | toda la canalización | sí | — |
+| `scripts/rvc-personatges.json` | base, tono, índice y clips de cada RVC | sí | — |
+| `scripts/veus.json` | voces derivadas de gina por DSP (experimento) | sí | — |
+| `tts/models/` | Matxa multiaccent y vocoder (Aina) | sí (LFS) | `setup-matxa.sh` |
+| `tts/Matcha-TTS-dev-cat/`, `tts/espeak-ng-src/` | clones de código | no | `setup-matxa.sh` |
+| `tts/rvc/Applio/` | Applio y sus modelos preentrenados | no | `setup-rvc.sh` |
+| `tts/rvc/Applio/logs/<nom>/<nom>_<N>e_*.pth` + `.index` | **modelo RVC entrenado** | no | solo reentrenando (horas) |
+| `tts/rvc/Applio/logs/<nom>/G_*.pth`, `D_*.pth` | estado del entrenamiento (1,2 GB) | no | solo hacen falta para `REPRENDRE=1` |
+| `tts/rvc/dades/<nom>/` | copia de los clips para Applio | no | la rehace `entrena-rvc.sh` |
+| `tts/rvc/eixida/` | frases generadas con `parla.sh` | no | sí |
+| `tts/rvc/export/doraemon-rvc.zip` | paquete de Doraemon para compartir | no | — |
+| `tts/runs/<run>/checkpoints/` | **fine-tunes de Matxa** (250 MB cada uno) | no | solo reentrenando |
+| `audios/` | vídeos/audio original descargado | no | volver a descargar |
+| `voz-dataset/separat*/` | salida de Demucs (`vocals.wav`, `no_vocals.wav`) | no | Demucs (lento); `no_vocals.wav` no lo usa nadie |
+| `voz-dataset/personatges*/` | voz agrupada por hablante | no | `separa-personatges.py` |
+| `voz-dataset/clips*/` | **clips transcritos** (entrada de todo entrenamiento) | no | `segmenta-veu.py` (lento) |
+| `voz-dataset/*.log` | logs de cada paso | no | — |
+| `.venv`, `.venv-voz`, `.venv-rvc` | entornos de Python (16 GB) | no | scripts `setup-*.sh` |
+
+Los datos (`audios/`, `voz-dataset/`, modelos entrenados) no van a GitHub:
+pesan decenas de GB y contienen voces con derechos (doblaje, YouTube).
+
+## Copia de seguridad
+
+Copia del 2026-10-16 en el USB «PHILIPS UFD»,
+`speech-lab-backup-2026-10-16/` (2,8 GB):
+
+| Archivo | Contenido |
+|---|---|
+| `rvc-models.tar` | último `.pth`, `.index`, `config.json` y `model_info.json` de doraemon, nobita, narrador, narradora y heidi + `rvc-personatges.json` y `veus.json` |
+| `matxa-recomanats.tar` | checkpoint recomendado de cada fine-tune (`doraemon-v1` 0399, `narrador-v1` last, `veus-v1` 0199) y sus `veus.json` |
+| `clips.tar` | `voz-dataset/clips*` (wavs + metadata.csv) de los cinco personajes |
+
+Restaurar (desde `speech-lab/`; los tar guardan rutas relativas):
+
+```bash
+B="/media/revitalia/PHILIPS UFD/speech-lab-backup-2026-10-16"
+tar -xf "$B/rvc-models.tar"; tar -xf "$B/matxa-recomanats.tar"; tar -xf "$B/clips.tar"
+```
+
+Con eso y los entornos (`setup-matxa.sh`, `setup-rvc.sh`) el laboratorio vuelve
+a tener todas las voces. El código está en GitHub, rama `experimentos-voz`.
+
+## Espacio en disco
+
+El disco del portátil (699 GB) está casi lleno y ya se llenó una vez durante un
+fine-tune. Lo que se puede borrar sin perder ningún modelo útil (unos 13 GB):
+
+- `G_*.pth` y `D_*.pth` de los RVC terminados (~6 GB).
+- Checkpoints intermedios de `tts/runs/` que no sean el recomendado ni
+  `last.ckpt` (~6 GB). Desaparecen del selector del laboratorio.
+- `no_vocals.wav` de `voz-dataset/separat*/`, `tts/rvc/dades/` y
+  `tts/rvc/export/doraemon-rvc/` (está también en el `.zip`).
+
+## Problemas conocidos
+
+- **CUDA desaparece tras suspender** el portátil (driver 535): reiniciar.
+  Entrenar siempre con `systemd-inhibit`. `entrena-rvc.sh` se para si no hay
+  CUDA en lugar de entrenar en CPU.
+- **6 GB de GPU**: no lanzar a la vez Demucs/Whisper y un entrenamiento (OOM).
+  `entrena-rvc.sh` pone `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`.
+- **Applio**: `--save-every-weights` invierte su efecto si se pasa; `core.py`
+  sale con código 0 aunque falle, por eso el script comprueba cada paso en disco.
+- **Whisper normaliza el valenciano** («seua» → «seva»): `segmenta-veu.py` usa
+  un prompt AVL y marca las formas sospechosas en `revisio.tsv`. Para RVC el
+  texto da igual (solo usa el audio); para el fine-tune de Matxa sí importa.
