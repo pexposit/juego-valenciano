@@ -106,19 +106,23 @@ pesan decenas de GB y contienen voces con derechos (doblaje, YouTube).
 El repositorio del juego en GitHub es **público** y las voces salen de doblajes y
 vídeos con derechos, así que los modelos no pueden ir a git, ni a LFS ni a
 Releases. Están en el repositorio **privado** de Hugging Face
-[`Pablo-exp/speech-lab-veus`](https://huggingface.co/Pablo-exp/speech-lab-veus),
+[`parlaval/speech-lab-veus`](https://huggingface.co/parlaval/speech-lab-veus),
 con las mismas rutas que en `speech-lab/`. Qué se comparte lo dice
 [`scripts/models.json`](../scripts/models.json): el último `.pth`, el `.index` y la
 configuración de cada RVC, y el checkpoint recomendado de cada fine-tune.
 
 **Para un compañero (una vez):**
 
-1. Pedir a Pablo-exp que le invite al repositorio. Para eso hace falta una cuenta
-   en huggingface.co; si el equipo crece, es mejor una organización de Hugging
-   Face con el repositorio dentro.
-2. Crear un token de **lectura** en <https://huggingface.co/settings/tokens> e
-   iniciar sesión: `speech-lab/.venv/bin/hf auth login`. El `.venv` lo crea
-   `npm run setup:speech`.
+1. Aceptar la invitación a la organización `parlaval` de Hugging Face. Un
+   administrador la envía al correo desde *Settings* → *Members* → *Invite
+   members*, con rol **read** (o **write** si va a subir modelos). Si no tiene
+   cuenta, la crea con ese mismo correo.
+2. Iniciar sesión: `speech-lab/.venv/bin/hf auth login` (el `.venv` lo crea
+   `npm run setup:speech`). Si inicia sesión desde el navegador, elegir «Grant
+   … access to selected organizations» y marcar `parlaval`. Si usa un token de
+   <https://huggingface.co/settings/tokens>, que sea de **lectura** o
+   *fine-grained* con acceso a `parlaval`. Una variable `HF_TOKEN` en el entorno
+   tiene prioridad sobre la sesión: si es de otra cuenta, hay que quitarla.
 3. Instalar los entornos de síntesis: `setup-matxa.sh` y `setup-rvc.sh`.
 4. Descargar: `npm run models:speech`. Comprueba las sumas SHA-256 y, si se
    vuelve a ejecutar, solo baja lo que haya cambiado.
