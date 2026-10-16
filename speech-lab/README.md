@@ -42,6 +42,17 @@ bash speech-lab/scripts/setup-matxa.sh   # .venv-voz: Matxa, espeak-ng ca-va, De
 bash speech-lab/scripts/setup-rvc.sh     # .venv-rvc: Applio (RVC)
 ```
 
+Los modelos de voz entrenados (personajes RVC y fine-tunes de Matxa) no están
+en git: están en un repositorio **privado** de Hugging Face. Con acceso y la
+sesión iniciada (`speech-lab/.venv/bin/hf auth login`):
+
+```bash
+npm run models:speech                    # todos (~2,5 GB, solo baja lo que cambia)
+npm run models:speech -- doraemon heidi  # solo algunos
+```
+
+Cómo pedir acceso y cómo publicar un modelo nuevo: [docs/veus-personatges.md](docs/veus-personatges.md#compartir-los-modelos-con-el-equipo).
+
 Requisitos: Node 22, `python3` con `venv` y, opcionalmente, `ffmpeg`. El
 micrófono necesita `localhost` o HTTPS. Sin terminal interactiva (`tsx watch`
 muere con `EBADF`): `npm run build -w speech-lab && node speech-lab/dist/index.js`.

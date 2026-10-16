@@ -101,6 +101,39 @@ El laboratorio lee el catálogo del disco: el modelo aparece en
 Los datos (`audios/`, `voz-dataset/`, modelos entrenados) no van a GitHub:
 pesan decenas de GB y contienen voces con derechos (doblaje, YouTube).
 
+## Compartir los modelos con el equipo
+
+El repositorio del juego en GitHub es **público** y las voces salen de doblajes y
+vídeos con derechos, así que los modelos no pueden ir a git, ni a LFS ni a
+Releases. Están en el repositorio **privado** de Hugging Face
+[`pabloexp/speech-lab-veus`](https://huggingface.co/pabloexp/speech-lab-veus),
+con las mismas rutas que en `speech-lab/`. Qué se comparte lo dice
+[`scripts/models.json`](../scripts/models.json): el último `.pth`, el `.index` y la
+configuración de cada RVC, y el checkpoint recomendado de cada fine-tune.
+
+**Para un compañero (una vez):**
+
+1. Pedir a pabloexp que le invite al repositorio. Para eso hace falta una cuenta
+   en huggingface.co; si el equipo crece, es mejor una organización de Hugging
+   Face con el repositorio dentro.
+2. Crear un token de **lectura** en <https://huggingface.co/settings/tokens> e
+   iniciar sesión: `speech-lab/.venv/bin/hf auth login`. El `.venv` lo crea
+   `npm run setup:speech`.
+3. Instalar los entornos de síntesis: `setup-matxa.sh` y `setup-rvc.sh`.
+4. Descargar: `npm run models:speech`. Comprueba las sumas SHA-256 y, si se
+   vuelve a ejecutar, solo baja lo que haya cambiado.
+
+**Para publicar un modelo nuevo o reentrenado** (necesita un token con permiso
+de escritura):
+
+1. Poner el nombre del `.pth` final (o del checkpoint de Matxa) en
+   `scripts/models.json` y, si es un personaje nuevo, su entrada en
+   `rvc-personatges.json`.
+2. `cd speech-lab && .venv/bin/python scripts/models-hf.py puja`. Antes de subir
+   comprueba que el repositorio es privado. Solo se suben los ficheros nuevos.
+3. Hacer commit de los dos JSON y push, para que el resto sepa que hay un modelo
+   nuevo.
+
 ## Copia de seguridad
 
 Copia del 2026-10-16 en el USB «PHILIPS UFD»,

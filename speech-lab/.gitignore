@@ -28,3 +28,6 @@ tts/logs/*
 !tts/logs/narrador-v1.log
 !tts/logs/narrador-v1-b.log
 !tts/logs/espeak-build.log
+# Descàrrega de models de Hugging Face (scripts/models-hf.py): caché i sumes.
+.cache/
+SHA256SUMS
