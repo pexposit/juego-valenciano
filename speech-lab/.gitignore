@@ -23,6 +23,8 @@ tts/*
 !tts/models/
 tts/models/**/.cache/
 !tts/espeak-ng/
-!tts/narrador-v1.log
-!tts/narrador-v1-b.log
-!tts/espeak-build.log
+!tts/logs/
+tts/logs/*
+!tts/logs/narrador-v1.log
+!tts/logs/narrador-v1-b.log
+!tts/logs/espeak-build.log

@@ -6,13 +6,13 @@
 #
 #   setsid nohup systemd-inhibit --what=sleep:idle bash scripts/entrena-narradora-heidi.sh &
 #
-# Progrés en voz-dataset/pipeline-veus.log; cada pas té el seu log (tts/rvc/entrena-*.log,
-# tts/veus-v1.log). Si un pas falla, s'apunta i se segueix amb el següent.
+# Progrés en voz-dataset/logs/pipeline-veus.log; cada pas té el seu log (tts/rvc/logs/entrena-*.log,
+# tts/logs/veus-v1.log). Si un pas falla, s'apunta i se segueix amb el següent.
 set -uo pipefail
 
 LAB=$(cd "$(dirname "$0")/.." && pwd)
 cd "$LAB"
-LOG=$LAB/voz-dataset/pipeline-veus.log
+LOG=$LAB/voz-dataset/logs/pipeline-veus.log
 log() { echo "[$(date '+%d/%m %H:%M')] $*" | tee -a "$LOG"; }
 
 log "inici: espere que acabe la segmentació"
@@ -24,17 +24,17 @@ for nom in narradora heidi; do
   if [[ ! -s voz-dataset/clips-$nom/metadata.csv ]]; then
     log "falten els clips de $nom: torne a segmentar"
     .venv/bin/python scripts/segmenta-veu.py --entrada "$entrada" --eixida "voz-dataset/clips-$nom" \
-      > "voz-dataset/segmenta-$nom.log" 2>&1 || log "segmentació de $nom ha fallat"
+      > "voz-dataset/logs/segmenta-$nom.log" 2>&1 || log "segmentació de $nom ha fallat"
   fi
   log "$nom: $(wc -l < "voz-dataset/clips-$nom/metadata.csv" 2>/dev/null || echo 0) clips"
 done
 
 for nom in narradora heidi; do
   log "RVC $nom: comença (100 èpoques)"
-  if CADA=25 scripts/entrena-rvc.sh "$nom" 100 > "tts/rvc/entrena-$nom.log" 2>&1; then
+  if CADA=25 scripts/entrena-rvc.sh "$nom" 100 > "tts/rvc/logs/entrena-$nom.log" 2>&1; then
     log "RVC $nom: fet"
   else
-    log "RVC $nom: ha fallat (tts/rvc/entrena-$nom.log)"
+    log "RVC $nom: ha fallat (tts/rvc/logs/entrena-$nom.log)"
   fi
 done
 
@@ -43,10 +43,10 @@ if .venv-voz/bin/python scripts/prepara-matxa.py --eixida voz-dataset/matxa-veus
      --font voz-dataset/clips-narradora:7 --font voz-dataset/clips-heidi:3 >> "$LOG" 2>&1; then
   log "Matxa: fine-tune veus-v1 comença (300 èpoques)"
   if .venv-voz/bin/python scripts/finetune-matxa.py --nom veus-v1 --dades voz-dataset/matxa-veus \
-       --spk 7 --spk 3 > tts/veus-v1.log 2>&1; then
+       --spk 7 --spk 3 > tts/logs/veus-v1.log 2>&1; then
     log "Matxa: fet"
   else
-    log "Matxa: ha fallat (tts/veus-v1.log)"
+    log "Matxa: ha fallat (tts/logs/veus-v1.log)"
   fi
   # El laboratori nomena els locutors del fine-tune amb este fitxer.
   [[ -d tts/runs/veus-v1 ]] && echo '{ "veus": { "7": "Narradora", "3": "Heidi" }, "recomanat": "last.ckpt" }' \

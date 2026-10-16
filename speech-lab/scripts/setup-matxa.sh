@@ -40,9 +40,10 @@ fi
 # ── 2. espeak-ng de projecte-aina (té ca-va, ca-ba i ca-nw) ───────────────
 if [[ ! -x "$ESPEAK/bin/espeak-ng" ]]; then
   echo "[setup:matxa] compilant espeak-ng de projecte-aina en $ESPEAK"
+  mkdir -p "$TTS/logs"
   [[ -d "$TTS/espeak-ng-src" ]] || git clone -q --depth 1 https://github.com/projecte-aina/espeak-ng.git "$TTS/espeak-ng-src"
   (cd "$TTS/espeak-ng-src" && ./autogen.sh && ./configure --prefix="$ESPEAK" --with-speechplayer=no \
-    --with-mbrola=no && make -j"$(nproc)" && make install) > "$TTS/espeak-build.log" 2>&1
+    --with-mbrola=no && make -j"$(nproc)" && make install) > "$TTS/logs/espeak-build.log" 2>&1
 fi
 
 # ── 3. Matcha-TTS (branca dev-cat, la del model multiaccent) ──────────────

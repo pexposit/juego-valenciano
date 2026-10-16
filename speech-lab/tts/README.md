@@ -12,7 +12,7 @@ pot refer amb `scripts/setup-matxa.sh`; ací es versiona per comoditat.
 | `models/matxa-tts-cat-multiaccent/` | [projecte-aina/matxa-tts-cat-multiaccent](https://huggingface.co/projecte-aina/matxa-tts-cat-multiaccent) (checkpoint `epoch=629` i config) | GPL-3.0; les veus de LaFrescat són per a ús no comercial i de recerca (vegeu el README del model) |
 | `models/alvocat-vocos-22khz/` | [projecte-aina/alvocat-vocos-22khz](https://huggingface.co/projecte-aina/alvocat-vocos-22khz) | [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) |
 | `espeak-ng/` | Compilat de [projecte-aina/espeak-ng](https://github.com/projecte-aina/espeak-ng), commit `7d3266e2430a7529766b18901d26db34b6963c83` (veus `ca-va`, `ca-ba`, `ca-nw`) | GPL-3.0; el codi font és al repositori indicat |
-| `*.log` | Logs de la compilació d'espeak i del fine-tune `narrador-v1` | — |
+| `logs/*.log` | Logs de la compilació d'espeak i del fine-tune `narrador-v1` | — |
 
 Els models són de Projecte AINA / Language Technologies Unit del Barcelona
 Supercomputing Center (langtech@bsc.es). L'ús comercial de les veus requereix

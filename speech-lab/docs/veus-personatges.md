@@ -2,8 +2,8 @@
 
 Cómo se fabrican, dónde están y cómo se recuperan las voces valencianas de
 personajes del laboratorio (Doraemon, Nobita, narrador, narradora, Heidi...).
-El resumen de resultados y medidas está en el [README](../README.md#modelos-de-voz-fase-a);
-aquí está el mapa de carpetas y el procedimiento paso a paso.
+Cómo se usan desde la página: [README](../README.md#generación-de-audio). Aquí, el
+procedimiento paso a paso, el mapa de carpetas y los resultados medidos.
 
 ## Idea general
 
@@ -86,16 +86,16 @@ El laboratorio lee el catálogo del disco: el modelo aparece en
 | `tts/Matcha-TTS-dev-cat/`, `tts/espeak-ng-src/` | clones de código | no | `setup-matxa.sh` |
 | `tts/rvc/Applio/` | Applio y sus modelos preentrenados | no | `setup-rvc.sh` |
 | `tts/rvc/Applio/logs/<nom>/<nom>_<N>e_*.pth` + `.index` | **modelo RVC entrenado** | no | solo reentrenando (horas) |
-| `tts/rvc/Applio/logs/<nom>/G_*.pth`, `D_*.pth` | estado del entrenamiento (1,2 GB) | no | solo hacen falta para `REPRENDRE=1` |
+| `tts/rvc/Applio/logs/<nom>/G_*.pth`, `D_*.pth` | estado del entrenamiento (1,2 GB); borrado en los modelos terminados | no | solo hacen falta para `REPRENDRE=1` |
 | `tts/rvc/dades/<nom>/` | copia de los clips para Applio | no | la rehace `entrena-rvc.sh` |
 | `tts/rvc/eixida/` | frases generadas con `parla.sh` | no | sí |
 | `tts/rvc/export/doraemon-rvc.zip` | paquete de Doraemon para compartir | no | — |
-| `tts/runs/<run>/checkpoints/` | **fine-tunes de Matxa** (250 MB cada uno) | no | solo reentrenando |
+| `tts/runs/<run>/checkpoints/` | **fine-tunes de Matxa** (250 MB cada uno; quedan el recomendado y `last.ckpt`) | no | solo reentrenando |
 | `audios/` | vídeos/audio original descargado | no | volver a descargar |
-| `voz-dataset/separat*/` | salida de Demucs (`vocals.wav`, `no_vocals.wav`) | no | Demucs (lento); `no_vocals.wav` no lo usa nadie |
+| `voz-dataset/separat*/` | salida de Demucs (`vocals.wav`; `no_vocals.wav` borrado) | no | Demucs (lento) |
 | `voz-dataset/personatges*/` | voz agrupada por hablante | no | `separa-personatges.py` |
 | `voz-dataset/clips*/` | **clips transcritos** (entrada de todo entrenamiento) | no | `segmenta-veu.py` (lento) |
-| `voz-dataset/*.log` | logs de cada paso | no | — |
+| `voz-dataset/logs/`, `tts/logs/`, `tts/rvc/logs/` | logs de cada paso (segmentación, Demucs, entrenamientos) | solo los de `tts/logs/` del narrador y espeak | — |
 | `.venv`, `.venv-voz`, `.venv-rvc` | entornos de Python (16 GB) | no | scripts `setup-*.sh` |
 
 Los datos (`audios/`, `voz-dataset/`, modelos entrenados) no van a GitHub:
@@ -125,13 +125,17 @@ a tener todas las voces. El código está en GitHub, rama `experimentos-voz`.
 ## Espacio en disco
 
 El disco del portátil (699 GB) está casi lleno y ya se llenó una vez durante un
-fine-tune. Lo que se puede borrar sin perder ningún modelo útil (unos 13 GB):
+fine-tune. El 2026-10-16 se liberaron 15 GB (de 13 a 28 GB libres) borrando:
 
-- `G_*.pth` y `D_*.pth` de los RVC terminados (~6 GB).
-- Checkpoints intermedios de `tts/runs/` que no sean el recomendado ni
-  `last.ckpt` (~6 GB). Desaparecen del selector del laboratorio.
-- `no_vocals.wav` de `voz-dataset/separat*/`, `tts/rvc/dades/` y
-  `tts/rvc/export/doraemon-rvc/` (está también en el `.zip`).
+- `G_*.pth` y `D_*.pth` de los RVC terminados (6,2 GB): ya no se pueden
+  reanudar con `REPRENDRE=1`, solo reentrenar.
+- Los checkpoints de `tts/runs/` que no eran el recomendado ni `last.ckpt`
+  (6,5 GB).
+- `no_vocals.wav` de Demucs (2,4 GB), `tts/rvc/dades/` y la carpeta repetida
+  `tts/rvc/export/doraemon-rvc/` (queda el `.zip`).
+
+Después de cada entrenamiento nuevo se puede repetir: borrar sus `G_`/`D_` y
+sus checkpoints intermedios cuando ya se haya elegido el bueno.
 
 ## Problemas conocidos
 
@@ -145,3 +149,66 @@ fine-tune. Lo que se puede borrar sin perder ningún modelo útil (unos 13 GB):
 - **Whisper normaliza el valenciano** («seua» → «seva»): `segmenta-veu.py` usa
   un prompt AVL y marca las formas sospechosas en `revisio.tsv`. Para RVC el
   texto da igual (solo usa el audio); para el fine-tune de Matxa sí importa.
+
+## Resultados medidos
+
+### Narradora y Heidi entrenadas (`scripts/entrena-narradora-heidi.sh`)
+
+Dos voces femeninas valencianas entrenadas con material real, con la misma
+canalización que el narrador y Doraemon (Demucs → `separa-personatges.py` →
+`extrau-personatge.py` → `segmenta-veu.py`), sin revisar a mano los textos de
+Whisper. El script encadena RVC y fine-tune sin intervención.
+
+| Voz | Fuente (`audios/`) | Voz útil | Clips |
+|---|---|---|---|
+| Narradora | `narradora/`: 16 cuentos de «La contacontes Yolanda» (YouTube) | 54 min | 854 |
+| Heidi | `heidi/`: episodios 1–15 de Heidi en valenciano (YouTube) | 31 min | 416 |
+
+La narradora se eligió entre 17 candidatas midiendo f0 (mujer), música de fondo
+(Demucs) y el detector de variant (solo dos salían valencianas, y esta era la
+única con material suficiente). Heidi es el grupo 01 de
+`voz-dataset/personatges-heidi/` (confirmado de oído).
+
+Modelos: `rvc:narradora` y `rvc:heidi` (gina + RVC, 100 épocas, tono +3 y +9
+semitonos en `rvc-personatges.json`) y `matxa:veus-v1:7` / `matxa:veus-v1:3`
+(fine-tune de Matxa con las dos voces, narradora en el locutor 7 y Heidi en el 3).
+Medido con 6 frases (WER de Whisper Aina; semejanza ECAPA con 40 clips reales;
+gina sin convertir da 0,23 / 0,13):
+
+| Configuración | WER | Semejanza | p(valencià) |
+|---|---|---|---|
+| **Narradora RVC 100e, índice 0** (por defecto) | **8,7 %** | 0,73 | 72 % |
+| Narradora RVC 100e, índice 0,6 | 14,1 % | 0,73 | — |
+| Narradora fine-tune epoch 199 (recomendado) | 14,1 % | 0,76 | 100 % |
+| **Heidi RVC 100e, índice 0,6** (por defecto) | **16,3 %** | 0,78 | 99 % |
+| Heidi RVC 50e, índice 0 | 12,0 % | 0,76 | — |
+| Heidi fine-tune epoch 199 (recomendado) | 30,4 % | 0,79 | 91 % |
+
+Como con los personajes de Doraemon, RVC se entiende mejor; el fine-tune de la
+narradora (54 min) queda cerca, el de Heidi (31 min, voz de dibujos) no. Con 6
+frases, 2 puntos de WER son una palabra: hay que decidir de oído.
+
+### Veus derivades: narradora y nena (`scripts/veus.json`)
+
+Dos voces femeninas **valencianas** sin entrenar nada: parten de gina (spk 7,
+la locutora valenciana de LaFrescat) y, como todo Matxa local, se fonetizan
+con espeak `ca-va` (`catalan_valencia_cleaners`), no con el catalán central.
+Cada entrada fija locutor, temperatura y duración de Matxa y, si hace falta,
+tono (semitonos) y formantes, que el sidecar de Matxa desplaza después de
+sintetizar con `stftpitchshift` (en `.venv-voz`, lo instala `setup-matxa.sh`):
+
+| Voz | Matxa | Desplazamiento | Resultado medido |
+|---|---|---|---|
+| `veu:narradora` | gina, temperatura 0,5, duración 1,12 (más pausada y estable) | ninguno | f0 ≈ 218 Hz, timbre de gina; p(valencià) = 80 % |
+| `veu:nena` | gina, temperatura 0,7, duración 0,92 (más viva) | +5 st, formantes ×1,2 | f0 ≈ 300 Hz, envolvente ×1,18; p(valencià) = 70 % |
+
+Por qué así: el fine-tune `narrador-v1` con el locutor de gina sale con voz de
+hombre (f0 ≈ 85 Hz: el fine-tune solo aprendió al narrador) y no hay clips de
+una narradora ni de una niña para entrenar un RVC. Subir solo el tono suena a
+gina acelerada; una niña tiene además el tracto vocal más corto, de ahí los
+formantes. Whisper (Aina) transcribe las dos voces sin errores en las frases
+de prueba; con +4 st y formantes ×1,15 confundía «mare» con «vale». El
+p(valencià) es del detector de variant (`npm run variant`) sobre ~11 s de
+texto conocido. Con clips reales de una narradora o una niña valencianas se
+puede entrenar un RVC (`scripts/entrena-rvc.sh`) y añadirlo a
+`rvc-personatges.json` con `base: 7`.
