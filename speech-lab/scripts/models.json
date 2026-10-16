@@ -1,5 +1,5 @@
 {
-  "repo": "pabloexp/speech-lab-veus",
+  "repo": "Pablo-exp/speech-lab-veus",
   "rvc": {
     "doraemon": "doraemon_300e_8700s.pth",
     "nobita": "nobita_300e_5700s.pth",

@@ -106,14 +106,14 @@ pesan decenas de GB y contienen voces con derechos (doblaje, YouTube).
 El repositorio del juego en GitHub es **público** y las voces salen de doblajes y
 vídeos con derechos, así que los modelos no pueden ir a git, ni a LFS ni a
 Releases. Están en el repositorio **privado** de Hugging Face
-[`pabloexp/speech-lab-veus`](https://huggingface.co/pabloexp/speech-lab-veus),
+[`Pablo-exp/speech-lab-veus`](https://huggingface.co/Pablo-exp/speech-lab-veus),
 con las mismas rutas que en `speech-lab/`. Qué se comparte lo dice
 [`scripts/models.json`](../scripts/models.json): el último `.pth`, el `.index` y la
 configuración de cada RVC, y el checkpoint recomendado de cada fine-tune.
 
 **Para un compañero (una vez):**
 
-1. Pedir a pabloexp que le invite al repositorio. Para eso hace falta una cuenta
+1. Pedir a Pablo-exp que le invite al repositorio. Para eso hace falta una cuenta
    en huggingface.co; si el equipo crece, es mejor una organización de Hugging
    Face con el repositorio dentro.
 2. Crear un token de **lectura** en <https://huggingface.co/settings/tokens> e
