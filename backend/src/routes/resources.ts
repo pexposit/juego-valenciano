@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { getAdmin, requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
-import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing } from '../services/examWritingEvaluator.js';
+import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing, evaluateC1Writing } from '../services/examWritingEvaluator.js';
 import { loadLevelContents } from '../services/levelContents.js';
 import { characterOf, isScenarioPlayable } from '../services/scenarios.js';
-import { ASSISTANT_CATEGORY, CHAT_CATEGORIES, FORM_FIELD_MAX_CHARS, isPracticeArea, WRITING_MAX_CHARS } from '@parlaval/shared';
+import { ASSISTANT_CATEGORY, CHAT_CATEGORIES, FORM_FIELD_MAX_CHARS, isPracticeArea, WRITING_MAX_CHARS_C1, writingMaxChars } from '@parlaval/shared';
 import { saveWritingErrors } from './errors.js';
 import { canSeeResource, optionalUserId, teacherResourcesFor } from '../services/teacherActivities.js';
 import { EXAM_CATEGORY, hasExam, isPlayable, type Metadata, type ResourceRow } from '../services/catalog.js';
@@ -200,7 +200,8 @@ const EVALUATE_RATE_LIMIT = {
 // i `choice` si l'exercici té opcions A/B).
 const evaluateSchema = z.object({
   answers: z.record(z.string().max(FORM_FIELD_MAX_CHARS)).optional(),
-  text: z.string().max(WRITING_MAX_CHARS).optional(),
+  // El límit de cada nivell es comprova en cada ruta; ací, el més alt.
+  text: z.string().max(WRITING_MAX_CHARS_C1).optional(),
   choice: z.string().max(5).optional(),
 });
 
@@ -248,6 +249,7 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
   } else if (exam?.level === 'A2' && exercise?.kind === 'writing' && exercise.min_words && exercise.max_words) {
     const text = parsedBody.data.text?.trim();
     if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
+    if (text.length > writingMaxChars(exam.level)) return res.status(400).json({ error: 'El text és massa llarg' });
     evaluate = () => evaluateA2Writing({
       instructions: exercise.instructions,
       text,
@@ -259,11 +261,11 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
   } else if ((exam?.level === 'B1' || exam?.level === 'B2' || exam?.level === 'C1') && exercise?.kind === 'writing' && exercise.min_words && exercise.max_words) {
     const text = parsedBody.data.text?.trim();
     if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
+    if (text.length > writingMaxChars(exam.level)) return res.status(400).json({ error: 'El text és massa llarg' });
     // Amb opcions A/B, l'avaluador necessita la consigna de l'opció triada.
     const choice = exercise.choices?.find(c => c.key === parsedBody.data.choice);
     if (exercise.choices?.length && !choice) return res.status(400).json({ error: 'Tria una de les opcions abans d’avaluar' });
-    evaluate = () => evaluateB1Writing({
-      level: exam.level as 'B1' | 'B2' | 'C1',
+    const input = {
       exerciseN: exercise.n,
       instructions: exercise.instructions,
       choice,
@@ -271,7 +273,8 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
       text,
       minWords: exercise.min_words!,
       maxWords: exercise.max_words!,
-    });
+    };
+    evaluate = () => exam.level === 'C1' ? evaluateC1Writing(input) : evaluateB1Writing({ ...input, level: exam.level as 'B1' | 'B2' });
   } else {
     return res.status(404).json({ error: "Este exercici no es pot avaluar" });
   }
@@ -326,18 +329,13 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
   } else if (exercise?.kind === 'writing') {
     const text = parsedBody.data.text?.trim();
     if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
+    if (text.length > writingMaxChars(exercise.level)) return res.status(400).json({ error: 'El text és massa llarg' });
     const task = exercise.task as { min_words: number; max_words: number; words?: string[]; min_words_used?: number };
+    const intermediateInput = { exerciseN: 7, instructions: exercise.prompt, sourceText, text, minWords: task.min_words, maxWords: task.max_words, contents };
     evaluate = () => intermediate
-      ? evaluateB1Writing({
-          level: exercise.level === 'B1' || exercise.level === 'B2' ? exercise.level : 'C1',
-          exerciseN: 7,
-          instructions: exercise.prompt,
-          sourceText,
-          text,
-          minWords: task.min_words,
-          maxWords: task.max_words,
-          contents,
-        })
+      ? (exercise.level === 'B1' || exercise.level === 'B2'
+        ? evaluateB1Writing({ ...intermediateInput, level: exercise.level })
+        : evaluateC1Writing(intermediateInput))
       : evaluateA2Writing({
           instructions: exercise.prompt,
           text,

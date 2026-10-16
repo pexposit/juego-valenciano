@@ -176,10 +176,11 @@ async function runEvaluation<T extends z.ZodTypeAny>(args: {
   ];
 
   const { client: mcp, tools } = await getMcpTools();
-  const request = () => client.chat.completions.parse({
+  const request = (toolChoice?: 'none') => client.chat.completions.parse({
     model: MODEL_NAME,
     messages,
     tools: tools.length > 0 ? tools : undefined,
+    tool_choice: tools.length > 0 ? toolChoice : undefined,
     response_format: zodResponseFormat(args.schema, args.name),
     reasoning_effort: 'none', // Obligatori per a usar tools amb gpt-6-luna en /v1/chat/completions
   });
@@ -209,10 +210,22 @@ async function runEvaluation<T extends z.ZodTypeAny>(args: {
     }
     choice = (await request()).choices[0];
   }
+  // Si el model seguix demanant ferramentes en l'última ronda, se li obliga a respondre amb el que ja té.
+  if (choice?.message?.tool_calls?.length) {
+    console.warn(`[exam-eval] ${args.name}: ${MAX_TOOL_ROUNDS} rondes de ferramentes sense resposta; es força l'avaluació`);
+    messages.push(choice.message);
+    for (const toolCall of choice.message.tool_calls) {
+      messages.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify({ error: 'Límit de consultes assolit' }) });
+    }
+    choice = (await request('none')).choices[0];
+  }
   console.log(`[exam-eval] ${args.name}: ${Date.now() - tStart}ms`);
 
   const parsed = choice?.message?.parsed;
-  if (!parsed) throw new Error("El model no ha retornat una avaluació vàlida");
+  if (!parsed) {
+    console.error(`[exam-eval] ${args.name}: sense avaluació (finish_reason=${choice?.finish_reason}, refusal=${choice?.message?.refusal ?? '-'})`);
+    throw new Error("El model no ha retornat una avaluació vàlida");
+  }
   return parsed;
 }
 
@@ -621,85 +634,9 @@ La rúbrica remet als «elements del nivell» de l'Ortografia (3.2.1), la Morfos
 ---
 
 `,
-  // El C1 només té redaccions de pràctica. Mateixos cinc criteris i mateixa escala que en el B2;
-  // les franjes de 10 punts segueixen l'objectiu 2.2 (Estructures lingüístiques) del Quadern C1.
-  C1: `# RÚBRICA D'AVALUACIÓ (NIVELL C1)
-Has d'avaluar 5 criteris independents. Cada criteri s'ha de puntuar exclusivament amb un dels valors discrets següents: **10**, **6**, **4** o **1** punt. Calibra'ls amb les expectatives d'un usuari **competent** (C1): més exigents que en el B2. En el C1 s'espera un grau elevat i constant de correcció, ajustat a la normativa i a la situació comunicativa: els errors han de ser escassos.
-
-### 1. COMPETÈNCIES LINGÜÍSTIQUES
-
-* **Lèxic:**
-  - **10 punts:** Usa el vocabulari amb una precisió remarcable i quasi sense interferències lèxiques. Domina un repertori lèxic i fraseològic ampli i genuí (locucions, frases fetes, expressions idiomàtiques) que li permet expressar sense restriccions el que vol dir i superar els buits amb circumloquis. Usa el lèxic d'especialitat quan la tasca ho demana i els recursos figurats (metàfora, metonímia, comparació) amb encert. Pot cometre, de tant en tant, algun error de vocabulari no significatiu.
-  - **6 punts:** Té un repertori lèxic ampli i precís en la major part del text, amb alguna locució o frase feta, però hi ha algunes imprecisions, repeticions o barbarismes aïllats.
-  - **4 punts:** El lèxic és limitat o poc precís per al nivell: repeticions freqüents, barbarismes diversos i absència de fraseologia.
-  - **1 punt:** Els errors lèxics fan incomprensible el text o impedixen resoldre la tasca.
-
-* **Morfosintaxi:**
-  - **10 punts:** Domina la morfologia pròpia dels registres formals (nom i adjectiu, verbs irregulars, purs i incoatius, formes velaritzades i no velaritzades, participis i gerundis irregulars, imperatiu, dobles formes) i la morfosintaxi dels pronoms. Construïx amb naturalitat i precisió estructures complexes (subordinació, relatius, concordança temporal, perífrasis) adequades al valencià formal. Els errors són escassos i no sistemàtics.
-  - **6 punts:** Usa correctament la major part d'estructures complexes i domina, almenys, la mitat dels elements morfosintàctics del nivell, però comet alguns errors (pronoms febles, preposicions, concordances) que no dificulten la comunicació.
-  - **4 punts:** El control de la morfosintaxi és propi d'un nivell inferior: discurs repetitiu o simple, amb errors freqüents i interferències morfològiques. Controla menys de la mitat dels elements del nivell.
-  - **1 punt:** No controla els elements bàsics de la norma.
-
-* **Ortografia:**
-  - **10 punts:** Domina amb naturalitat les normes avançades dels signes ortogràfics (accent, dièresi, guionet, apòstrof i contracció), incloses les excepcions, i les regles avançades de l'ortografia vocàlica i consonàntica. Usa tots els signes de puntuació i les convencions (majúscules, abreviacions) correctament. Només hi ha errors esporàdics.
-  - **6 punts:** Coneix la normativa ortogràfica del nivell i en domina, almenys, la mitat dels elements; hi ha alguns errors en casos de dificultat avançada.
-  - **4 punts:** Presenta faltes ortogràfiques sistemàtiques en més de la mitat dels elements del nivell o errors en regles bàsiques.
-  - **1 punt:** L'ortografia usada s'allunya tant de la norma que no es pot situar el text en un registre estàndard.
-
-### 2. COMPETÈNCIES TEXTUALS
-
-* **Coherència i cohesió:**
-  - **10 punts:** El text és clar, fluid i ben estructurat: les idees principals destaquen i es desenvolupen amb idees complementàries, justificacions i exemples fins a una conclusió apropiada. Usa mecanismes complexos de cohesió (connectors variats i precisos, substitucions, el·lipsis, referències) propis del valencià escrit formal (complix els 3 aspectes: organització, parts i connectors).
-  - **6 punts:** Usa correctament **dos** dels ítems següents: organització, parts o connectors.
-  - **4 punts:** Usa correctament **un** dels ítems següents: organització, parts o connectors.
-  - **1 punt:** No fa un ús correcte de **cap** dels ítems següents: organització, parts, connectors.
-
-* **Adequació:**
-  - **10 punts:** Afig elements de valor a l'objectiu complit de la tasca, adequa el registre, el to i el gènere al lector i a la funció comunicativa (també amb al·lusions, humor o ironia si la tasca ho permet) i el text respecta les indicacions d'extensió.
-  - **6 punts:** Complix l'objectiu de la tasca i el text respecta les indicacions d'extensió amb un marge del ±10 %.
-  - **4 punts:** Complix **un** dels dos ítems següents: objectiu o extensió.
-  - **1 punt:** No complix **cap** dels ítems següents: objectiu, extensió.
-
-### 3. ELEMENTS DEL NIVELL C1 (Quadern C1 de la JQCV, 3.2)
-La rúbrica remet als «elements del nivell» de l'Ortografia (3.2.1), la Morfosintaxi (3.2.2) i el Lèxic (3.2.3): són els d'estes llistes. Per a decidir si l'aspirant en domina almenys la mitat, valora només els elements que apareixen en el text (o que la tasca exigix de manera evident): un text breu no els pot mostrar tots, i l'absència d'un element no és un error. El que compta és si els que usa els usa bé i si els errors són sistemàtics (es repetixen) o aïllats.
-
-**3.2.1. Fonètica, elocució i ortografia** (criteri d'Ortografia)
-- Vocals: alternances entre mots patrimonials i cultes (món/mundial, hòmens/humà, corba/curvilini); ortografia contrastiva amb altres llengües (avorrir-se, afaitar-se, metre, línia); obrir, poguera; separació sil·làbica de derivats i compostos (ben-es-tar, des-ai-re, vos-al-tres).
-- Accentuació: regles generals, accent obert i tancat, diacrítics, compostos i derivats (sud-americà, pèl-roig, fisicoquímic, útilment), cultismes i préstecs; e tancada valenciana (café, anglés, conéixer, aniré, féiem) i excepcions (església, Dénia, fórmula, pólvora); què, perquè, València.
-- Dièresi (amb les excepcions i l'estalvi de dièresi), guionet en mots no simples i forma dels pronoms febles segons la posició (el porta, l'ha portat, portar-lo, porta'l).
-- Apostrofació i contracció: excepcions (la una, ni l'una ni l'altra, la ira, la eme, l'11); parònims amb apòstrof (descriure/d'escriure; banyat/banya't); contraccions amb a, de, per i ca.
-- Oclusives: final de síl·laba (cabdill, admetre, cognom; apte, dissabte, substitució); final de paraula sense vocal de suport (absurd, immund); -etud, -itud, -leg; quan/quant, tan/tant. b/v contrastives (arribar, treballar, rebentar, trobar, mòbil, covard, gravar, llavi, trèvol) i parònims (abans/avanç, probable/provable).
-- Alveolars: -issar, -isar, -itzar (acarnissar-se, matisar, polititzar); -tz-; -z- excepcional; vocal + -si (tesi, crisi, dosi); flexió en -s (pisos, obesos, ossos); cultismes en -ssió; compostos i derivats amb s/ss (aerosol, asèptic, pressentir, assenyalar); homòfons i parònims (cessió/sessió, abraçar/abrasar, cinc/zinc).
-- Palatals: -tjar/-jar (hostatjar, marejar); j + e (injecció, jerarquia, majestat); valors de la x i x inicial (Xàtiva, xilòfon); burgés, distingir.
-- Laterals i nasals: l·l (al·legoria, col·lecció, il·legal, síl·laba, mortadel·la, metàl·lic, cristal·lí, cèl·lula); simfonia, alemanya, canó, impremta; -mpt-, -mpc-, -mn- (assumpte, exempció, compte/comte/conte, condemnar); també/tan bé.
-- Ròtiques i h: brusa, frare, escorta; prendre i derivats; harmonia, orxata, coet, subhasta; h en cultismes (hèlix, hemorràgia, híbrid).
-- Convencions: majúscules i minúscules, tots els signes de puntuació, abreviatures, símbols, sigles i acrònims.
-
-**3.2.2. Morfosintaxi** (criteri de Morfosintaxi)
-- Substantius i adjectius: -e/-o/-u → -a (pediatra, monja, europea); gènere amb interferències (el dubte, el deute, el corrent, els afores); plurals especials i invariables (sofàs, cafés, llapis; apèndixs, falçs); doble gènere amb significat diferent (canal, capital, còlera); adjectius difícils (promiscu/promíscua, inic/iniqua, pobre/pobra, comú/comuna, covard/covarda); pluralia tantum (les ulleres, les postres); col·locació de l'adjectiu.
-- Determinants: article davant d'infinitiu (Saber això m'alegra, no *El saber això); presència i absència d'article; article neutre i alternatives (el més prompte possible); ús i abús dels possessius.
-- Pronoms febles: complement del nom, subjecte i règim (en, hi); se davant de [s]; usos lexicalitzats (me'n vaig, no m'hi veig); combinacions formals (li ho vaig dir); pleonasmes admesos i no admesos; concordança del participi amb l'acusatiu.
-- Relatius (que, què, qui, on, el qual; la qual cosa, cosa que; del qual possessiu) i exclamatius (quin + substantiu + més + adjectiu; Que valent que és!).
-- Quantificadors: u/un, xifres romanes, multiplicatius, col·lectius, qualsevol, hom, cadascú; gens, massa, prou; com més... més, pel cap alt, si més no; res de + adjectiu.
-- Preposicions: tòniques i àtones, compostes (cap a, fins a, com a, per a), en + infinitiu temporal, elisió i canvi de preposicions àtones.
-- Adverbis: potser + indicatiu, pot ser que + subjuntiu; coordinació d'adverbis en -ment; baix, davall, sota; sols, només ≠ no més.
-- Conjuncions i connectors: per què, perquè, per a què; sinó/si no; causals, consecutives i condicionals formals; connectors de cohesió (addició, contrast, reformulació, exemplificació, conseqüència, conclusió).
-- Verbs: irregulars velaritzats i amb interferències (admetre, concebre, ocórrer, rebre, percebre, cabre, caldre); formes poc usuals (complaure, jaure, lluir, moldre, romandre); purs i incoatius (afig/afegix); formes no velaritzades (dorm, perd, senta); construccions transitives, impersonals i pronominals; perífrasis d'obligació (haver de, caldre, deure; no *tindre que) i de probabilitat; ser i estar; infinitiu, participis irregulars (admés, confós, exclòs) i concordança; gerundi de posterioritat incorrecte; concordança temporal (Si haguera estudiat, hauria aprovat).
-
-**3.2.3. Lèxic i semàntica** (criteri de Lèxic)
-- Vocabulari formal: casa i construcció; activitats professionals i sectors productius; alimentació i salut; oci i esports; comerç; ensenyança i formació; turisme; mitjans de comunicació; cultura; medi físic i clima; ciència, tecnologia i tecnologies de la comunicació.
-- Fraseologia: frases fetes, locucions i refranys.
-- Formació del lèxic: derivació (afixos i el seu significat), prefixació (expresident, vicerector, no-violència), compostos (bocamoll, gira-sol, penja-roba, xano-xano, nord-est); paraules patrimonials i cultismes.
-- Precisió lèxica: barbarismes, manlleus, neologismes i vulgarismes.
-- Relacions semàntiques: polisèmia, sinonímia i geosinònims, falsos sinònims, antonímia; mecanismes lèxics de cohesió; denotació i connotació; usos figurats (metàfora, metonímia, sinècdoque); onomatopeies.
-- Registres i varietats (històriques, geogràfiques, socials i funcionals).
-
----
-
-`,
 };
 
-type EieLevel = keyof typeof EIE_RUBRICS;
+type EieLevel = keyof typeof EIE_RUBRICS | 'C1';
 
 const eieSystemPrompt = (level: EieLevel) => `# ROL I CONTEXT
 Actues com a avaluador oficial de la Junta Qualificadora de Coneixements de Valencià (JQCV), seguint fidelment la normativa de l'Acadèmia Valenciana de la Llengua (AVL).
@@ -707,7 +644,7 @@ La teua tasca és avaluar les produccions d'expressió i interacció escrita de 
 
 ---
 
-${EIE_RUBRICS[level]}# CONTEXT DE LA TASCA
+${EIE_RUBRICS[level as keyof typeof EIE_RUBRICS]}# CONTEXT DE LA TASCA
 Rebràs la consigna exacta a la qual respon l'aspirant. L'objectiu de la tasca s'avalua SEMPRE respecte d'eixa consigna:
 - **Redacció amb opcions (exercici 6 del B1, exercici 7 del B2, exercicis 4 i 5 del C1):** l'aspirant ha triat una de les dos opcions (A o B) i rebràs NOMÉS la consigna d'eixa opció: la situació comunicativa i els punts que ha de desenvolupar. Avalua l'Adequació exclusivament respecte d'eixa consigna; no n'hi ha cap altra i no has d'esperar que el text parle de res més.
   - L'objectiu es complix si el text respon a eixa situació (gènere textual, destinatari i registre: correu, blog, entrada web...) i tracta tots els punts indicats.
@@ -788,12 +725,9 @@ Retorna únicament un objecte JSON amb el següent esquema:
 
 export const SYSTEM_PROMPT_B1_EIE = eieSystemPrompt('B1');
 export const SYSTEM_PROMPT_B2_EIE = eieSystemPrompt('B2');
-export const SYSTEM_PROMPT_C1_EIE = eieSystemPrompt('C1');
-const EIE_SYSTEM_PROMPTS: Record<EieLevel, string> = { B1: SYSTEM_PROMPT_B1_EIE, B2: SYSTEM_PROMPT_B2_EIE, C1: SYSTEM_PROMPT_C1_EIE };
+const EIE_SYSTEM_PROMPTS = { B1: SYSTEM_PROMPT_B1_EIE, B2: SYSTEM_PROMPT_B2_EIE };
 
-// Redaccions del B1, del B2 i del C1: mateix esquema i mateix càlcul, amb la rúbrica de cada nivell.
-export async function evaluateB1Writing(args: {
-  level?: EieLevel; // per defecte, B1
+type EieArgs = {
   exerciseN: number;
   instructions: string;
   choice?: { key: string; text: string; points?: string[] };
@@ -803,8 +737,10 @@ export async function evaluateB1Writing(args: {
   minWords: number;
   maxWords: number;
   contents?: LevelContent[]; // per a classificar els errors (pràctica)
-}): Promise<B1WritingEvaluation & { rubrica: 'b1_redaccio' | 'b2_redaccio' | 'c1_redaccio'; opcio?: string }> {
-  const level = args.level ?? 'B1';
+};
+
+// Consigna, extensió i text de l'aspirant que es passen a l'avaluador (B1, B2 i C1).
+function eieInput(args: EieArgs, level: EieLevel) {
   const count = countWords(args.text);
   const inRange = count >= args.minWords && count <= args.maxWords;
   // Marge del ±10 % sobre el rang demanat (p. ex. 150-170 → 135-187).
@@ -838,6 +774,15 @@ export async function evaluateB1Writing(args: {
   ].join('\n\n');
   // EXAM_EVAL_DEBUG=1 mostra al log exactament què rep l'avaluador.
   if (process.env.EXAM_EVAL_DEBUG) console.log(`[exam-eval] Entrada ${level}:\n${userContent}`);
+  return { userContent, count, inRange, inMargin };
+}
+
+// Redaccions del B1 i del B2: mateix esquema i mateix càlcul, amb la rúbrica de cada nivell.
+export async function evaluateB1Writing(args: EieArgs & {
+  level?: 'B1' | 'B2'; // per defecte, B1
+}): Promise<B1WritingEvaluation & { rubrica: 'b1_redaccio' | 'b2_redaccio'; opcio?: string }> {
+  const level = args.level ?? 'B1';
+  const { userContent, count, inRange, inMargin } = eieInput(args, level);
 
   const parsed = await runEvaluation({
     systemPrompt: EIE_SYSTEM_PROMPTS[level],
@@ -870,7 +815,7 @@ export async function evaluateB1Writing(args: {
   const total = Object.values(criteris).reduce((sum, c) => sum + c.puntuacio, 0);
   return {
     ...parsed,
-    rubrica: `${level.toLowerCase() as Lowercase<EieLevel>}_redaccio`,
+    rubrica: `${level.toLowerCase() as Lowercase<typeof level>}_redaccio`,
     opcio: args.choice?.key,
     comprovacio_extensio: {
       paraules_reals: count,
@@ -878,6 +823,191 @@ export async function evaluateB1Writing(args: {
       dins_marge_10_percent: inMargin,
     },
     criteris,
+    puntuacio_total_rubrica: total,
+    mitjana_base_10: Math.round((total / 5) * 10) / 10,
+  };
+}
+
+// ── C1: rúbrica oficial de la JQCV (2026) d'expressió i interacció escrites ──
+// Quatre aspectes, cada un en bandes A-E amb un tram de punts; total sobre 50.
+
+const C1Aspecte = z.object({
+  banda: z.enum(['A', 'B', 'C', 'D', 'E']),
+  puntuacio: z.number().int(),
+  justificacio: z.string(),
+});
+
+export const C1_PROBLEMES = ['F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'] as const;
+
+export const C1WritingEvaluationSchema = z.object({
+  comprovacio_extensio: z.object({
+    paraules_reals: z.number().int(),
+    objectiu_tasca: z.string(),
+    dins_marge_10_percent: z.boolean(),
+  }),
+  criteris: z.object({
+    execucio_tasca: C1Aspecte,
+    construccio_discurs: C1Aspecte,
+    contingut_linguistic: C1Aspecte,
+    control_norma: C1Aspecte,
+  }),
+  problemes_especifics: z.array(z.enum(C1_PROBLEMES)),
+  errors_detectats: z.array(z.object({
+    segment_original: z.string(),
+    proposta_correccio: z.string(),
+    categoria: z.enum(['lèxic', 'morfosintaxi', 'ortografia']),
+    sistematic: z.boolean(),
+    contingut: z.string().describe("Codi (c1, c2...) del contingut del nivell de l'aprenent on encaixa l'error; buit si no es proporciona la llista o si l'error és d'un nivell superior."),
+  })),
+  retorn_pedagogic: z.string(),
+});
+export type C1WritingEvaluation = z.infer<typeof C1WritingEvaluationSchema>;
+
+type C1Key = keyof C1WritingEvaluation['criteris'];
+type Banda = 'A' | 'B' | 'C' | 'D' | 'E';
+// Tram de punts de cada banda, de la més alta a la més baixa: [màxim, mínim].
+const C1_BANDS: Record<C1Key, Record<Banda, [number, number]>> = {
+  execucio_tasca: { A: [16, 13], B: [12, 8], C: [7, 4], D: [3, 1], E: [0, 0] },
+  construccio_discurs: { A: [12, 9], B: [8, 6], C: [5, 3], D: [2, 1], E: [0, 0] },
+  contingut_linguistic: { A: [12, 9], B: [8, 6], C: [5, 3], D: [2, 1], E: [0, 0] },
+  control_norma: { A: [10, 8], B: [7, 5], C: [4, 3], D: [2, 1], E: [0, 0] },
+};
+const bandOf = (key: C1Key, points: number): Banda =>
+  (Object.entries(C1_BANDS[key]) as [Banda, [number, number]][]).find(([, [max, min]]) => points <= max && points >= min)?.[0] ?? 'E';
+
+const C1_RUBRIC = `# RÚBRICA OFICIAL D'AVALUACIÓ DE L'ÀREA D'EXPRESSIÓ I INTERACCIÓ ESCRITES (NIVELL C1, JQCV 2026)
+
+## Com s'aplica
+Els descriptors de cada banda s'interpreten de manera GLOBAL i no són excloents: no s'espera que l'aspirant complisca tots els aspectes d'una banda, ni se li canvia de banda perquè no execute un descriptor. Si complix tres descriptors de la banda A i dos de la B, cal ubicar-lo en la A, però amb la puntuació més baixa d'eixa banda. Per a obtindre la puntuació més alta d'una banda cal complir-ne TOTS els descriptors. Dins de cada banda tria un nombre ENTER del tram indicat.
+- Banda A: aspirant excel·lent, amb un control de la llengua ajustat i òptim al nivell.
+- Banda B: aspirant suficient; en alguns aspectes té dubtes de control, però arriba a un nivell adequat.
+- Banda C: no arriba a demostrar un control suficient del nivell exigit.
+- Banda D: control insuficient del nivell exigit.
+- Banda E: actuació clarament inferior al nivell exigit, pròpia d'un nivell inferior.
+Els quatre aspectes són independents. No s'exigix un domini total de la normativa ni el control d'aspectes controvertits de la llengua.
+
+## 1. EXECUCIÓ DE LA TASCA (objectius comunicatius, adequació, impressió en el lector, ús de la documentació) — màxim 16
+- **A (16-13):** Interpreta correctament la informació que se li oferix i redacta un text que complix totes les convencions del gènere. Presenta la informació amb claredat, en destaca els aspectes principals, inclou exemples rellevants i expressa la seua opinió de manera ordenada amb arguments crítics si la classe de text ho demana. El registre és adequat i la veu de l'autor no hi figura o ho fa amb subtilesa. Ajusta el discurs al lector, que en té una impressió positiva perquè s'hi inclouen coneixements compartits; el text és atractiu, amb un títol que crida l'atenció (si cal) i convida a la lectura. Té el nombre de paraules que es demana i la tasca queda resolta.
+- **B (12-8):** Es basa en la informació oferta, però té algunes dificultats a l'hora d'interpretar-la i pot inventar algunes dades, usar arguments i exemples poc convincents o no tractar tots els aspectes requerits. L'objectiu comunicatiu es complix, tot i que no respecta totes les convencions del gènere. El registre es desvia lleugerament en algun moment i, a voltes, la veu de l'autor és evident. Les dades no estan ben contextualitzades perquè l'examinand les dona per sabudes; el text és millorable, li falten elements que conviden a la lectura. El text supera el nombre de paraules requerit o no hi arriba (±10 %); s'evidencia falta de recursos i es repetix informació, però la tasca està resolta.
+- **C (7-4):** No gestiona bé la informació: inclou massa dades irrellevants, inventades o copiades literalment, i les presenta de manera confusa. Falten alguns punts que es demanen i els arguments són escassos i pobres. El text no s'adequa al gènere proposat. La veu de l'autor és massa evident, amb excessives opinions personals en un registre inadequat. No té en compte el lector o no s'hi adreça adequadament; excés de pressuposicions; mala impressió, presentació deficient i títol equívoc o absent (si cal). El nombre de paraules no arriba al que es demana i la tasca no queda resolta.
+- **D (3-1):** No complix la tasca. No argumenta la seua opinió, copia tota la informació que se li oferix o es desvia molt del tema. No es reconeix el gènere. El registre s'allunya molt del convenient i la veu de l'autor és present en tot el text amb to inadequat. El discurs no s'ajusta al lector, que no entén de què es parla; presentació molt deficient i sense títol (si cal). El nombre de paraules està molt lluny del demanat i la tasca no queda resolta.
+- **E (0):** Text d'un nivell molt inferior, tasca en blanc o text totalment il·legible.
+
+## 2. CONSTRUCCIÓ DEL DISCURS (organització, progressió temàtica, cohesió, puntuació) — màxim 12
+- **A (12-9):** Estructura adequada i ordenada, amb paràgrafs ben diferenciats i un començament i acabament clars. Bona progressió temàtica que ajuda a entendre sense problemes la informació. Usa adequadament els mecanismes de cohesió gramatical i els marcadors textuals. Utilitza correctament tant la puntuació sintàctica com l'estilística.
+- **B (8-6):** Estructura adequada, tot i que pot haver-hi algun paràgraf massa llarg o massa curt; hi ha principi i final, però té problemes per a resoldre'ls. Alguns problemes en l'orde de les idees que no afecten en excés la progressió temàtica. Ús acceptable dels mecanismes de cohesió i dels marcadors, amb poca varietat o algun ús inadequat, però la comprensió no es veu afectada. La puntuació és adequada, però a voltes incorrecta, sense dificultar la comprensió de l'oració.
+- **C (5-3):** No estructura bé el text: paràgrafs massa curts o massa llargs; l'inici i el final són confusos o no s'identifiquen. Informació desordenada que provoca confusió: no hi ha una progressió temàtica clara. No utilitza bé els mecanismes de cohesió gramatical i no inclou marcadors textuals; si n'hi ha, estan mal usats. La puntuació no és correcta o és escassa.
+- **D (2-1):** Estructura molt roïna: no diferencia els paràgrafs, escriu frases soltes o un únic paràgraf; no hi ha inici ni final. Informació molt desordenada, sense progressió temàtica. Cohesió i marcadors escassos i mal usats: és molt difícil comprendre el text. Puntuació escassa i incorrecta: és molt difícil seguir el text.
+- **E (0):** Text d'un nivell molt inferior, tasca en blanc o text totalment il·legible.
+
+## 3. CONTINGUT LINGÜÍSTIC (repertori lèxic, precisió, flexibilitat, recursos retòrics) — màxim 12
+- **A (12-9):** Lèxic ric i propi del tema; fa servir fins i tot sinònims poc comuns per a evitar repeticions. Utilitza expressions idiomàtiques adequadament sense estratègies d'evitació. Empra estructures sintàctiques variades i complexes de manera apropiada. Fa un ús convenient dels recursos retòrics que demana el text per a cridar l'atenció del lector.
+- **B (8-6):** Lèxic adequat, però amb certa dificultat per a recórrer a sinònims i alguna repetició en usar lèxic complex. Expressions idiomàtiques ajustades al context, però puntualment recorre a estratègies d'evitació. Sintaxi correcta, amb vacil·lacions en estructures més elaborades que no dificulten la comprensió. Pocs recursos retòrics, o massa i amb impressió d'estranyesa.
+- **C (5-3):** Lèxic massa simple i genèric, amb repeticions i imprecisions sovint. Estratègies d'evitació freqüents; expressions idiomàtiques escasses o mal usades. Sintaxi correcta però massa bàsica, o amb errors evidents en estructures més elaborades. Recursos retòrics escassos; si n'hi ha, inadequats i creen confusió.
+- **D (2-1):** Lèxic pobre, amb moltes repeticions, imprecisions i contrasentits. No usa expressions idiomàtiques i les estratègies d'evitació no ajuden a entendre què vol expressar. Sintaxi molt simple o amb errors greus en construccions elaborades que impedixen la comprensió. Cap recurs retòric, o ho fa de manera que provoca rebuig.
+- **E (0):** Text d'un nivell molt inferior, tasca en blanc o text totalment il·legible.
+
+## 4. CONTROL DE LA NORMA (ortografia, morfosintaxi i vocabulari) — màxim 10
+- **A (10-8):** Vocabulari: de tant en tant comet errors menors no significatius i els rectifica. L'ortografia és correcta, més enllà d'alguns errors puntuals no significatius en aspectes d'un nivell superior o en paraules especialitzades; és coherent en l'ús de la norma. Correcció morfosintàctica alta: errors escassos i difícils de detectar, deixant de banda els aspectes controvertits.
+- **B (7-5):** Vocabulari: comet errors no significatius i els rectifica. Ortografia adequada, però amb alguns errors evidents i alguna incoherència en aspectes no conflictius de la norma. Correcció morfosintàctica adequada, tot i que amb alguns errors evidents en aspectes no controvertits.
+- **C (4-3):** Vocabulari: errors puntuals però significatius, que no rectifica. Diversos errors ortogràfics, també en aspectes bàsics; sense coherència en l'ús de la norma. Correcció morfosintàctica fluixa, amb errors significatius i recurrents.
+- **D (2-1):** Vocabulari: errors reiterats i significatius. Errors ortogràfics molt abundants, repetits i greus; gens coherent. Correcció morfosintàctica molt fluixa, amb errors greus i freqüents que dificulten la comprensió.
+- **E (0):** Text d'un nivell molt inferior, tasca en blanc o text totalment il·legible.
+
+## PROBLEMES ESPECÍFICS (indica'n el codi a «problemes_especifics» quan es presenten)
+- **F:** El text és d'un nivell molt inferior (B1 o més baix) → 0 (banda E) en tots els aspectes.
+- **G:** Atribuïx al text informació inexistent i la mescla amb moltes idees pròpies → bandes C o D en Execució de la tasca.
+- **H:** Plagia diversos fragments del text de partida → bandes C o D en Execució de la tasca.
+- **I:** Dona per sabuda molta informació dels textos de partida; pressuposa que el lector coneix les dades → bandes C o D en Execució de la tasca.
+- **J:** Tracta un tema que s'allunya del que es proposa en l'enunciat → bandes C o D en Execució de la tasca.
+- **K:** El gènere no es correspon amb el demanat → bandes C o D en Execució de la tasca.
+- **L:** El text s'allunya del domini del registre estàndard → bandes C o D en Execució de la tasca.
+- **M:** Escriu menys paraules, o més, de les demanades (fora del marge del ±10 %), però resol la tasca → bandes C o D en Execució de la tasca.
+- **N:** No ha acabat la tasca → Execució de la tasca des de la zona baixa de la banda C en avall, segons les paraules escrites (no és igual que falte una frase del final que més de mig text); en els altres aspectes la puntuació també es ressent de la quantitat de text (si ha escrit poc, és difícil una puntuació alta en Construcció del discurs i en Contingut lingüístic).
+- **O:** La tasca està en blanc → 0 en tots els aspectes.
+- **P:** El text és totalment il·legible → 0 en tots els aspectes.
+- **Q:** El text està escrit en lletra majúscula → 0 en Control de la norma.
+`;
+
+const C1_SYSTEM_PROMPT = `# ROL I CONTEXT
+Actues com a avaluador oficial de la Junta Qualificadora de Coneixements de Valencià (JQCV), seguint fidelment la normativa de l'Acadèmia Valenciana de la Llengua (AVL).
+La teua tasca és avaluar les produccions d'expressió i interacció escrita de nivell C1 aplicant estrictament la rúbrica oficial de la JQCV.
+
+---
+
+${C1_RUBRIC}
+---
+
+# CONTEXT DE LA TASCA
+Rebràs la consigna exacta a la qual respon l'aspirant. L'Execució de la tasca s'avalua SEMPRE respecte d'eixa consigna:
+- **Redacció amb opcions (exercicis 4 i 5 del C1):** l'aspirant ha triat una de les dos opcions (A o B) i rebràs NOMÉS la consigna d'eixa opció. No esperes que el text parle de res més. Un punt es considera tractat si el text en parla de manera identificable, encara que siga breument i amb paraules pròpies. Abans de decidir que en falta algun, repassa el text punt per punt.
+- **Imatge de suport:** si hi ha una infografia, rebràs la transcripció del seu contingut. El text n'ha d'aprofitar la informació amb paraules pròpies i integrada en el discurs; si només la copia com una llista, no pot arribar a la banda A.
+- **Tasques de pràctica amb text de referència:** de vegades rebràs també un text o la transcripció d'un àudio (un passatge per parafrasejar, una conferència de la qual cal prendre apunts...). L'execució inclou recollir-ne fidelment la informació essencial que demana l'enunciat; en una paràfrasi és correcte reaprofitar paraules del text original reorganitzades, i en uns apunts són acceptables les frases curtes i els punts si l'enunciat ho permet.
+- Indica en la justificació de l'Execució de la tasca quins punts o demandes de la consigna s'han tractat i quins no.
+
+# EXTENSIÓ
+Rebràs el recompte automàtic de paraules, el rang demanat i si el text entra en el marge del ±10 %. **Eixe recompte és exacte: NO tornes a comptar les paraules ni el contradigues.** Dins del marge però fora del rang, la banda A de l'Execució de la tasca no és possible; fora del marge, aplica el problema M (o N si la tasca no està acabada).
+
+---
+
+# PROTOCOL DE CONSULTA AL SERVIDOR MCP (AVL/DNV)
+- Disposes d'accés a ferramentes MCP de consulta lingüística (diccionari normatiu DNV i verificador gramatical).
+- **Verificació prèvia obligatòria:** abans de catalogar una paraula com a castellanisme o error lèxic, consulta el servidor MCP. Si el lema està acceptat per l'AVL, no el pots penalitzar.
+- No confongues formes legítimes pròpies de l'estàndard valencià (com *este/eixe*, pronoms clítics combinats o variants morfològiques vàlides) amb incorreccions.
+
+---
+
+# FORMAT D'EIXIDA (JSON ESTRICTE)
+Per a cada aspecte, indica la banda (A-E) i una puntuació ENTERA dins del tram d'eixa banda. Retorna únicament un objecte JSON amb els camps: comprovacio_extensio, criteris (execucio_tasca, construccio_discurs, contingut_linguistic, control_norma, cada un amb banda, puntuacio i justificacio breu), problemes_especifics (llista de codis F-Q, buida si no n'hi ha), errors_detectats (segment_original, proposta_correccio segons l'AVL, categoria lèxic | morfosintaxi | ortografia, sistematic, contingut) i retorn_pedagogic (comentari en valencià dirigit a l'aspirant, amb punts forts i consells concrets de millora per al nivell C1).`;
+
+export const SYSTEM_PROMPT_C1_EIE = C1_SYSTEM_PROMPT;
+
+// Redaccions del C1: els totals es calculen ací (sobre 50) i s'apliquen els topalls dels problemes específics.
+export async function evaluateC1Writing(args: EieArgs): Promise<C1WritingEvaluation & {
+  rubrica: 'c1_redaccio'; opcio?: string; puntuacio_total_rubrica: number; mitjana_base_10: number;
+}> {
+  const { userContent, count, inMargin } = eieInput(args, 'C1');
+  const parsed = await runEvaluation({
+    systemPrompt: C1_SYSTEM_PROMPT,
+    userContent,
+    schema: C1WritingEvaluationSchema,
+    name: 'avaluacio_eie_c1',
+  });
+
+  const problems = new Set(parsed.problemes_especifics);
+  // Fora del marge del ±10 % és el problema M, tret que el model ja haja dit que no l'ha acabada (N).
+  if (!inMargin && !problems.has('N') && !problems.has('O')) problems.add('M');
+  const blank = ['F', 'O', 'P'].some(c => problems.has(c as typeof C1_PROBLEMES[number]));
+
+  const keys = Object.keys(C1_BANDS) as C1Key[];
+  const criteris = Object.fromEntries(keys.map(key => {
+    const bands = C1_BANDS[key];
+    const given = parsed.criteris[key];
+    // La puntuació es porta al tram de la banda que ha triat el model.
+    let [max, min] = bands[given.banda];
+    let points = Math.min(max, Math.max(min, given.puntuacio));
+    // Topalls: C o D (≤ 7) per als problemes G-M, la zona baixa de la C (≤ 5) per a N; 0 per a F, O, P (i Q en la norma).
+    if (key === 'execucio_tasca') {
+      if (['G', 'H', 'I', 'J', 'K', 'L', 'M'].some(c => problems.has(c as typeof C1_PROBLEMES[number]))) points = Math.min(points, bands.C[0]);
+      if (problems.has('N')) points = Math.min(points, 5);
+    }
+    if (blank || (key === 'control_norma' && problems.has('Q'))) points = 0;
+    const banda = bandOf(key, points);
+    return [key, { ...given, banda, puntuacio: points }];
+  })) as C1WritingEvaluation['criteris'];
+
+  const total = Object.values(criteris).reduce((sum, c) => sum + c.puntuacio, 0);
+  return {
+    ...parsed,
+    rubrica: 'c1_redaccio',
+    opcio: args.choice?.key,
+    comprovacio_extensio: {
+      paraules_reals: count,
+      objectiu_tasca: `${args.minWords}-${args.maxWords} paraules`,
+      dins_marge_10_percent: inMargin,
+    },
+    criteris,
+    problemes_especifics: [...problems],
     puntuacio_total_rubrica: total,
     mitjana_base_10: Math.round((total / 5) * 10) / 10,
   };

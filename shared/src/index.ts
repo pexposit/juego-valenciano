@@ -35,7 +35,7 @@ export const levelBand = (level: string | null | undefined): 'A' | 'B' | 'C' | n
 export const PREDEFINED_PATH_LEVELS: readonly string[] = ['A2', 'B1', 'B2'];
 export const hasPredefinedPaths = (level: string | null | undefined) => !!level && PREDEFINED_PATH_LEVELS.includes(level);
 /** Nivells amb ruta personalitzada generada per la IA (learning_paths), a més de les predefinides. */
-export const AI_PATH_LEVELS: readonly string[] = ['B1', 'B2'];
+export const AI_PATH_LEVELS: readonly string[] = ['B1', 'B2', 'C1'];
 export const hasAiPath = (level: string | null | undefined) => !!level && AI_PATH_LEVELS.includes(level);
 
 /* ── Límits de l'historial de conversa ────────────────────────────────── */
@@ -44,6 +44,9 @@ export const hasAiPath = (level: string | null | undefined) => !!level && AI_PAT
 export const MESSAGE_MAX_CHARS = 2000;
 /** Longitud màxima d'una redacció (Expressió escrita, en pràctica i en examen). */
 export const WRITING_MAX_CHARS = 2000;
+/** El C1 demana textos més llargs: el límit és de 3500 caràcters. */
+export const WRITING_MAX_CHARS_C1 = 3500;
+export const writingMaxChars = (level: string | null | undefined) => (level === 'C1' ? WRITING_MAX_CHARS_C1 : WRITING_MAX_CHARS);
 /** Longitud màxima de cada camp d'un formulari (A1). */
 export const FORM_FIELD_MAX_CHARS = 500;
 /** Nombre màxim de missatges de context. */

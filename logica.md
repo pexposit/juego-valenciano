@@ -39,7 +39,7 @@ ParlaVal («Aprén parlant, no memoritzant») es una aplicación web para aprend
 - **Práctica del temario oficial de la JQCV** (Junta Qualificadora de Coneixements de Valencià): fonética y ortografía, morfosintaxis, léxico, comprensión oral y escrita, expresión escrita (corregida por IA con las rúbricas oficiales) y expresión oral (conversando).
 - **Simulacros de examen JQCV** (A1, A2, B1, B2) con corrección automática y evaluación por IA de las redacciones.
 - **Detección de errores** en todo lo que escribe o dice el alumno, clasificados según los contenidos de su nivel, y una pestaña para practicarlos hasta resolverlos.
-- **Rutas de aprendizaje**: predefinidas (A2, B1, B2), creadas por el profesorado para sus clases y una ruta personalizada generada por IA (B1, B2).
+- **Rutas de aprendizaje**: predefinidas (A2, B1, B2), creadas por el profesorado para sus clases y una ruta personalizada generada por IA (B1, B2, C1).
 - **Un mundo infantil (Nivell 0)** para niños que aún no leen: 16 islas de minijuegos, 31 lecciones narradas, cromos, álbum, subtítulos en la lengua materna, escenarios de conversación infantiles y un informe para la familia protegido por PIN.
 - **Un panel del profesorado**: clases con código de unión, seguimiento del alumnado, actividades propias (plantillas cerradas) y rutas por clase.
 - **Un tutor** («el professor») en el tablero, con el que se puede chatear de dudas de valenciano; adapta su registro al nivel y a la edad, y ayuda en la lengua materna.
@@ -137,7 +137,7 @@ Consecuencia: si se borran los datos del navegador o se cambia de dispositivo, e
 ### 3.2 Rutas por nivel
 
 - `PREDEFINED_PATH_LEVELS = ['A2','B1','B2']` → `hasPredefinedPaths(level)`: estos niveles ven las rutas predefinidas en `/ruta`.
-- `AI_PATH_LEVELS = ['B1','B2']` → `hasAiPath(level)`: además tienen la ruta personalizada de IA (`/ruta/personalitzada`), y son **los únicos** para los que el backend genera ruta de IA.
+- `AI_PATH_LEVELS = ['B1','B2','C1']` → `hasAiPath(level)`: además tienen la ruta personalizada de IA (`/ruta/personalitzada`), y son **los únicos** para los que el backend genera ruta de IA.
 
 ### 3.3 Categorías de recursos y áreas
 
@@ -599,9 +599,9 @@ Avaluadores del Área 3 (Expressió i Interacció Escrites) con las rúbricas of
 - No llegar al mínimo de palabras obligatorias ⇒ Adecuación ≤4 y Léxico ≤6.
 - El servidor envía el recuento automático de palabras y de palabras obligatorias detectadas; **redondea cada criterio al valor permitido más cercano (`snapScore`)** y recalcula `puntuacio_total_rubrica` (/50) y `mitjana_ponderada_base_10` (total/5).
 
-**B1, B2 y C1 (`evaluateB1Writing`, `b1_redaccio` / `b2_redaccio` / `c1_redaccio`)**
+**B1 y B2 (`evaluateB1Writing`, `b1_redaccio` / `b2_redaccio`)**
 - Mismos 5 criterios y escala 10/6/4/1, con descriptores propios de cada nivel y la lista de «elementos del nivel» de los Quaderns JQCV (fonética/ortografía, morfosintaxis, léxico).
-- La rúbrica C1 no es oficial: sigue la estructura de la del B2 con las franjas de 10 calibradas con el objetivo 2.2 (Estructures lingüístiques) del Quadern C1. Se usa en la práctica y en los exámenes C1; el C2 también se corrige con ella. El mínimo del área de expresión escrita del C1 es 5 de 10 (el área vale un 35 %). Si una opción A/B lleva infografía (`choices[].image_text`), el evaluador recibe su transcripción.
+- **C1 (`evaluateC1Writing`, `c1_redaccio`)**: rúbrica OFICIAL de la JQCV (2026, «Avaluació de l'àrea d'expressió i interacció escrites, nivell C1»), distinta de la de B1/B2: 4 aspectos en bandas A–E con tramo de puntos (Execució de la tasca 16-13/12-8/7-4/3-1/0, Construcció del discurs 12-9/8-6/5-3/2-1/0, Contingut lingüístic 12-9/8-6/5-3/2-1/0, Control de la norma 10-8/7-5/4-3/2-1/0), total sobre 50 y `mitjana_base_10` = total/5. El modelo da banda y puntuación; el servidor ajusta la puntuación al tramo de la banda y aplica los problemas específicos (códigos F–Q: 0 en todo para F/O/P, 0 en norma para Q, tope de banda C en la tarea para G–M, tope 5 para N; fuera del ±10 % de extensión se añade M). Se usa en la práctica y en los exámenes C1; el C2 también se corrige con ella. El mínimo del área de expresión escrita del C1 es 5 de 10 (el área vale un 35 %). Si una opción A/B lleva infografía (`choices[].image_text`), el evaluador recibe su transcripción.
 - Consigna: si hay opciones A/B, **solo la de la opción elegida** (situación + puntos a desarrollar); si no, el enunciado + transcripción de la imagen (`image_text`) + texto de referencia (`sourceText`, práctica).
 - Extensión: el servidor calcula el recuento, el rango y el margen ±10 % (`Math.round`), y le dice al modelo que no vuelva a contar.
 - **Post-proceso en el servidor** (para que siempre cuadre):
@@ -1370,7 +1370,7 @@ Efecto lateral: A1, C1 y C2 siguen viendo `LearningPath` en `/ruta`, pero el bac
 10. «Softvalencià» es en realidad el LanguageTool de Softcatalà.
 
 ### 19.3 Lógica y producto
-11. **Ruta de IA para A1, C1 y C2**: `/ruta` les muestra `LearningPath`, pero el backend solo genera para B1/B2 → «Generar» no crea nada: devuelve la ruta antigua si la había o un 404 «Encara no hi ha activitats per al teu nivell».
+11. **Ruta de IA para A1 y C2**: `/ruta` les muestra `LearningPath`, pero el backend solo genera para B1/B2/C1 → «Generar» no crea nada: devuelve la ruta antigua si la había o un 404 «Encara no hi ha activitats per al teu nivell».
 12. **El resumen (`/resum`) es inalcanzable**: «Acabar conversa» vuelve atrás; la evaluación se guarda pero no se muestra salvo escribiendo la URL.
 13. **«Començar classe»** del tablero no hace nada; **«Reinicia el progrés»** solo recarga la página.
 14. ~~El nivel no se puede cambiar~~: resuelto (perfil y prueba de nivel, §20).

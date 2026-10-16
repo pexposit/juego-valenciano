@@ -316,6 +316,7 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
                 maxWords={e.task.max_words}
                 words={e.task.words}
                 minWordsUsed={e.task.min_words_used}
+                level={e.level}
                 value={progress.writings[e.id] ?? ''}
                 onChange={value => setProgress(p => ({ ...p, writings: { ...p.writings, [e.id]: value } }))}
               />

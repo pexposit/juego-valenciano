@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-react';
-import { countWords, FORM_FIELD_MAX_CHARS, usedRequiredWords, WRITING_MAX_CHARS } from '@parlaval/shared';
+import { countWords, FORM_FIELD_MAX_CHARS, usedRequiredWords, writingMaxChars } from '@parlaval/shared';
 import { CharLimit } from './ui';
-import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice, A1WritingEvaluation, A2CriterionKey, A2WritingEvaluation, B1WritingEvaluation, WritingCriterionKey, WritingEvaluation } from '../lib/types';
+import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice, A1WritingEvaluation, A2CriterionKey, A2WritingEvaluation, B1WritingEvaluation, C1CriterionKey, C1WritingEvaluation, WritingCriterionKey, WritingEvaluation } from '../lib/types';
 
 // Respostes de l'aspirant (número de pregunta -> clau de l'opció) i si l'àrea ja
 // s'ha corregit: en eixe cas es marquen les encertades i les errades.
@@ -323,7 +323,7 @@ export function FormExercise({
 
 /* ── Expressió escrita: redacció lliure amb límit de paraules ─────────── */
 export function WritingExercise({
-  title, minWords, maxWords, words = [], minWordsUsed = 0, image, choices = [], choice, onChoose, value, onChange,
+  title, minWords, maxWords, words = [], minWordsUsed = 0, image, choices = [], choice, onChoose, value, onChange, level,
 }: {
   title?: string;
   minWords: number;
@@ -336,7 +336,9 @@ export function WritingExercise({
   onChoose?: (key: string) => void;
   value: string;
   onChange: (value: string) => void;
+  level?: string; // el C1 admet textos més llargs
 }) {
+  const maxChars = writingMaxChars(level);
   const count = countWords(value);
   const inRange = count >= minWords && count <= maxWords;
   // Una paraula compta com a usada també en plural o amb majúscules (estoigs, Llapis...).
@@ -379,12 +381,12 @@ export function WritingExercise({
         <textarea
           rows={9}
           value={value}
-          maxLength={WRITING_MAX_CHARS}
+          maxLength={maxChars}
           onChange={e => onChange(e.target.value)}
           placeholder="Escriu ací el teu text..."
           className="w-full resize-y bg-[repeating-linear-gradient(transparent,transparent_31px,#E7E5E4_32px)] px-5 py-3 leading-8 outline-none"
         />
-        <CharLimit length={value.length} max={WRITING_MAX_CHARS} className="px-5 pb-3" />
+        <CharLimit length={value.length} max={maxChars} className="px-5 pb-3" />
       </div>
     </div>
   );
@@ -584,11 +586,11 @@ export const B1_PASS_MARK = 5;
 export const B2_PASS_MARK = 4;
 // En el C1 val un 35 %: cal el 50 % de l'àrea (5 de 10), amb la mitjana de les dos redaccions.
 export const C1_PASS_MARK = 5;
-export const passMarkOf = (evaluation: B1WritingEvaluation) =>
+export const passMarkOf = (evaluation: B1WritingEvaluation | C1WritingEvaluation) =>
   ({ b1_redaccio: B1_PASS_MARK, b2_redaccio: B2_PASS_MARK, c1_redaccio: C1_PASS_MARK })[evaluation.rubrica];
 export const writingPassMark = (level: string) => (level === 'B1' ? B1_PASS_MARK : level === 'B2' ? B2_PASS_MARK : C1_PASS_MARK);
-// Redacció avaluada amb la rúbrica del B1, del B2 o del C1 (mateix format).
-export const isB1OrB2Writing = (evaluation?: WritingEvaluation): evaluation is B1WritingEvaluation =>
+// Redacció del B1, el B2 o el C1: totes porten la nota sobre 10 (`mitjana_base_10`).
+export const isB1OrB2Writing = (evaluation?: WritingEvaluation): evaluation is B1WritingEvaluation | C1WritingEvaluation =>
   evaluation?.rubrica === 'b1_redaccio' || evaluation?.rubrica === 'b2_redaccio' || evaluation?.rubrica === 'c1_redaccio';
 
 // Botó "Avaluar" i resultat de l'avaluació amb IA d'un exercici d'expressió escrita.
@@ -619,9 +621,10 @@ export function WritingEvaluationPanel({
       {error && <p className="rounded-2xl bg-coral/10 p-4 text-sm font-bold text-coral">{error}</p>}
 
       {evaluation && !loading && (
-        isB1OrB2Writing(evaluation) ? <B1Result evaluation={evaluation} />
+        evaluation.rubrica === 'c1_redaccio' ? <C1Result evaluation={evaluation} />
+          : evaluation.rubrica === 'b1_redaccio' || evaluation.rubrica === 'b2_redaccio' ? <B1Result evaluation={evaluation} />
           : evaluation.rubrica === 'a2_redaccio' ? <A2Result evaluation={evaluation} />
-          : <A1Result evaluation={evaluation} />
+          : <A1Result evaluation={evaluation as A1WritingEvaluation} />
       )}
     </div>
   );
@@ -654,12 +657,12 @@ function ScoreHeader({ score, max, pass, label, verdict, note }: {
   );
 }
 
-function CriterionCard({ label, badge, text }: { label: string; badge: string; text: string }) {
+function CriterionCard({ label, badge, text, tone }: { label: string; badge: string; text: string; tone?: string }) {
   return (
     <div className="rounded-2xl border-2 border-ink/10 p-4">
       <div className="mb-1 flex items-center justify-between gap-2">
         <p className="font-black">{label}</p>
-        <span className={`rounded-full px-3 py-1 text-xs font-black ${BAND_STYLE[badge.split('/')[0]] ?? 'bg-cream'}`}>{badge}</span>
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${BAND_STYLE[tone ?? badge.split('/')[0]] ?? 'bg-cream'}`}>{badge}</span>
       </div>
       <p className="text-sm opacity-80">{text}</p>
     </div>
@@ -767,6 +770,62 @@ function ItemChecks({ labels, achieved }: { labels: Record<string, string>; achi
         );
       })}
     </div>
+  );
+}
+
+const C1_CRITERION_LABELS: Record<C1CriterionKey, { label: string; max: number }> = {
+  execucio_tasca: { label: 'Execució de la tasca', max: 16 },
+  construccio_discurs: { label: 'Construcció del discurs', max: 12 },
+  contingut_linguistic: { label: 'Contingut lingüístic', max: 12 },
+  control_norma: { label: 'Control de la norma', max: 10 },
+};
+const C1_BAND_TONE: Record<string, string> = { A: '10', B: '6', C: '4', D: '1', E: '1' };
+const C1_PROBLEMS: Record<string, string> = {
+  F: 'Text d\'un nivell molt inferior', G: 'Informació inexistent atribuïda al text', H: 'Plagi del text de partida',
+  I: 'Informació donada per sabuda', J: 'Tema allunyat de l\'enunciat', K: 'Gènere no adequat', L: 'Registre no estàndard',
+  M: 'Extensió fora del marge', N: 'Tasca sense acabar', O: 'Tasca en blanc', P: 'Text il·legible', Q: 'Text en majúscules',
+};
+
+// Redacció del C1: rúbrica oficial amb quatre aspectes en bandes A-E (total sobre 50).
+function C1Result({ evaluation }: { evaluation: C1WritingEvaluation }) {
+  const mark = evaluation.mitjana_base_10;
+  const passMark = passMarkOf(evaluation);
+  const { criteris: c, comprovacio_extensio: ext } = evaluation;
+  return (
+    <section className={`fade-up flex flex-col gap-5 rounded-2xl border-2 p-5 ${mark >= passMark ? 'border-teal/30' : 'border-coral/40'}`}>
+      <ScoreHeader
+        score={mark}
+        max={10}
+        pass={mark >= passMark}
+        label={`Avaluació de la redacció${evaluation.opcio ? ` · Opció ${evaluation.opcio}` : ''}`}
+        verdict={mark >= passMark ? '✅ Per damunt del mínim' : '⚠️ Per davall del mínim'}
+        note={`${evaluation.puntuacio_total_rubrica} de 50 punts en la rúbrica. L'àrea es decidix amb la mitjana de les dos redaccions (mínim ${passMark} de 10).`}
+      />
+      <p className="rounded-2xl bg-cream p-4 font-bold">{evaluation.retorn_pedagogic}</p>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${ext.dins_marge_10_percent ? 'bg-teal text-white' : 'bg-coral text-white'}`}>
+          {ext.dins_marge_10_percent ? '✓' : '✗'} {ext.paraules_reals} paraules
+        </span>
+        <span className="rounded-full bg-cream px-3 py-1 text-xs font-black">Demanades: {ext.objectiu_tasca} (±10 %)</span>
+        {evaluation.problemes_especifics.map(code => (
+          <span key={code} className="rounded-full bg-coral/15 px-3 py-1 text-xs font-black text-coral">{code} · {C1_PROBLEMS[code] ?? code}</span>
+        ))}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {(Object.keys(C1_CRITERION_LABELS) as C1CriterionKey[]).map(key => (
+          <CriterionCard
+            key={key}
+            label={C1_CRITERION_LABELS[key].label}
+            badge={`${c[key].banda} · ${c[key].puntuacio}/${C1_CRITERION_LABELS[key].max}`}
+            text={c[key].justificacio}
+            tone={C1_BAND_TONE[c[key].banda]}
+          />
+        ))}
+      </div>
+      <ErrorList errors={evaluation.errors_detectats.map(e => ({
+        original: e.segment_original, correction: e.proposta_correccio, tag: `${e.categoria}${e.sistematic ? ' · sistemàtic' : ''}`,
+      }))} />
+    </section>
   );
 }
 

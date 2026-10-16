@@ -116,7 +116,7 @@ export type A2WritingEvaluation = {
 // d'extensió (±10 %); cada nivell té la seua rúbrica oficial.
 export type B1CriterionKey = A2CriterionKey;
 export type B1WritingEvaluation = {
-  rubrica: 'b1_redaccio' | 'b2_redaccio' | 'c1_redaccio';
+  rubrica: 'b1_redaccio' | 'b2_redaccio';
   opcio?: string; // opció triada (A/B) en la redacció amb opcions
   comprovacio_extensio: { paraules_reals: number; objectiu_tasca: string; dins_marge_10_percent: boolean };
   criteris: Record<B1CriterionKey, { puntuacio: number; franja: string; justificacio: string }> & {
@@ -129,7 +129,20 @@ export type B1WritingEvaluation = {
   errors_detectats: { segment_original: string; proposta_correccio: string; categoria: string; sistematic: boolean }[];
   retorn_pedagogic: string;
 };
-export type WritingEvaluation = A1WritingEvaluation | A2WritingEvaluation | B1WritingEvaluation;
+// C1: rúbrica oficial de la JQCV (2026) amb quatre aspectes en bandes A-E; total sobre 50.
+export type C1CriterionKey = 'execucio_tasca' | 'construccio_discurs' | 'contingut_linguistic' | 'control_norma';
+export type C1WritingEvaluation = {
+  rubrica: 'c1_redaccio';
+  opcio?: string;
+  comprovacio_extensio: { paraules_reals: number; objectiu_tasca: string; dins_marge_10_percent: boolean };
+  criteris: Record<C1CriterionKey, { banda: 'A' | 'B' | 'C' | 'D' | 'E'; puntuacio: number; justificacio: string }>;
+  problemes_especifics: string[];
+  puntuacio_total_rubrica: number;
+  mitjana_base_10: number;
+  errors_detectats: { segment_original: string; proposta_correccio: string; categoria: string; sistematic: boolean }[];
+  retorn_pedagogic: string;
+};
+export type WritingEvaluation = A1WritingEvaluation | A2WritingEvaluation | B1WritingEvaluation | C1WritingEvaluation;
 
 // Ruta d'aprenentatge personalitzada (GET /api/learning-path): passos que el LLM
 // tria del catàleg del nivell de l'usuari a partir de les seues avaluacions.

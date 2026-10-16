@@ -304,6 +304,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
             </div>
             {'reading' in exercise && exercise.reading && <Reading reading={exercise.reading} />}
             <ExerciseBody
+              level={exam.level}
               exercise={exercise}
               answers={progress.answers}
               checked={checked}
@@ -360,9 +361,10 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
 }
 
 function ExerciseBody({
-  exercise, answers, checked, onAnswer, form, onFormChange,
+  exercise, level, answers, checked, onAnswer, form, onFormChange,
 }: {
   exercise: ExamExercise;
+  level: string;
   answers: Record<number, string>;
   checked: boolean;
   onAnswer: (n: number, key: string) => void;
@@ -399,6 +401,7 @@ function ExerciseBody({
           minWordsUsed={exercise.min_words_used}
           image={exercise.image}
           choices={exercise.choices}
+          level={level}
           choice={form[`${key}-choice`]}
           onChoose={c => onFormChange(`${key}-choice`, c)}
           value={form[key] ?? ''}
