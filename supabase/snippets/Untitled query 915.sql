@@ -1,1 +1,1 @@
-delete from user_errors;
+delete from profiles;

@@ -5,6 +5,15 @@ import { ensureSession } from '../lib/api';
 import { isPin, setPin } from '../features/kids/parentPin';
 
 const NETWORK_ERROR = 'No hem pogut connectar. Revisa la connexió i torna-ho a provar.';
+// No es demana cap correu per a no guardar dades personals: el compte es crea amb un nom d'usuari i
+// internament es lliga a una adreça fictícia (el domini .invalid no existix mai).
+const ACCOUNT_DOMAIN = 'usuaris.parlaval.invalid';
+const USERNAME_PATTERN = /^[A-Za-z0-9._-]{3,24}$/;
+const MIN_PASSWORD = 6;
+const accountEmail = (username: string) => `${username.trim().toLowerCase()}@${ACCOUNT_DOMAIN}`;
+const passwordProblem = (password: string) =>
+  password.length < MIN_PASSWORD ? `La contrasenya ha de tindre almenys ${MIN_PASSWORD} caràcters.` : null;
+
 const INPUT_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 outline-none focus:border-[#0F47AF] transition-colors';
 
 // Crea la sessió al backend en entrar (o reutilitza la que ja haja creat el tauler, que pot
@@ -26,7 +35,7 @@ async function updateLastActive(client: NonNullable<typeof supabase>, userId: st
 }
 
 export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [level, setLevel] = useState('A2');
   // Adults que no saben el seu nivell: comencen en l'A2 i, en entrar, se'ls obri la prova de nivell,
@@ -57,13 +66,14 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
     }
   };
 
-  // Registre directe amb email + contrasenya. Amb Supabase local
-  // (enable_confirmations = false) no cal verificar cap correu: la sessió
-  // es crea a l'instant i l'usuari entra directament al tauler.
+  // Registre directe amb nom d'usuari + contrasenya. Sense confirmació de correu (autoconfirm):
+  // la sessió es crea a l'instant i l'usuari entra directament al tauler.
   const signUp = () => {
-    if (supabase && password.length < 6) {
-      return setNotice('La contrasenya ha de tindre almenys 6 caràcters.');
+    if (supabase && !USERNAME_PATTERN.test(username.trim())) {
+      return setNotice('El nom d\'usuari ha de tindre entre 3 i 24 caràcters i només pot portar lletres (excepete ç y ñ) (sense accents), xifres (0-9), punts, guionets (-) i guionets baixos (_). No admet espais ni accents.');
     }
+    const weak = passwordProblem(password);
+    if (supabase && weak) return setNotice(weak);
     if (supabase && !ageGroup) return setNotice('Indica si el compte és per a un xiquet o per a una persona adulta.');
     if (supabase && asksMotherTongue && !motherTongue) return setNotice('Tria la teua llengua materna.');
     if (ageGroup === 'child' && !isPin(familyPin)) return setNotice('Tria un PIN de la família de 4 xifres.');
@@ -71,17 +81,17 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
     const startLevel = ageGroup === 'child' ? 'nivell0' : wantsPlacement ? 'A2' : level;
     return withAuth(async client => {
       const { data, error } = await client.auth.signUp({
-        email,
+        email: accountEmail(username),
         password,
-        options: { data: { level: startLevel, age_group: ageGroup || 'adult', ...(asksMotherTongue ? { mother_tongue: motherTongue } : {}), display_name: email.split('@')[0] } },
+        options: { data: { level: startLevel, age_group: ageGroup || 'adult', ...(asksMotherTongue ? { mother_tongue: motherTongue } : {}), display_name: username.trim() } },
       });
       if (error) {
         setNotice(error.message?.toLowerCase().includes('already registered')
-          ? 'Ja hi ha un compte amb aquest correu. Utilitza «Inicia sessió» amb la teua contrasenya.'
+          ? 'Ja hi ha un compte amb este nom d\'usuari. Tria\'n un altre o utilitza «Inicia sessió».'
           : `No hem pogut crear el compte: ${error.message}`);
         return;
       }
-      // Si cal confirmar el correu encara no hi ha sessió: el PIN es demanarà en entrar al seguiment.
+      // Si encara no hi ha sessió, el PIN es demanarà en entrar al seguiment.
       if (ageGroup === 'child' && data.session) {
         await setPin(data.user?.id, familyPin).catch(e => console.error('Error guardant el PIN de la família:', e));
       }
@@ -95,7 +105,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   // un perfil a la taula `profiles`: si no n'hi ha (p. ex. es va esborrar),
   // es tanca la sessió acabada d'obrir i es rebutja l'accés.
   const logIn = () => withAuth(async client => {
-    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    const { data, error } = await client.auth.signInWithPassword({ email: accountEmail(username), password });
     if (error) return setNotice(`No hem pogut iniciar sessió: ${error.message}`);
 
     const { data: profile } = await client.from('profiles').select('level, role').eq('id', data.user.id).single();
@@ -121,26 +131,30 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         <div className="text-center mb-6">
           <span className="text-4xl">🍊</span>
           <h1 className="mt-2 text-3xl font-black"><span style={{ color: '#0F47AF' }}>Parla</span><span style={{ color: '#FF3B3B' }}>Val</span></h1>
-          <p className="mt-1 opacity-60">{creating ? 'Crea el teu compte i comença, sense necessitat de correu de verificació.' : 'Inicia sessió per continuar.'}</p>
+          <p className="mt-1 opacity-60">{creating ? 'Crea el teu compte i comença: no et demanem cap correu ni dades personals.' : 'Inicia sessió per continuar.'}</p>
         </div>
 
-        <label className="block text-sm font-extrabold mb-1">Correu electrònic</label>
+        <label className="block text-sm font-extrabold mb-1" htmlFor="auth-username">Nom d'usuari</label>
         <input
-          value={email}
-          onChange={e => { setEmail(e.target.value); setNotice(''); }}
-          type="email"
-          placeholder="tu@exemple.com"
-          id="auth-email"
-          autoComplete="email"
+          value={username}
+          onChange={e => { setUsername(e.target.value); setNotice(''); }}
+          type="text"
+          placeholder={creating ? 'El nom que vulgues' : 'El teu nom d\'usuari'}
+          id="auth-username"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          maxLength={24}
           className={INPUT_CLASS}
         />
+        {creating && <p className="mt-1 text-xs opacity-60">Pots posar el nom que vulgues; no cal que siga el teu nom real. Serveix per a entrar i no es pot recuperar si l'oblides.</p>}
 
         <label className="mt-4 block text-sm font-extrabold mb-1">Contrasenya</label>
         <input
           value={password}
           onChange={e => { setPassword(e.target.value); setNotice(''); }}
           type="password"
-          placeholder="Mínim 6 caràcters"
+          placeholder={creating ? `Mínim ${MIN_PASSWORD} caràcters` : 'La teua contrasenya'}
           id="auth-password"
           autoComplete={creating ? 'new-password' : 'current-password'}
           onKeyDown={e => { if (e.key === 'Enter') void (creating ? signUp() : logIn()); }}
@@ -283,8 +297,6 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
             {notice}
           </div>
         )}
-
-        <p className="mt-5 text-center text-xs opacity-40">Mode demo disponible sense Supabase.</p>
       </section>
     </main>
   );

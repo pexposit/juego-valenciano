@@ -731,12 +731,12 @@ Carrusel de 7 fotos de la Comunitat Valenciana (cada 5 s), botones «Entra» / �
 Dos modos: iniciar sesión y crear cuenta.
 
 **Crear cuenta**:
-- Email y contraseña (≥6 caracteres).
+- **Nombre de usuario y contraseña**, sin correo real (no se guardan datos personales). El usuario (3–24 caracteres: letras ASCII, cifras, `.`, `_`, `-`) se convierte internamente en `usuario@usuaris.parlaval.invalid` (dominio inexistente) para GoTrue. El inicio de sesión también es solo con nombre de usuario (no hay entrada por correo; las cuentas antiguas con correo real ya no pueden entrar así). Contraseña de ≥6 caracteres. Sin correo no hay recuperación de contraseña.
 - «Aquest compte és per a...»: niño o adulto (obligatorio).
 - Adulto: elige nivel (`nivell0`, A1…C2; por defecto A2).
 - Niño: PIN familiar de 4 cifras (obligatorio); el nivel se fuerza a `nivell0`.
 - Lengua materna (obligatoria) si es niño o adulto de Nivell 0.
-- `supabase.auth.signUp` con metadatos `{level, age_group, mother_tongue?, display_name: parte local del email}`. **El perfil lo crea el trigger de la BD**.
+- `supabase.auth.signUp` con metadatos `{level, age_group, mother_tongue?, display_name: el nombre de usuario escrito}`. **El perfil lo crea el trigger de la BD**.
 - Si ya hay sesión (local sin confirmación de email) y es niño → `kids_set_pin`.
 - Después `ensureSession(level)` (sesión del backend) y al tablero.
 
