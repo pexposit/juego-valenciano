@@ -46,8 +46,7 @@ tags:
 # Models de veu de speech-lab (ús intern)
 
 Models entrenats del laboratori de veu de ParlaVal: RVC de cada personatge
-(Applio) i fine-tunes de Matxa. **Repositori privat**: les veus són de doblatges i
-vídeos amb drets i no es poden publicar ni redistribuir fora del projecte.
+(Applio) i fine-tunes de Matxa.
 
 Les rutes són les de `speech-lab/`. Per a descarregar-los, des del repositori del joc:
 
