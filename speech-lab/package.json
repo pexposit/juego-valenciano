@@ -11,7 +11,8 @@
     "test": "vitest run src",
     "test:watch": "vitest src",
     "smoke": "tsx src/bench/smoke.ts",
-    "wer": "tsx src/bench/werBench.ts"
+    "wer": "tsx src/bench/werBench.ts",
+    "variant": "tsx src/bench/variantCli.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

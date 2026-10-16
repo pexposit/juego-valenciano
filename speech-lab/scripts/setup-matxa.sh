@@ -32,6 +32,10 @@ if ! "$VENV/bin/python" -c "import speechbrain, sklearn" 2>/dev/null; then
   echo "[setup:matxa] instal·lant SpeechBrain i scikit-learn (separa-personatges.py)"
   "$VENV/bin/pip" install -q speechbrain scikit-learn
 fi
+if ! "$VENV/bin/python" -c "import stftpitchshift" 2>/dev/null; then
+  echo "[setup:matxa] instal·lant stftpitchshift (to i formants de les veus derivades, scripts/veus.json)"
+  "$VENV/bin/pip" install -q stftpitchshift
+fi
 
 # ── 2. espeak-ng de projecte-aina (té ca-va, ca-ba i ca-nw) ───────────────
 if [[ ! -x "$ESPEAK/bin/espeak-ng" ]]; then

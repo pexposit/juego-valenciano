@@ -5,7 +5,8 @@ Protocol NDJSON per stdio, com whisper_batch.py:
 
   node → python (una línia JSON per petició):
     {"ckpt": "/…/checkpoint_epoch=629.ckpt", "spk": 7, "text": "Bon dia",
-     "out": "/tmp/xxx.wav", "temperatura": 0.667, "velocitat": 1.0, "passos": 32}
+     "out": "/tmp/xxx.wav", "temperatura": 0.667, "velocitat": 1.0, "passos": 32,
+     "to": 5, "formants": 1.2}
 
   python → node (una línia JSON per resposta):
     {"compute_ms": 160.2, "audio_secs": 1.6, "cached": true}
@@ -15,6 +16,13 @@ Corre en .venv-voz (torch + Matcha). El vocoder es carrega en arrancar; cada
 checkpoint, la primera vegada que es demana, i se'n guarden MAX_MODELS en GPU
 (el menys usat recentment ix). Els logs van a stderr; per stdout només ixen
 respostes JSON.
+
+`to` (semitons) i `formants` (factor de l'envolupant espectral) són opcionals:
+les veus derivades de scripts/veus.json (la nena) els fan servir per a moure
+la veu de gina després de sintetitzar-la. Es fa amb stftpitchshift, que
+conserva els formants en pujar el to i després els escala a banda: pujar
+només el to sona a gina accelerada; pujar també els formants simula un tracte
+vocal més curt. El temps del desplaçament va inclòs en `compute_ms`.
 """
 from __future__ import annotations
 
@@ -30,6 +38,25 @@ import matxa_entorn as mx  # noqa: E402  (abans de qualsevol import de matcha)
 
 log = logging.getLogger("matxa")
 MAX_MODELS = 3
+MOSTREIG = 22050
+
+
+def desplaca(x, to: float, formants: float):  # noqa: ANN001, ANN201
+    """Puja o baixa el to (semitons) i escala els formants; manté el pic de l'original."""
+    import numpy as np
+
+    try:
+        from stftpitchshift import StftPitchShift
+    except ImportError as exc:
+        raise RuntimeError("falta stftpitchshift en .venv-voz: executa scripts/setup-matxa.sh") from exc
+
+    # Lifter de 1 ms: separa l'envolupant (formants) de l'excitació (to) a 22 kHz.
+    with np.errstate(invalid="ignore", divide="ignore"):
+        y = StftPitchShift(1024, 256, MOSTREIG).shiftpitch(
+            x, factors=2 ** (to / 12), quefrency=1e-3, distortion=formants)
+    y = np.nan_to_num(y)
+    pic = np.abs(y).max()
+    return y * (np.abs(x).max() / pic) if pic > 0 else y
 
 
 def main() -> None:
@@ -82,8 +109,13 @@ def main() -> None:
                 torch.cuda.synchronize()
             ms = (time.time() - t) * 1000
             x = ona.float().clamp(-1, 1).numpy()
-            sf.write(req["out"], (x * 32767).astype(np.int16), 22050, subtype="PCM_16")
-            answer = {"compute_ms": round(ms, 1), "audio_secs": round(len(x) / 22050, 2), "cached": cached}
+            to, formants = float(req.get("to") or 0), float(req.get("formants") or 1)
+            if to or formants != 1:
+                t = time.time()
+                x = desplaca(x, to, formants)
+                ms += (time.time() - t) * 1000
+            sf.write(req["out"], (x * 32767).astype(np.int16), MOSTREIG, subtype="PCM_16")
+            answer = {"compute_ms": round(ms, 1), "audio_secs": round(len(x) / MOSTREIG, 2), "cached": cached}
         except Exception as exc:  # noqa: BLE001  (qualsevol error torna a Node, el sidecar segueix viu)
             log.warning("error: %s", exc)
             answer = {"error": str(exc)}

@@ -5,6 +5,9 @@
  *  - `remot:<veu>`      matxa-tts de la UJI (el mateix que el joc).
  *  - `matxa:base:<spk>` checkpoint base de Matxa multiaccent en local.
  *  - `matxa:<run>:<spk>` fine-tunes de tts/runs/<run>/ (scripts/finetune-matxa.py).
+ *  - `veu:<nom>`        veus derivades de scripts/veus.json: un locutor de Matxa
+ *                       base (gina, valenciana) amb la seua prosòdia i, si cal,
+ *                       to i formants desplaçats (la narradora i la nena).
  *  - `rvc:<nom>`        Matxa base (gina, o el locutor «base» de
  *                       scripts/rvc-personatges.json) + conversió RVC del
  *                       personatge (scripts/entrena-rvc.sh), com scripts/parla.sh.
@@ -35,10 +38,15 @@ export type TtsModel = {
   /** Checkpoints triables (fine-tunes i RVC) i el que es fa servir si no se'n tria cap. */
   checkpoints?: string[]
   defaultCheckpoint?: string
-  /** Semitons que es mou la veu de partida abans de la conversió (només RVC). */
+  /** Semitons que es mou la veu de partida (RVC: abans de la conversió; veus derivades: després de Matxa). */
   pitch?: number
-  /** Locutor de Matxa base que es converteix (només RVC). */
+  /** Locutor de Matxa base de partida (RVC i veus derivades). */
   baseSpeaker?: number
+  /** Factor dels formants (només veus derivades: >1 tracte vocal més curt, com el d'una xiqueta). */
+  formant?: number
+  /** Temperatura i durada de Matxa per defecte (només veus derivades). */
+  temperature?: number
+  speed?: number
   /** Pes per defecte del fitxer .index (només RVC). */
   indexRate?: number
 };
@@ -51,6 +59,7 @@ export type LocalTtsRequest = {
   speed?: number
   pitch?: number
   indexRate?: number
+  formant?: number
 };
 
 export type LocalTtsResult = {
@@ -68,7 +77,10 @@ const SETUP_MATXA = 'Executa `bash speech-lab/scripts/setup-matxa.sh`.';
 const SETUP_RVC = 'Executa `bash speech-lab/scripts/setup-rvc.sh` i entrena un personatge amb `scripts/entrena-rvc.sh`.';
 
 const matxa = new NdjsonSidecar<
-  { ckpt: string, spk: number, text: string, out: string, temperatura?: number, velocitat?: number },
+  {
+    ckpt: string, spk: number, text: string, out: string,
+    temperatura?: number, velocitat?: number, to?: number, formants?: number,
+  },
   { compute_ms: number, audio_secs: number, cached: boolean }
 >({
   name: 'matxa',
@@ -130,6 +142,35 @@ function rvcWeights(name: string): string[] {
     .sort(byEpoch);
 }
 
+/** Una entrada de scripts/veus.json. */
+export type DerivedVoice = {
+  nom?: string
+  base?: number
+  temperatura?: number
+  durada?: number
+  to?: number
+  formants?: number
+};
+
+/** Catàleg de les veus derivades; els camps absents són els de Matxa sense tocar. */
+export function derivedVoiceModels(voices: Record<string, DerivedVoice>): TtsModel[] {
+  return Object.entries(voices).map(([name, voice]) => {
+    const baseSpeaker = voice.base ?? GINA;
+    const speaker = BASE_SPEAKERS[baseSpeaker] ?? `spk${baseSpeaker}`;
+    const accent = BASE_ACCENTS[baseSpeaker];
+    return {
+      id: `veu:${name}`,
+      label: `${voice.nom ?? name} (${speaker}${accent ? ` · ${accent}` : ''})`,
+      group: 'Matxa local · veus derivades',
+      baseSpeaker,
+      temperature: voice.temperatura ?? 0.667,
+      speed: voice.durada ?? 1,
+      pitch: voice.to ?? 0,
+      formant: voice.formants ?? 1,
+    };
+  });
+}
+
 export function localTtsModels(): TtsModel[] {
   const models: TtsModel[] = config.tts.voices.map((voice) => ({
     id: `remot:${voice}`, label: `${voice} (servidor UJI)`, group: 'Remot · matxa-tts UJI',
@@ -139,6 +180,7 @@ export function localTtsModels(): TtsModel[] {
     BASE_SPEAKERS.forEach((name, spk) => models.push({
       id: `matxa:base:${spk}`, label: `${name} (${BASE_ACCENTS[spk]})`, group: 'Matxa local · model base',
     }));
+    models.push(...derivedVoiceModels(readJson<Record<string, DerivedVoice>>(config.localTts.derivedVoices) ?? {}));
   }
 
   for (const run of listDir(config.localTts.runsDir).sort()) {
@@ -204,9 +246,11 @@ export async function synthesizeLocal(request: LocalTtsRequest): Promise<LocalTt
     const ckpt = kind === 'matxa' && name !== 'base'
       ? path.join(config.localTts.runsDir, name, 'checkpoints', checkpoint!)
       : config.localTts.baseCheckpoint;
+    const derived = kind === 'veu';
     const synth = await matxa.request({
-      ckpt, spk: kind === 'rvc' ? model.baseSpeaker ?? GINA : Number(spk), text: request.text, out: matxaWav,
-      temperatura: request.temperature, velocitat: request.speed,
+      ckpt, spk: kind === 'rvc' || derived ? model.baseSpeaker ?? GINA : Number(spk), text: request.text, out: matxaWav,
+      temperatura: request.temperature ?? model.temperature, velocitat: request.speed ?? model.speed,
+      ...(derived && { to: request.pitch ?? model.pitch, formants: request.formant ?? model.formant }),
     });
     if (kind !== 'rvc') {
       return {

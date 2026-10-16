@@ -52,7 +52,29 @@ export const config = {
     applioDir: resolveFromLab(process.env.APPLIO_DIR?.trim() || 'tts/rvc/Applio'),
     /** To mitjà de cada personatge respecte de gina (scripts/parla.sh llig el mateix fitxer). */
     rvcCharacters: path.join(labRoot, 'scripts', 'rvc-personatges.json'),
+    /** Veus derivades d'un locutor de Matxa base (narradora, nena): prosòdia, to i formants. */
+    derivedVoices: path.join(labRoot, 'scripts', 'veus.json'),
     startTimeoutMs: positiveNumber(process.env.LOCAL_TTS_START_TIMEOUT_MS, 180_000),
+  },
+  /**
+   * API fonètica PhoneticXeus de la UJI (intranet): fonemes amb probabilitats
+   * i alineació amb el text de referència. La usa el detector de variant
+   * (valencià / central) de src/variant/.
+   */
+  phonetic: {
+    baseUrl: (process.env.PHONETIC_API_URL?.trim() || 'http://deeplab.lsi.uji.es:8899').replace(/\/$/, ''),
+    /** Cada petició alinea un segment de 3–15 s; en una GPU lliure tarda uns pocs segons. */
+    timeoutMs: positiveNumber(process.env.PHONETIC_API_TIMEOUT_MS, 120_000),
+  },
+  /**
+   * `POST /api/variant`: sessions en memòria per a acumular l'evidència d'una
+   * persona entre gravacions (caduquen i n'hi ha un màxim), i durada màxima
+   * d'una gravació (cada 15 s de veu són tres crides en fila a l'API).
+   */
+  variant: {
+    sessionTtlMs: positiveNumber(process.env.VARIANT_SESSION_TTL_MS, 30 * 60_000),
+    maxSessions: positiveNumber(process.env.VARIANT_MAX_SESSIONS, 200),
+    maxSeconds: positiveNumber(process.env.VARIANT_MAX_SECONDS, 180),
   },
   /** Freqüència d'amostratge que espera el reconeixedor (els models Vosk són de 16 kHz). */
   sampleRate: positiveNumber(process.env.VOSK_SAMPLE_RATE, 16000),

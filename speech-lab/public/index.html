@@ -125,7 +125,13 @@
       max-height: 38vh; overflow-y: auto;
     }
     section.gen {
-      grid-column: 2 / 4; grid-row: 4;
+      grid-column: 2; grid-row: 4;
+      max-height: 38vh; overflow-y: auto;
+    }
+    /* El detector comparteix la fila de baix: el veredicte queda dalt i la
+       resta (contribucions, segments) es llig fent scroll dins de la secció. */
+    section.variant {
+      grid-column: 3; grid-row: 4;
       max-height: 38vh; overflow-y: auto;
     }
   }
@@ -140,6 +146,36 @@
   .gen-history audio { width: 100%; height: 32px; margin-top: 4px; }
   .gen-history a { color: var(--teal); font-size: 12px; margin-left: 6px; }
   select { font: inherit; padding: 6px; border: 1px solid var(--line); border-radius: 8px; max-width: 100%; }
+  /* ── Detector de variant ─────────────────────────────────────────────── */
+  .variant input[type="file"] { padding: 4px; }
+  .variant input[type="checkbox"] { width: auto; }
+  .variant .row + .row { margin-top: 8px; }
+  .verdict { font-size: 16px; font-weight: 700; padding: 4px 12px; }
+  .verdict[data-kind="valencia"] { background: #ccfbf1; color: #115e59; }
+  .verdict[data-kind="central"] { background: #e0e7ff; color: #3730a3; }
+  .verdict[data-kind="indeterminat"] { background: #fef3c7; color: #92400e; }
+  /* Barra de probabilitat: central a l'esquerra, valencià a la dreta; la
+     franja del mig (35–65 %) és la zona on el detector no es pronuncia. */
+  .pbar {
+    position: relative; height: 14px; margin: 10px 0 2px; border-radius: 999px;
+    border: 1px solid var(--line);
+    background: linear-gradient(90deg, #e0e7ff 0 35%, #fef3c7 35% 65%, #ccfbf1 65% 100%);
+  }
+  .pbar span {
+    position: absolute; top: -4px; bottom: -4px; width: 4px; margin-left: -2px;
+    border-radius: 2px; background: var(--ink); transition: left .3s ease;
+  }
+  .pbar-scale { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; }
+  .contrib { list-style: none; margin: 8px 0 0; padding: 0; font-size: 13px; }
+  .contrib li { display: grid; grid-template-columns: 1fr 72px; gap: 2px 8px; padding: 3px 0; border-top: 1px dashed var(--line); }
+  .contrib .dir { font-size: 12px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+  .contrib .dir[data-towards="valencia"] { color: #115e59; }
+  .contrib .dir[data-towards="central"] { color: #3730a3; }
+  .contrib .dir:not([data-towards]) { color: #94a3b8; font-weight: 400; }
+  .contrib .track { grid-column: 1 / -1; position: relative; height: 4px; background: #f1f5f9; border-radius: 2px; }
+  .contrib .track i { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+  .variant .segments li.rejected { color: #64748b; }
+  .variant .segments .why { font-size: 12px; color: #b45309; }
 </style>
 </head>
 <body>
@@ -307,12 +343,15 @@
       <label data-for="local" title="length_scale de Matxa: per davall d'1 parla més ràpid">
         Durada <output id="genSpeedOut">1.00</output>
         <input type="range" id="genSpeed" min="0.6" max="1.5" step="0.05" value="1"></label>
-      <label data-for="rvc" title="Semitons que es puja gina abans de passar-la pel model del personatge">
+      <label data-for="rvc veu" title="Semitons que es mou la veu de partida (RVC: abans del model del personatge; veus derivades: després de Matxa)">
         To (semitons) <output id="genPitchOut">0</output>
         <input type="range" id="genPitch" min="-12" max="12" step="1" value="0"></label>
       <label data-for="rvc" title="Quant s'acosta el timbre als clips reals del personatge (fitxer .index)">
         Índex <output id="genIndexOut">0.60</output>
         <input type="range" id="genIndex" min="0" max="1" step="0.05" value="0.6"></label>
+      <label data-for="veu" title="Escala dels formants: per damunt d'1 el tracte vocal sona més curt (veu de xiqueta)">
+        Formants <output id="genFormantOut">1.00</output>
+        <input type="range" id="genFormant" min="0.8" max="1.4" step="0.01" value="1"></label>
     </div>
     <div class="row" style="margin-top:8px">
       <button id="genBtn">Generar</button>
@@ -322,6 +361,55 @@
     <audio id="genAudio" controls style="width:100%" hidden></audio>
     <p id="genMetrics" class="hint"></p>
     <ul class="gen-history" id="genHistory"></ul>
+  </section>
+
+  <section class="variant">
+    <h2>Detector de variant (valencià / central)</h2>
+    <p class="hint" style="margin-top:0">Diu si la <strong>pronunciació</strong> d'un àudio sona
+      valenciana o central, a partir de les vocals àtones (a/e/o que el central reduïx) mesurades
+      amb l'API fonètica de la UJI (només accessible des de la intranet).</p>
+    <div class="row">
+      <button id="varRec" class="ghost">● Gravar</button>
+      <input type="file" id="varFile" accept="audio/*,.wav" aria-label="Fitxer d'àudio per al detector" />
+    </div>
+    <div class="row">
+      <input type="text" id="varRef" spellcheck="false"
+        placeholder="Text llegit (opcional): la frase exacta que es llig"
+        aria-label="Text llegit (opcional)" />
+    </div>
+    <div class="row">
+      <label class="check" style="margin-right:0"><input type="checkbox" id="varPool"> Acumular gravacions
+        (mateixa persona)</label>
+      <button id="varReset" class="ghost" disabled>Reinicia</button>
+    </div>
+    <p id="varState" class="hint" role="status" aria-live="polite">Grava 10–20 s parlant seguit
+      (conta què has fet hui, per exemple) o puja un àudio.</p>
+
+    <div id="varResult" hidden>
+      <div class="row">
+        <span class="badge verdict" id="varVerdict">—</span>
+        <span id="varP" class="hint" style="margin:0"></span>
+      </div>
+      <div class="pbar" aria-hidden="true"><span id="varBar"></span></div>
+      <div class="pbar-scale" aria-hidden="true"><span>central</span><span>dubtós</span><span>valencià</span></div>
+      <p id="varReason" class="warn" hidden></p>
+      <div id="varNotes"></div>
+      <ul class="contrib" id="varContrib" aria-label="Què ha pesat en el veredicte"></ul>
+      <ul class="segments" id="varSegments" aria-label="Segments analitzats"></ul>
+      <p id="varMeta" class="hint"></p>
+    </div>
+
+    <div class="row" id="varSamples" aria-label="Exemples sintètics" style="margin-top:8px">
+      <button class="ghost" data-variant-sample="/samples/variant-sintetic-central-16k.wav">Exemple central (sintètic)</button>
+      <button class="ghost" data-variant-sample="/samples/variant-sintetic-valencia-16k.wav">Exemple valencià (sintètic)</button>
+    </div>
+    <p class="hint">Els exemples són veu d'espeak-ng (<code>ca</code> i <code>ca-va</code>, 15 s):
+      només servixen per a provar el circuit. En l'exemple central decidixen sobretot les
+      paraules (aquest, avui…): l'espeak central no reduïx prou les vocals.</p>
+    <p class="hint">Límits: necessita 10–20 s de parla seguida (≈80 % d'encert amb 5 s,
+      ≈90 % amb 10–20 s); no val per a paraules soltes ni per a veus sintètiques (les de Matxa
+      sonen centrals); és binari (el balear i el nord-occidental no hi entren) i encara no s'ha
+      validat amb el micròfon del navegador. Descriu la pronunciació de l'àudio, no la persona.</p>
   </section>
 </main>
 
