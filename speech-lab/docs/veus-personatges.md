@@ -63,7 +63,7 @@ cd speech-lab
 # 1. Clips transcritos (usa la GPU; ~3 min por capítulo)
 .venv/bin/python scripts/segmenta-veu.py \
   --entrada voz-dataset/personatges-heidi/parlant_04 --eixida voz-dataset/clips-parlant04
-# 2. Alta en scripts/rvc-personatges.json, p. ej. "parlant04": { "base": 6, "to": 0 }
+# 2. Alta en scripts/rvc-personatges.json, p. ej. "parlant04": { "base": 6, "to": -4, "index": 0 }
 # 3. Entrenamiento RVC sin que el portátil se suspenda (pierde CUDA al hibernar)
 systemd-inhibit --what=sleep:idle scripts/entrena-rvc.sh parlant04 200
 # 4. Prueba
@@ -82,7 +82,7 @@ El laboratorio lee el catálogo del disco: el modelo aparece en
 | `rvc:narrador` | audiolibro (`voz-dataset/clips`) | lluc | −6 | 100 épocas; para el narrador va mejor el fine-tune `narrador-v1` |
 | `rvc:narradora` | «La contacontes Yolanda» (54 min) | gina | +3 | 100 épocas, índice 0 |
 | `rvc:heidi` | Heidi ep. 1–15 (31 min) | gina | +9 | 100 épocas |
-| `rvc:parlant04` | Heidi, grupo 04 (~20 min, voz grave, f0 ≈ 121 Hz; parece el narrador de la serie) | lluc | por medir | en preparación (2026-10-16) |
+| `rvc:parlant04` | Heidi, grupo 04 (~20 min, 225 clips; voz grave, f0 ≈ 121 Hz; parece el narrador de la serie) | lluc | −4 | 200 épocas, índice 0: WER 9,8 % con 4 frases (19,6 % con índice 0,6); f0 generada 126 Hz |
 | `matxa:narrador-v1:6` | audiolibro | — | — | fine-tune, recomendado `last.ckpt` |
 | `matxa:doraemon-v1:7/3` | Doraemon / Nobita | — | — | fine-tune, robótico (descartado) |
 | `matxa:veus-v1:7/3` | narradora / Heidi | — | — | fine-tune, recomendado `epoch=0199.ckpt` |

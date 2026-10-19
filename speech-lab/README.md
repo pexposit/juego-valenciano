@@ -113,7 +113,7 @@ para comparar de oído.
 
 | Id del modelo | Qué es | Parámetros |
 |---|---|---|
-| **`rvc:<nombre>`** (recomendado, sale el primero) | Matxa base + timbre del personaje con RVC (`doraemon`, `nobita`, `narrador`, `narradora`, `heidi`) | tono (semitonos), peso del índice |
+| **`rvc:<nombre>`** (recomendado, sale el primero) | Matxa base + timbre del personaje con RVC (`doraemon`, `nobita`, `narrador`, `narradora`, `heidi`, `parlant04`) | tono (semitonos), peso del índice |
 | `remot:<voz>` | matxa-tts de la UJI (gina, lluc) | — |
 | `matxa:base:<spk>` | Matxa multiaccent local; locutores valencianos gina (7) y lluc (6) | temperatura, duración |
 | `matxa:<run>:<spk>` | fine-tunes de `tts/runs/` (`narrador-v1`, `doraemon-v1`, `veus-v1`) | checkpoint, temperatura, duración |
@@ -215,7 +215,7 @@ speech-lab/
 ## Estado y siguientes pasos
 
 Hecho: reconocimiento en streaming, transcripción por lotes y bench WER (con
-voz sintética), generación de audio con todos los modelos, voces de cinco
+voz sintética), generación de audio con todos los modelos, voces de seis
 personajes, detector de variante y modo llamada. La integración en el juego
 (fase 5) se implementó y se revirtió por decisión del propietario.
 
@@ -226,8 +226,6 @@ Pendiente:
 - **Vocabulario desde los escenarios** del juego (leído por `/api/scenarios`):
   el vocabulario restringido es la mejora más grande medida.
 - **Streaming de calidad** (Whisper por trozos o NeMo) y TTS troceado por frases.
-- **Más voces**: `rvc:parlant04` (grupo 04 de Heidi, voz grave, sobre lluc) en
-  preparación.
 
 ## Qué no hace
 
