@@ -6,7 +6,7 @@ import { ScenarioSelect } from './components/ScenarioSelect';
 import { SceneLoading, useDashboardAssets, useSceneAssets } from './components/SceneLoading';
 import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
-import { changeLevel, endSession, fetchExam, fetchPractice, fetchResources, finishAbandonedResources, forgetSession, invalidateResources } from './lib/api';
+import { changeLevel, endSession, fetchExam, fetchPractice, fetchResources, finishAbandonedResources, forgetSession, invalidateResources, retranslateTutorConversation } from './lib/api';
 import type { Exam as ExamResource, Practice as PracticeResource, Resource } from './lib/types';
 import { activityRoute, AI_PATH_ROUTE, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
@@ -330,6 +330,8 @@ export function App() {
   const updateMotherTongue = (mother_tongue: string) => {
     setMotherTongue(mother_tongue);
     void saveProfile({ mother_tongue });
+    // Les traduccions que ja té la conversa del tauler passen a la llengua nova.
+    void retranslateTutorConversation(mother_tongue);
   };
 
   // El nivell el canvia el backend (el client no pot escriure profiles.level). Torna les classes

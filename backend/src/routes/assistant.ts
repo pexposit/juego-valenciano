@@ -6,6 +6,7 @@ import { rateLimit } from '../middleware/rateLimit.js';
 import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { summarizeConversationTitle } from '../services/conversationTitle.js';
+import { retranslateLines } from '../services/retranslate.js';
 import { MESSAGE_MAX_CHARS } from '@parlaval/shared';
 import { bilingualGreeting } from '../services/motherTongue.js';
 import { assistantGreeting, assistantGreetingIsTranslated } from '../services/assistantLevel.js';
@@ -194,5 +195,25 @@ assistantRouter.post(
     if (!parsed.success) return validationError(res, parsed.error);
     const title = await summarizeConversationTitle(parsed.data.messages.map(m => ({ role: m.role, content_text: m.text })));
     res.json({ title });
+  },
+);
+
+const translateSchema = z.object({
+  tongue: z.enum(['es', 'en', 'fr', 'it', 'ro', 'uk']),
+  lines: z.array(z.string().min(1).max(MESSAGE_MAX_CHARS * 2)).min(1).max(60),
+});
+
+// Torna a traduir les frases del professor a la llengua materna nova (el client les té guardades i les
+// reescriu): perquè en canviar de llengua en el perfil, la conversa del tauler no continue en l'anterior.
+assistantRouter.post(
+  '/api/assistant/translate',
+  requireAuth,
+  rateLimit({ windowMs: 60_000, max: 10, maxAnonymous: 3 }),
+  async (req: AuthRequest, res) => {
+    const parsed = translateSchema.safeParse(req.body);
+    if (!parsed.success) return validationError(res, parsed.error);
+    const translations = await retranslateLines(parsed.data.lines, parsed.data.tongue);
+    if (!translations) return res.status(503).json({ error: "No s'han pogut traduir les frases" });
+    res.json({ translations });
   },
 );

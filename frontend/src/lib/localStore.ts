@@ -216,6 +216,18 @@ async function pruneConversations(userId: string) {
   await deleteKeys('conversations', doomed.map(c => c.id));
 }
 
+/** Canvia el text de missatges ja guardats (per id): p. ex. per a tornar a traduir les frases del professor. */
+export async function updateMessageTexts(patches: { id: string; text: string }[]) {
+  const userId = await currentUserId();
+  if (!userId || patches.length === 0) return;
+  const rows: LocalMessage[] = [];
+  for (const patch of patches) {
+    const message = await getOne('messages', patch.id);
+    if (message && message.userId === userId) rows.push({ ...message, text: patch.text });
+  }
+  await putAll('messages', rows);
+}
+
 /** Els missatges d'una conversa de l'usuari, en ordre (buit si no és d'este navegador). */
 export async function getMessages(conversationId: string): Promise<LocalMessage[]> {
   const userId = await currentUserId();

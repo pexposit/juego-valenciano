@@ -2,7 +2,7 @@ import type { ActivityResult, Exam, LatestEvaluation, LearningPath, Lesson, Prac
 import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
-import { addErrors, addEvaluation, addMessages, getMessages, latestEvaluations, listConversations, listErrors, markErrorsResolved, setCurrentTutorConversation, updateConversation, type LocalError, forgetLevelData } from './localStore';
+import { addErrors, addEvaluation, addMessages, getMessages, latestEvaluations, listConversations, listErrors, markErrorsResolved, setCurrentTutorConversation, updateConversation, updateMessageTexts, type LocalError, forgetLevelData } from './localStore';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
 // Catàleg d'activitats de la BDD (taula resources). Es demana una sola vegada
 // per càrrega de la pàgina: el comparteixen la selecció d'activitats i el xat.
@@ -502,7 +502,46 @@ export type AssistantConversation = {
   session_resource_id: string;
   messages: { role: 'user' | 'character'; text: string }[];
 };
+// Llengües maternes amb traducció (les mateixes que els subtítols del Nivell 0).
+const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'];
+// Canvi de llengua materna en curs: obrir el xat del tauler l'espera, perquè no mostre les traduccions velles.
+let retranslating: Promise<void> | undefined;
+
+/**
+ * Quan canvia la llengua materna, les frases del professor de la conversa del tauler porten la traducció
+ * (la segona línia) en l'anterior, guardada dins de cada missatge. Es tornen a traduir a la nova llengua; si
+ * la nova no té traducció (valencià o una altra), s'esborren. Si no es pot traduir, la conversa queda com estava.
+ */
+export function retranslateTutorConversation(tongue: string): Promise<void> {
+  const run = (async () => {
+    const current = (await listConversations('tutor')).find(c => c.current);
+    if (!current) return;
+    const messages = (await getMessages(current.id)).filter(m => m.role === 'character' && m.text.includes('\n'));
+    if (messages.length === 0) return;
+    const valencian = (text: string) => text.split('\n')[0];
+
+    if (!TRANSLATED_TONGUES.includes(tongue)) {
+      await updateMessageTexts(messages.map(m => ({ id: m.id, text: valencian(m.text) })));
+      return;
+    }
+    const recent = messages.slice(-60);
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ tongue, lines: recent.map(m => valencian(m.text)) }),
+    });
+    if (!res.ok) throw new Error(`El backend ha respost amb codi ${res.status}`);
+    const { translations } = await res.json() as { translations: string[] };
+    await updateMessageTexts(recent.map((m, i) => ({ id: m.id, text: `${valencian(m.text)}\n${translations[i]}` })));
+  })().catch(error => console.error('Error actualitzant les traduccions del xat:', error));
+  retranslating = run;
+  void run.finally(() => { if (retranslating === run) retranslating = undefined; });
+  return run;
+}
+
 async function callAssistant(action: 'open' | 'restart', sessionId: string): Promise<AssistantConversation> {
+  await retranslating;
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/${action}`, {
     method: 'POST',
