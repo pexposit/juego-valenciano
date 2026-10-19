@@ -90,6 +90,8 @@ resourcesRouter.get('/api/resources', async (req, res) => {
     initial_prompt: text(metadata?.initial_prompt),
     // Salutació pregenerada de l'escenari (ruta d'un àudio estàtic), si en té.
     greeting_audio: text(metadata?.greeting_audio),
+    // A qui va dirigit un escenari del Nivell 0: 'adult' per als de persones adultes; sense marca, els xiquets.
+    audience: text(metadata?.audience),
     // Nom i rol del personatge (p. ex. "Vicent, venedor del mercat"), sense separar-los:
     // l'etiqueta de sota l'actor a la pantalla del xat el mostra tal qual.
     character: characterOf(metadata) ?? null,

@@ -18,6 +18,10 @@ export const ROBOT_AVATAR = {
   // Versions del robot amb roba de l'escenari (GLB + imatge mentre carrega);
   // la resta d'escenaris usen `modelUrl` i `fallbackUrl`. Font: assets-src/robot-avatar/.
   scenarioOutfits: {
+    n0_fruiteria: { // Josep, fruiter (adults, Nivell 0): el mateix personatge que el mercat de l'A2
+      modelUrl: '/avatar-robot/robot-mercat.glb',
+      fallbackUrl: '/avatar-robot/robot-mercat.webp',
+    },
     mercat: { // barret de palla, davantal i taronja
       modelUrl: '/avatar-robot/robot-mercat.glb',
       fallbackUrl: '/avatar-robot/robot-mercat.webp',
@@ -70,9 +74,17 @@ export const ROBOT_AVATAR = {
       modelUrl: '/avatar-robot/robot-ajuntament.glb',
       fallbackUrl: '/avatar-robot/robot-ajuntament.webp',
     },
+    n0_ajuntament: { // Rosa, funcionària (adults, Nivell 0): el mateix personatge que l'ajuntament del B1
+      modelUrl: '/avatar-robot/robot-ajuntament.glb',
+      fallbackUrl: '/avatar-robot/robot-ajuntament.webp',
+    },
     bar: { // Maria, cambrera: polo taronja, davantal negre, llibreta, drap, pestanyes i safata amb café i suc
       modelUrl: '/avatar-robot/robot-bar.glb',
       fallbackUrl: '/avatar-robot/robot-bar.webp',
+    },
+    n0_taller: { // Toni, mecànic (adults, Nivell 0): el mateix personatge que el taller del B1
+      modelUrl: '/avatar-robot/robot-taller.glb',
+      fallbackUrl: '/avatar-robot/robot-taller.webp',
     },
     taller: { // mecànic en cap: granota de treball, gorra, pegat amb el nom, tornavís, drap i clau fixa
       modelUrl: '/avatar-robot/robot-taller.glb',

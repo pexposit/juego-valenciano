@@ -5,6 +5,7 @@ import { Logo, ProfileButton } from './ui';
 import { LessonModal } from './LessonModal';
 import { fetchActivityStatus, fetchResources, type ActivityStatus } from '../lib/api';
 import type { Resource } from '../lib/types';
+import { isKidsScenario } from '../data/content';
 import { isRobotAvatarEnabled, preloadRobotAvatar } from '../features/robot-avatar'; // [robot-avatar]
 
 // Noms visibles de les categories conegudes, en l'ordre en què es mostren; la
@@ -55,7 +56,8 @@ function groupResources(resources: Resource[], level: string): Category[] {
     categories.set(category, sections);
   };
   for (const r of resources) {
-    if (!r.class_activity && r.difficulty === level) add(r.category, r);
+    // Esta pantalla és només per a persones adultes: els escenaris infantils del Nivell 0 no hi apareixen.
+    if (!r.class_activity && r.difficulty === level && !isKidsScenario(r)) add(r.category, r);
   }
   return [...categories]
     .map(([id, sections]) => ({

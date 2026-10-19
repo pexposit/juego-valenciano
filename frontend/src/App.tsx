@@ -8,7 +8,7 @@ import { PageTransition } from './components/ui';
 import { supabase } from './lib/supabase';
 import { changeLevel, endSession, fetchExam, fetchPractice, fetchResources, finishAbandonedResources, forgetSession, invalidateResources, retranslateTutorConversation } from './lib/api';
 import type { Exam as ExamResource, Practice as PracticeResource, Resource } from './lib/types';
-import { activityRoute, AI_PATH_ROUTE, DEFAULT_PROFILE, KIDS_ROUTES, ROUTES, type Page } from './data/content';
+import { activityRoute, AI_PATH_ROUTE, DEFAULT_PROFILE, isKidsScenario, KIDS_ROUTES, ROUTES, type Page } from './data/content';
 import { HomePage } from './pages/HomePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
@@ -64,8 +64,8 @@ function useCatalogResource(match: (resource: Resource) => boolean, key: string 
 // Llig l'escenari de la URL (/xat/:scenario) i el busca al catàleg de la BDD;
 // si no existix o no és jugable (enllaç trencat, escrit a mà...), torna a la selecció.
 function ChatRoute({
-  level, xp, onXpGained, onBack,
-}: { level: string; xp: number; onXpGained: (delta: number) => void; onBack: () => void }) {
+  level, kids, xp, onXpGained, onBack,
+}: { level: string; kids: boolean; xp: number; onXpGained: (delta: number) => void; onBack: () => void }) {
   const { scenario } = useParams<{ scenario: string }>();
   const navigate = useNavigate();
   const section = useCatalogResource(r => CHAT_CATEGORIES.includes(r.category) && r.type === scenario, scenario);
@@ -77,6 +77,10 @@ function ChatRoute({
   const translation = level === 'nivell0' && lang ? section?.translations?.[lang] ?? null : null;
 
   if (!scenario || section === null) return <Navigate to={ROUTES.scenarioselect} replace />;
+  // Els escenaris infantils només els fan els xiquets (per l'enllaç directe tampoc).
+  if (section && isKidsScenario(section) && !kids) return <Navigate to={ROUTES.dashboard} replace />;
+  // I els de persones adultes del Nivell 0, els xiquets no els fan.
+  if (section && section.difficulty === 'nivell0' && section.audience === 'adult' && kids) return <Navigate to={KIDS_ROUTES.home} replace />;
   if (section === undefined || !ready) return <SceneLoading />;
   return (
     <PageTransition>
@@ -508,7 +512,7 @@ export function App() {
         />
         <Route
           path={`${ROUTES.chat}/:scenario`}
-          element={<ChatRoute level={level} xp={xp} onXpGained={delta => setXp(x => x + delta)} onBack={() => navigate(-1)} />}
+          element={<ChatRoute level={level} kids={kids} xp={xp} onXpGained={delta => setXp(x => x + delta)} onBack={() => navigate(-1)} />}
         />
         <Route path={`${ROUTES.exam}/:id`} element={!profileReady ? null : <ExamRoute onBack={() => navigate(-1)} />} />
         <Route path={`${ROUTES.practice}/:id`} element={!profileReady ? null : <PracticeRoute level={level} onBack={() => navigate(-1)} />} />

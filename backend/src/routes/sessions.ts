@@ -226,16 +226,16 @@ sessionsRouter.post(
       }
 
       const userId = req.userId;
-      const { data: profile } = await client.from('profiles').select('level').eq('id', userId).maybeSingle();
+      const { data: profile } = await client.from('profiles').select('level, age_group').eq('id', userId).maybeSingle();
       // Quins objectius de l'escenari ha complit (xiquets i persones adultes): el professorat ho veu a la taula de
       // l'alumnat. Es fa abans de l'avaluació pedagògica, perquè no en depenga.
-      const audience = profile?.level === 'nivell0' ? 'child' : 'adult';
+      const audience = profile?.age_group === 'child' ? 'child' : 'adult';
       if (parsed.data.messages.length > 0) {
         void reviewKidsConversation(client, userId, sessionResourceId, sessionResource.recurso_id, parsed.data.messages, audience)
           .catch((err: Error) => console.error('[objectives] Error:', err.message));
       }
-      // Nivell 0: sense errors ni avaluació pedagògica; només els objectius.
-      if (audience === 'child') return res.json({ ok: true, evaluation: null });
+      // Nivell 0 (xiquets i adults): sense errors ni avaluació pedagògica; només els objectius.
+      if (profile?.level === 'nivell0') return res.json({ ok: true, evaluation: null });
 
       let evaluation = null;
       const evalStart = Date.now();
@@ -271,6 +271,6 @@ async function reviewIfMissing(
 ) {
   const { data: existing } = await client.from('kids_scenario_reviews').select('session_resource_id').eq('session_resource_id', sessionResourceId).maybeSingle();
   if (existing) return;
-  const { data: profile } = await client.from('profiles').select('level').eq('id', userId).maybeSingle();
-  await reviewKidsConversation(client, userId, sessionResourceId, resourceId, messages, profile?.level === 'nivell0' ? 'child' : 'adult');
+  const { data: profile } = await client.from('profiles').select('age_group').eq('id', userId).maybeSingle();
+  await reviewKidsConversation(client, userId, sessionResourceId, resourceId, messages, profile?.age_group === 'child' ? 'child' : 'adult');
 }

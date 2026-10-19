@@ -11,7 +11,7 @@ export type TurnResponse={reply_text:string;transcription?:string|null;reply_aud
 // de joc i la fila en té les dades (el decidix el backend); `has_lesson`, si té lliçó fixa (metadata.lesson).
 // Traducció d'un escenari a una llengua materna (resources.metadata.translations).
 export type ScenarioTranslation = { content: string | null; initial_prompt: string | null; objectius: string[] };
-export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; greeting_audio:string|null; character:string|null; objectius:string[]; translations:Record<string,ScenarioTranslation>; playable:boolean; has_lesson:boolean; class_activity?:boolean; assigned?:boolean; cefr_level?:string|null };
+export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; greeting_audio:string|null; audience:string|null; character:string|null; objectius:string[]; translations:Record<string,ScenarioTranslation>; playable:boolean; has_lesson:boolean; class_activity?:boolean; assigned?:boolean; cefr_level?:string|null };
 
 // Exercici de pràctica del temari (taula practice_exercises). `choice`: la correcta
 // és answers[0], una de les `options`; `fill`: val qualsevol de les `answers`;
