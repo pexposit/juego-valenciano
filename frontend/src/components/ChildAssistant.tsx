@@ -188,16 +188,16 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   };
 
   return (
-    <div className="relative z-20 flex flex-col items-center gap-4 px-5 pb-10 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
+    <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center gap-4 px-5 pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
       {isRobotAvatarEnabled('dashboard')
-        ? <DashboardRobot className="drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} />
-        : <img src="/images/avatar_professor.svg" alt="El professor" className="float drop-shadow-lg" width={avatarSize} height={avatarSize} />}
+        ? <DashboardRobot className="shrink-0 drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} />
+        : <img src="/images/avatar_professor.svg" alt="El professor" className="float shrink-0 drop-shadow-lg" width={avatarSize} height={avatarSize} />}
 
-      <section className="w-full max-w-4xl [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor">
+      <section className="flex min-h-0 w-full max-w-4xl flex-1 flex-col [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor">
         <div
           ref={listRef}
           aria-live="polite"
-          className="flex max-h-[clamp(10rem,calc(100dvh_-_34rem),36rem)] [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-14rem)] min-h-24 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white"
+          className="flex max-h-[36rem] min-h-24 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-var(--app-footer,0px)-14rem)]"
         >
           {openFailed && <p className="text-center text-lg font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-lg font-bold opacity-60">Un moment...</p>}

@@ -64,7 +64,7 @@ function OptionChips({ q, options, answers, checked, onAnswer }: AnswerProps & {
           <button
             key={o.key}
             disabled={checked}
-            onClick={() => onAnswer(q.n, o.key)}
+            onClick={() => onAnswer(q.n, answers[q.n] === o.key ? '' : o.key)} // tornar a tocar l'opció triada la desfà
             aria-pressed={answers[q.n] === o.key}
             className={`btn-press min-w-10 rounded-full border-2 px-3 py-1.5 text-sm font-black uppercase transition-colors disabled:cursor-default ${CHIP[status]}`}
           >
@@ -101,7 +101,7 @@ function TextOption({ q, option, ...props }: AnswerProps & { q: ExamQuestion; op
   return (
     <button
       disabled={props.checked}
-      onClick={() => props.onAnswer(q.n, option.key)}
+      onClick={() => props.onAnswer(q.n, props.answers[q.n] === option.key ? '' : option.key)} // tornar a tocar l'opció triada la desfà
       aria-pressed={props.answers[q.n] === option.key}
       className={`btn-press flex w-full items-center gap-3 rounded-xl border-2 px-4 py-2.5 text-left transition-colors disabled:cursor-default ${box}`}
     >
@@ -136,7 +136,7 @@ export function ChoiceExercise({ questions, ...props }: AnswerProps & { question
                 <button
                   key={o.key}
                   disabled={checked}
-                  onClick={() => onAnswer(q.n, o.key)}
+                  onClick={() => onAnswer(q.n, answers[q.n] === o.key ? '' : o.key)} // tornar a tocar l'opció triada la desfà
                   aria-pressed={answers[q.n] === o.key}
                   aria-label={`Opció ${o.key}`}
                   className={`btn-press group relative overflow-hidden rounded-2xl border-4 bg-white transition-all disabled:cursor-default ${RING[status]}`}

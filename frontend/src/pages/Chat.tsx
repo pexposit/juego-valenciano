@@ -282,14 +282,14 @@ ${translation.initial_prompt}` : text;
             ← Eixir
           </button>
           <span
-            className="max-w-[26vw] truncate rounded-full px-3.5 py-1.5 text-xs font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm sm:max-w-none"
+            className="max-w-[26vw] truncate rounded-full px-3.5 py-1.5 text-xs lg:text-base font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm sm:max-w-none"
             style={{ background: 'rgba(255,255,255,0.92)' }}
           >
             {title}
           </span>
         </div>
         <div
-          className="absolute left-1/2 hidden -translate-x-1/2 rounded-full px-4 py-2 text-sm font-black shadow backdrop-blur-sm sm:block"
+          className="absolute left-1/2 hidden -translate-x-1/2 rounded-full px-4 py-2 text-sm lg:text-lg font-black shadow backdrop-blur-sm sm:block"
           style={{ background: 'rgba(255,255,255,0.9)' }}
         >
           ⚡ {xp} XP
@@ -320,10 +320,10 @@ ${translation.initial_prompt}` : text;
       {hasObjectives && showObjectives && (
         <aside
           id="chat-objectives"
-          className="absolute right-5 top-20 z-20 max-h-[calc(100dvh-11rem)] w-[min(calc(100%-2.5rem),320px)] overflow-y-auto rounded-3xl bg-white/95 p-5 shadow-xl backdrop-blur-sm [@media(max-height:500px)_and_(orientation:landscape)]:inset-x-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-8.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:w-auto [@media(max-height:500px)_and_(orientation:landscape)]:p-3"
+          className="absolute right-5 top-20 z-20 max-h-[calc(100dvh-11rem)] w-[min(calc(100%-2.5rem),320px)] lg:w-[min(calc(100%-2.5rem),420px)] overflow-y-auto rounded-3xl bg-white/95 p-5 shadow-xl backdrop-blur-sm [@media(max-height:500px)_and_(orientation:landscape)]:inset-x-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-8.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:w-auto [@media(max-height:500px)_and_(orientation:landscape)]:p-3"
         >
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider" style={{ color: '#0F47AF' }}>
+            <h2 className="flex items-center gap-2 text-sm lg:text-base font-black uppercase tracking-wider" style={{ color: '#0F47AF' }}>
               <Target size={16} /> Objectius
             </h2>
             <button onClick={() => setShowObjectives(false)} aria-label="Tancar els objectius" className="btn-press rounded-full p-1 opacity-60 hover:opacity-100">
@@ -331,17 +331,17 @@ ${translation.initial_prompt}` : text;
             </button>
           </div>
           {summary && (
-            <p className="mb-3 text-sm font-bold opacity-70">
+            <p className="mb-3 text-sm lg:text-lg font-bold opacity-70">
               {summary}
-              {translation?.content && <span className="mt-0.5 block text-xs font-semibold text-slate-400">{translation.content}</span>}
+              {translation?.content && <span className="mt-0.5 block text-xs lg:text-base font-semibold text-slate-400">{translation.content}</span>}
             </p>
           )}
           {objectives.length > 0 && (
-            <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm font-bold">
+            <ol className="flex list-decimal flex-col gap-1.5 lg:gap-2.5 pl-5 text-sm lg:text-lg font-bold">
               {objectives.map((o, i) => (
                 <li key={o}>
                   {o}
-                  {translation?.objectius[i] && <span className="block text-xs font-semibold text-slate-400">{translation.objectius[i]}</span>}
+                  {translation?.objectius[i] && <span className="block text-xs lg:text-base font-semibold text-slate-400">{translation.objectius[i]}</span>}
                 </li>
               ))}
             </ol>
@@ -350,20 +350,20 @@ ${translation.initial_prompt}` : text;
       )}
 
       {/* Character bubble with entrance animation */}
-      <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] z-10 max-w-[min(72%,440px)] rounded-3xl bg-white p-5 font-bold shadow-xl text-base [@media(max-height:500px)_and_(orientation:landscape)]:left-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:p-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm">
+      <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] z-10 max-w-[min(72%,440px)] lg:max-w-[min(72%,600px)] rounded-3xl bg-white p-5 lg:p-7 font-bold shadow-xl text-base lg:text-2xl [@media(max-height:500px)_and_(orientation:landscape)]:left-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:p-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm">
         <div className="[@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-10.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:overflow-y-auto">
         <p className="leading-relaxed">
           {loading ? <span className="opacity-50">El personatge està escrivint…</span> : characterText}
         </p>
         {!loading && translation && characterHelp.length > 0 && (
-          <p className="mt-1 whitespace-pre-line text-sm font-semibold text-slate-400">{characterHelp.join('\n')}</p>
+          <p className="mt-1 whitespace-pre-line text-sm lg:text-xl font-semibold text-slate-400">{characterHelp.join('\n')}</p>
         )}
         {!loading && (
           <>
             {showAudioLoading && <AudioLoading className="mt-3" />}
             <button
               onClick={replayCharacter}
-              className="btn-press mt-3 flex items-center gap-1 text-sm font-extrabold"
+              className="btn-press mt-3 flex items-center gap-1 text-sm lg:text-lg font-extrabold"
               style={{ color: '#0F47AF' }}
             >
               <Volume2 size={15} /> Escolta de nou
@@ -387,11 +387,11 @@ ${translation.initial_prompt}` : text;
       {user && (
         <div
           key={`user-${bubbleKey}`}
-          className="user-bubble-enter user-bubble absolute bottom-36 right-5 z-10 max-w-[70%] [@media(max-height:500px)_and_(orientation:landscape)]:bottom-24 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[40%] [@media(max-height:500px)_and_(orientation:landscape)]:p-2 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm rounded-3xl p-4 font-bold text-white shadow-lg"
+          className="user-bubble-enter user-bubble absolute bottom-48 lg:bottom-52 right-5 z-10 max-w-[70%] [@media(max-height:500px)_and_(orientation:landscape)]:bottom-24 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[40%] [@media(max-height:500px)_and_(orientation:landscape)]:p-2 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm rounded-3xl p-4 lg:p-5 lg:text-xl font-bold text-white shadow-lg"
           style={{ background: '#0F47AF' }}
         >
           <p>{user}</p>
-          {userTranscription && <p className="mt-2 border-t border-white/30 pt-2 text-sm font-normal">Transcripció: {userTranscription}</p>}
+          {userTranscription && <p className="mt-2 border-t border-white/30 pt-2 text-sm lg:text-lg font-normal">Transcripció: {userTranscription}</p>}
         </div>
       )}
 

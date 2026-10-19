@@ -1,7 +1,7 @@
 import { userKey } from '../lib/progressStorage';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Headphones, Lightbulb, RotateCcw } from 'lucide-react';
+import { ArrowUp, ChevronLeft, ChevronRight, Headphones, Lightbulb, RotateCcw } from 'lucide-react';
 import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type PracticeArea } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
@@ -434,24 +434,42 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
             <p className="text-sm font-bold opacity-60">
               {checked ? `${correct} de ${gradable.length} encerts` : `${answered} de ${gradable.length} preguntes respostes`}
             </p>
-            {checked ? (
-              <button
-                onClick={reset}
-                className="btn-press flex items-center gap-2 rounded-full bg-teal px-6 py-3 font-black text-white shadow hover:bg-teal/90"
-              >
-                <RotateCcw size={18} /> Tornar a fer
-              </button>
-            ) : (
-              <button
-                onClick={check}
-                disabled={answered === 0}
-                className="btn-press rounded-full bg-orange px-6 py-3 font-black text-white shadow hover:bg-orange/90 disabled:opacity-50"
-              >
-                Corregir
-              </button>
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Passa a la pàgina següent de preguntes (només si n'hi ha). */}
+              {page < pages.length - 1 && (
+                <button
+                  onClick={() => goToPage(page + 1)}
+                  className="btn-press flex items-center gap-2 rounded-full bg-[#0F47AF] px-6 py-3 font-black text-white shadow hover:bg-[#0F47AF]/90"
+                >
+                  Continuar <ChevronRight size={18} />
+                </button>
+              )}
+              {checked ? (
+                <button
+                  onClick={reset}
+                  className="btn-press flex items-center gap-2 rounded-full bg-teal px-6 py-3 font-black text-white shadow hover:bg-teal/90"
+                >
+                  <RotateCcw size={18} /> Tornar a fer
+                </button>
+              ) : (
+                <button
+                  onClick={check}
+                  disabled={answered === 0}
+                  className="btn-press rounded-full bg-orange px-6 py-3 font-black text-white shadow hover:bg-orange/90 disabled:opacity-50"
+                >
+                  Corregir
+                </button>
+              )}
+            </div>
           </div>
         )}
+
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="btn-press mx-auto flex items-center gap-1 text-sm font-bold opacity-50 hover:opacity-100 transition-opacity"
+        >
+          <ArrowUp size={14} /> Tornar a dalt
+        </button>
       </div>
     </main>
   );
