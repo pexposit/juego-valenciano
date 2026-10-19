@@ -165,3 +165,66 @@ export function ago(date: string | null, now = Date.now()) {
 }
 
 export const percent = (value: number | null) => (value === null ? '—' : `${Math.round(value * 100)} %`);
+
+
+/* ── Persones adultes ─────────────────────────────────────────────────── */
+
+/**
+ * El mateix resum (li costa, a practicar, ho domina) per a qui no és del Nivell 0, amb les seues activitats en
+ * compte d'illes: les pràctiques i els exàmens (última nota) i els escenaris (objectius de l'última conversa).
+ *   - ho domina: 80 % o més i, si és una pràctica, sense errors pendents de corregir;
+ *   - li costa: 50 % o menys;
+ *   - a practicar: la resta (entre el 50 i el 80 %, o amb errors encara sense corregir).
+ */
+export type AdultItem = {
+  key: string;
+  name: string;
+  emoji: string;
+  kind: 'practice' | 'exam' | 'scenario';
+  ratio: number;
+  detail: string; // «7/10», «2/5 objectius»
+  pendingErrors: number;
+  lastAt: string;
+  mastery: Mastery;
+};
+export type AdultReport = { costa: AdultItem[]; practicar: AdultItem[]; domina: AdultItem[]; items: AdultItem[]; lastActivity: string | null };
+
+const adultMastery = (ratio: number, pendingErrors: number): Mastery =>
+  ratio <= 0.5 ? 'costa' : ratio >= 0.8 && pendingErrors === 0 ? 'domina' : 'practicar';
+
+export function summarizeAdult({ activities = [], conversations = [] }: ChildData): AdultReport {
+  const items: AdultItem[] = [];
+  for (const a of activities) {
+    if (a.score === null || !a.total) continue;
+    const r = a.score / a.total;
+    items.push({
+      key: `${a.kind}:${a.resource_id}`, name: a.name, emoji: a.icon ?? (a.kind === 'exam' ? '📝' : '📘'), kind: a.kind,
+      ratio: r, detail: `${a.score}/${a.total}`, pendingErrors: a.pending_errors, lastAt: a.last_at, mastery: adultMastery(r, a.pending_errors),
+    });
+  }
+  for (const c of summarizeConversations(conversations)) {
+    if (!c.total || c.latest.objectives.every(o => o.met === null)) continue;
+    const met = metCount(c.latest);
+    const r = met / c.total;
+    items.push({
+      key: `scenario:${c.id}`, name: c.name, emoji: '💬', kind: 'scenario',
+      ratio: r, detail: `${met}/${c.total} objectius`, pendingErrors: 0, lastAt: c.latest.created_at, mastery: adultMastery(r, 0),
+    });
+  }
+  const group = (mastery: Mastery) => items.filter(i => i.mastery === mastery).sort((a, b) => a.ratio - b.ratio);
+  const dates = items.map(i => i.lastAt).sort();
+  return { costa: group('costa'), practicar: group('practicar'), domina: group('domina'), items, lastActivity: dates[dates.length - 1] ?? null };
+}
+
+/** Les activitats que costen (50 % o menys) a més alumnes adults d'una classe, amb quants. */
+export function groupAdultStruggles(students: ChildData[]) {
+  const counts = new Map<string, { item: AdultItem; students: number }>();
+  for (const report of students.map(summarizeAdult)) {
+    for (const item of report.costa) {
+      const entry = counts.get(item.key);
+      if (entry) entry.students += 1;
+      else counts.set(item.key, { item, students: 1 });
+    }
+  }
+  return [...counts.values()].sort((a, b) => b.students - a.students);
+}

@@ -203,8 +203,17 @@ sessionsRouter.post(
         return res.status(404).json({ error: 'Recurs de sessió no trobat o no autoritzat' });
       }
 
-      // Ja tancat (p. ex. el navegador el reintenta en recuperar un escenari abandonat): no es torna a avaluar.
-      if (sessionResource.resolved) return res.json({ ok: true, evaluation: null });
+      // Ja tancat (p. ex. el navegador el reintenta en recuperar un escenari abandonat): no es torna a avaluar. Però si
+      // arriba la conversa i encara no hi ha la revisió dels objectius (un tancament anterior, sense conversa, no la va
+      // poder fer), es fa ara.
+      if (sessionResource.resolved) {
+        res.json({ ok: true, evaluation: null });
+        if (parsed.data.messages.length > 0) {
+          void reviewIfMissing(client, req.userId, sessionResourceId, sessionResource.recurso_id, parsed.data.messages)
+            .catch((err: Error) => console.error('[objectives] Error:', err.message));
+        }
+        return;
+      }
 
       const { error: updateError } = await client
         .from('session_resource')
@@ -218,13 +227,15 @@ sessionsRouter.post(
 
       const userId = req.userId;
       const { data: profile } = await client.from('profiles').select('level').eq('id', userId).maybeSingle();
-      // Nivell 0: sense errors ni avaluació pedagògica; només quins objectius de l'escenari ha complit.
-      if (profile?.level === 'nivell0') {
-        res.json({ ok: true, evaluation: null });
-        void reviewKidsConversation(client, userId, sessionResourceId, sessionResource.recurso_id, parsed.data.messages)
-          .catch((err: Error) => console.error('[kids-objectives] Error:', err.message));
-        return;
+      // Quins objectius de l'escenari ha complit (xiquets i persones adultes): el professorat ho veu a la taula de
+      // l'alumnat. Es fa abans de l'avaluació pedagògica, perquè no en depenga.
+      const audience = profile?.level === 'nivell0' ? 'child' : 'adult';
+      if (parsed.data.messages.length > 0) {
+        void reviewKidsConversation(client, userId, sessionResourceId, sessionResource.recurso_id, parsed.data.messages, audience)
+          .catch((err: Error) => console.error('[objectives] Error:', err.message));
       }
+      // Nivell 0: sense errors ni avaluació pedagògica; només els objectius.
+      if (audience === 'child') return res.json({ ok: true, evaluation: null });
 
       let evaluation = null;
       const evalStart = Date.now();
@@ -250,3 +261,16 @@ sessionsRouter.post(
     }
   }
 );
+/** Revisa els objectius d'una conversa només si encara no se n'ha guardat la revisió. */
+async function reviewIfMissing(
+  client: any,
+  userId: string,
+  sessionResourceId: string,
+  resourceId: string,
+  messages: { role: string; text: string; created_at: string }[],
+) {
+  const { data: existing } = await client.from('kids_scenario_reviews').select('session_resource_id').eq('session_resource_id', sessionResourceId).maybeSingle();
+  if (existing) return;
+  const { data: profile } = await client.from('profiles').select('level').eq('id', userId).maybeSingle();
+  await reviewKidsConversation(client, userId, sessionResourceId, resourceId, messages, profile?.level === 'nivell0' ? 'child' : 'adult');
+}

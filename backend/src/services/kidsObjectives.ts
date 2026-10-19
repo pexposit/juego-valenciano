@@ -18,9 +18,27 @@ const openai = () => {
 };
 
 type Message = { role: string; content_text: string; created_at: string };
+// Qui fa la conversa: un xiquet del Nivell 0 o una persona adulta (qualsevol altre nivell).
+export type Audience = 'child' | 'adult';
+
+// Prompt per a persones adultes (qualsevol nivell que no siga el 0): el mateix criteri, però sense el to infantil.
+const ADULT_SYSTEM =
+  "Revises una conversa entre una persona adulta que aprén valencià i un personatge d'un escenari de pràctica. " +
+  "NO busques errors. Per a cada objectiu, digues només si l'aprenent l'ha complit en la conversa: ha d'haver fet ell mateix " +
+  "l'acte comunicatiu que descriu l'objectiu, en valencià. Sigues raonable: compta com a complit si ho ha fet de manera " +
+  "comprensible, encara que siga amb errades o amb frases curtes. Els exemples entre parèntesis són només exemples: n'hi ha prou " +
+  "que en cobrisca alguns. No compta si només ho ha dit el personatge, si l'aprenent ho ha dit només en una altra llengua, " +
+  "o si no ha arribat a eixa part de la conversa. " +
+  'Respon NOMÉS amb JSON, sense text abans ni després: {"complits": [true, false, ...]}, un valor per objectiu i en el mateix ordre.';
+
+
 
 /** Quins objectius s'han complit (en el mateix ordre), o null si no s'ha pogut revisar. */
-export async function checkObjectives(objectives: string[], messages: Pick<Message, 'role' | 'content_text'>[]): Promise<(boolean | null)[]> {
+export async function checkObjectives(
+  objectives: string[],
+  messages: Pick<Message, 'role' | 'content_text'>[],
+  audience: Audience = 'child',
+): Promise<(boolean | null)[]> {
   const unknown = objectives.map(() => null);
   const ai = openai();
   const model = process.env.OPENAI_MODEL;
@@ -28,7 +46,7 @@ export async function checkObjectives(objectives: string[], messages: Pick<Messa
 
   const transcript = messages
     .slice(-MAX_MESSAGES)
-    .map(m => `${m.role === 'user' ? 'Xiquet' : 'Personatge'}: ${m.content_text}`)
+    .map(m => `${m.role === 'user' ? (audience === 'adult' ? 'Aprenent' : 'Xiquet') : 'Personatge'}: ${m.content_text}`)
     .join('\n');
   const list = objectives.map((o, i) => `${i + 1}. ${o}`).join('\n');
 
@@ -39,7 +57,7 @@ export async function checkObjectives(objectives: string[], messages: Pick<Messa
       messages: [
         {
           role: 'system',
-          content:
+          content: audience === 'adult' ? ADULT_SYSTEM :
             'Revises una conversa entre un xiquet o una xiqueta que aprén valencià (Nivell 0, infantil) i un personatge. ' +
             'NO busques errors. Per a cada objectiu, digues només si el xiquet l\'ha complit en la conversa. ' +
             'Sigues generós: compta com a complit si el xiquet ho ha dit en valencià, encara que siga amb errors, amb una sola paraula ' +
@@ -81,6 +99,7 @@ export async function reviewKidsConversation(
   sessionResourceId: string,
   resourceId: string,
   messages: { role: string; text: string; created_at: string }[],
+  audience: Audience = 'child',
 ) {
   const { data: resource } = await client.from('resources').select('name, metadata').eq('id', resourceId).maybeSingle();
   const list: Message[] = messages
@@ -91,7 +110,7 @@ export async function reviewKidsConversation(
 
   const objectives = (Array.isArray(resource.metadata?.objectius) ? resource.metadata.objectius : [])
     .filter((o: unknown): o is string => typeof o === 'string');
-  const met = await checkObjectives(objectives, list);
+  const met = await checkObjectives(objectives, list, audience);
   const seconds = Math.max(0, Math.round((Date.parse(list[list.length - 1].created_at) - Date.parse(list[0].created_at)) / 1000));
 
   const { error } = await client.from('kids_scenario_reviews').upsert({

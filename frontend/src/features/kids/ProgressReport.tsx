@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { BookOpen, MessageCircle } from 'lucide-react';
-import { ago, percent, stageNote, summarize, type IslandSummary, type Report } from './report';
-import type { ChildData, ConversationRow } from './tracking';
+import { BookOpen } from 'lucide-react';
+import { ago, percent, stageNote, summarize, summarizeAdult, type AdultItem, type IslandSummary, type Report } from './report';
+import type { ChildData } from './tracking';
 
 /**
  * Informe del seguiment d'un xiquet del Nivell 0, per a persones adultes (la família en
@@ -9,15 +9,16 @@ import type { ChildData, ConversationRow } from './tracking';
  * illes agrupades per encerts a la primera: li costa, a practicar i ho domina. A banda,
  * les converses amb personatges, amb els objectius que ha complit (sense errors).
  */
-export function ProgressReport({ data, name, onLesson, onOpenConversation }: {
+export function ProgressReport({ data, name, onLesson }: {
   data: ChildData;
   name: string;
   onLesson?: (lesson: string) => void;
-  // Si hi és, cada conversa es pot obrir per a llegir-la (la família, en el compte del xiquet).
-  onOpenConversation?: (conversation: ConversationRow) => void;
 }) {
   const report = summarize(data);
   const who = name || 'el xiquet o la xiqueta';
+  // Les illes, les partides i les lliçons són del Nivell 0 (xiquets): de qui té un altre nivell només es veuen els escenaris.
+  const adult = Boolean(data.level) && data.level !== 'nivell0';
+  if (adult) return <AdultReport data={data} report={report} />;
 
   return (
     <div className="space-y-5">
@@ -59,7 +60,7 @@ export function ProgressReport({ data, name, onLesson, onOpenConversation }: {
         islands={report.domina}
       />
 
-      <Conversations report={report} onOpen={onOpenConversation} />
+      <Conversations report={report} />
 
       {report.recent.length > 0 && (
         <Card>
@@ -96,12 +97,14 @@ function Tile({ label, value, detail }: { label: string; value: string; detail: 
 }
 
 /** Les converses amb personatges: no es corregixen errors, es mira quins objectius ha complit. */
-function Conversations({ report, onOpen }: { report: Report; onOpen?: (conversation: ConversationRow) => void }) {
+function Conversations({ report, adult = false }: { report: Report; adult?: boolean }) {
   return (
     <Card>
       <h3 className="text-2xl font-black">Converses</h3>
       <p className="mt-1 text-base opacity-60">
-        Parla amb personatges, com el mag Merlí. Ací no es corregixen errors: es mira quins objectius de la conversa ha complit en valencià.
+        {adult
+          ? "Escenaris de conversa amb personatges. Ací no es corregixen errors: es mira quins objectius de l'escenari ha complit en valencià."
+          : 'Parla amb personatges, com el mag Merlí. Ací no es corregixen errors: es mira quins objectius de la conversa ha complit en valencià.'}
       </p>
       {report.conversations.length ? (
         <ul className="mt-3 divide-y divide-gray-100">
@@ -135,34 +138,12 @@ function Conversations({ report, onOpen }: { report: Report; onOpen?: (conversat
                   ))}
                 </ul>
                 {!reviewed && <p className="mt-1 text-sm opacity-60">Encara no s'ha pogut revisar esta conversa.</p>}
-                {onOpen && (
-                  <ul className="mt-3 space-y-2">
-                    {c.all.slice(0, 6).map(conversation => (
-                      <li key={conversation.session_resource_id}>
-                        <button
-                          onClick={() => onOpen(conversation)}
-                          className="btn-press flex w-full items-center gap-3 rounded-2xl bg-gray-50 px-4 py-2 text-left text-base hover:bg-gray-100"
-                        >
-                          <MessageCircle size={18} className="shrink-0 text-[#7C3AED]" />
-                          <span className="flex-1">
-                            <b>{ago(conversation.created_at)}</b>
-                            <span className="opacity-60"> · {plural(conversation.turns, 'resposta', 'respostes')} · {Math.max(1, Math.round(conversation.seconds / 60))} min</span>
-                          </span>
-                          {conversation.objectives.some(o => o.met !== null) && (
-                            <span className="font-extrabold opacity-70">{conversation.objectives.filter(o => o.met).length}/{conversation.objectives.length}</span>
-                          )}
-                          <span className="font-extrabold text-[#7C3AED]">Llig-la</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </li>
             );
           })}
         </ul>
       ) : (
-        <p className="mt-3 text-lg">Encara no ha parlat amb cap personatge.</p>
+        <p className="mt-3 text-lg">{adult ? 'Encara no ha acabat cap escenari de conversa.' : 'Encara no ha parlat amb cap personatge.'}</p>
       )}
     </Card>
   );
@@ -219,6 +200,92 @@ function Group({ title, hint, empty, tone, islands, onLesson }: {
         </ul>
       ) : (
         <p className="mt-3 text-lg">{empty}</p>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * L'informe d'una persona adulta: com el dels xiquets (li costa, a practicar, ho domina), però amb les seues
+ * activitats (pràctiques, exàmens i escenaris) en compte d'illes. Els escenaris porten els objectius complits.
+ */
+function AdultReport({ data, report }: { data: ChildData; report: Report }) {
+  const adult = summarizeAdult(data);
+  return (
+    <div className="space-y-5">
+      {!adult.items.length && (
+        <Card>
+          <p className="text-xl font-extrabold">Encara no hi ha activitats</p>
+          <p className="mt-1 text-lg opacity-70">Quan acabe pràctiques, exàmens o escenaris, ací veureu què domina, què li costa i què ha de practicar.</p>
+        </Card>
+      )}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Tile label="Activitats" value={`${adult.items.length}`} detail="amb nota o objectius" />
+        <Tile label="Ho domina" value={`${adult.domina.length}`} detail="80 % o més" />
+        <Tile label="Li costa" value={`${adult.costa.length}`} detail="50 % o menys" />
+        <Tile label="Última activitat" value={ago(adult.lastActivity)} detail="pràctica, examen o escenari" />
+      </div>
+
+      <AdultGroup
+        title="Li costa"
+        hint="Activitats on té el 50 % o menys d'encerts (o d'objectius complits)."
+        empty="Cap activitat, de moment. 🎉"
+        tone="coral"
+        items={adult.costa}
+      />
+      <AdultGroup
+        title="A practicar"
+        hint="Activitats entre el 50 i el 80 %, o ben fetes però amb errors encara sense corregir."
+        empty="Cap: tot el que ha fet va molt bé o costa."
+        tone="amber"
+        items={adult.practicar}
+      />
+      <AdultGroup
+        title="Ho domina"
+        hint="Activitats amb el 80 % o més, i sense errors pendents de corregir."
+        empty="Encara cap: cal fer unes quantes activitats."
+        tone="teal"
+        items={adult.domina}
+      />
+
+      <Conversations report={report} adult />
+    </div>
+  );
+}
+
+const KIND_LABEL = { practice: 'Pràctica', exam: 'Examen', scenario: 'Escenari' } as const;
+
+/** Un grup d'activitats d'una persona adulta, amb la nota i, si en té, els errors per corregir. */
+function AdultGroup({ title, hint, empty, tone, items }: { title: string; hint: string; empty: string; tone: keyof typeof TONES; items: AdultItem[] }) {
+  return (
+    <Card>
+      <h3 className="flex items-center gap-2 text-2xl font-black">
+        {title}
+        <span className={`rounded-full px-2.5 py-0.5 text-base font-extrabold ${TONES[tone]}`}>{items.length}</span>
+      </h3>
+      <p className="mt-1 text-base opacity-60">{hint}</p>
+      {items.length ? (
+        <ul className="mt-3 divide-y divide-gray-100">
+          {items.map(i => (
+            <li key={i.key} className="flex flex-wrap items-center gap-3 py-3">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gray-100 text-2xl" aria-hidden="true">{i.emoji}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-lg font-extrabold">{i.name}</span>
+                <span className="block text-base opacity-60">
+                  {KIND_LABEL[i.kind]} · {i.detail} · {ago(i.lastAt)}
+                </span>
+                {i.pendingErrors > 0 && (
+                  <span className="mt-0.5 block text-base font-bold text-amber-700">
+                    {i.pendingErrors} {i.pendingErrors === 1 ? 'error' : 'errors'} per corregir
+                  </span>
+                )}
+              </span>
+              <span className={`shrink-0 rounded-full px-3 py-1 text-lg font-black ${TONES[tone]}`}>{percent(i.ratio)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-lg opacity-70">{empty}</p>
       )}
     </Card>
   );

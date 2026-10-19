@@ -92,7 +92,7 @@ ${translation.initial_prompt}` : text;
       const sessionId = await ensureSession(level);
       const { id } = await startSessionResource(sessionId, scenario, category);
       openedActivity.current = { sessionId, sessionResourceId: id };
-      void trackOpenResource(sessionId, id, level === 'nivell0');
+      void trackOpenResource(sessionId, id, true);
       return openedActivity.current;
     })().catch(error => {
       // Permet tornar-ho a provar en el següent torn.
@@ -139,7 +139,7 @@ ${translation.initial_prompt}` : text;
     const opened = openedActivity.current;
     openedActivity.current = undefined; // es tanca una sola vegada (botó i, després, eixida de la pantalla)
     if (opened) {
-      void finishSessionResource(opened.sessionId, opened.sessionResourceId, { includeMessages: level === 'nivell0' })
+      void finishSessionResource(opened.sessionId, opened.sessionResourceId, { includeMessages: true })
         .catch(error => console.error("Error tancant l'escenari:", error));
     }
   };
@@ -207,7 +207,7 @@ ${translation.initial_prompt}` : text;
     setLoading(true);
     try {
       const { sessionId, sessionResourceId } = await openActivity();
-      void trackOpenResource(sessionId, sessionResourceId, level === 'nivell0'); // encara està actiu
+      void trackOpenResource(sessionId, sessionResourceId, true); // encara està actiu
       // El personatge ha de recordar el que s'ha dit: li enviem el context de la
       // conversa actual (el primer missatge inclou el salut inicial del personatge).
       const context: HistoryItem[] = history.length > 0

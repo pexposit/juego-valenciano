@@ -235,6 +235,7 @@ export type SessionResource = { id: string; sesion_id: string; recurso_id: strin
 // revisar-ne els objectius). L'avaluació que torna es guarda ací.
 // Si es crida dues vegades per al mateix recurs (botó i eixida de la pantalla), es fa una sola petició.
 const finishing = new Map<string, Promise<void>>();
+const ANALYSIS_WAIT_MS = 15_000;
 export function finishSessionResource(
   sessionId: string,
   sessionResourceId: string,
@@ -253,8 +254,12 @@ async function sendFinishResource(
   sessionResourceId: string,
   { includeMessages = false }: { includeMessages?: boolean },
 ): Promise<void> {
-  // Primer, que acaben les anàlisis d'errors encara en curs d'este recurs.
-  await Promise.allSettled([...(pendingAnalyses.get(sessionResourceId) ?? [])]);
+  // Primer, que acaben les anàlisis d'errors encara en curs d'este recurs (com a molt ANALYSIS_WAIT_MS: si una es queda
+  // penjada, l'escenari s'ha de tancar igualment).
+  await Promise.race([
+    Promise.allSettled([...(pendingAnalyses.get(sessionResourceId) ?? [])]),
+    new Promise(resolve => window.setTimeout(resolve, ANALYSIS_WAIT_MS)),
+  ]);
   const [messages, errors, evaluations] = await Promise.all([
     includeMessages ? getMessages(sessionResourceId) : Promise.resolve([]),
     listErrors(),
@@ -280,7 +285,10 @@ async function sendFinishResource(
   );
   // 404: el recurs ja no existix o no és d'este usuari; no té sentit tornar-ho a provar.
   if (res.ok || res.status === 404) forgetOpenResource(sessionResourceId);
-  if (!res.ok) return console.warn(`[finishSessionResource] El backend ha respost amb codi ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    return console.warn(`[finishSessionResource] El backend ha respost amb codi ${res.status}`, detail.slice(0, 500));
+  }
   const { evaluation } = await res.json() as { evaluation?: LatestEvaluation | null };
   if (evaluation) {
     await addEvaluation({
@@ -571,13 +579,6 @@ export type TutorMessage = { role: 'user' | 'character'; text: string; created_a
 const toTutorMessages = (messages: Awaited<ReturnType<typeof getMessages>>): TutorMessage[] =>
   messages.map(m => ({ role: m.role, text: m.text, created_at: m.createdAt }));
 
-// Una conversa del Nivell 0 (escenari) per al seguiment de la família: els missatges, en ordre.
-// Només es poden llegir en el navegador on es va fer la conversa, amb el compte del xiquet.
-export async function fetchKidsConversation(id: string): Promise<TutorMessage[]> {
-  const messages = await getMessages(id);
-  if (messages.length === 0) throw new Error('Esta conversa només es pot llegir en el dispositiu on es va fer.');
-  return toTutorMessages(messages);
-}
 // Reobri una conversa anterior com a l'actual; en tornar al tauler el professor la continua.
 export async function resumeTutorConversation(id: string): Promise<void> {
   const sessionId = await ensureSession('A1');
