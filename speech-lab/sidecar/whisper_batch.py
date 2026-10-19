@@ -22,9 +22,12 @@ stderr; per stdout només ixen respostes JSON.
 from __future__ import annotations
 
 import argparse
+import ctypes
+import glob
 import json
 import logging
 import os
+import site
 import sys
 import time
 
@@ -32,58 +35,136 @@ log = logging.getLogger("whisper")
 
 MODEL = None  # type: ignore[assignment]
 
+# Llibreries que CTranslate2 carrega dinàmicament quan treballa en GPU. No venen
+# amb el paquet: les posa `pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`.
+CUDA_SONAMES = ("libcublas.so.12", "libcublasLt.so.12", "libcudnn.so.9")
+# Tipus de còmput per orde de preferència en GPU: el large-v3 en float16 demana
+# ~3 GB de VRAM; si no n'hi ha prou, int8_float16 en gasta la meitat.
+GPU_COMPUTE_TYPES = ("float16", "int8_float16")
 
-def pick_device() -> tuple[str, str]:
-    """cuda+float16 si hi ha GPU lliure; si no, cpu+int8. Sense suposicions.
 
-    La GPU pot estar ocupada per un altre procés (o sense permisos en un
-    contenidor): en eixe cas ctranslate2 no falla al comptar dispositius,
-    falla al carregar el model. Per això `load_model` reintenta en CPU.
-    """
+class GpuFailed(RuntimeError):
+    """La GPU ha fallat en plena transcripció: cal recarregar el model en CPU."""
+
+
+def cuda_library_dirs() -> list[str]:
+    """Directoris amb les llibreries CUDA dels wheels `nvidia-*` instal·lats amb pip."""
+    roots: list[str] = []
     try:
-        import ctranslate2
-
-        if ctranslate2.get_cuda_device_count() > 0:
-            return "cuda", "float16"
-    except Exception:  # noqa: BLE001 - si no ho podem saber, anem a CPU
+        roots.extend(site.getsitepackages())
+        roots.append(site.getusersitepackages())
+    except Exception:  # noqa: BLE001 - sense `site` simplement no hi ha wheels
         pass
-    return "cpu", "int8"
+    dirs: list[str] = []
+    for root in roots:
+        dirs.extend(sorted(glob.glob(os.path.join(root, "nvidia", "*", "lib"))))
+    return [d for d in dirs if os.path.isdir(d)]
 
 
-def load_model(model_path: str, model_id: str):  # noqa: ANN001, ANN202
+def ensure_cuda_libraries_visible() -> None:
+    """Fa que el carregador dinàmic trobe les llibreries CUDA dels wheels `nvidia-*`.
+
+    El carregador només llegix `LD_LIBRARY_PATH` a l'arrencada, així que afegir-lo
+    després no servix: si cal, ens reexecutem una sola volta (la marca d'entorn ho
+    garantix). Sense açò CTranslate2 troba el driver, carrega el model en GPU,
+    reserva VRAM i falla en la primera transcripció amb «Library libcublas.so.12
+    is not found or cannot be loaded».
+    """
+    if os.environ.get("PARLAVAL_CUDA_PATHS") == "1":
+        return
+    if os.environ.get("AINA_DEVICE", "auto").strip().lower() == "cpu":
+        return  # forçat a CPU: no cal tocar el carregador ni reexecutar res
+    dirs = cuda_library_dirs()
+    current = [p for p in os.environ.get("LD_LIBRARY_PATH", "").split(os.pathsep) if p]
+    missing = [d for d in dirs if d not in current]
+    if not missing:
+        return
+    os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(dirs + current)
+    os.environ["PARLAVAL_CUDA_PATHS"] = "1"
+    log.info("afegix %d directoris de CUDA al carregador i reexecuta el procés", len(missing))
+    os.execve(sys.executable, [sys.executable, *sys.argv], os.environ)
+
+
+def cuda_libraries_loadable() -> tuple[bool, str]:
+    """Comprova que les llibreries CUDA es poden carregar de veritat, no només el driver.
+
+    Carregar-les nosaltres (amb RTLD_GLOBAL) també les deixa registrades per al
+    `dlopen` que farà CTranslate2 després.
+    """
+    absent: list[str] = []
+    for soname in CUDA_SONAMES:
+        try:
+            ctypes.CDLL(soname, mode=ctypes.RTLD_GLOBAL)
+        except OSError:
+            absent.append(soname)
+    return (not absent, ", ".join(absent))
+
+
+def device_attempts(force_cpu: bool = False) -> list[tuple[str, str]]:
+    """Orde d'intents de càrrega: GPU (float16 → int8_float16) i, al final, CPU.
+
+    `AINA_DEVICE=cpu` força CPU (útil per a comparar temps) i `AINA_COMPUTE_TYPE`
+    fixa el tipus de còmput en GPU. La comprovació de les llibreries evita
+    l'error «Library libcublas.so.12 is not found»: si falten, ni mirem la GPU.
+    """
+    if force_cpu or os.environ.get("AINA_DEVICE", "auto").strip().lower() == "cpu":
+        return [("cpu", "int8")]
+    loadable, absent = cuda_libraries_loadable()
+    if not loadable:
+        log.warning("falten llibreries CUDA (%s): anem per CPU (vegeu scripts/setup-aina.sh)", absent)
+        return [("cpu", "int8")]
+    forced = os.environ.get("AINA_COMPUTE_TYPE", "").strip()
+    computes = (forced,) if forced else GPU_COMPUTE_TYPES
+    return [("cuda", compute) for compute in computes] + [("cpu", "int8")]
+
+
+def load_model(model_path: str, model_id: str, force_cpu: bool = False):  # noqa: ANN001, ANN202
     """Carrega des de la ruta local; si no hi és, descarrega de Hugging Face.
 
-    Si la GPU falla (ocupada, sense permisos…), cau a CPU automàticament:
-    el laboratori ha de funcionar sempre, encara que més lent.
+    Prova els intents en orde (GPU float16 → GPU int8_float16 → CPU int8) i es
+    queda amb el primer que funcione: el large-v3 en float16 demana ~3 GB de
+    VRAM i en un portàtil amb altra faena a la GPU no sempre n'hi ha. El
+    laboratori ha de funcionar sempre, encara que siga més lent.
     """
     from faster_whisper import WhisperModel
 
-    device, compute = pick_device()
     source = model_path if os.path.exists(os.path.join(model_path, "model.bin")) else model_id
-    started = time.perf_counter()
-    try:
-        model = WhisperModel(source, device=device, compute_type=compute)
-    except Exception as exc:  # noqa: BLE001 - qualsevol error de GPU → CPU
-        if device == "cuda":
-            log.warning("GPU no disponible (%s): caem a CPU", exc)
-            device, compute = "cpu", "int8"
+    failures: list[str] = []
+    for device, compute in device_attempts(force_cpu):
+        started = time.perf_counter()
+        try:
             model = WhisperModel(source, device=device, compute_type=compute)
-        else:
-            raise
-    log.info(
-        "model %s carregat en %d ms (device=%s compute=%s)",
-        source,
-        (time.perf_counter() - started) * 1000,
-        device,
-        compute,
-    )
-    # Ho recordem per al log de cada transcripció (WER amb context de device).
-    model._lab_device = device  # noqa: SLF001 - només metadada per al log
-    return model
+        except Exception as exc:  # noqa: BLE001 - provem el següent intent
+            failures.append(f"{device}/{compute}: {exc}")
+            log.warning("càrrega fallida en %s/%s (%s)", device, compute, exc)
+            continue
+        log.info(
+            "model %s carregat en %d ms (device=%s compute=%s)",
+            source,
+            (time.perf_counter() - started) * 1000,
+            device,
+            compute,
+        )
+        if failures:
+            log.info("intents descartats abans: %s", " | ".join(failures))
+        # Ho recordem per al log de cada transcripció (WER amb context de device).
+        model._lab_device = device  # noqa: SLF001 - només metadada per al log
+        return model
+    raise RuntimeError("no hem pogut carregar el model — " + " | ".join(failures))
+
+
+def looks_like_gpu_error(exc: Exception) -> bool:
+    """Errors de CUDA que només apareixen al primer càlcul (llibreries, VRAM, context)."""
+    text = str(exc).lower()
+    return any(token in text for token in ("cublas", "cudnn", "cuda", "gpu", "out of memory"))
 
 
 def transcribe(model, request: dict) -> dict:  # noqa: ANN001, ANN202
-    """Una petició NDJSON → un dict de resposta (sense llançar mai)."""
+    """Una petició NDJSON → un dict de resposta.
+
+    Els errors tornen com a `{error: …}`; l'única excepció és `GpuFailed`, que
+    puja a `main` perquè recarregue el model en CPU (la GPU ha caigut a mig vol).
+    """
     wav_path = request.get("wav_path")
     if not isinstance(wav_path, str) or not os.path.isfile(wav_path):
         return {"error": f"no trobe el fitxer: {wav_path}"}
@@ -129,6 +210,11 @@ def transcribe(model, request: dict) -> dict:  # noqa: ANN001, ANN202
             "audio_secs": round(getattr(info, "duration", 0.0), 2),
         }
     except Exception as exc:  # noqa: BLE001 - volem informar el client de qualsevol error
+        # La GPU pot fallar amb el model ja carregat (VRAM que desapareix, context
+        # perdut, llibreries que no es troben al primer càlcul): això no és un
+        # error de l'àudio, és del dispositiu, i es resol recarregant en CPU.
+        if looks_like_gpu_error(exc) and getattr(model, "_lab_device", "cpu") == "cuda":
+            raise GpuFailed(str(exc)) from exc
         log.warning("transcripció fallida (%s): %s", wav_path, exc)
         return {"error": f"no hem pogut transcriure l'àudio: {exc}"}
 
@@ -141,6 +227,10 @@ def main() -> None:
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, stream=sys.stderr, format="[whisper] %(message)s")
+
+    # Abans de tocar cap cosa de CUDA: que el carregador trobe libcublas/libcudnn
+    # dels wheels nvidia-* (pot reexecutar el procés una sola volta).
+    ensure_cuda_libraries_visible()
 
     global MODEL
     MODEL = load_model(args.model, args.model_id)
@@ -156,7 +246,15 @@ def main() -> None:
         except json.JSONDecodeError:
             print(json.dumps({"error": "petició no vàlida (cal JSON)"}), flush=True)
             continue
-        print(json.dumps(transcribe(MODEL, request), ensure_ascii=False), flush=True)
+        try:
+            answer = transcribe(MODEL, request)
+        except GpuFailed as exc:
+            # Recarreguem en CPU una sola volta i reintentem la mateixa petició:
+            # el laboratori no es pot quedar penjat per la GPU.
+            log.warning("GPU no utilisable en plena transcripció (%s): recarregue en CPU", exc)
+            MODEL = load_model(args.model, args.model_id, force_cpu=True)
+            answer = transcribe(MODEL, request)
+        print(json.dumps(answer, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":

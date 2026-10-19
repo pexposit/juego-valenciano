@@ -1,0 +1,16 @@
+{
+  "repo": "parlaval/speech-lab-veus",
+  "rvc": {
+    "doraemon": "doraemon_300e_8700s.pth",
+    "nobita": "nobita_300e_5700s.pth",
+    "narrador": "narrador_100e_15400s.pth",
+    "narradora": "narradora_100e_21200s.pth",
+    "heidi": "heidi_100e_11300s.pth",
+    "parlant04": "parlant04_200e_11400s.pth"
+  },
+  "matxa": {
+    "doraemon-v1": ["epoch=0399.ckpt"],
+    "narrador-v1": ["last.ckpt"],
+    "veus-v1": ["epoch=0199.ckpt"]
+  }
+}
