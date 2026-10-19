@@ -7,3 +7,25 @@ bench/samples/*.wav
 # Els exemples de la pàgina SÍ es versionen (són els mateixos WAV, ~230 KB).
 !public/samples/*.wav
 __pycache__/
+# Registre del servidor del laboratori quan s'arranca en segon pla.
+lab-dev.log
+# Clonació de veu: entorn amb torch/demucs, àudios font i dataset generat (pesen i tenen drets).
+.venv-voz/
+.venv-rvc/
+audios/
+voz-dataset/
+# Matxa (es refà amb scripts/setup-matxa.sh). Només es versionen l'espeak
+# compilat i uns logs: els models d'Aina els descarrega setup-matxa.sh, el codi de
+# Matcha i l'espeak font són clons, i les execucions (checkpoints, mostres,
+# tensorboard) porten veus amb drets.
+tts/*
+!tts/README.md
+!tts/espeak-ng/
+!tts/logs/
+tts/logs/*
+!tts/logs/narrador-v1.log
+!tts/logs/narrador-v1-b.log
+!tts/logs/espeak-build.log
+# Descàrrega de models de Hugging Face (scripts/models-hf.py): caché i sumes.
+.cache/
+SHA256SUMS

@@ -12,7 +12,14 @@ import { readPcm16Wav } from './bench/wav.js';
 import { logSummary, SessionMetrics } from './metrics.js';
 import { availableProviders, disposeProviders, getStreamingStt } from './streaming/registry.js';
 import { availableTtsProviders, disposeTtsProviders, getStreamingTts } from './tts/registry.js';
+import { disposeLocalTts, localTtsModels, synthesizeLocal, TtsRequestError } from './tts/local.js';
 import type { StreamingSttSession } from './streaming/types.js';
+import { VariantSession } from './variant/detector.js';
+import { decodeWav } from './variant/segment.js';
+import {
+  analyseRecordingTimed, anyUnreachable, apiFailure, describeResult, describeSegment, MAX_INPUT_RATE, MIN_INPUT_RATE,
+  PHONETIC_HINT, pingPhoneticApi, resampleTo, speechNotes, TARGET_RATE, VariantSessionStore, type PingResult,
+} from './variant/service.js';
 
 /* ── Servidor HTTP: /health i la pàgina de proves ────────────────────────── */
 
@@ -46,7 +53,42 @@ const server = http.createServer(async (req, res) => {
       ttsProvider: config.tts.provider,
       ttsProviders: availableTtsProviders,
       sampleRate: config.sampleRate,
+      // Sense ping ací (seria lent fora de la intranet): /api/variant/health el fa.
+      phoneticApi: config.phonetic.baseUrl,
     }));
+    return;
+  }
+
+  // ── Detector de variant: GET /api/variant/health ─────────────────────
+  // Comprova que l'API fonètica de la UJI respon (només des de la intranet).
+  if (url.pathname === '/api/variant/health' && req.method === 'GET') {
+    const ping = await pingPhoneticApi();
+    rememberPing(ping);
+    res.writeHead(ping.ok ? 200 : 502, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify(ping.ok ? ping : { ...ping, hint: PHONETIC_HINT }));
+    return;
+  }
+
+  // ── Detector de variant: POST /api/variant ───────────────────────────
+  // Cos: WAV PCM16 (qualsevol freqüència: es remostreja a 16 kHz).
+  // ?ref=… text llegit (model sense lèxic) · ?session=… acumula l'evidència
+  // de la mateixa persona entre peticions · ?reset=1 buida la sessió (sense
+  // cos, només reinicia). Resposta: veredicte, contribucions i segments.
+  if (url.pathname === '/api/variant' && req.method === 'POST') {
+    // La lectura del cos també va dins del `.catch`: si el client talla la
+    // pujada (tanca la pestanya), `readBody` falla i no ha de tombar el procés.
+    void readBody(req, MAX_UPLOAD_BYTES).then((body) => handleVariant(url, body, res)).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      if (req.destroyed || res.destroyed) {
+        console.warn(`[variant] el client ha tallat la connexió: ${message}`);
+        return;
+      }
+      console.error('[variant] error:', message);
+      if (!res.headersSent) {
+        res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' })
+          .end(JSON.stringify({ error: message }));
+      }
+    });
     return;
   }
 
@@ -131,8 +173,17 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── Catàleg de models de l'apartat «Generació d'àudio» ──────────────
+  if (url.pathname === '/api/tts/models' && req.method === 'GET') {
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ models: localTtsModels() }));
+    return;
+  }
+
   // ── Síntesi: POST /api/tts ───────────────────────────────────────────
-  // Cos JSON: {text, voice?}. Resposta: WAV del proveïdor TTS actiu.
+  // Cos JSON: {text, voice?} → WAV del proveïdor TTS actiu (el que usa el
+  // mode trucada). Amb `model` (id de /api/tts/models) genera amb aquell
+  // model: remot, Matxa local, un fine-tune, una veu derivada o un personatge RVC.
   if (url.pathname === '/api/tts' && req.method === 'POST') {
     const chunks: Buffer[] = [];
     req.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -153,6 +204,31 @@ const server = http.createServer(async (req, res) => {
               .end(JSON.stringify({ error: 'Cal un JSON amb {text} (i voice opcional)' }));
             return;
           }
+          if (parsed.data.model) {
+            const { model, ...options } = parsed.data;
+            const started = Date.now();
+            const result = await synthesizeLocal({ ...options, model });
+            const totalMs = Date.now() - started;
+            console.log(
+              `[tts] model=${result.model}${result.checkpoint ? `@${result.checkpoint}` : ''}`
+              + ` total=${totalMs}ms matxa=${Math.round(result.matxaMs)}ms`
+              + `${result.rvcMs !== undefined ? ` rvc=${Math.round(result.rvcMs)}ms` : ''}`
+              + ` àudio=${result.audioSecs}s${result.cached ? '' : ' (càrrega del model)'}`,
+            );
+            res.writeHead(200, {
+              'content-type': 'audio/wav',
+              'content-length': result.audio.length,
+              'x-tts-model': result.model,
+              'x-tts-checkpoint': result.checkpoint ?? '',
+              'x-tts-total-ms': String(totalMs),
+              'x-tts-matxa-ms': String(Math.round(result.matxaMs)),
+              'x-tts-rvc-ms': result.rvcMs !== undefined ? String(Math.round(result.rvcMs)) : '',
+              'x-tts-audio-secs': String(result.audioSecs),
+              'x-tts-cached': result.cached ? '1' : '0',
+            });
+            res.end(result.audio);
+            return;
+          }
           const provider = getStreamingTts();
           const result = await provider.synthesize(parsed.data.text, { voice: parsed.data.voice });
           console.log(
@@ -169,7 +245,7 @@ const server = http.createServer(async (req, res) => {
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           console.error('[tts] error:', message);
-          res.writeHead(502, { 'content-type': 'application/json; charset=utf-8' })
+          res.writeHead(error instanceof TtsRequestError ? 400 : 502, { 'content-type': 'application/json; charset=utf-8' })
             .end(JSON.stringify({ error: message }));
         }
       })();
@@ -198,6 +274,200 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+/* ── Detector de variant (valencià / central) ───────────────────────────── */
+
+/** Mateix límit que /api/transcribe: prou per a minuts de veu, no per a penjar el laboratori. */
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
+/**
+ * Llig el cos sencer. Si passa del límit torna de seguida amb `tooLarge`
+ * (per a contestar 413 sense esperar) i la resta es descarta sense guardar-la.
+ */
+function readBody(req: http.IncomingMessage, maxBytes: number): Promise<{ body: Buffer; tooLarge: boolean }> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let received = 0;
+    const onData = (chunk: Buffer) => {
+      received += chunk.length;
+      if (received > maxBytes) {
+        chunks.length = 0;
+        req.off('data', onData);
+        req.resume();
+        resolve({ body: Buffer.alloc(0), tooLarge: true });
+        return;
+      }
+      chunks.push(chunk);
+    };
+    req.on('data', onData);
+    req.on('end', () => resolve({ body: Buffer.concat(chunks), tooLarge: false }));
+    req.on('error', reject);
+  });
+}
+
+const variantSessions = new VariantSessionStore();
+
+/**
+ * Darrer ping bo a l'API fonètica. Fora de la intranet una connexió pot
+ * quedar penjada fins al temps màxim (2 min per crida): amb el ping de 5 s
+ * abans d'analitzar es falla de seguida. Si ha anat bé fa poc, no es repetix.
+ */
+let lastPingOk = 0;
+const PING_FRESH_MS = 60_000;
+
+function rememberPing(ping: PingResult): void {
+  lastPingOk = ping.ok ? Date.now() : 0;
+}
+
+function sendJson(res: http.ServerResponse, status: number, payload: unknown): void {
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' }).end(JSON.stringify(payload));
+}
+
+async function handleVariant(
+  url: URL,
+  { body, tooLarge }: { body: Buffer; tooLarge: boolean },
+  res: http.ServerResponse,
+): Promise<void> {
+  const started = Date.now();
+  if (tooLarge) {
+    sendJson(res, 413, { error: 'L’àudio passa de 25 MB' });
+    return;
+  }
+
+  const sessionId = url.searchParams.get('session')?.trim() || null;
+  if (sessionId !== null && !VariantSessionStore.validId(sessionId)) {
+    sendJson(res, 400, { error: 'L’identificador de sessió només pot tindre lletres, xifres, - i _ (màxim 64)' });
+    return;
+  }
+  const reset = url.searchParams.get('reset') === '1';
+  const ref = url.searchParams.get('ref')?.trim() || null;
+  if (ref !== null && ref.length > 2000) {
+    sendJson(res, 400, { error: 'El text llegit no pot passar de 2000 caràcters' });
+    return;
+  }
+  if (sessionId && reset) variantSessions.reset(sessionId);
+
+  // Només reiniciar: sense cos, es torna la sessió buida.
+  if (body.length === 0) {
+    if (reset && sessionId) {
+      console.log(`[variant] sessió ${sessionId} reiniciada`);
+      sendJson(res, 200, { reset: true, session: { id: sessionId, recordings: 0 } });
+    } else {
+      sendJson(res, 400, { error: 'Cal enviar un WAV al cos de la petició' });
+    }
+    return;
+  }
+
+  let decoded;
+  try {
+    decoded = decodeWav(body);
+  } catch (error) {
+    sendJson(res, 400, { error: error instanceof Error ? error.message : String(error) });
+    return;
+  }
+  if (decoded.sampleRate < MIN_INPUT_RATE || decoded.sampleRate > MAX_INPUT_RATE) {
+    sendJson(res, 400, {
+      error: `Freqüència d'amostratge no acceptada (${decoded.sampleRate} Hz):`
+        + ` ha d'estar entre ${MIN_INPUT_RATE / 1000} i ${MAX_INPUT_RATE / 1000} kHz`,
+    });
+    return;
+  }
+  const audioSeconds = decoded.samples.length / decoded.sampleRate;
+  if (audioSeconds > config.variant.maxSeconds) {
+    sendJson(res, 413, {
+      error: `L'àudio dura ${Math.round(audioSeconds)} s i el màxim és ${config.variant.maxSeconds} s:`
+        + ' talla’l o envia’l en trossos amb la mateixa sessió.',
+    });
+    return;
+  }
+  const decodeStarted = Date.now();
+  const audio = resampleTo(decoded, TARGET_RATE);
+  const resampleMs = Date.now() - decodeStarted;
+
+  // Fallar ràpid si l'API fonètica no és accessible (fora de la intranet).
+  if (Date.now() - lastPingOk > PING_FRESH_MS) {
+    const ping = await pingPhoneticApi();
+    rememberPing(ping);
+    if (!ping.ok) {
+      console.warn(`[variant] l'API fonètica no respon (${ping.url}): ${ping.error}`);
+      sendJson(res, 502, {
+        error: `No s'ha pogut connectar amb l'API fonètica (${ping.url}): ${ping.error}`,
+        hint: PHONETIC_HINT,
+      });
+      return;
+    }
+  }
+
+  // Si el client se'n va (pestanya tancada), no es continuen enviant
+  // segments a l'API: la fila és única i faria esperar la resta de peticions.
+  const controller = new AbortController();
+  res.on('close', () => {
+    if (!res.writableFinished) controller.abort();
+  });
+  const analysisStarted = Date.now();
+  const recording = await analyseRecordingTimed(audio, { referenceText: ref, filename: 'gravacio', signal: controller.signal });
+  const analysisMs = Date.now() - analysisStarted;
+  // Una fallada de xarxa a mitja gravació també invalida el ping recent.
+  if (anyUnreachable(recording.analyses)) lastPingOk = 0;
+  if (recording.aborted) {
+    console.warn(
+      `[variant] el client ha tancat la connexió: s'atura l'anàlisi`
+      + ` (${recording.analyses.length} trossos fets, ${recording.skipped} sense enviar)`,
+    );
+    return;
+  }
+  const failure = apiFailure(recording.analyses);
+  if (failure) {
+    lastPingOk = 0;
+    const status = failure.status === -1 ? 'no ha respost' : `ha respost ${failure.status}`;
+    console.warn(`[variant] l'API fonètica ${status} en tots els segments`);
+    sendJson(res, 502, {
+      error: `L'API fonètica (${config.phonetic.baseUrl}) ${status}: no s'ha pogut analitzar l'àudio.`,
+      hint: PHONETIC_HINT,
+    });
+    return;
+  }
+
+  // Amb sessió, l'evidència s'afig a la de les gravacions anteriors.
+  const entry = sessionId ? variantSessions.get(sessionId) : null;
+  const session = entry?.session ?? new VariantSession();
+  session.addAnalyses(recording.analyses.map((a) => a.analysis));
+  if (entry) entry.recordings += 1;
+  const result = session.result();
+
+  const segments = recording.analyses.map(describeSegment);
+  const usableNow = segments.filter((s) => s.usable).length;
+  const notes = [
+    ...recording.notes,
+    ...speechNotes(result, entry ? Math.max(audioSeconds, result.speechSeconds) : audioSeconds),
+  ];
+  const totalMs = Date.now() - started;
+  console.log(
+    `[variant] àudio=${audioSeconds.toFixed(2)}s${decoded.sampleRate !== TARGET_RATE ? ` (${decoded.sampleRate} Hz)` : ''}`
+    + ` segments=${usableNow}/${segments.length} model=${result.model}`
+    + ` p=${result.pValencia === null ? '—' : result.pValencia.toFixed(3)} veredicte=${result.verdict}`
+    + `${result.reason ? `(${result.reason})` : ''} n_ae=${result.nAe}`
+    + `${recording.usedReference ? ' ref=sí' : ''}`
+    + `${entry ? ` sessió=${sessionId}#${entry.recordings} veu=${result.speechSeconds.toFixed(1)}s` : ''}`
+    + ` paret=${totalMs}ms`,
+  );
+  sendJson(res, 200, {
+    ...describeResult(result),
+    segments,
+    totals: {
+      audioSeconds: Number(audioSeconds.toFixed(2)),
+      sampleRate: decoded.sampleRate,
+      speechSeconds: Number(result.speechSeconds.toFixed(2)),
+      usableSegments: result.usableSegments,
+      nAe: result.nAe,
+    },
+    texts: result.texts,
+    usedReference: recording.usedReference,
+    session: entry ? { id: sessionId, recordings: entry.recordings } : null,
+    notes,
+    timings: { resampleMs, analysisMs, totalMs },
+  });
+}
+
 /* ── WebSocket: àudio cap al proveïdor i resultats cap al client ─────────── */
 
 const configMessageSchema = z.object({
@@ -213,6 +483,13 @@ const controlMessageSchema = z.union([configMessageSchema, z.object({ eof: z.lit
 const ttsRequestSchema = z.object({
   text: z.string().min(1).max(2000),
   voice: z.string().min(1).max(64).optional(),
+  model: z.string().min(1).max(128).optional(),
+  checkpoint: z.string().min(1).max(128).optional(),
+  temperature: z.number().min(0).max(1.5).optional(),
+  speed: z.number().min(0.5).max(2).optional(),
+  pitch: z.number().int().min(-24).max(24).optional(),
+  indexRate: z.number().min(0).max(1).optional(),
+  formant: z.number().min(0.7).max(1.5).optional(),
 });
 
 function safeJson(raw: string): unknown {
@@ -383,7 +660,7 @@ server.listen(config.port, () => {
 async function shutdown(): Promise<void> {
   console.log('[speech] aturant el laboratori…');
   for (const client of wss.clients) client.terminate();
-  await Promise.all([disposeProviders(), disposeBatchProviders(), disposeTtsProviders()]);
+  await Promise.all([disposeProviders(), disposeBatchProviders(), disposeTtsProviders(), disposeLocalTts()]);
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 2000).unref();
 }

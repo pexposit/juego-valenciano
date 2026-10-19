@@ -1,360 +1,238 @@
-# speech-lab · Laboratorio de voz en tiempo real
+# speech-lab · Laboratorio de voz en valenciano
 
-Módulo **independiente** para investigar e implementar reconocimiento de voz en
-tiempo real para ParlaVal. No toca `frontend/` ni `backend/`: el juego sigue
-funcionando igual con su flujo *push-to-talk* mientras aquí se investiga.
+Módulo **independiente** de ParlaVal para investigar la voz: reconocimiento en
+tiempo real, transcripción, síntesis con voces de personajes, detección de la
+variante (valenciano / central) y una llamada conversacional con los agentes
+del juego. No toca `frontend/`, `backend/` ni `shared/`: el juego funciona igual
+mientras aquí se experimenta.
 
-Estado: **fases 0–2 completadas** (andamiaje, sidecar de Vosk y página de pruebas
-en vivo), el **modo llamada** (prototipo conversacional dentro del propio
-laboratorio, ver abajo) y la **fase A** (catálogo de modelos: transcripción
-por lotes con faster-whisper catalán d'Aina + TTS matxa + bench WER, ver
-«Modelos de voz»). Las fases B–D están descritas al final.
+Todo corre en local (`http://localhost:3100`) salvo dos servicios de la UJI: el
+TTS remoto matxa-tts (el mismo que el juego) y la API fonética del detector de
+variante, accesible solo desde la intranet o con VPN.
+
+## Funcionalidades
+
+| Funcionalidad | Dónde | Motor | Guía |
+|---|---|---|---|
+| **Reconocimiento en directo** con parciales, métricas y vocabulario restringido | página: «Micròfon» | Vosk small-ca (sidecar Python) | [reconeixement-de-veu.md](docs/reconeixement-de-veu.md) |
+| **Transcripción de ficheros** y comparador Aina vs Vosk | página: «Transcripció de fitxers», `POST /api/transcribe` | faster-whisper `large-v3-ca-3catparla` (Aina) | [reconeixement-de-veu.md](docs/reconeixement-de-veu.md#página-transcripción-de-fitxers-fase-b) |
+| **Bench WER** de los motores | `npm run wer:speech` | Vosk y Aina | [reconeixement-de-veu.md](docs/reconeixement-de-veu.md#bench-wer-fase-4-cerrada-con-voz-sintética) |
+| **Generación de audio** con cualquier voz: Matxa base, fine-tunes, voces de personajes (RVC) y voces derivadas | página: «Generació d'àudio», `POST /api/tts` | Matxa (local o remoto) + RVC (Applio) | [abajo](#generación-de-audio) y [veus-personatges.md](docs/veus-personatges.md) |
+| **Entrenar voces de personajes** a partir de vídeos (Doraemon, Nobita, narrador, narradora, Heidi…) | `scripts/` | Demucs, ECAPA, Whisper, Applio, Matxa | [veus-personatges.md](docs/veus-personatges.md) |
+| **Detector de variante** valenciano / central | página: «Detector de variant», `POST /api/variant`, `npm run variant` | API PhoneticXeus (UJI) + modelo logístico | [detector-variant.md](docs/detector-variant.md) |
+| **Modo llamada**: conversación a manos libres con un personaje del juego | página: botón «📞 Trucar» | Vosk + API del juego + TTS | [mode-trucada.md](docs/mode-trucada.md) |
 
 ## Arranque
 
+Desde la raíz del repositorio:
+
 ```bash
-npm run setup:speech   # venv de Python + vosk + websockets + modelo catalán (43 MB) + muestras a 16 kHz
-npm run setup:aina     # faster-whisper + model català d'Aina (~3 GB, GPU si hi és)
+npm run setup:speech   # .venv + Vosk + modelo catalán (43 MB) + muestras a 16 kHz
+npm run setup:aina     # faster-whisper + modelo de Aina (~3 GB, usa la GPU si hay)
 npm run dev:speech     # laboratorio en http://localhost:3100
+npm run test:speech    # tests (vitest, sin arrancar Python)
 npm run smoke:speech   # prueba de humo de la tubería completa, sin micrófono
-npm run wer:speech     # bench de WER: cada WAV de bench/samples/*.wav contra su .txt
-npm run test:speech    # tests del protocolo y de las métricas
+npm run wer:speech     # bench WER: cada bench/samples/*.wav contra su .txt
 ```
 
-Requisitos: `python3` con `venv` (el paquete `vosk` viene en un *wheel* de 7 MB,
-no compila nada) y, opcionalmente, `ffmpeg` para reconvertir las muestras del
-repositorio a 16 kHz. Todo es local: **no hay claves ni servicios externos**.
+Solo para la síntesis local y las voces de personajes (necesitan GPU NVIDIA):
 
-El micrófono necesita `localhost` o HTTPS; el laboratorio escucha en `localhost`.
-
-## Arquitectura
-
-```
-navegador (public/index.html + lab.js + AudioWorklet)
-  │  PCM16 mono 16 kHz por WebSocket  (/ws/transcribe)
-  ▼
-servidor del laboratorio (src/index.ts, Express no: http + ws)
-  │  interfaz StreamingStt  ← mismo patrón que backend/src/services/voice.ts
-  ▼
-provider Vosk (src/streaming/voskSidecar.ts)
-  │  WebSocket interno 127.0.0.1:2700
-  ▼
-sidecar Python (sidecar/vosk_stream.py) → model català vosk-model-small-ca-0.4
+```bash
+bash speech-lab/scripts/setup-matxa.sh   # .venv-voz: Matxa, espeak-ng ca-va, Demucs, SpeechBrain
+bash speech-lab/scripts/setup-rvc.sh     # .venv-rvc: Applio (RVC)
 ```
 
-Por qué un sidecar de Python y no los *bindings* de npm: el paquete `vosk` de
-npm depende de `ffi-napi@4.0.3`, que no tiene binario precompilado para Node 22 y
-falla al compilar (comprobado en esta máquina: `node-gyp` no encuentra las
-cabeceras). El *wheel* de Python son 7 MB, no compila nada y carga el modelo en
-~300 ms. El proveedor de TypeScript aísla ese detalle: cambiar de motor solo
-afecta a `src/streaming/`.
+Los modelos de voz entrenados (personajes RVC y fine-tunes de Matxa) no están
+en git: están en un repositorio **privado** de Hugging Face. Con acceso y la
+sesión iniciada (`speech-lab/.venv/bin/hf auth login`):
 
-### Protocolo
-
-El mismo que `vosk-server`, para que sustituir el motor no obligue a tocar al
-cliente:
-
-```
-cliente → laboratorio
-  {"config": {"sample_rate": 16000, "phrase_list": ["bon dia"], "words": false}}
-  <frames binarios PCM16 mono little-endian>
-  {"eof": 1}          → resultado final y cierre del turno
-
-laboratorio → cliente
-  {"type": "ready", "provider": "vosk", "sampleRate": 16000}
-  {"type": "partial", "text": "bon dia com", "atMs": 150, "latencyMs": 24}
-  {"type": "final",   "text": "bon dia com et puc ajudar hui", "atMs": 299, "latencyMs": 23}
-  {"type": "metrics", "partials": 8, "finals": 1, "firstPartialMs": 150, "finalMs": 299,
-                      "audioMs": 2589, "computeMs": 171, "rtf": 0.066}
-  {"type": "error", "message": "…"}   // mensajes en valenciano, como el resto del repo
+```bash
+npm run models:speech                    # todos (~2,5 GB, solo baja lo que cambia)
+npm run models:speech -- doraemon heidi  # solo algunos
 ```
 
-El sidecar añade `compute_ms` a cada respuesta: es el tiempo **real de cómputo
-del motor**. Sin ese dato, el cliente solo puede medir el tiempo de ida y vuelta,
-que cuando se envía audio más rápido que el habla incluye toda la cola acumulada
-y hace parecer el motor 10 veces más lento (ver «Errores corregidos»).
+Cómo pedir acceso y cómo publicar un modelo nuevo: [docs/veus-personatges.md](docs/veus-personatges.md#compartir-los-modelos-con-el-equipo).
 
-El estado se resume en una línea con el mismo estilo que el backend
-(`[turn] stt=…ms agente=…ms`):
-## Mediciones (esta máquina, Node 22, 16 kHz mono)
+Requisitos: Node 22, `python3` con `venv` y, opcionalmente, `ffmpeg`. El
+micrófono necesita `localhost` o HTTPS. Sin terminal interactiva (`tsx watch`
+muere con `EBADF`): `npm run build -w speech-lab && node speech-lab/dist/index.js`.
 
-Audio de prueba: `salutacio-gina-16k.wav` (2,59 s, «Bon dia! Com et puc ajudar
-hui?», convertido del WAV del repositorio a 16 kHz PCM16).
+## La página
 
-| Prueba | Primer parcial con texto | Cómputo por fragmento | Cómputo total | RTF | Texto |
-|---|---|---|---|---|---|
-| Vocabulario libre (`smoke`) | ~1,0 s de audio | 12–45 ms | 171 ms | **0,066** | `bon dia com et puc ajudar hui` |
-| Vocabulario libre a tiempo real (`--pace`) | 1.053 ms | 15–45 ms | 189 ms | **0,073** | idéntico |
-| Gramática restringida, 3 frases (`--phrases`) | 11 ms | 0–8 ms | 43 ms | **0,017** | idéntico |
-| Voz masculina (`salutacio-lluc-16k.wav`) | 1.045 ms | 12–47 ms | 163 ms | **0,063** | idéntico |
+`http://localhost:3100`, JavaScript sin build (`public/index.html`, `public/lab.js`
+y un `AudioWorklet`):
 
-Otras cifras: carga del modelo **~300 ms** (una sola vez por proceso), coste de
-`AcceptWaveform` por fragmento de 256 ms **≤ 47 ms**, y RTF estable muy por
-debajo de 1 (el motor va ~15× más rápido que el habla).
+1. **Micròfon**: «Escoltar» envía PCM16 a 16 kHz por WebSocket y muestra el
+   texto en vivo; «Fi del torn» cierra el turno. Campo de **vocabulario
+   restringido** (una frase por línea): cuatro veces menos cómputo y
+   transcripción exacta si la frase está en la lista. Los filtros de voz del
+   navegador van desactivados porque empeoran el reconocimiento.
+2. **Nivell d'entrada, Transcripció, Mètriques, Registre**: nivel del
+   micrófono, texto final, latencias (primer parcial, final, RTF) y log.
+3. **Transcripció de fitxers**: sube cualquier audio (el navegador lo pasa a
+   16 kHz), segmentos clicables y comparación lado a lado Aina / Vosk.
+4. **Generació d'àudio**: ver abajo.
+5. **Detector de variant**: graba, sube un fichero o prueba los ejemplos;
+   veredicto, probabilidad y qué ha pesado. Opciones de texto leído y de
+   acumular varias grabaciones de la misma persona.
+6. **📞 Trucar**: elige escenario y nivel y habla con el personaje sin pulsar
+   nada; se le puede interrumpir mientras habla.
 
-### Hallazgos que condicionan el diseño
+## Generación de audio
 
-1. **La gramática restringida es la palanca más potente** (`phrase_list` →
-   `KaldiRecognizer(model, rate, json)`): el RTF baja de 0,066 a **0,017** (4×
-   menos cómputo) y la transcripción sale exacta. Esto conecta directamente con
-   los objetivos y el vocabulario de `backend/src/scenarios/*.ts`. Requisito:
-   enviar las frases **normalizadas y sin puntuación**, porque el motor descarta
-   en silencio las palabras que no están en la lista (aviso real observado:
-   `Ignoring word missing in vocabulary: 'dia,'`).
-2. **El primer parcial con texto aparece alrededor del primer segundo de audio**
-   y no antes: es comportamiento propio de Vosk (mantiene contexto antes de
-   emitir resultados). Lo que sí controlamos es el cómputo por fragmento
-   (12–45 ms), que es la latencia real añadida.
-3. **El fin de turno lo marca el propio motor**: cuando Vosk detecta una pausa
-   devuelve `{"text": …}` (endpointing). No hace falta un VAD externo para el
-   caso limpio. Por eso el cliente **envía todo el audio, silencio incluido**:
-   si se filtrase el silencio, el motor nunca detectaría el corte.
-4. Los resultados sin texto (silencio inicial) se descartan en el proveedor: si
-   se reenviaran, cortarían el turno antes de que el usuario empiece a hablar.
+### Qué es RVC y por qué tiene prioridad
 
-### Errores encontrados y corregidos durante la validación
+**RVC** (*Retrieval-based Voice Conversion*) es un modelo de **conversión de
+voz**: no lee texto, sino que cambia el timbre de un audio ya hablado por el de
+otra persona. Aquí se encadena con Matxa:
 
-- **No llegaba el resultado final** (`finals=0`, texto vacío). El sidecar
-  comparaba la cadena literal `'{"eof": 1}'` con espacios, pero el cliente envía
-  `{"eof":1}`; caía en un `assert` y moría con `AssertionError` de mensaje vacío
-  (de ahí el `sessió interrompuda (…):` sin texto en el log). Ahora se parsea el
-  JSON en lugar de comparar cadenas.
-- **RTF falso de 0,8** que parecía indicar que el motor iba a velocidad real. Era
-  el tiempo de ida y vuelta con toda la cola acumulada. Corregido midiendo el
-  cómputo en el origen (`compute_ms`) y usándolo cuando está disponible.
-- `tsx watch` sin terminal interactiva (stdin cerrado) muere con `EBADF` y puede
-  dejar procesos huérfanos. En entornos no interactivos:
-  `npm run build -w speech-lab && node dist/index.js`. El laboratorio mata el
-  sidecar con `SIGINT`/`SIGTERM` para no dejar Python suelto.
+```
+texto ──► Matxa (gina o lluc, voz valenciana limpia) ──► WAV ──► RVC del personaje ──► voz del personaje
+```
 
-## Modelos de voz (fase A)
+Matxa pone la pronunciación valenciana y la entonación; RVC solo cambia «quién
+habla». Usa ContentVec para quedarse con lo que se dice sin el timbre, RMVPE para
+el tono y, opcionalmente, un `.index` con rasgos de los clips reales para
+acercarse más a la voz original. Como solo aprende el timbre, le bastan 5–30
+minutos de voz. Un fine-tune de Matxa tiene que aprender a hablar entero con ese
+mismo material y suena más robótico.
 
-El laboratorio ya no es «solo Vosk»: el servidor expone tres familias detrás
-de tres registros (`src/streaming/`, `src/batch/`, `src/tts/`), cada una con
-su sidecar y su protocolo testeado sin arrancar Python.
+En todas las pruebas (Doraemon, Nobita, narradora, Heidi) Matxa + RVC se entiende
+mejor que el fine-tune de Matxa (WER de Whisper: Heidi 16 % frente a 30 %,
+narradora 9 % frente a 14 %). Por eso los personajes RVC son los **modelos
+recomendados**: salen los primeros en el catálogo y la página elige uno por
+defecto. Los fine-tunes de Matxa solo compensan con mucho audio limpio, como el
+narrador del audiolibro.
 
-| Familia | Proveedor | Motor | Uso |
-|---|---|---|---|
-| Streaming STT | `vosk` | Vosk small-ca + sidecar WS (`sidecar/vosk_stream.py`) | micrófono en vivo, parciales |
-| Batch STT | `aina` | faster-whisper `large-v3-ca-3catparla` + sidecar NDJSON (`sidecar/whisper_batch.py`) | transcripción automática, bench WER |
-| Batch STT | `vosk-batch` | mismo Vosk small-ca, por WebSocket interno (`src/batch/voskBatch.ts`) | comparador A/B de la página |
-| TTS | `matxa` | matxa-tts remoto (UJI, el mismo que el juego) | síntesis `POST /api/tts` |
+### Catálogo
 
-Endpoints nuevos (además de `/ws/transcribe` y `/health`, que ahora lista
-también `batchProvider`, `batchModel` y `ttsProvider`):
+Se elige un modelo del catálogo (`GET /api/tts/models`, leído del disco en cada
+petición: un entrenamiento nuevo aparece sin reiniciar), el checkpoint si hay
+varios y sus parámetros. Cada generación queda en un historial con sus tiempos
+para comparar de oído.
 
-- `POST /api/transcribe` — cuerpo: WAV PCM16 mono 16 kHz (máx. 25 MB).
-  Responde `{provider, model, text, segments[], words[], computeMs,
-  audioSecs, wallMs}` y, con `?reference=…`, añade `{wer}` calculado en el
-  servidor. Parámetros: `?provider=aina`, `?language=ca`, `?words=1`.
-- `POST /api/tts` — cuerpo JSON `{text, voice?}` (máx. 2000 chars).
-  Responde el WAV con cabeceras `x-tts-voice` y `x-tts-first-byte-ms`.
-
-### Página: transcripción de fitxers (fase B)
-
-La página (`http://localhost:3100`, sección «Transcripció de fitxers») usa
-esos endpoints sin nada nuevo en el servidor:
-
-- **Transcriure**: eliges un audio (mp3, ogg, webm, wav…), el navegador lo
-  convierte a 16 kHz mono con `OfflineAudioContext`, lo envía a
-  `POST /api/transcribe?provider=…&words=1` y muestra el texto + segmentos
-  clicables (▶ salta el reproductor a cada segmento) + métricas (cómput, RTF).
-- **Comparar Aina vs Vosk**: el mismo WAV por los dos motores en paralelo,
-  tabla lado a lado con texto y cómputo. Equivale a `npm run wer:speech`
-  pero con tu propio audio y sin terminal.
-- Verificado sin navegador con el smoke extendido:
-  `npm run smoke -- --api-transcribe [--provider aina|vosk-batch]` y
-  `npm run smoke -- --api-tts [--voice gina]`.
-
-### Bench WER (fase 4, cerrada con voz sintética)
-
-Cada `bench/samples/*.wav` con su `.txt` de referencia se pasa por cada
-motor (`npm run wer:speech`). Resultado con las muestras TTS actuales
-(23/9/2026; CPU, faster-whisper int8; Vosk RTF 0,061):
-
-| Muestra | Vosk small-ca | Aina large-v3-ca |
+| Id del modelo | Qué es | Parámetros |
 |---|---|---|
-| `salutacio-gina-16k.wav` («…ajudar hui?») | **WER 0%** (exacta, 18 ms) | WER 28,6% (`et→em`, `hui→avui`, 5,8 s) |
-| `salutacio-lluc-16k.wav` (igual) | **WER 0%** (exacta, 20 ms) | WER 14,3% (`hui→avui`, 5,9 s) |
-| `bon-dia-16k.wav` («Bon dia») | WER 250% (igual que Aina: alucina la salutación) | WER 250% (al·lucina la salutació sencera, 6,0 s) |
+| **`rvc:<nombre>`** (recomendado, sale el primero) | Matxa base + timbre del personaje con RVC (`doraemon`, `nobita`, `narrador`, `narradora`, `heidi`, `parlant04`) | tono (semitonos), peso del índice |
+| `remot:<voz>` | matxa-tts de la UJI (gina, lluc) | — |
+| `matxa:base:<spk>` | Matxa multiaccent local; locutores valencianos gina (7) y lluc (6) | temperatura, duración |
+| `matxa:<run>:<spk>` | fine-tunes de `tts/runs/` (`narrador-v1`, `doraemon-v1`, `veus-v1`) | checkpoint, temperatura, duración |
+| `veu:<nombre>` | gina transformada por DSP (`narradora`, `nena`; experimento) | tono, formantes |
 
-Lectura honesta: con voz sintética limpia **Vosk small sigue ganando en
-catalán oriental estricto**, y el large-v3-ca tiende al oriental (`avui`,
-`em`). El bench queda montado para repetirlo con **voz humana valenciana**,
-que es la medida que de verdad decide el motor (ver «Siguientes pasos»).
+Los modelos locales viven en dos sidecars que arrancan con la primera petición
+(~12 s) y luego tardan ~0,2 s por frase cada uno; ocupan ~2 GB de GPU, así que
+no caben junto a un entrenamiento en la GPU de 6 GB.
 
-Notas de la puesta a punto:
+Desde la terminal: `scripts/parla.sh <personaje> "text"` → WAV en `tts/rvc/eixida/`.
 
-- `scripts/setup-aina.sh` instala `faster-whisper` en el mismo `.venv` y
-  descarga el snapshot de Hugging Face a `models/`. Si la GPU falla (ocupada
-  o sin permisos — visto en esta máquina: ctranslate2 cuenta 1 dispositivo
-  pero CUDA responde «busy or unavailable»), el sidecar **cae a CPU solo**.
-- El sidecar de lots habla NDJSON por stdio (sin puerto): una línea por
-  petición, una por respuesta, en orden; el servidor encúa las peticiones.
-- Sin secretos nuevos: el TTS `matxa` usa las mismas `MATXA_TTS_*` que el
-  backend (ver `speech-lab/.env.example`).
+Cifras completas y cómo entrenar un personaje nuevo: [docs/veus-personatges.md](docs/veus-personatges.md).
 
-## Limitaciones conocidas
+## API HTTP
 
-- **Solo existe el modelo catalán «small»**: `vosk-model-small-ca-0.4` (42 MB,
-  Apache-2.0) es el único publicado para catalán; no hay versión grande. La
-  precisión con voz sintética limpia es buena (transcripción exacta), pero con
-  voz humana y acento valenciano hay que medir WER antes de dar nada por bueno:
-  en una prueba intermedia apareció `una` donde luego llegó `hui`.
-- **Páginas de pruebas sin validar con micrófono real**: este entorno no tiene
-  navegador, así que `public/index.html` está probada por la tubería equivalente
-  (`smoke`) y por el servidor de estáticos, pero **la captura de micrófono queda
-  como prueba manual** (`npm run dev:speech` → abrir la página → «Escoltar»).
-- Los WAV del repositorio son 22050 Hz `pcm_s24le`: hay que reconvertirlos con
-  `scripts/convert-samples.sh` (lo hace el *setup* si hay `ffmpeg`).
-- El laboratorio no está pensado para producción: sin autenticación, sin límites
-  de tamaño y con reconexión automática del cliente.
+| Método y ruta | Para qué |
+|---|---|
+| `GET /health` | estado de los motores y de la configuración |
+| `WS /ws/transcribe` | reconocimiento en streaming (protocolo de vosk-server) |
+| `POST /api/transcribe` | WAV PCM16 mono 16 kHz → texto, segmentos, palabras y, con `?reference=`, WER |
+| `GET /api/tts/models` | catálogo de voces |
+| `POST /api/tts` | `{text, voice?, model?, checkpoint?, temperature?, speed?, pitch?, indexRate?, formant?}` → WAV |
+| `POST /api/variant` | WAV → veredicto valenciano / central (`?ref=`, `?session=`, `?reset=1`) |
+| `GET /api/variant/health` | si la API fonética de la UJI responde |
 
-## La página de pruebas
+Formato de cada una en las guías de [docs/](docs/).
 
-`http://localhost:3100` (JS vanilla y `AudioWorklet`, sin build ni Tailwind para
-mantener el módulo ligero):
+## Configuración
 
-1. **Escoltar** — pide el micrófono, abre un `AudioContext` a 16 kHz y envía
-   PCM16 en fragmentos de 128 ms. `echoCancellation`, `noiseSuppression` y
-   `autoGainControl` van **desactivados**: los filtros de voz del navegador
-   están pensados para llamadas y degradan el reconocimiento.
-2. **Fi del torn** — envía `{"eof": 1}`, recibe el resultado final y las
-   métricas, y el servidor cierra la sesión. La página se reconecta sola para el
-   siguiente turno.
-3. **Vocabulario restringido** — una frase por línea; se aplica al pulsar
-   «Escoltar». Es el campo que usa la gramática restringida del punto 1 de los
-   hallazgos.
-
-Si el navegador no respeta los 16 kHz del `AudioContext`, el hilo principal
-resamplea por interpolación lineal y lo avisa en la interfaz.
-
-### Opciones (`speech-lab/.env`, copia de `.env.example`)
+`speech-lab/.env` (copia de `.env.example`). Todas tienen valor por defecto:
 
 | Variable | Por defecto | Para qué |
 |---|---|---|
-| `SPEECH_LAB_PORT` | `3100` | Puerto del laboratorio (HTTP + WebSocket) |
-| `SPEECH_PROVIDER` | `vosk` | Motor del registro `src/streaming/registry.ts` |
-| `VOSK_SAMPLE_RATE` | `16000` | Frecuencia que espera el modelo |
-| `VOSK_PYTHON` | `.venv/bin/python` | Intérprete del sidecar |
-| `VOSK_MODEL_PATH` | `models/vosk-model-small-ca-0.4` | Modelo (admite ruta absoluta) |
-| `VOSK_SIDECAR_PORT` | `2700` | Puerto interno, solo `127.0.0.1` |
+| `SPEECH_LAB_PORT` | `3100` | puerto del laboratorio |
+| `SPEECH_PROVIDER` | `vosk` | motor de streaming |
+| `VOSK_PYTHON`, `VOSK_MODEL_PATH`, `VOSK_SAMPLE_RATE`, `VOSK_SIDECAR_PORT` | `.venv/bin/python`, `models/vosk-model-small-ca-0.4`, `16000`, `2700` | sidecar de Vosk |
+| `BATCH_PROVIDER` | `aina` | motor de transcripción por lotes |
+| `AINA_PYTHON`, `AINA_MODEL_ID`, `AINA_MODEL_PATH` | `.venv/bin/python`, modelo `3catparla` | sidecar de Whisper |
+| `AINA_DEVICE`, `AINA_COMPUTE_TYPE` | `auto`, `float16` | forzar CPU o el tipo en GPU |
+| `TTS_PROVIDER`, `MATXA_TTS_URL`, `MATXA_TTS_VOICE(S)` | `matxa`, servidor UJI, `gina` | TTS remoto (mismas variables que el backend) |
+| `MATXA_PYTHON`, `MATXA_BASE_CKPT`, `MATXA_RUNS_DIR` | `.venv-voz`, checkpoint 629, `tts/runs` | Matxa local |
+| `RVC_PYTHON`, `APPLIO_DIR` | `.venv-rvc`, `tts/rvc/Applio` | RVC |
+| `PHONETIC_API_URL`, `PHONETIC_API_TIMEOUT_MS` | `http://deeplab.lsi.uji.es:8899`, `120000` | API fonética del detector |
+| `VARIANT_SESSION_TTL_MS`, `VARIANT_MAX_SESSIONS`, `VARIANT_MAX_SECONDS` | `1800000`, `200`, `180` | sesiones y límites de `/api/variant` |
 
-### Estructura
+## Estructura
 
 ```
 speech-lab/
-├── sidecar/vosk_stream.py      # puente Vosk ↔ WebSocket (modelo y endpointing)
-├── src/
-│   ├── index.ts                # servidor HTTP + /ws/transcribe + cierre limpio
-│   ├── config.ts               # entorno con valores por defecto (patrón voice.ts)
-│   ├── metrics.ts              # latencias, cómputo y RTF por sesión
-│   ├── streaming/
-│   │   ├── types.ts            # StreamingStt / StreamingSttSession
-│   │   └── registry.ts         # motor activo (una instancia por proveedor)
-│   │   ├── voskProtocol.ts     # protocolo del sidecar, aislado y testeable
-│   │   └── voskSidecar.ts      # arranque del sidecar, FIFO de latencias, errores
-│   └── bench/
-│       ├── smoke.ts            # prueba de humo por WebSocket
-│       ├── wav.ts              # lector WAV PCM16 (sin dependencias)
-│       ├── wer.ts              # WER (Levenshtein por palabra) + normalización
-│       └── werBench.ts         # bench: cada WAV contra su .txt, por proveedor
-├── public/                     # página de pruebas (index.html, lab.js, worklet/)
-├── scripts/                    # setup-vosk.sh, setup-aina.sh, convert-samples.sh
-└── bench/samples/              # WAV a 16 kHz (generados, ignorados por git) + .txt
+├── README.md
+├── docs/
+│   ├── reconeixement-de-veu.md        # Vosk, Aina, protocolo, mediciones, bench WER
+│   ├── veus-personatges.md            # canalización de voces, modelos, carpetas, copia de seguridad
+│   ├── detector-variant.md            # método, precisión, límites, API y CLI
+│   ├── mode-trucada.md                # llamada conversacional y su validación
+│   └── estat-de-lart-veu-conversacional.md
+├── src/                               # servidor (TypeScript)
+│   ├── index.ts                       # HTTP + WebSocket + estáticos
+│   ├── config.ts                      # variables de entorno
+│   ├── metrics.ts                     # latencias y RTF
+│   ├── streaming/                     # STT en streaming (Vosk)
+│   ├── batch/                         # STT por lotes (Aina, Vosk)
+│   ├── tts/                           # TTS remoto y local (Matxa, RVC, veus derivades)
+│   ├── variant/                       # detector de variante
+│   └── bench/                         # smoke, WER y CLI del detector
+├── sidecar/                           # procesos Python que habla el servidor
+│   ├── vosk_stream.py                 # Vosk por WebSocket
+│   ├── whisper_batch.py               # faster-whisper por NDJSON
+│   ├── matxa_local.py                 # Matxa local por NDJSON
+│   └── rvc_convert.py                 # conversión RVC por NDJSON
+├── public/                            # la página (index.html, lab.js, worklet/, samples/)
+├── bench/samples/                     # audios de prueba + su texto de referencia
+├── scripts/
+│   ├── setup-{vosk,aina,matxa,rvc}.sh # instalación de cada entorno
+│   ├── convert-samples.sh             # muestras a 16 kHz
+│   ├── separa-personatges.py          # vídeos → voz agrupada por hablante
+│   ├── extrau-personatge.py           # un hablante sin tramos dudosos
+│   ├── segmenta-veu.py                # clips de 2–12 s + transcripción
+│   ├── revisa-clips.py                # web para revisar los textos a mano
+│   ├── entrena-rvc.sh                 # entrena un RVC
+│   ├── prepara-matxa.py, finetune-matxa.py   # fine-tune de Matxa
+│   ├── sintetitza-matxa.py, matxa_entorn.py  # síntesis desde la terminal
+│   ├── parla.sh                       # texto → voz de personaje (Matxa + RVC)
+│   ├── entrena-narradora-heidi.sh     # ejemplo de canalización desatendida
+│   ├── rvc-personatges.json           # voz base, tono e índice de cada personaje
+│   └── veus.json                      # voces derivadas por DSP
+│
+│   (fuera de git: pesan mucho o tienen derechos)
+├── models/                            # Vosk y Aina descargados
+├── tts/                               # Matxa, espeak-ng, Applio, entrenamientos (ver tts/README.md)
+│   ├── runs/<run>/                    # fine-tunes de Matxa
+│   ├── rvc/Applio/logs/<nombre>/      # modelos RVC
+│   └── logs/, rvc/logs/               # logs de entrenamientos
+├── audios/                            # audio original descargado
+├── voz-dataset/                       # Demucs, hablantes, clips y logs/
+└── .venv/, .venv-voz/, .venv-rvc/     # entornos de Python
 ```
 
-## Siguientes pasos
+## Estado y siguientes pasos
 
-- **Fase B — WER con voz humana.** La sección «Transcripció» ya está en
-  `public/` (subir WAV, segmentos clicables, comparador Aina vs Vosk); falta
-  repetir el bench con **voz humana valenciana** (Common Voice catalán como
-  *ground truth*). Es la medida que de verdad decide el motor.
-- **Fase 3 — gramática desde los escenarios.** Derivar el `phrase_list` de
-  `backend/src/scenarios/*.ts` (objetivos y vocabulario) con normalización
-  (minúsculas, sin puntuación, sin duplicados) y medir A/B con y sin gramática.
-  La evidencia actual (RTF 0,017 frente a 0,066) hace de esto la línea con más
-  recorrido. Nota: los `.ts` viven en `backend/` (no tocable); la vía es leer
-  `/api/scenarios` por HTTP como ya hace el modo llamada.
-- **Fase C — live de verdad.** Proveedor streaming de calidad (`aina-chunked`
-  con el faster-whisper por trozos de 2–5 s, o NeMo Transducer nativo),
-  `POST /api/tts` troceado por frases en paralelo, y modo llamada v2 dúplex.
-  Criterio: primer parcial < 600 ms en la RTX 3060.
-- **Fase D — clonación vocal (experimental).** `VoiceStore` (`POST
-  /api/voices` con audios de referencia → `voices/`, gitignored) + sidecar
-  XTTS-v2 zero-shot; si el catalán no da calidad, plan B con RVC sobre el TTS
-  base. Se evalúa con el propio bench WER (inteligibilidad del clon).
-## Modo llamada: conversación completa sin tocar el juego
+Hecho: reconocimiento en streaming, transcripción por lotes y bench WER (con
+voz sintética), generación de audio con todos los modelos, voces de seis
+personajes, detector de variante y modo llamada. La integración en el juego
+(fase 5) se implementó y se revirtió por decisión del propietario.
 
-El laboratorio tiene, además del banco de pruebas, un prototipo de **llamada
-conversacional** que demuestra el circuito completo de voz en tiempo real
-consumiendo la API existente del juego — pero **sin modificar ninguna línea de
-`frontend/`, `backend/` ni `shared/`**:
+Pendiente:
 
-```
-micrófono → Vosk en streaming (texto en vivo mientras hablas)
-   → al detectarse el final de la frase, POST /api/turn (modo demo, texto ya transcrito)
-      → agente (OpenAI) responde
-   → POST /api/tts → la respuesta suena con la voz del escenario (gina/lluc)
-   → el micrófono se reabre solo: conversación continua a manos libres
-```
+- **WER con voz humana valenciana**: es la medida que de verdad decide entre
+  Vosk y Aina; con voz sintética Vosk gana, pero Aina tira al catalán central.
+- **Vocabulario desde los escenarios** del juego (leído por `/api/scenarios`):
+  el vocabulario restringido es la mejora más grande medida.
+- **Streaming de calidad** (Whisper por trozos o NeMo) y TTS troceado por frases.
 
-- Se activa en la página del laboratorio (`http://localhost:3100`) con el botón
-  **«Trucar»**, eligiendo escenario y nivel. Botón «Penjar» para colgar.
-- Es **solo lectura de la API del juego** (las mismas llamadas que hace el
-  frontend: `createSession` + `sendTurn` + `/api/tts` en modo demo, sin token).
-  No escribe en Supabase, no aplica XP real ni altera el flujo del juego.
-- El historial del agente se lleva en memoria dentro del laboratorio, igual que
-  hace `App.tsx`, para que el personaje recuerde la conversación.
-- Limitaciones conscientes de un prototipo: el modo demo no persiste sesiones,
-  no hay *barge-in* (el micrófono se reabre cuando termina el audio de la
-  respuesta) y el endpointing es el de Vosk (pausa ≈ fin de frase).
-- Verificado e2e: dos turnos seguidos sobre «El Mercat» — el agente contesta y
-  recuerda «dos quilos de taronges» del turno anterior; audio WAV válido
-  reproducido; página sin errores de JS.
+## Qué no hace
 
-### Fase 5 — integración en el juego (⏸ pendiente de decisión)
+No modifica el juego, no escribe en Supabase, no aplica XP ni toca el agente.
+El modo llamada solo **consume** la API del juego en modo demo. Es un
+laboratorio: sin autenticación ni pensado para producción.
 
-La integración directa en el juego se implementó y **se revertió** por decisión
-del propietario (el módulo debe vivir aparte). El trabajo está guardado en
-`/tmp/fase5-integracion/` (proxy `backend/src/routes/streaming.ts` +
-`frontend/src/lib/voiceStream.ts` + cambios en `VoiceInput.tsx`) y fue
-verificado punta a punta (texto exacto vía el proxy, RTF ≈ 0,07). Si se quiere
-integrar más adelante, se puede restaurar desde ahí o reimplementarla usando el
-modo llamada como referencia del circuito; antes conviene cerrar la fase B
-(WER con voz humana) para decidir motor.
-
-- **Fase 6 — recerca de motors conversacionals.** Taula de projectes i models
-  de parla en català/valencià, amb implicacions per al laboratori:
-  `docs/estat-de-lart-veu-conversacional.md`.
-
-## Mode trucada: validació del *endpointing* (tests automatitzats)
-
-El mode trucada depén d'una sola cosa: que el tancament del torn funcione sense
-que ningú polse res. Validat amb un arnés que envia PCM16 per WebSocket **sense
-enviar mai `{eof: 1}`** (la sortida de l'arnés és a `/tmp/call_detect_test.mjs`):
-
-| Test | Escenari | Resultat |
-|---|---|---|
-| 1 | Parla → 1,5 s de silenci, sense `eof` | ✅ final sol `"bon dia com et puc ajudar hui"` → agent respon sobre el mercat → TTS WAV vàlid (351–530 KB) |
-| 2 | 6 s de silenci pur | ✅ cap final (sense falsos positius) |
-| 3 | Dos torns consecutius en la mateixa connexió amb **frases diferents** | ✅ torn 1 `"bon dia com et puc ajudar hui"`, torn 2 `"perdona on està l ajuntament no el troba per enlloc"` — el reconeixedor es reinicia bé entre torns |
-
-Nota de depuració: una versió anterior de l'arnés informava el torn 2 amb el
-text del torn 1 — era un error del test (cercava el primer final de la
-sessió, no el nou), no del motor. Amb el cursor arreglat, el *endpointing* per
-energia i el *reset* del reconeixedor es comporten com cal.
-
-## Qué NO hace este módulo
-
-No modifica `frontend/`, `backend/` ni `shared/` (la integración de la fase 5
-se revertió: `git status` solo muestra `speech-lab/` y el `package.json` de la
-raíz), no escribe en Supabase, no aplica XP ni toca el agente conversacional.
-El modo llamada únicamente **consume** la API HTTP ya existente en modo demo,
-igual que haría cualquier cliente de prueba.
-
-
-
-```
-[speech] provider=vosk partials=8 finals=1 first_partial=150ms final=299ms audio=2.59s rtf=0.066
-```
+Licencias: los modelos de Matxa y el vocoder son de Projecte AINA (uso no
+comercial, ver [tts/README.md](tts/README.md)); las voces de personajes salen de
+doblajes y vídeos con derechos y no se publican.

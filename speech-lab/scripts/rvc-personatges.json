@@ -1,0 +1,8 @@
+{
+  "doraemon": { "base": 7, "to": 5 },
+  "nobita": { "base": 7, "to": 6 },
+  "narrador": { "base": 6, "to": -6, "index": 0, "clips": "voz-dataset/clips" },
+  "narradora": { "base": 7, "to": 3, "index": 0 },
+  "heidi": { "base": 7, "to": 9 },
+  "parlant04": { "base": 6, "to": -4, "index": 0 }
+}
