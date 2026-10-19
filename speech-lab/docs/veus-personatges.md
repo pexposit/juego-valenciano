@@ -94,7 +94,7 @@ El laboratorio lee el catálogo del disco: el modelo aparece en
 | `scripts/` | toda la canalización | sí | — |
 | `scripts/rvc-personatges.json` | base, tono, índice y clips de cada RVC | sí | — |
 | `scripts/veus.json` | voces derivadas de gina por DSP (experimento) | sí | — |
-| `tts/models/` | Matxa multiaccent y vocoder (Aina) | sí (LFS) | `setup-matxa.sh` |
+| `tts/models/` | Matxa multiaccent y vocoder (Aina) | no | `setup-matxa.sh` (los baja de Hugging Face) |
 | `tts/Matcha-TTS-dev-cat/`, `tts/espeak-ng-src/` | clones de código | no | `setup-matxa.sh` |
 | `tts/rvc/Applio/` | Applio y sus modelos preentrenados | no | `setup-rvc.sh` |
 | `tts/rvc/Applio/logs/<nom>/<nom>_<N>e_*.pth` + `.index` | **modelo RVC entrenado** | no | solo reentrenando (horas) |

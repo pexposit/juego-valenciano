@@ -14,14 +14,12 @@ lab-dev.log
 .venv-rvc/
 audios/
 voz-dataset/
-# Matxa (es refà amb scripts/setup-matxa.sh). Només es versionen els models
-# d'Aina (amb LFS), l'espeak compilat i els logs: el codi de Matcha i l'espeak
-# font són clons, i les execucions (checkpoints, mostres, tensorboard) porten la
-# veu del narrador de l'audiollibre.
+# Matxa (es refà amb scripts/setup-matxa.sh). Només es versionen l'espeak
+# compilat i uns logs: els models d'Aina els descarrega setup-matxa.sh, el codi de
+# Matcha i l'espeak font són clons, i les execucions (checkpoints, mostres,
+# tensorboard) porten veus amb drets.
 tts/*
 !tts/README.md
-!tts/models/
-tts/models/**/.cache/
 !tts/espeak-ng/
 !tts/logs/
 tts/logs/*
