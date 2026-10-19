@@ -46,6 +46,10 @@ export const ROBOT_AVATAR = {
       modelUrl: '/avatar-robot/robot-a2_casa.glb',
       fallbackUrl: '/avatar-robot/robot-a2_casa.webp',
     },
+    b1_salut: { // Marc, company de pis (B1, salut): el mateix personatge que el company de pis de l'A2 (Xavi)
+      modelUrl: '/avatar-robot/robot-a2_casa.glb',
+      fallbackUrl: '/avatar-robot/robot-a2_casa.webp',
+    },
     a2_activitats: { // Toni, amic del gimnàs: samarreta de tirants, pantaló curt, cinta, tovallola i pesa
       modelUrl: '/avatar-robot/robot-a2_activitats.glb',
       fallbackUrl: '/avatar-robot/robot-a2_activitats.webp',
@@ -66,11 +70,19 @@ export const ROBOT_AVATAR = {
       modelUrl: '/avatar-robot/robot-a2_clima.glb',
       fallbackUrl: '/avatar-robot/robot-a2_clima.webp',
     },
+    b1_treball: { // Sergi, responsable de recursos humans (B1, el treball): el mateix personatge que el recepcionista de l'hotel de l'A2 (Jordi)
+      modelUrl: '/avatar-robot/robot-a2_viatges.glb',
+      fallbackUrl: '/avatar-robot/robot-a2_viatges.webp',
+    },
     a2_viatges: { // Jordi, recepcionista de l'hotel: uniforme amb ribets daurats, llacet, placa i clau de l'habitació
       modelUrl: '/avatar-robot/robot-a2_viatges.glb',
       fallbackUrl: '/avatar-robot/robot-a2_viatges.webp',
     },
     ajuntament: { // Amparo, funcionària d'atenció ciutadana: americana petroli, brusa, ulleres, collaret i carpeta
+      modelUrl: '/avatar-robot/robot-ajuntament.glb',
+      fallbackUrl: '/avatar-robot/robot-ajuntament.webp',
+    },
+    b1_administracio: { // Teresa, tècnica de l'Oficina d'Atenció Ciutadana (B1): el mateix personatge que la funcionària de l'ajuntament (Amparo)
       modelUrl: '/avatar-robot/robot-ajuntament.glb',
       fallbackUrl: '/avatar-robot/robot-ajuntament.webp',
     },
@@ -149,6 +161,96 @@ export const ROBOT_AVATAR = {
     n0_biblioteca: { // Pau, el bibliotecari (xiquets): armilla de punt amb rombes, ulleres daurades, llapis a l'orella i conte
       modelUrl: '/avatar-robot/robot-n0_biblioteca.glb',
       fallbackUrl: '/avatar-robot/robot-n0_biblioteca.webp',
+    },
+    b2_gent: { // Carme, presidenta de l'associació cultural: brusa amb floretes, collaret de boles, pestanyes i carpeta amb la llista
+      modelUrl: '/avatar-robot/robot-b2_gent.glb',
+      fallbackUrl: '/avatar-robot/robot-b2_gent.webp',
+    },
+    b2_estudis_treball: { // Ferran, director de RRHH (entrevista de feina): reutilitza la roba de l'oficina
+      modelUrl: '/avatar-robot/robot-oficina.glb',
+      fallbackUrl: '/avatar-robot/robot-oficina.webp',
+    },
+    b2_viatges: { // Núria, coordinadora de l'oficina de turisme de Morella: roba de guia amb el fullet de la ruta dels Ports
+      modelUrl: '/avatar-robot/robot-b2_viatges.glb',
+      fallbackUrl: '/avatar-robot/robot-b2_viatges.webp',
+    },
+    b2_menjar_salut: { // Toni, entrenador personal i dietista al gimnàs: reutilitza la roba de Toni del gimnàs
+      modelUrl: '/avatar-robot/robot-a2_activitats.glb',
+      fallbackUrl: '/avatar-robot/robot-a2_activitats.webp',
+    },
+    b2_cultura_espectacles: { // Marta, locutora de «Platea»: la roba de locutor de ràdio amb pestanyes
+      modelUrl: '/avatar-robot/robot-b2_cultura_espectacles.glb',
+      fallbackUrl: '/avatar-robot/robot-b2_cultura_espectacles.webp',
+    },
+    b2_mitjans: { // Pau, redactor en cap del diari digital: roba d'oficina amb una tauleta amb el diari
+      modelUrl: '/avatar-robot/robot-b2_mitjans.glb',
+      fallbackUrl: '/avatar-robot/robot-b2_mitjans.webp',
+    },
+    b2_politica_societat: { // Empar, regidora de participació ciutadana: reutilitza la roba de l'ajuntament
+      modelUrl: '/avatar-robot/robot-ajuntament.glb',
+      fallbackUrl: '/avatar-robot/robot-ajuntament.webp',
+    },
+    b2_actualitat: { // Héctor, divulgador científic: americana de tweed, samarreta amb un planeta i model d'àtom
+      modelUrl: '/avatar-robot/robot-b2_actualitat.glb',
+      fallbackUrl: '/avatar-robot/robot-b2_actualitat.webp',
+    },
+    b2_cultura_llengua: { // la tia Pepeta, contadora de rondalles: vestit de floretes, toquilla, monyo i ventall
+      modelUrl: '/avatar-robot/robot-b2_cultura_llengua.glb',
+      fallbackUrl: '/avatar-robot/robot-b2_cultura_llengua.webp',
+    },
+    // --- C1: roba pròpia (variants i nova) ---
+    c1_relacions: { // Neus, la cosina (noces d'or dels avis): la roba del cosí Pau amb pestanyes, sense el globus
+      modelUrl: '/avatar-robot/robot-c1_relacions.glb',
+      fallbackUrl: '/avatar-robot/robot-c1_relacions.webp',
+    },
+    c1_casa: { // Vicent, arquitecte tècnic: americana camel amb plànols enrotllats
+      modelUrl: '/avatar-robot/robot-c1_casa.glb',
+      fallbackUrl: '/avatar-robot/robot-c1_casa.webp',
+    },
+    c1_temps_lliure: { // Jordi, coordinador d'activitats: la roba d'agent de viatges, sense pestanyes ni bola del món
+      modelUrl: '/avatar-robot/robot-c1_temps_lliure.glb',
+      fallbackUrl: '/avatar-robot/robot-c1_temps_lliure.webp',
+    },
+    c1_ensenyanca: { // Karim, pare nouvingut: jersei verd, camisa, rellotge i la motxilla escolar dels fills
+      modelUrl: '/avatar-robot/robot-c1_ensenyanca.glb',
+      fallbackUrl: '/avatar-robot/robot-c1_ensenyanca.webp',
+    },
+    c1_comerc: { // Rafel, antiquari del rastre: barret de feltre, armilla de tweed, riñonera i la làmpada de llautó
+      modelUrl: '/avatar-robot/robot-c1_comerc.glb',
+      fallbackUrl: '/avatar-robot/robot-c1_comerc.webp',
+    },
+    c1_medi_clima: { // Pilar, tècnica de protecció civil de l'Ajuntament: uniforme amb bandes reflectants, emblema i walkie-talkie
+      modelUrl: '/avatar-robot/robot-c1_medi_clima.glb',
+      fallbackUrl: '/avatar-robot/robot-c1_medi_clima.webp',
+    },
+    // --- C1: reutilitzen la roba d'un altre escenari ---
+    c1_treball: { // Sílvia, delegada de personal: roba de Sílvia (a2_faena)
+      modelUrl: '/avatar-robot/robot-a2_faena.glb',
+      fallbackUrl: '/avatar-robot/robot-a2_faena.webp',
+    },
+    c1_alimentacio: { // Empar, xef del restaurant: roba d'Empar (a2_menjar)
+      modelUrl: '/avatar-robot/robot-a2_menjar.glb',
+      fallbackUrl: '/avatar-robot/robot-a2_menjar.webp',
+    },
+    c1_mitjans: { // Laia, directora del diari digital i del programa de ràdio: roba de locutora (b2_cultura_espectacles)
+      modelUrl: '/avatar-robot/robot-b2_cultura_espectacles.glb',
+      fallbackUrl: '/avatar-robot/robot-b2_cultura_espectacles.webp',
+    },
+    c1_salut: { // Marc, infermer: bata de la farmàcia (farmacia)
+      modelUrl: '/avatar-robot/robot-farmacia.glb',
+      fallbackUrl: '/avatar-robot/robot-farmacia.webp',
+    },
+    c1_cultura: { // Teresa, directora de la casa de cultura: roba de presidenta d'associació (b2_gent)
+      modelUrl: '/avatar-robot/robot-b2_gent.glb',
+      fallbackUrl: '/avatar-robot/robot-b2_gent.webp',
+    },
+    c1_economia: { // Sergi, tècnic de desenvolupament local: roba d'oficina (oficina)
+      modelUrl: '/avatar-robot/robot-oficina.glb',
+      fallbackUrl: '/avatar-robot/robot-oficina.webp',
+    },
+    c1_sociocultural: { // Marina, presidenta d'una associació intercultural: roba de presidenta d'associació (b2_gent)
+      modelUrl: '/avatar-robot/robot-b2_gent.glb',
+      fallbackUrl: '/avatar-robot/robot-b2_gent.webp',
     },
   } as Record<string, { modelUrl: string; fallbackUrl: string }>,
 } as const;
