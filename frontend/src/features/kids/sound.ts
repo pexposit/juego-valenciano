@@ -4,9 +4,9 @@ import { KIDS_AUDIO } from './content';
 import { LESSON_AUDIO } from './lessons';
 
 /**
- * So del Nivell 0: les frases les diu la veu del navegador si en té una de catalana de
- * qualitat (sona natural i no ha d'esperar cap descàrrega); si no, frases pregenerades
- * amb el TTS (/audio/kids/<clau>.wav; si en falta alguna, la demana al servidor) i
+ * So del Nivell 0: les frases pregenerades amb la veu del personatge (/audio/kids/<clau>.wav);
+ * si en falta alguna, la veu catalana del navegador si en té una de qualitat o, si no, la
+ * demana al TTS del servidor; i
  * efectes sintetitzats amb Web Audio (sense fitxers): arpa i campanetes quan
  * s'encerta, un «boing» suau quan no, i sons curts per a bambolles i comptes.
  */
@@ -62,9 +62,9 @@ function play(src: string): Promise<boolean> {
 
 /**
  * Diu una frase. Para la que sonava. Es resol quan acaba (o si falla) amb true
- * si ningú l'ha interrompuda. Els xiquets no llegixen: primer prova la veu catalana del
- * navegador; si no n'hi ha, el fitxer; si falta el fitxer, el TTS del servidor i, si tampoc
- * respon, qualsevol veu del navegador.
+ * si ningú l'ha interrompuda. Els xiquets no llegixen: primer el fitxer pregenerat (la veu
+ * del personatge); si falta, la veu catalana del navegador; si no n'hi ha, el TTS del
+ * servidor i, si tampoc respon, qualsevol veu del navegador.
  */
 export function say(key: string): Promise<boolean> {
   release();
@@ -74,11 +74,11 @@ export function say(key: string): Promise<boolean> {
   setVoiceState('loading');
   return (async () => {
     const text = phraseText(key);
+    if (await play(`/audio/kids/${encodeURIComponent(key)}.wav`)) return live();
+    if (!live()) return false;
     const voice = text ? await catalanVoice() : null;
     if (!live()) return false;
     if (voice && (await speak(text, voice, live))) return live();
-    if (!live()) return false;
-    if (await play(`/audio/kids/${encodeURIComponent(key)}.wav`)) return live();
     if (!live()) return false;
     const url = text ? await serverVoice(key, text) : null;
     if (url && live() && (await play(url))) return live();
