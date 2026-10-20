@@ -28,12 +28,53 @@ export const config = {
   /** Proveïdor de síntesi (`matxa`: TTS remot de la UJI, el mateix que el joc). */
   tts: {
     provider: process.env.TTS_PROVIDER?.trim() || 'matxa',
-    baseUrl: (process.env.MATXA_TTS_URL?.trim() || 'http://deeplab.lsi.uji.es:11000').replace(/\/$/, ''),
+    baseUrl: (process.env.MATXA_TTS_URL?.trim() || 'https://krono.act.uji.es/deeplab/speech').replace(/\/$/, ''),
     model: process.env.MATXA_TTS_MODEL?.trim() || 'matxa-tts',
     language: process.env.MATXA_TTS_LANGUAGE?.trim() || 'ca-es',
     defaultVoice: process.env.MATXA_TTS_VOICE?.trim() || 'gina',
     voices: (process.env.MATXA_TTS_VOICES?.trim() || 'gina,lluc').split(',').map((v) => v.trim()).filter(Boolean),
     timeoutMs: positiveNumber(process.env.MATXA_TTS_TIMEOUT_MS, 120_000),
+  },
+  /**
+   * Generació local (apartat «Generació d'àudio»): Matxa en GPU amb el model
+   * base i els fine-tunes de tts/runs/, i RVC (Applio) damunt de gina per als
+   * personatges de tts/rvc/Applio/logs/. Cada motor viu en el seu entorn.
+   */
+  localTts: {
+    matxaPython: resolveFromLab(process.env.MATXA_PYTHON?.trim() || '.venv-voz/bin/python'),
+    matxaScript: path.join(labRoot, 'sidecar', 'matxa_local.py'),
+    baseCheckpoint: resolveFromLab(
+      process.env.MATXA_BASE_CKPT?.trim() || 'tts/models/matxa-tts-cat-multiaccent/checkpoint_epoch=629.ckpt',
+    ),
+    runsDir: resolveFromLab(process.env.MATXA_RUNS_DIR?.trim() || 'tts/runs'),
+    rvcPython: resolveFromLab(process.env.RVC_PYTHON?.trim() || '.venv-rvc/bin/python'),
+    rvcScript: path.join(labRoot, 'sidecar', 'rvc_convert.py'),
+    applioDir: resolveFromLab(process.env.APPLIO_DIR?.trim() || 'tts/rvc/Applio'),
+    /** To mitjà de cada personatge respecte de gina (scripts/parla.sh llig el mateix fitxer). */
+    rvcCharacters: path.join(labRoot, 'scripts', 'rvc-personatges.json'),
+    /** Veus derivades d'un locutor de Matxa base (narradora, nena): prosòdia, to i formants. */
+    derivedVoices: path.join(labRoot, 'scripts', 'veus.json'),
+    startTimeoutMs: positiveNumber(process.env.LOCAL_TTS_START_TIMEOUT_MS, 180_000),
+  },
+  /**
+   * API fonètica PhoneticXeus del DeepLab de la UJI: fonemes amb probabilitats
+   * i alineació amb el text de referència. La usa el detector de variant
+   * (valencià / central) de src/variant/.
+   */
+  phonetic: {
+    baseUrl: (process.env.PHONETIC_API_URL?.trim() || 'https://krono.act.uji.es/deeplab/api').replace(/\/$/, ''),
+    /** Cada petició alinea un segment de 3–15 s; en una GPU lliure tarda uns pocs segons. */
+    timeoutMs: positiveNumber(process.env.PHONETIC_API_TIMEOUT_MS, 120_000),
+  },
+  /**
+   * `POST /api/variant`: sessions en memòria per a acumular l'evidència d'una
+   * persona entre gravacions (caduquen i n'hi ha un màxim), i durada màxima
+   * d'una gravació (cada 15 s de veu són tres crides en fila a l'API).
+   */
+  variant: {
+    sessionTtlMs: positiveNumber(process.env.VARIANT_SESSION_TTL_MS, 30 * 60_000),
+    maxSessions: positiveNumber(process.env.VARIANT_MAX_SESSIONS, 200),
+    maxSeconds: positiveNumber(process.env.VARIANT_MAX_SECONDS, 180),
   },
   /** Freqüència d'amostratge que espera el reconeixedor (els models Vosk són de 16 kHz). */
   sampleRate: positiveNumber(process.env.VOSK_SAMPLE_RATE, 16000),

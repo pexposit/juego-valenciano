@@ -39,6 +39,13 @@ export const chatRoute = (scenario: Scenario) => `/xat/${scenario}`;
 export const examRoute = (resourceId: string) => `/examen/${resourceId}`;
 export const practiceRoute = (resourceId: string) => `/practica/${resourceId}`;
 
+/**
+ * Els escenaris infantils (Nivell 0: el mag, el zoo, el pati, la biblioteca...): només els fa el xiquet, mai una
+ * persona adulta. Els escenaris del Nivell 0 pensats per a adults porten audience = 'adult' i no són infantils.
+ */
+export const isKidsScenario = (resource: Pick<Resource, 'category' | 'difficulty' | 'audience'>) =>
+  resource.category === 'escenari' && resource.difficulty === 'nivell0' && resource.audience !== 'adult';
+
 // Pantalla de joc de cada categoria de resources: els escenaris i l'Expressió oral s'obrin al xat
 // (per `type`), els exàmens al visor de l'examen i els continguts de les àrees
 // del temari a la pantalla d'exercicis (per `id`).

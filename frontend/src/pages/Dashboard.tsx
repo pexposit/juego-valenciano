@@ -6,7 +6,7 @@ import type { Page } from '../data/content';
 export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name: string; ageGroup: string; showMotherTongue: boolean; setPage: (p: Page) => void }) {
   const isChild = ageGroup === 'child';
   return (
-    <main className="fade-up relative min-h-screen">
+    <main className="fade-up relative flex h-[calc(100dvh-var(--app-footer,0px))] flex-col overflow-y-auto">
       {/* Fons amb transparència perquè el text i els botons per damunt es lligen bé. */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-30"

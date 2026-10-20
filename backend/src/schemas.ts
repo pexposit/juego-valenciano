@@ -68,10 +68,23 @@ export const clientEvaluationSchema = z.object({
 
 // En tancar un recurs: la conversa (Nivell 0, per a revisar els objectius) o els errors
 // pendents del recurs i les últimes avaluacions (per a l'avaluació pedagògica).
+// Una llista tolerant: les entrades que no passen la validació (un text massa llarg, un camp que falta) es descarten
+// i la resta es manté, en compte de rebutjar tota la petició. Si no, un sol missatge o error estrany deixaria
+// l'escenari sense tancar ni revisar mai.
+const lenientList = <T extends z.ZodTypeAny>(item: T, max: number) =>
+  z.array(z.unknown()).optional().default([]).transform(list => {
+    const valid = list.flatMap(entry => {
+      const parsed = item.safeParse(entry);
+      return parsed.success ? [parsed.data as z.infer<T>] : [];
+    });
+    if (valid.length < list.length) console.warn(`[finish] S'han descartat ${list.length - valid.length} entrades invàlides de ${list.length}`);
+    return valid.slice(-max);
+  });
+
 export const finishResourceSchema = z.object({
-  messages: z.array(clientMessageSchema).max(400).optional().default([]),
-  errors: z.array(clientErrorSchema).max(100).optional().default([]),
-  evaluations: z.array(clientEvaluationSchema).max(4).optional().default([]),
+  messages: lenientList(clientMessageSchema, 400),
+  errors: lenientList(clientErrorSchema, 100),
+  evaluations: lenientList(clientEvaluationSchema, 4),
 });
 
 // Un missatge de l'usuari en un xat, per a buscar-hi errors.

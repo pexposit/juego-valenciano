@@ -128,7 +128,7 @@ VITE_API_BASE_URL      = https://api.tu-dominio.com
 ## 5. Detalles que suelen morder
 
 - **HTTPS y micrófono.** Sin contexto seguro, `getUserMedia` no funciona y el juego pierde la voz sin mensaje de error. Vercel lo da gratis; un servidor propio con IP o HTTP, no.
-- **matxa es HTTP, pero no pasa nada.** `http://deeplab.lsi.uji.es:11000` lo llama el **backend** (servidor a servidor), así que el navegador no bloquea nada por contenido mixto. Si algún día lo llamara el frontend, sí lo bloquearía.
+- **matxa va por HTTPS.** `https://krono.act.uji.es/deeplab/speech` lo llama el **backend** (servidor a servidor). Al ser HTTPS, si algún día lo llamara el frontend tampoco habría problema de contenido mixto (sí haría falta que el servidor permitiera CORS).
 - **El límite de peticiones vive en memoria del proceso.** Con una instancia (lo normal en Render/Railway/Fly) es suficiente. Si escalas a varias réplicas, cada una llevaría su propia cuenta: entonces necesitarás Redis o contadores en la base de datos.
 - **`req.ip` detrás de un proxy.** Ya está resuelto con `app.set('trust proxy', 1)`; sin esa línea, todas las peticiones llegarían con la IP del proxy y el límite afectaría a todos los usuarios a la vez.
 - **El laboratorio de voz no se despliega.** `speech-lab/` necesita los modelos Vosk y Python; es herramienta de desarrollo. Ojo: su README documenta que llama a `/api/tts` sin token, así que con `ALLOW_DEMO=false` el laboratorio dejará de poder pedir audio.

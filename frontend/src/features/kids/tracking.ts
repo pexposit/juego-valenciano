@@ -33,7 +33,14 @@ export type ConversationRow = {
   seconds: number;
   created_at: string;
 };
-export type ChildData = { name: string; badges: string[]; sessions: SessionRow[]; words: WordRow[]; conversations: ConversationRow[] };
+// Activitat d'una persona adulta (pràctica o examen): l'última nota i els errors encara sense corregir. La demana la docent al servidor.
+export type AdultActivity = {
+  resource_id: string; name: string; icon: string | null; category: string; kind: 'practice' | 'exam';
+  score: number | null; total: number | null; pending_errors: number; last_at: string;
+};
+// `level`: el nivell de l'alumne (no hi és en mode demostració); les illes i les partides només són del Nivell 0.
+// `activities`: només en les classes d'adults.
+export type ChildData = { name: string; level?: string; badges: string[]; sessions: SessionRow[]; words: WordRow[]; conversations: ConversationRow[]; activities?: AdultActivity[] };
 
 const localKey = (uid: string | undefined) => `parlaval:kids:seguiment:${uid ?? 'demo'}`;
 type LocalData = { sessions: SessionRow[]; words: Record<string, WordRow> };
@@ -101,7 +108,7 @@ export async function loadChildData(uid: string | undefined): Promise<ChildData>
   }
   const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
   const [profile, sessions, words, conversations] = await Promise.all([
-    supabase.from('profiles').select('display_name, badges').eq('id', uid).single(),
+    supabase.from('profiles').select('display_name, badges, level').eq('id', uid).single(),
     supabase.from('kids_sessions').select('island, stage, rounds, first_try, misses, easy, seconds, created_at')
       .eq('user_id', uid).gte('created_at', since).order('created_at', { ascending: false }).limit(500),
     supabase.from('kids_word_stats').select('item_id, word, emoji, island, attempts, misses, last_seen').eq('user_id', uid),
@@ -112,6 +119,7 @@ export async function loadChildData(uid: string | undefined): Promise<ChildData>
   if (error) throw error;
   return {
     name: profile.data?.display_name ?? '',
+    level: (profile.data?.level as string | undefined) ?? undefined,
     badges: (profile.data?.badges as string[] | undefined) ?? [],
     sessions: (sessions.data ?? []) as SessionRow[],
     words: (words.data ?? []) as WordRow[],
@@ -149,10 +157,24 @@ export async function deleteClass(id: string) {
 }
 
 /** Els alumnes d'una classe, cada un amb el seu seguiment. */
-export async function loadStudents(classId: string): Promise<Student[]> {
+export async function loadStudents(classId: string, adult = false): Promise<Student[]> {
   const { data, error } = await need().from('kids_class_members').select('student_id, joined_at').eq('class_id', classId).order('joined_at');
   if (error) throw error;
-  return Promise.all((data ?? []).map(async m => ({ id: m.student_id as string, joined_at: m.joined_at as string, data: await loadChildData(m.student_id as string) })));
+  // Les classes d'adults porten, a més, l'activitat de pràctiques i exàmens (només la llig el servidor).
+  const activity = adult ? await loadClassActivity(classId) : {};
+  return Promise.all((data ?? []).map(async m => {
+    const child = await loadChildData(m.student_id as string);
+    return { id: m.student_id as string, joined_at: m.joined_at as string, data: adult ? { ...child, activities: activity[m.student_id as string] ?? [] } : child };
+  }));
+}
+
+async function loadClassActivity(classId: string): Promise<Record<string, AdultActivity[]>> {
+  const token = (await need().auth.getSession()).data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/teacher/classes/${encodeURIComponent(classId)}/activity`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error("No hem pogut carregar l'activitat de la classe");
+  return res.json();
 }
 
 export async function removeStudent(classId: string, student: string) {

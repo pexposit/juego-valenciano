@@ -5,6 +5,7 @@ import { stageCount } from './islandSession';
 import { ROBOT_AVATAR } from '../robot-avatar';
 import { fetchResources } from '../../lib/api';
 import type { Resource } from '../../lib/types';
+import { isKidsScenario } from '../../data/content';
 import { ISLANDS } from './lessons';
 import { loadCromos, loadStages, stagesDone } from './progress';
 import { say, sayBriefly, stopVoice } from './sound';
@@ -34,7 +35,7 @@ export function KidsHome({ name, uid, onBack, onIsland, onScenario, onAlbum, onP
     let cancelled = false;
     fetchResources()
       .then(data => {
-        if (!cancelled) setScenarios(data.filter(r => r.category === 'escenari' && r.difficulty === 'nivell0'));
+        if (!cancelled) setScenarios(data.filter(isKidsScenario));
       })
       .catch(error => console.error('Error carregant els escenaris:', error));
     return () => { cancelled = true; };

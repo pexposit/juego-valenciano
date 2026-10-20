@@ -67,7 +67,8 @@ learningPathRouter.get('/api/activity-status', requireAuth, async (req: AuthRequ
     // Xats: acabat (resolved) o només començat.
     for (const s of sessions.data ?? []) {
       const current = status[s.recurso_id];
-      if (s.resolved) status[s.recurso_id] = current ?? { status: 'done', score: null, total: null, answered: null, pending_errors: 0 };
+      // Un recurs tancat guanya a un altre de la mateixa activitat que va quedar obert (p. ex. una entrada duplicada).
+      if (s.resolved) status[s.recurso_id] = current && current.status !== 'in_progress' ? current : { status: 'done', score: null, total: null, answered: null, pending_errors: 0 };
       else if (!current) status[s.recurso_id] = { status: 'in_progress', score: null, total: null, answered: null, pending_errors: 0 };
     }
     // Feta del tot (totes les preguntes contestades), però amb errors pendents: només és «feta» quan s'han corregit.

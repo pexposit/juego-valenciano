@@ -15,7 +15,7 @@ SELECT * FROM jsonb_to_recordset($data$[
   {
     "id": "09a7b08e-3dd9-43d5-b856-3cbc9453a387", "type": "b2_gent", "sort_order": 1,
     "name": "3.1.1. Conéixer la gent", "icon": "🤝", "color": "#FFCCBC", "bg": "#FBE9E7",
-    "background": "/images/house_party.jpg",
+    "background": "/images/asociacion_cultural.jpg",
     "content": "Carme, la presidenta de l'associació cultural del barri, et va deixar un missatge al contestador. Ara et telefona perquè l'ajudes a preparar el sopar de benvinguda dels socis nous.",
     "voice": "gina", "character": "Carme, presidenta de l'associació cultural del barri", "role": "Presidenta de l'associació",
     "greeting": "Per fi et trobe! Vas escoltar el missatge que et vaig deixar al contestador? Reconec que era un poc embolicat... Què en vas entendre?",
@@ -136,7 +136,7 @@ SELECT * FROM jsonb_to_recordset($data$[
   {
     "id": "ede09fd8-b569-415a-84f6-3b02900f262a", "type": "b2_cultura_llengua", "sort_order": 9,
     "name": "3.1.9. Cultura i llengua", "icon": "📜", "color": "#FFAB91", "bg": "#FBE9E7",
-    "background": "/images/street.jpg",
+    "background": "/images/pueblo_noche.jpg",
     "content": "És nit de festes al poble i, a la fresca, la tia Pepeta, una veïna major que sap totes les rondalles i llegendes de la comarca, en conta una i et proposa un joc.",
     "voice": "gina", "character": "La tia Pepeta, contadora de rondalles", "role": "Veïna del poble",
     "greeting": "Seu ací, a la fresca, que ara ve la bona! Saps la llegenda de la cova de la mora encantada? Escolta, que te la conte com me la contava ma mare...",

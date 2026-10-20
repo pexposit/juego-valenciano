@@ -7,10 +7,9 @@ import { ProgressReport } from '../features/kids/ProgressReport';
 import { ClassPaths } from '../features/paths/ClassPaths';
 import { ClassActivities } from '../features/paths/ClassActivities';
 import { TeacherActivities } from '../features/activities/TeacherActivities';
-import { ConversationView } from '../features/kids/ConversationView';
-import { ago, groupStruggles, percent, summarize } from '../features/kids/report';
+import { ago, groupAdultStruggles, groupStruggles, percent, summarize, summarizeAdult } from '../features/kids/report';
 import {
-  createClass, deleteClass, loadMyClasses, loadStudents, removeStudent, type ConversationRow, type KidsClass, type Student,
+  createClass, deleteClass, loadMyClasses, loadStudents, removeStudent, type KidsClass, type Student,
 } from '../features/kids/tracking';
 
 const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-xl font-normal outline-none focus:border-[#0F47AF] transition-colors';
@@ -26,7 +25,6 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
   const [selected, setSelected] = useState<KidsClass>();
   const [students, setStudents] = useState<Student[]>();
   const [student, setStudent] = useState<Student>();
-  const [conversation, setConversation] = useState<ConversationRow>();
   const [newName, setNewName] = useState('');
   const [newLevels, setNewLevels] = useState<string[]>([]);
   const [error, setError] = useState<string>();
@@ -48,7 +46,7 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
     setStudent(undefined);
     if (!selected) return;
     let cancelled = false;
-    loadStudents(selected.id)
+    loadStudents(selected.id, !isLevel0Class(selected.levels))
       .then(s => { if (!cancelled) setStudents(s); })
       .catch(e => {
         console.error(e);
@@ -120,8 +118,7 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
           <>
             <h1 className="text-4xl font-black">{student.data.name || 'Alumne'}</h1>
             <p className="mt-1 mb-5 text-lg opacity-70">{selected?.name} · a la classe des de {new Date(student.joined_at).toLocaleDateString('ca-ES')}</p>
-            <ProgressReport data={student.data} name={student.data.name} onOpenConversation={setConversation} />
-            {conversation && <ConversationView conversation={conversation} name={student.data.name} onClose={() => setConversation(undefined)} />}
+            <ProgressReport data={student.data} name={student.data.name} />
           </>
         ) : selected ? (
           <ClassView
@@ -217,6 +214,9 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
   onDelete: () => void;
 }) {
   const struggles = students ? groupStruggles(students.map(s => s.data)) : [];
+  const adultStruggles = students && !isLevel0Class(klass.levels) ? groupAdultStruggles(students.map(s => s.data)) : [];
+  // Les illes, els cromos i les partides són del Nivell 0: en les classes d'adults només es veuen els escenaris.
+  const kidsClass = isLevel0Class(klass.levels);
   const [pathsVersion, setPathsVersion] = useState(0);
 
   return (
@@ -265,30 +265,58 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
               <thead className="text-sm font-extrabold uppercase tracking-wide opacity-50">
                 <tr>
                   <th className="py-2">Nom</th>
-                  <th>Última vegada</th>
-                  <th>Aquesta setmana</th>
-                  <th>Encerts</th>
-                  <th>Cromos</th>
-                  <th>Li costa</th>
-                  <th>Converses</th>
+                  <th>{kidsClass ? 'Última vegada' : 'Última activitat'}</th>
+                  {kidsClass ? (
+                    <>
+                      <th>Aquesta setmana</th>
+                      <th>Encerts</th>
+                      <th>Cromos</th>
+                      <th>Li costa</th>
+                    </>
+                  ) : (
+                    <>
+                      <th>Li costa</th>
+                      <th>A practicar</th>
+                      <th>Ho domina</th>
+                    </>
+                  )}
+                  <th>{kidsClass ? 'Converses' : 'Objectius dels escenaris'}</th>
                   <th />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {students.map(s => {
                   const r = summarize(s.data);
+                  const a = summarizeAdult(s.data);
                   return (
                     <tr key={s.id} className="cursor-pointer hover:bg-gray-50" onClick={() => onOpen(s)}>
                       <td className="py-3 font-extrabold text-[#0F47AF] underline-offset-2 hover:underline">{s.data.name || 'Sense nom'}</td>
-                      <td>{ago(r.lastPlayed)}</td>
-                      <td>{r.week.minutes} min</td>
-                      <td>{percent(r.accuracy)}</td>
-                      <td>{r.cromos}/{r.islands.length}</td>
-                      <td title={r.costa.map(i => i.name).join(', ')}>{r.costa.slice(0, 4).map(i => i.emoji).join(' ') || '—'}</td>
+                      <td>{ago(kidsClass ? r.lastPlayed : a.lastActivity)}</td>
+                      {kidsClass ? (
+                        <>
+                          <td>{r.week.minutes} min</td>
+                          <td>{percent(r.accuracy)}</td>
+                          <td>{r.cromos}/{r.islands.length}</td>
+                          <td title={r.costa.map(i => i.name).join(', ')}>{r.costa.slice(0, 4).map(i => i.emoji).join(' ') || '—'}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td title={a.costa.map(i => i.name).join(', ')}>{a.costa.length ? `${a.costa.length} · ${a.costa.slice(0, 3).map(i => i.emoji).join(' ')}` : '—'}</td>
+                          <td title={a.practicar.map(i => i.name).join(', ')}>{a.practicar.length || '—'}</td>
+                          <td title={a.domina.map(i => i.name).join(', ')}>{a.domina.length || '—'}</td>
+                        </>
+                      )}
                       <td title="Objectius complits en l'última conversa de cada escenari">
-                        {r.conversations.length
+                        {!r.conversations.length ? '—' : kidsClass
                           ? r.conversations.map(c => `${c.latest.objectives.filter(o => o.met).length}/${c.total}`).join(' · ')
-                          : '—'}
+                          : (
+                            <ul className="space-y-0.5 text-base">
+                              {r.conversations.slice(0, 3).map(c => (
+                                <li key={c.id}>{c.name} <b>{c.latest.objectives.filter(o => o.met).length}/{c.total}</b></li>
+                              ))}
+                              {r.conversations.length > 3 && <li className="opacity-60">+{r.conversations.length - 3} més</li>}
+                            </ul>
+                          )}
                       </td>
                       <td className="text-right">
                         <button
@@ -306,23 +334,44 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
             </table>
           </section>
 
-          <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
-            <h3 className="text-2xl font-black">El que més costa al grup</h3>
-            <p className="mt-1 text-base opacity-60">Illes on l'alumne encerta a la primera el 50 % de les rondes o menys.</p>
-            {struggles.length ? (
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {struggles.map(({ island, students: n }) => (
-                  <li key={island.id} className="flex items-center gap-2 rounded-full bg-coral/10 px-3 py-1.5 text-lg">
-                    <span aria-hidden="true">{island.emoji}</span>
-                    <span className="font-bold">{island.name}</span>
-                    <span className="text-sm opacity-60">{n} {n === 1 ? 'alumne' : 'alumnes'}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-lg opacity-70">De moment, no hi ha cap illa que coste a ningú.</p>
-            )}
-          </section>
+          {kidsClass && (
+            <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
+              <h3 className="text-2xl font-black">El que més costa al grup</h3>
+              <p className="mt-1 text-base opacity-60">Illes on l'alumne encerta a la primera el 50 % de les rondes o menys.</p>
+              {struggles.length ? (
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {struggles.map(({ island, students: n }) => (
+                    <li key={island.id} className="flex items-center gap-2 rounded-full bg-coral/10 px-3 py-1.5 text-lg">
+                      <span aria-hidden="true">{island.emoji}</span>
+                      <span className="font-bold">{island.name}</span>
+                      <span className="text-sm opacity-60">{n} {n === 1 ? 'alumne' : 'alumnes'}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-lg opacity-70">De moment, no hi ha cap illa que coste a ningú.</p>
+              )}
+          {!kidsClass && (
+            <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
+              <h3 className="text-2xl font-black">El que més costa al grup</h3>
+              <p className="mt-1 text-base opacity-60">Activitats on l'alumne té el 50 % o menys d'encerts o d'objectius complits.</p>
+              {adultStruggles.length ? (
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {adultStruggles.map(({ item, students: n }) => (
+                    <li key={item.key} className="flex items-center gap-2 rounded-full bg-coral/10 px-3 py-1.5 text-lg">
+                      <span aria-hidden="true">{item.emoji}</span>
+                      <span className="font-bold">{item.name}</span>
+                      <span className="text-sm opacity-60">{n} {n === 1 ? 'alumne' : 'alumnes'}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-lg opacity-70">De moment, no hi ha cap activitat que coste a ningú.</p>
+              )}
+            </section>
+          )}
+            </section>
+          )}
         </>
       )}
     </>

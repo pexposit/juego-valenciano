@@ -2,7 +2,7 @@ import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Les
 import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
-import { addErrors, addEvaluation, addMessages, getMessages, latestEvaluations, listConversations, listErrors, markErrorsResolved, setCurrentTutorConversation, updateConversation, type LocalError, forgetLevelData } from './localStore';
+import { addErrors, addEvaluation, addMessages, getMessages, latestEvaluations, listConversations, listErrors, markErrorsResolved, setCurrentTutorConversation, updateConversation, updateMessageTexts, type LocalError, forgetLevelData } from './localStore';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
 // Catàleg d'activitats de la BDD (taula resources). Es demana una sola vegada
 // per càrrega de la pàgina: el comparteixen la selecció d'activitats i el xat.
@@ -235,6 +235,7 @@ export type SessionResource = { id: string; sesion_id: string; recurso_id: strin
 // revisar-ne els objectius). L'avaluació que torna es guarda ací.
 // Si es crida dues vegades per al mateix recurs (botó i eixida de la pantalla), es fa una sola petició.
 const finishing = new Map<string, Promise<void>>();
+const ANALYSIS_WAIT_MS = 15_000;
 export function finishSessionResource(
   sessionId: string,
   sessionResourceId: string,
@@ -253,8 +254,12 @@ async function sendFinishResource(
   sessionResourceId: string,
   { includeMessages = false }: { includeMessages?: boolean },
 ): Promise<void> {
-  // Primer, que acaben les anàlisis d'errors encara en curs d'este recurs.
-  await Promise.allSettled([...(pendingAnalyses.get(sessionResourceId) ?? [])]);
+  // Primer, que acaben les anàlisis d'errors encara en curs d'este recurs (com a molt ANALYSIS_WAIT_MS: si una es queda
+  // penjada, l'escenari s'ha de tancar igualment).
+  await Promise.race([
+    Promise.allSettled([...(pendingAnalyses.get(sessionResourceId) ?? [])]),
+    new Promise(resolve => window.setTimeout(resolve, ANALYSIS_WAIT_MS)),
+  ]);
   const [messages, errors, evaluations] = await Promise.all([
     includeMessages ? getMessages(sessionResourceId) : Promise.resolve([]),
     listErrors(),
@@ -280,7 +285,10 @@ async function sendFinishResource(
   );
   // 404: el recurs ja no existix o no és d'este usuari; no té sentit tornar-ho a provar.
   if (res.ok || res.status === 404) forgetOpenResource(sessionResourceId);
-  if (!res.ok) return console.warn(`[finishSessionResource] El backend ha respost amb codi ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    return console.warn(`[finishSessionResource] El backend ha respost amb codi ${res.status}`, detail.slice(0, 500));
+  }
   const { evaluation } = await res.json() as { evaluation?: LatestEvaluation | null };
   if (evaluation) {
     await addEvaluation({
@@ -502,7 +510,46 @@ export type AssistantConversation = {
   session_resource_id: string;
   messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule }[];
 };
+// Llengües maternes amb traducció (les mateixes que els subtítols del Nivell 0).
+const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'];
+// Canvi de llengua materna en curs: obrir el xat del tauler l'espera, perquè no mostre les traduccions velles.
+let retranslating: Promise<void> | undefined;
+
+/**
+ * Quan canvia la llengua materna, les frases del professor de la conversa del tauler porten la traducció
+ * (la segona línia) en l'anterior, guardada dins de cada missatge. Es tornen a traduir a la nova llengua; si
+ * la nova no té traducció (valencià o una altra), s'esborren. Si no es pot traduir, la conversa queda com estava.
+ */
+export function retranslateTutorConversation(tongue: string): Promise<void> {
+  const run = (async () => {
+    const current = (await listConversations('tutor')).find(c => c.current);
+    if (!current) return;
+    const messages = (await getMessages(current.id)).filter(m => m.role === 'character' && m.text.includes('\n'));
+    if (messages.length === 0) return;
+    const valencian = (text: string) => text.split('\n')[0];
+
+    if (!TRANSLATED_TONGUES.includes(tongue)) {
+      await updateMessageTexts(messages.map(m => ({ id: m.id, text: valencian(m.text) })));
+      return;
+    }
+    const recent = messages.slice(-60);
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ tongue, lines: recent.map(m => valencian(m.text)) }),
+    });
+    if (!res.ok) throw new Error(`El backend ha respost amb codi ${res.status}`);
+    const { translations } = await res.json() as { translations: string[] };
+    await updateMessageTexts(recent.map((m, i) => ({ id: m.id, text: `${valencian(m.text)}\n${translations[i]}` })));
+  })().catch(error => console.error('Error actualitzant les traduccions del xat:', error));
+  retranslating = run;
+  void run.finally(() => { if (retranslating === run) retranslating = undefined; });
+  return run;
+}
+
 async function callAssistant(action: 'open' | 'restart', sessionId: string): Promise<AssistantConversation> {
+  await retranslating;
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/${action}`, {
     method: 'POST',
@@ -532,13 +579,6 @@ export type TutorMessage = { role: 'user' | 'character'; text: string; gnv?: Gnv
 const toTutorMessages = (messages: Awaited<ReturnType<typeof getMessages>>): TutorMessage[] =>
   messages.map(m => ({ role: m.role, text: m.text, gnv: m.gnv, created_at: m.createdAt }));
 
-// Una conversa del Nivell 0 (escenari) per al seguiment de la família: els missatges, en ordre.
-// Només es poden llegir en el navegador on es va fer la conversa, amb el compte del xiquet.
-export async function fetchKidsConversation(id: string): Promise<TutorMessage[]> {
-  const messages = await getMessages(id);
-  if (messages.length === 0) throw new Error('Esta conversa només es pot llegir en el dispositiu on es va fer.');
-  return toTutorMessages(messages);
-}
 // Reobri una conversa anterior com a l'actual; en tornar al tauler el professor la continua.
 export async function resumeTutorConversation(id: string): Promise<void> {
   const sessionId = await ensureSession('A1');

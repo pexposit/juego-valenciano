@@ -1,0 +1,4 @@
+{
+  "narradora": { "nom": "Narradora", "base": 7, "temperatura": 0.5, "durada": 1.12 },
+  "nena": { "nom": "Nena", "base": 7, "temperatura": 0.7, "durada": 0.92, "to": 5, "formants": 1.2 }
+}
