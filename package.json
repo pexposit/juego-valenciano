@@ -11,7 +11,8 @@
     "dev:speech": "npm run dev -w speech-lab",
     "smoke:speech": "npm run smoke -w speech-lab",
     "wer:speech": "npm run wer -w speech-lab",
-    "test:speech": "npm run test -w speech-lab"
+    "test:speech": "npm run test -w speech-lab",
+    "dev:rag": "cd rag_gnv && ${RAG_GNV_PYTHON:-.venv/bin/python} servidor.py"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1",

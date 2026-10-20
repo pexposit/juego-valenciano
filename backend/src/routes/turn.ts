@@ -12,6 +12,7 @@ import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
 import { assistantLevelInstructions } from '../services/assistantLevel.js';
 import { stt, tts } from '../services/voice.js';
+import { gnvRagEnabled } from '../services/gnvRag.js';
 
 export const turnRouter = Router();
 
@@ -84,12 +85,15 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     let levelInstructions: string | undefined;
     let level = data.level;
     let levelZero = false;
+    let gnvTool = false;
     if (client && scenario.category === ASSISTANT_CATEGORY) {
       const { data: profile } = await client.from('profiles').select('mother_tongue, level, age_group').eq('id', req.userId!).maybeSingle();
       extraInstructions = motherTongueInstructions(profile?.mother_tongue);
       levelInstructions = assistantLevelInstructions(profile?.level, profile?.age_group);
       level = profile?.level ?? level;
       levelZero = profile?.level === 'nivell0';
+      // Els dubtes de normativa es responen amb la GNV (RAG), però no en el Nivell 0 (xiquets que no lligen).
+      gnvTool = gnvRagEnabled() && !levelZero;
     } else if (client) {
       // Escenaris del Nivell 0: si el xiquet té activada la llengua materna, el personatge hi afig
       // la traducció de cada resposta (segona línia), que el xat mostra com a subtítol.
@@ -108,6 +112,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       history,
       extraInstructions,
       levelInstructions,
+      gnvTool,
     });
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);

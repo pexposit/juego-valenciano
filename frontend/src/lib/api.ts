@@ -1,4 +1,4 @@
-import type { ActivityResult, Exam, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, WritingEvaluation } from './types';
+import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, WritingEvaluation } from './types';
 import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
@@ -500,7 +500,7 @@ export async function recordPracticeAnswers(answers: { exercise_id: string; answ
 export type AssistantConversation = {
   session_id: string;
   session_resource_id: string;
-  messages: { role: 'user' | 'character'; text: string }[];
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule }[];
 };
 async function callAssistant(action: 'open' | 'restart', sessionId: string): Promise<AssistantConversation> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -512,7 +512,7 @@ async function callAssistant(action: 'open' | 'restart', sessionId: string): Pro
   if (!res.ok) throw new Error("No s'ha pogut obrir la conversa amb el professor");
   const opened = await res.json() as { session_id: string; session_resource_id: string; greeting: string };
   await setCurrentTutorConversation(opened.session_resource_id);
-  let messages = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text }));
+  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv }));
   // Conversa nova (o d'un altre dispositiu, sense missatges ací): comença amb la salutació.
   if (messages.length === 0) {
     messages = [{ role: 'character', text: opened.greeting }];
@@ -527,10 +527,10 @@ export const restartAssistant = (sessionId: string) => callAssistant('restart', 
 // Converses anteriors del xiquet amb el tutor (pestanya «Converses» del tauler infantil).
 // `title`: el nom que ha posat l'usuari (title_edited) o el resum del LLM; si encara no n'hi ha, el primer missatge.
 export type TutorConversation = { id: string; started_at: string; message_count: number; title: string; title_edited: boolean; preview: string; current: boolean };
-export type TutorMessage = { role: 'user' | 'character'; text: string; created_at: string };
+export type TutorMessage = { role: 'user' | 'character'; text: string; gnv?: GnvRule; created_at: string };
 
 const toTutorMessages = (messages: Awaited<ReturnType<typeof getMessages>>): TutorMessage[] =>
-  messages.map(m => ({ role: m.role, text: m.text, created_at: m.createdAt }));
+  messages.map(m => ({ role: m.role, text: m.text, gnv: m.gnv, created_at: m.createdAt }));
 
 // Una conversa del Nivell 0 (escenari) per al seguiment de la família: els missatges, en ordre.
 // Només es poden llegir en el navegador on es va fer la conversa, amb el compte del xiquet.

@@ -70,7 +70,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   // la sessió es crea a l'instant i l'usuari entra directament al tauler.
   const signUp = () => {
     if (supabase && !USERNAME_PATTERN.test(username.trim())) {
-      return setNotice('El nom d\'usuari ha de tindre entre 3 i 24 caràcters i només pot portar lletres (excepete ç y ñ) (sense accents), xifres (0-9), punts, guionets (-) i guionets baixos (_). No admet espais ni accents.');
+      return setNotice('El nom d\'usuari ha de tindre entre 3 i 24 caràcters i només pot portar lletres (excepete ç,ñ) (sense accents), xifres (0-9), punts, guionets (-) i guionets baixos (_). No admet espais ni accents.');
     }
     const weak = passwordProblem(password);
     if (supabase && weak) return setNotice(weak);

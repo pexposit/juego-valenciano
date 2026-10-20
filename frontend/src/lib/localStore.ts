@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import type { GnvRule } from './types';
 
 /**
  * Dades de l'usuari que poden ser sensibles (el que escriu o diu): es guarden només en este
@@ -30,6 +31,8 @@ export type LocalMessage = {
   conversationId: string; // session_resource_id
   role: 'user' | 'character';
   text: string;
+  // Tutor: la regla de la GNV amb què ha respost (si n'hi ha).
+  gnv?: GnvRule;
   createdAt: string;
 };
 
@@ -174,7 +177,7 @@ const byDate = <T extends { createdAt: string }>(a: T, b: T) => a.createdAt.loca
 export async function addMessages(
   conversationId: string,
   kind: ConversationKind,
-  messages: { role: 'user' | 'character'; text: string; createdAt?: string }[],
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; createdAt?: string }[],
 ) {
   const userId = await currentUserId();
   if (!userId || messages.length === 0) return;
@@ -186,6 +189,7 @@ export async function addMessages(
     conversationId,
     role: m.role,
     text: m.text,
+    ...(m.gnv ? { gnv: m.gnv } : {}),
     createdAt: m.createdAt ?? new Date(now + i).toISOString(),
   }));
   const created = !(await getOne('conversations', conversationId));

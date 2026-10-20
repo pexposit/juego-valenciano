@@ -257,4 +257,99 @@ describe('estado de la petición enviada a OpenAI', () => {
       expect(models).toEqual(['gpt-4o-mini', 'gpt-4o-mini']);
     });
   });
+
+  describe('consulta de la GNV (tutor)', () => {
+    const gnvArgs = { ...defaultArgs, message: "Quan porta accent 'què'?", gnvTool: true };
+    const ragResult = {
+      hay_respaldo: true,
+      mejor_puntuacion: 0.97,
+      mensaje: '',
+      fuentes: [
+        { seccion: '5.1.3', ruta: 'Ortografia > 5.1.3. L\'accentuació diacrítica', etiqueta: 'GNV § 5.1.3 · Ortografia > 5.1.3. L\'accentuació diacrítica', puntuacion: 0.97, texto: 'El pronom **què** porta accent.' },
+        { seccion: '5.1.1', ruta: 'Ortografia > 5.1.1. Regles generals', etiqueta: 'GNV § 5.1.1 · Ortografia > 5.1.1. Regles generals', puntuacion: 0.6, texto: 'Les agudes porten accent.' },
+        { seccion: '9.9', ruta: 'Altres', etiqueta: 'GNV § 9.9 · Altres', puntuacion: 0.2, texto: 'No usada.' },
+      ],
+    };
+
+    /** Separa les crides a OpenAI de les del RAG pel URL. */
+    function route(openAi: string[], rag: unknown = ragResult) {
+      const replies = [...openAi];
+      fetchMock.mockImplementation(async (url: string) => {
+        if (String(url).includes('/consultar')) return { ok: true, status: 200, json: async () => rag };
+        return openAiResponse(replies.shift() ?? '');
+      });
+    }
+    const ragCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).includes('/consultar'));
+
+    it('no consulta la GNV si el model deixa consulta_gnv buida', async () => {
+      const { replyFromAgent } = await loadAgent();
+      route([jsonReply({ consulta_gnv: '' })]);
+
+      const reply = await replyFromAgent(gnvArgs);
+      expect(reply.gnv).toBeUndefined();
+      expect(reply).not.toHaveProperty('consulta_gnv');
+      expect(ragCalls()).toHaveLength(0);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('consulta la GNV i retorna la regla amb la cita del RAG i sense Markdown', async () => {
+      const { replyFromAgent } = await loadAgent();
+      route([
+        jsonReply({ consulta_gnv: 'accentuació diacrítica de què i que' }),
+        jsonReply({ reply_text: 'Porta accent quan és **pronom**.', gnv: { fonts: [1, 2, 7], contingut: 'Què tònic porta accent.', explicacio: 'Si preguntes, accent.' } }),
+      ]);
+
+      const reply = await replyFromAgent(gnvArgs);
+      expect(JSON.parse(ragCalls()[0][1].body)).toEqual({ consulta: 'accentuació diacrítica de què i que', k: 4 });
+      expect(reply.reply_text).toBe('Porta accent quan és pronom.');
+      expect(reply.gnv).toEqual({
+        regla: ragResult.fuentes[0].etiqueta,
+        seccio: '5.1.3',
+        ruta: ragResult.fuentes[0].ruta,
+        contingut: 'Què tònic porta accent.',
+        explicacio: 'Si preguntes, accent.',
+        text_original: 'El pronom què porta accent.',
+        // La font 2 completa la regla; la 7 no existix i la 3 no s'ha usat.
+        relacionades: [{ regla: 'GNV § 5.1.1 · Ortografia > 5.1.1. Regles generals', seccio: '5.1.1', ruta: 'Ortografia > 5.1.1. Regles generals', text: 'Les agudes porten accent.' }],
+      });
+      // La segona petició porta les fonts i exigix el camp gnv.
+      const second = JSON.parse(fetchMock.mock.calls.at(-1)![1].body);
+      expect(second.messages.at(-1).content).toContain('<font id="1" seccio="5.1.3"');
+      expect(second.response_format.json_schema.schema.required).toContain('gnv');
+    });
+
+    it('sense respaldo en la GNV respon sense regla', async () => {
+      const { replyFromAgent } = await loadAgent();
+      route([jsonReply({ consulta_gnv: 'paella valenciana' }), jsonReply({ reply_text: 'No ho trobe a la GNV.' })],
+        { hay_respaldo: false, mejor_puntuacion: 0.01, mensaje: 'No ho trobe a la Gramàtica Normativa Valenciana.', fuentes: [] });
+
+      const reply = await replyFromAgent(gnvArgs);
+      expect(reply.gnv).toBeUndefined();
+      const second = JSON.parse(fetchMock.mock.calls.at(-1)![1].body);
+      expect(second.response_format.json_schema.schema.required).not.toContain('gnv');
+    });
+
+    it('si el RAG falla, el tutor respon igual', async () => {
+      const { replyFromAgent } = await loadAgent();
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const replies = [jsonReply({ consulta_gnv: 'plural de sofà' }), jsonReply({ reply_text: 'Es diu sofàs.' })];
+      fetchMock.mockImplementation(async (url: string) => {
+        if (String(url).includes('/consultar')) throw new Error('ECONNREFUSED');
+        return openAiResponse(replies.shift() ?? '');
+      });
+
+      const reply = await replyFromAgent(gnvArgs);
+      expect(reply.reply_text).toBe('Es diu sofàs.');
+      expect(reply.gnv).toBeUndefined();
+    });
+
+    it('sense gnvTool no demana consulta_gnv', async () => {
+      const { replyFromAgent } = await loadAgent();
+      route([jsonReply()]);
+
+      await replyFromAgent(defaultArgs);
+      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(body.response_format.json_schema.schema.properties).not.toHaveProperty('consulta_gnv');
+    });
+  });
 });

@@ -3,7 +3,15 @@ export type { LevelKey } from '@parlaval/shared';
 export type Scenario = string;
 export type Mood='neutral'|'content'|'confus';
 
-export type TurnResponse={reply_text:string;transcription?:string|null;reply_audio_base64?:string|null;reply_audio_mime_type?:string|null;mood:Mood;detected_level_signal:'below'|'on'|'above';error_flags:string[];xp_delta:number;analyze_errors?:boolean};
+// Regla de la Gramàtica Normativa Valenciana amb què el tutor respon un dubte de normativa (RAG del backend):
+// la cita oficial, el que diu la norma en breu i l'explicació fàcil del professor.
+export type GnvRule = {
+  regla: string; seccio: string; ruta: string; contingut: string; explicacio: string; text_original: string;
+  // Altres seccions que completen la regla (el cas contrari, excepcions...). No hi és en les respostes antigues.
+  relacionades?: { regla: string; seccio: string; ruta: string; text: string }[];
+};
+
+export type TurnResponse={reply_text:string;gnv?:GnvRule;transcription?:string|null;reply_audio_base64?:string|null;reply_audio_mime_type?:string|null;mood:Mood;detected_level_signal:'below'|'on'|'above';error_flags:string[];xp_delta:number;analyze_errors?:boolean};
 
 // Fila de la taula resources: `category` agrupa les activitats (p. ex. 'escenari')
 // i `type` n'és la secció dins de la categoria (p. ex. 'mercat').

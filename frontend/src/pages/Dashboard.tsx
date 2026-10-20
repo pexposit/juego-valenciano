@@ -85,18 +85,6 @@ export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name:
 
       {/* Mateix tauler per a tots: el professor i el xat. */}
       <ChildAssistant showHelp={showMotherTongue} />
-
-      {!isChild && (
-        <div className="relative z-20 flex justify-center px-5 pb-10">
-          <button
-            id="dashboard-start-btn"
-            onClick={() => {}}
-            className="btn-press rounded-full bg-teal px-6 py-2 text-xl md:px-8 md:py-3 md:text-2xl font-black text-white shadow-lg ring-2 ring-white hover:bg-teal/90"
-          >
-            Començar classe
-          </button>
-        </div>
-      )}
     </main>
   );
 }

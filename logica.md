@@ -657,6 +657,15 @@ Generación (`generateLearningPath`, con un mapa `generating` para no generar do
 - `summarizeConversationTitle`: con los 16 primeros mensajes, el LLM da un título de 2–6 palabras en valenciano, sin comillas ni punto ni emojis; si no hay clave, falla o no hay mensajes del usuario → `null`.
 - `cleanTitle`: una línea, sin comillas ni punto final, máx. 40 caracteres (con «…»).
 
+### 6.9 bis Tutor: dudas de normativa con la GNV (RAG, `services/gnvRag.ts` + `rag_gnv/`)
+
+Solo en el chat del tutor (`assistent`) y **no en Nivell 0** (`turn.ts` pasa `gnvTool`); `RAG_GNV_ENABLED=false` lo desactiva.
+1. Primera llamada al LLM: el esquema JSON añade `consulta_gnv`. El LLM decide si el mensaje es una duda de normativa (pronunciación, ortografía, acentuación, morfología, sintaxis…) y, si lo es, escribe la consulta **reescrita con terminología gramatical** conservando las palabras clave (la técnica de `pruebaRag/reescrituras.py`); si no, la deja vacía y su respuesta se usa tal cual. Se hace con un campo de la salida estructurada y no con *function calling* porque los modelos de razonamiento no admiten herramientas en `/chat/completions`.
+2. Con consulta: `POST {RAG_GNV_URL}/consultar` (20 s; una sola vez aunque OpenAI se reintente). El servicio `rag_gnv/` (Python, puerto 8010, sin auth, solo para el backend) hace la búsqueda padre/hijo: vectores bge-m3 (Chroma) + BM25 fusionados con RRF, reranker `bge-reranker-v2-m3` sobre 50 hijos, devuelve los padres; si la mejor puntuación < 0,05 → sin respaldo.
+3. Segunda llamada con las fuentes numeradas (`<font id seccio ruta>`): con respaldo, el esquema exige `gnv {fonts[], contingut, explicacio}`: todas las fuentes usadas (la principal y las que completan la regla: caso contrario, excepciones), la norma completa (los dos casos del contraste y las observaciones) y una explicación **para estudiantes** (siempre sencilla, sea cual sea el nivel: sin tecnicismos o explicados con una comparación, en 3-5 puntos «• »: por qué su palabra es así, el caso contrario, ejemplos y un truco que debe acertar también con el ejemplo contrario); sin respaldo, el tutor dice que no lo encuentra en la GNV; si el RAG falla, responde con prudencia sin citar.
+4. El servidor construye `gnv = {regla, seccio, ruta, contingut, explicacio, text_original, relacionades[]}`: la **cita la pone el servidor** desde el RAG (no el LLM) y quita el Markdown de la GNV (el TTS solo lee `reply_text`).
+5. El cliente guarda `gnv` con el mensaje en IndexedDB y `ChatBubble` muestra la tarjeta «Regla oficial · GNV § …» (qué dice la norma, explicación fácil y el texto original desplegable), también en `/converses`.
+
 ### 6.10 Clasificador de nivel (`services/classificador.ts`)
 
 Cliente de `classificador_llm` (`POST {CLASSIFICADOR_URL}/classificar`, 60 s) que devuelve `{grup, nivell, confianca, nivells_dubte, justificacio}`. **Ninguna ruta lo usa todavía.**
@@ -743,7 +752,7 @@ Dos modos: iniciar sesión y crear cuenta.
 **Iniciar sesión**: `signInWithPassword` → lee `level, role` (sin perfil → cierra sesión con aviso) → `last_active_on = hoy` → `ensureSession` → `/classes` (docente) o `/dashboard`.
 
 ### 8.3 Tablero (`Dashboard`)
-Fondo de aula. Botones: «Activitats» (`/scenaris`); niño → «Lliçons»; adulto → «Rutes», «Classe», «Errors»; todos → «Converses» y perfil. En el centro, el tutor (`ChildAssistant`, §11.11) con el robot. Hay un botón «Començar classe» para adultos **que no hace nada**.
+Fondo de aula. Botones: «Activitats» (`/scenaris`); niño → «Lliçons»; adulto → «Rutes», «Classe», «Errors»; todos → «Converses» y perfil. En el centro, el tutor (`ChildAssistant`, §11.11) con el robot.
 
 ### 8.4 Catálogo de actividades (`ScenarioSelect`, «Activitats»)
 - `fetchResources()` + `fetchActivityStatus()`.
@@ -1255,6 +1264,7 @@ Dockerfiles: backend en 3 etapas `node:22-alpine` (build, dependencias de produc
 | `RATE_LIMIT_EVALUATE_PER_MIN`, `RATE_LIMIT_EVALUATE_ANON_PER_MIN` | 5 / 2 |
 | `MCPDETECTOR_SERVER_PATH` | Ruta del servidor MCP |
 | `CLASSIFICADOR_URL` | Clasificador |
+| `RAG_GNV_URL` / `RAG_GNV_ENABLED` / `RAG_GNV_TIMEOUT_MS` | RAG de la GNV del tutor (§6.9 bis) |
 | `UJI_HOST`, `UJI_LLM_MODEL` | LLM local (no usado) |
 | `EXAM_EVAL_DEBUG` | Log de la entrada de los evaluadores |
 
@@ -1372,7 +1382,7 @@ Efecto lateral: A1, C1 y C2 siguen viendo `LearningPath` en `/ruta`, pero el bac
 ### 19.3 Lógica y producto
 11. **Ruta de IA para A1 y C2**: `/ruta` les muestra `LearningPath`, pero el backend solo genera para B1/B2/C1 → «Generar» no crea nada: devuelve la ruta antigua si la había o un 404 «Encara no hi ha activitats per al teu nivell».
 12. **El resumen (`/resum`) es inalcanzable**: «Acabar conversa» vuelve atrás; la evaluación se guarda pero no se muestra salvo escribiendo la URL.
-13. **«Començar classe»** del tablero no hace nada; **«Reinicia el progrés»** solo recarga la página.
+13. **«Reinicia el progrés»** solo recarga la página.
 14. ~~El nivel no se puede cambiar~~: resuelto (perfil y prueba de nivel, §20).
 15. Las evaluaciones de redacciones **del examen** no generan errores ni resultado (a diferencia de la práctica).
 16. `forn` y `taller` no tienen `system_prompt`, personaje ni objetivos (son jugables por `character_role` y usan el prompt por defecto); `forn` está en una ruta A2.
