@@ -7,6 +7,7 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
+import { pickTutorExercise, type TutorExercise } from '../services/tutorExercise.js';
 import { getScenario } from '../services/scenarios.js';
 import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
@@ -86,6 +87,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     let level = data.level;
     let levelZero = false;
     let gnvTool = false;
+    let exerciseTool = false;
     if (client && scenario.category === ASSISTANT_CATEGORY) {
       const { data: profile } = await client.from('profiles').select('mother_tongue, level, age_group').eq('id', req.userId!).maybeSingle();
       extraInstructions = motherTongueInstructions(profile?.mother_tongue);
@@ -94,6 +96,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       levelZero = profile?.level === 'nivell0';
       // Els dubtes de normativa es responen amb la GNV (RAG), però no en el Nivell 0 (xiquets que no lligen).
       gnvTool = gnvRagEnabled() && !levelZero;
+      // Els exercicis del catàleg són per a qui sap llegir: no per al Nivell 0.
+      exerciseTool = !levelZero;
     } else if (client) {
       // Escenaris del Nivell 0: si el xiquet té activada la llengua materna, el personatge hi afig
       // la traducció de cada resposta (segona línia), que el xat mostra com a subtítol.
@@ -113,7 +117,15 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       extraInstructions,
       levelInstructions,
       gnvTool,
+      exerciseTool,
     });
+
+    // El tutor ha oferit un exercici: se'n tria un de real del catàleg (mai inventat).
+    const { exercici_tema, ...replyBody } = reply;
+    let exercise: TutorExercise | null = null;
+    if (exerciseTool && exercici_tema?.trim()) {
+      exercise = await pickTutorExercise(exercici_tema, level, data.shown_exercises);
+    }
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
     const xpDelta = 10;
@@ -143,7 +155,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     );
 
     res.json({
-      ...reply,
+      ...replyBody,
+      ...(exercise ? { exercise } : {}),
       transcription: data.input_mode === 'voice' ? text : null,
       reply_audio_base64: audio?.audio.toString('base64') || null,
       reply_audio_mime_type: audio?.mimeType || null,

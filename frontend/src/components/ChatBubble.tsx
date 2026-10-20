@@ -1,10 +1,12 @@
-import { BookOpen } from 'lucide-react';
-import type { GnvRule } from '../lib/types';
+import { Link } from 'react-router-dom';
+import { BookOpen, Check, X } from 'lucide-react';
+import { practiceRoute } from '../data/content';
+import type { GnvRule, TutorExercise } from '../lib/types';
 
 // Bombolla d'un missatge del xat amb el tutor. En els missatges del professor, la primera línia és en
 // valencià i la resta, en gris clar, l'ajuda en la llengua materna del xiquet (amagada si `showHelp` és fals).
 // Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial.
-export function ChatBubble({ role, text, gnv, showHelp = true }: { role: 'user' | 'character'; text: string; gnv?: GnvRule; showHelp?: boolean }) {
+export function ChatBubble({ role, text, gnv, exercise, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
   const [valencian, ...help] = role === 'character' ? text.split('\n') : [text];
   return (
     <div
@@ -15,6 +17,7 @@ export function ChatBubble({ role, text, gnv, showHelp = true }: { role: 'user' 
       <p>{valencian}</p>
       {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-lg font-semibold text-slate-400">{help.join('\n')}</p>}
       {gnv && <GnvRuleCard rule={gnv} />}
+      {exercise && <ExerciseCard exercise={exercise} onAnswer={onAnswer} />}
     </div>
   );
 }
@@ -51,6 +54,45 @@ function GnvRuleCard({ rule }: { rule: GnvRule }) {
           ))}
         </div>
       </details>
+    </section>
+  );
+}
+
+// Exercici real del catàleg dins de la bombolla: es respon amb un toc i es corregix al moment.
+function ExerciseCard({ exercise, onAnswer }: { exercise: TutorExercise; onAnswer?: (exercise: TutorExercise, chosen: string) => void }) {
+  const answered = exercise.chosen !== undefined;
+  const correct = answered && exercise.chosen === exercise.answer;
+  return (
+    <section aria-label="Exercici" className="mt-3 rounded-xl bg-white/80 p-3 text-base font-semibold ring-2 ring-orange/30">
+      <p className="text-sm font-extrabold uppercase tracking-wide text-orange">Exercici · {exercise.resource_name} · {exercise.level}</p>
+      <p className="mt-2 whitespace-pre-line text-lg font-bold">{exercise.prompt}</p>
+      <div className="mt-2 flex flex-col gap-2">
+        {exercise.options.map(option => {
+          const isRight = answered && option === exercise.answer;
+          const isWrong = answered && option === exercise.chosen && !isRight;
+          return (
+            <button
+              key={option}
+              disabled={answered}
+              onClick={() => onAnswer?.(exercise, option)}
+              className={`btn-press flex items-center justify-between gap-2 rounded-xl px-4 py-2 text-left font-bold ring-2 disabled:cursor-default ${
+                isRight ? 'bg-green-100 ring-green-500' : isWrong ? 'bg-red-100 ring-red-400' : 'bg-white ring-slate-200 hover:ring-orange'
+              }`}
+            >
+              <span>{option}</span>
+              {isRight && <Check size={20} className="shrink-0 text-green-600" aria-hidden />}
+              {isWrong && <X size={20} className="shrink-0 text-red-500" aria-hidden />}
+            </button>
+          );
+        })}
+      </div>
+      {answered && (
+        <div className="mt-3">
+          <p className={`font-extrabold ${correct ? 'text-green-600' : 'text-red-500'}`}>{correct ? 'Molt bé! 🎉' : `Quasi! La correcta és «${exercise.answer}».`}</p>
+          {exercise.explanation && <p className="mt-1 whitespace-pre-line text-sm font-semibold text-slate-600">{exercise.explanation}</p>}
+          <Link to={practiceRoute(exercise.resource_id)} className="mt-2 inline-block text-sm font-extrabold text-teal underline">Fer més exercicis d'esta activitat</Link>
+        </div>
+      )}
     </section>
   );
 }

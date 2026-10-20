@@ -11,6 +11,8 @@ const outputSchema = z.object({
   help_text: z.string().optional(),
   // Tutor: la consulta per a la GNV que ha decidit fer el model (buida si no és de normativa).
   consulta_gnv: z.string().optional(),
+  // Tutor: el tema de l'exercici del catàleg que vol oferir ('' si no n'ofereix cap).
+  exercici_tema: z.string().optional(),
   // Només quan el tutor ha consultat la GNV i hi ha trobat respaldo.
   gnv: z.object({
     fonts: z.array(z.number().int()),
@@ -49,9 +51,13 @@ const GNV_INSTRUCTIONS = `CONSULTA DE LA GRAMÀTICA NORMATIVA VALENCIANA (GNV):
 - Si l'aprenent pregunta un dubte de normativa (com es pronuncia, com s'escriu, quan porta accent, com es forma el plural o el femení, com es conjuga, quina preposició o pronom va...), omple consulta_gnv: després rebràs la regla oficial de la GNV per a respondre-la.
 - Si no és un dubte de normativa, deixa consulta_gnv buida i respon directament.`;
 
+const EXERCISE_INSTRUCTIONS = `EXERCICIS DEL CATÀLEG:
+- Quan l'aprenent demane practicar, o tu mateix vages a proposar-li un exercici, NO te l'inventes: omple exercici_tema amb el tema que vol practicar (1 a 4 paraules en valencià, p. ex. "accentuació", "pronoms febles", "verbs en passat") i en reply_text digues només una frase curta que presente l'exercici (p. ex. «Prova este exercici!»). L'aplicació li'n mostrarà un de real dins del xat.
+- Si l'aprenent no demana practicar i no cal cap exercici, deixa exercici_tema buit.`;
+
 type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
-function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false) {
+function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false) {
   return {
     type: 'json_schema',
     json_schema: {
@@ -76,6 +82,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false) {
             description: 'La resposta directa del personatge a la conversa.',
           },
           ...(askGnvQuery ? { consulta_gnv: { type: 'string', description: GNV_QUERY_DESCRIPTION } } : {}),
+          ...(askExercise ? { exercici_tema: { type: 'string', description: "Tema de l'exercici del catàleg que ofereixes a l'aprenent; cadena buida si no n'ofereixes cap." } } : {}),
           ...(withGnv ? {
             gnv: {
               type: 'object',
@@ -100,7 +107,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false) {
             },
           } : {}),
         },
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askExercise ? ['exercici_tema'] : []), ...(withGnv ? ['gnv'] : [])],
         additionalProperties: false,
       },
     },
@@ -197,6 +204,8 @@ export async function replyFromAgent(args: {
   levelInstructions?: string;
   // Tutor: pot consultar la Gramàtica Normativa Valenciana (RAG) quan el missatge és un dubte de normativa.
   gnvTool?: boolean;
+  // Tutor: pot oferir un exercici real del catàleg (exercici_tema); el resol qui crida.
+  exerciseTool?: boolean;
 }): Promise<AgentReply> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY no està configurada');
@@ -224,7 +233,9 @@ export async function replyFromAgent(args: {
 
         ${args.gnvTool ? GNV_INSTRUCTIONS : ''}
 
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}.`.trim(),
+        ${args.exerciseTool ? EXERCISE_INSTRUCTIONS : ''}
+
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.exerciseTool ? ', exercici_tema' : ''}.`.trim(),
     },
     {
       role: 'user',
@@ -255,7 +266,7 @@ export async function replyFromAgent(args: {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         let content = await complete(key, model!, {
-          response_format: replySchema(withHelp, false, args.gnvTool),
+          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool),
           messages,
         });
 
@@ -265,7 +276,7 @@ export async function replyFromAgent(args: {
         if (consulta) {
           gnvResult = await lookupGnv(consulta);
           content = await complete(key, model!, {
-            response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo)),
+            response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool),
             messages: [...messages, { role: 'system', content: gnvSourcesMessage(consulta, gnvResult) }],
           });
         }

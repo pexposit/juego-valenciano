@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { GnvRule } from './types';
+import type { GnvRule, TutorExercise } from './types';
 
 /**
  * Dades de l'usuari que poden ser sensibles (el que escriu o diu): es guarden només en este
@@ -33,6 +33,8 @@ export type LocalMessage = {
   text: string;
   // Tutor: la regla de la GNV amb què ha respost (si n'hi ha).
   gnv?: GnvRule;
+  // Tutor: l'exercici del catàleg que ha mostrat (amb la resposta de l'aprenent, si ja l'ha feta).
+  exercise?: TutorExercise;
   createdAt: string;
 };
 
@@ -177,7 +179,7 @@ const byDate = <T extends { createdAt: string }>(a: T, b: T) => a.createdAt.loca
 export async function addMessages(
   conversationId: string,
   kind: ConversationKind,
-  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; createdAt?: string }[],
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise; createdAt?: string }[],
 ) {
   const userId = await currentUserId();
   if (!userId || messages.length === 0) return;
@@ -190,6 +192,7 @@ export async function addMessages(
     role: m.role,
     text: m.text,
     ...(m.gnv ? { gnv: m.gnv } : {}),
+    ...(m.exercise ? { exercise: m.exercise } : {}),
     createdAt: m.createdAt ?? new Date(now + i).toISOString(),
   }));
   const created = !(await getOne('conversations', conversationId));
@@ -229,6 +232,16 @@ export async function updateMessageTexts(patches: { id: string; text: string }[]
     const message = await getOne('messages', patch.id);
     if (message && message.userId === userId) rows.push({ ...message, text: patch.text });
   }
+  await putAll('messages', rows);
+}
+
+/** Guarda la resposta que l'aprenent ha donat a l'exercici del catàleg mostrat en un missatge del tutor. */
+export async function saveExerciseAnswer(conversationId: string, exerciseId: string, chosen: string) {
+  const userId = await currentUserId();
+  if (!userId) return;
+  const rows = (await getMessages(conversationId))
+    .filter(m => m.exercise?.id === exerciseId && !m.exercise.chosen)
+    .map(m => ({ ...m, exercise: { ...m.exercise!, chosen } }));
   await putAll('messages', rows);
 }
 

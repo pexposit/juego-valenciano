@@ -24,7 +24,7 @@ const LEVEL_INSTRUCTIONS: Record<Tier, string> = {
     "Dóna exemples breus i evita la terminologia gramatical; si n'has de fer servir, explica-la amb paraules fàcils.",
   B:
     "L'aprenent és de nivell intermedi (B1-B2): pots fer servir frases més llargues, vocabulari variat i una mica de terminologia gramatical. " +
-    "Explica el perquè de les regles, compara formes properes i proposa algun exercici curt quan convinga.",
+    "Explica el perquè de les regles, compara formes properes i, si convé practicar, ofereix un exercici del catàleg (no te l'inventes).",
   C:
     "L'aprenent és de nivell avançat (C1-C2): respon amb registre ric i precís, tracta matisos, registres, expressions idiomàtiques i qüestions de normativa (AVL), " +
     'i justifica les correccions amb la regla corresponent.',

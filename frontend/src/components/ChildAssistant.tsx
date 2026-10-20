@@ -5,8 +5,9 @@ import { KID_ASSISTANT_TYPE } from '@parlaval/shared';
 import { ChatBubble } from './ChatBubble';
 import { VoiceInput } from './VoiceInput';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
-import { analyzeMessage, ensureSession, fetchTts, openAssistant, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
-import { addMessages } from '../lib/localStore';
+import { analyzeMessage, ensureSession, fetchTts, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
+import { addMessages, saveExerciseAnswer } from '../lib/localStore';
+import type { TutorExercise } from '../lib/types';
 
 type Message = AssistantConversation['messages'][number];
 
@@ -163,17 +164,18 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         text,
         audio_base64: voice || null,
         history: context,
+        shown_exercises: messages.flatMap(m => (m.exercise ? [m.exercise.id] : [])),
         include_audio: false,
       });
       const said = reply.transcription || text;
       setMessages(m => {
         const next = [...m];
         if (reply.transcription) next[next.length - 1] = { role: 'user', text: reply.transcription };
-        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv }];
+        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise }];
       });
       void addMessages(opened.session_resource_id, 'tutor', [
         { role: 'user', text: said || VOICE_MESSAGE_LABEL },
-        { role: 'character', text: reply.reply_text, gnv: reply.gnv },
+        { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise },
       ]).catch(error => console.error('Error guardant la conversa:', error));
       // Els errors del xat amb el professor compten per a la ruta, però no es practiquen.
       if (reply.analyze_errors && said) {
@@ -185,6 +187,15 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // L'aprenent respon l'exercici del catàleg mostrat en el xat: es marca, es guarda i es corregix com a pràctica.
+  const answerExercise = (exercise: TutorExercise, chosen: string) => {
+    setMessages(m => m.map(x => (x.exercise?.id === exercise.id && !x.exercise.chosen ? { ...x, exercise: { ...x.exercise, chosen } } : x)));
+    void conversation.current
+      ?.then(opened => saveExerciseAnswer(opened.session_resource_id, exercise.id, chosen))
+      .catch(error => console.error("Error guardant la resposta de l'exercici:", error));
+    void recordPracticeAnswers([{ exercise_id: exercise.id, answer: chosen }]).catch(error => console.error("Error registrant la resposta de l'exercici:", error));
   };
 
   return (
@@ -201,7 +212,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         >
           {openFailed && <p className="text-center text-lg font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-lg font-bold opacity-60">Un moment...</p>}
-          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} showHelp={showHelp} />)}
+          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} exercise={m.exercise} onAnswer={answerExercise} showHelp={showHelp} />)}
           {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-xl font-bold opacity-60">...</p>}
         </div>
 

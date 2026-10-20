@@ -24,6 +24,8 @@ export const turnSchema = z.object({
     role: z.enum(['user', 'character']),
     content_text: z.string().max(MESSAGE_MAX_CHARS),
   })).max(HISTORY_MAX_MESSAGES).optional().default([]),
+  // Tutor: exercicis del catàleg ja mostrats en la conversa (no es repetixen).
+  shown_exercises: z.array(z.string().uuid()).max(100).optional().default([]),
 });
 
 export const ttsSchema = z.object({
