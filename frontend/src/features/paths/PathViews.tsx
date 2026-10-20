@@ -1,7 +1,10 @@
-import { BookOpen, Check, ChevronRight, Play, RotateCcw } from 'lucide-react';
+import { BookOpen, Check, ChevronRight, Eye, Play, RotateCcw } from 'lucide-react';
 import { levelLabel } from '@parlaval/shared';
 import { categoryLabel } from '../../components/ScenarioSelect';
 import type { Resource, StudyPath } from '../../lib/types';
+import { restartActivity } from '../../lib/api';
+import { localProgress, resetLocalProgress } from './progress';
+import { setRouteContext } from './routeContext';
 
 // Peces de les rutes que comparteixen «Rutes» (les recomanades) i «Classe» (les de la docent).
 
@@ -84,6 +87,23 @@ export function PathDetail({ path, eyebrow, catalog, onOpen, onLesson }: {
         {path.steps.map((step, i) => {
           const resource = catalog.get(step.resource_id);
           const isNext = step === next;
+          // Estat de l'activitat: la nota ve del servidor (si ja s'ha corregit); les respostes, d'este navegador.
+          const local = localProgress(resource);
+          const hasGrade = step.done && step.score != null && Boolean(step.total);
+          const ratio = hasGrade ? step.score! / step.total! : null;
+          const gradeTone = ratio === null ? '' : ratio >= 0.8 ? 'bg-teal/10 text-teal' : ratio <= 0.5 ? 'bg-coral/10 text-coral' : 'bg-amber-100 text-amber-800';
+          // L'activitat s'obri des d'esta ruta: en acabar-la es podrà passar a la següent.
+          const open = async (reset = false) => {
+            if (!resource) return;
+            if (reset) {
+              // «Tornar a fer»: es buiden les respostes d'este navegador i, en el servidor, l'activitat deixa de
+              // comptar com a corregida i sense nota fins que es torne a corregir.
+              resetLocalProgress(resource);
+              await restartActivity(resource.id).catch(() => undefined);
+            }
+            setRouteContext(path.steps.map(s => s.resource_id));
+            startActivity(resource, step.done || local !== 'none', onOpen, onLesson);
+          };
           return (
             <li key={step.resource_id} className="relative flex gap-4">
               <span
@@ -107,21 +127,59 @@ export function PathDetail({ path, eyebrow, catalog, onOpen, onLesson }: {
                     {resource?.section_name && <p className="mt-1 text-sm opacity-75">{resource.name}</p>}
                   </div>
                 </div>
+                {/* Com va l'activitat: corregida (amb la nota) o començada; si ni s'ha començat, no es diu res. */}
+                {(step.done || local === 'started') && (
+                <p className="mt-3 flex flex-wrap items-center gap-2 text-sm font-bold">
+                  {step.done ? (
+                    <>
+                      <span className="rounded-full bg-teal/10 px-2.5 py-0.5 text-teal">✓ Corregida</span>
+                      {hasGrade && (
+                        <span className={`rounded-full px-2.5 py-0.5 ${gradeTone}`}>
+                          {step.score}/{step.total} · {Math.round(ratio! * 100)} %
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-800">Començada · sense corregir</span>
+                  )}
+                </p>
+                )}
                 <div className="mt-4 flex flex-wrap justify-end gap-2">
                   {resource?.has_lesson && step.done && (
                     <button onClick={() => onLesson(resource)} className="btn-press flex items-center gap-2 rounded-full bg-cream px-4 py-2 text-sm font-black text-teal hover:bg-teal/10">
                       <BookOpen size={16} /> Repassar la lliçó
                     </button>
                   )}
-                  <button
-                    onClick={() => resource && startActivity(resource, step.done, onOpen, onLesson)}
-                    disabled={!resource}
-                    className={`btn-press flex items-center gap-2 rounded-full px-5 py-2 text-sm font-black disabled:opacity-50 ${step.done ? 'bg-cream text-teal hover:bg-teal/10' : 'bg-teal text-white hover:bg-teal/90'}`}
-                  >
-                    {step.done ? <><RotateCcw size={16} /> Tornar a fer</>
-                      : resource?.has_lesson ? <><BookOpen size={16} /> Aprendre i practicar</>
-                      : <><Play size={16} /> Començar</>}
-                  </button>
+                  {step.done && local === 'corrected' ? (
+                    <>
+                      {/* Ja corregida: es torna a obrir tal com estava, per a vore les respostes errades, sense reiniciar-la. */}
+                      <button
+                        onClick={() => open()}
+                        disabled={!resource}
+                        className="btn-press flex items-center gap-2 rounded-full bg-teal px-5 py-2 text-sm font-black text-white hover:bg-teal/90 disabled:opacity-50"
+                      >
+                        <Eye size={16} /> Revisa les respostes
+                      </button>
+                      <button
+                        onClick={() => open(true)}
+                        disabled={!resource}
+                        className="btn-press flex items-center gap-2 rounded-full bg-cream px-4 py-2 text-sm font-black text-teal hover:bg-teal/10 disabled:opacity-50"
+                      >
+                        <RotateCcw size={16} /> Tornar a fer
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => open()}
+                      disabled={!resource}
+                      className={`btn-press flex items-center gap-2 rounded-full px-5 py-2 text-sm font-black text-white disabled:opacity-50 ${local === 'started' ? 'bg-[#0F47AF] hover:bg-[#0F47AF]/90' : step.done ? 'bg-teal hover:bg-teal/90' : 'bg-green-600 hover:bg-green-600/90'}`}
+                    >
+                      {local === 'started' ? <><Play size={16} /> Continuar</>
+                        : step.done ? <><RotateCcw size={16} /> Tornar a fer</>
+                        : resource?.has_lesson ? <><BookOpen size={16} /> Aprendre i practicar</>
+                        : <><Play size={16} /> Començar</>}
+                    </button>
+                  )}
                 </div>
               </article>
             </li>

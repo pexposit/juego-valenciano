@@ -38,9 +38,13 @@ export type AdultActivity = {
   resource_id: string; name: string; icon: string | null; category: string; kind: 'practice' | 'exam';
   score: number | null; total: number | null; pending_errors: number; last_at: string;
 };
+// El progrés d'un alumne en una ruta (només classes d'adults): `kind` diu si la va crear la docent per a la classe
+// o és una de les predefinides del nivell.
+export type RouteStep = { resourceId: string; name: string; icon: string | null; category: string; done: boolean; score: number | null; total: number | null };
+export type RouteProgress = { id: string; kind: 'class' | 'predefined'; title: string; description: string; level: string; steps: RouteStep[] };
 // `level`: el nivell de l'alumne (no hi és en mode demostració); les illes i les partides només són del Nivell 0.
 // `activities`: només en les classes d'adults.
-export type ChildData = { name: string; level?: string; badges: string[]; sessions: SessionRow[]; words: WordRow[]; conversations: ConversationRow[]; activities?: AdultActivity[] };
+export type ChildData = { name: string; level?: string; badges: string[]; sessions: SessionRow[]; words: WordRow[]; conversations: ConversationRow[]; activities?: AdultActivity[]; routes?: RouteProgress[] };
 
 const localKey = (uid: string | undefined) => `parlaval:kids:seguiment:${uid ?? 'demo'}`;
 type LocalData = { sessions: SessionRow[]; words: Record<string, WordRow> };
@@ -162,9 +166,16 @@ export async function loadStudents(classId: string, adult = false): Promise<Stud
   if (error) throw error;
   // Les classes d'adults porten, a més, l'activitat de pràctiques i exàmens (només la llig el servidor).
   const activity = adult ? await loadClassActivity(classId) : {};
+  // I el progrés de cada alumne en les rutes que la docent ha creat per a la classe.
+  const classRoutes = adult ? await loadClassRoutes(classId).catch(() => ({ paths: [], predefined: [], progress: {} } as ClassRoutes)) : undefined;
   return Promise.all((data ?? []).map(async m => {
     const child = await loadChildData(m.student_id as string);
-    return { id: m.student_id as string, joined_at: m.joined_at as string, data: adult ? { ...child, activities: activity[m.student_id as string] ?? [] } : child };
+    const id = m.student_id as string;
+    return {
+      id,
+      joined_at: m.joined_at as string,
+      data: adult ? { ...child, activities: activity[id] ?? [], routes: routesOf(classRoutes!, id, child.level) } : child,
+    };
   }));
 }
 
@@ -199,3 +210,48 @@ export async function joinClass(code: string): Promise<{ id: string; name: strin
 }
 
 export const leaveClass = (classId: string, student: string) => removeStudent(classId, student);
+
+// Les rutes de la classe i, per alumne, les activitats que té fetes (l'última nota). Només les llig el servidor.
+type RouteInfo = { id: string; title: string; description: string; level: string; steps: { resource_id: string; name: string; icon: string | null; category: string }[] };
+type ClassRoutes = {
+  paths: RouteInfo[]; // les de la docent per a la classe
+  predefined: RouteInfo[]; // les predefinides dels nivells de la classe
+  progress: Record<string, Record<string, { score: number | null; total: number | null }>>;
+};
+
+async function loadClassRoutes(classId: string): Promise<ClassRoutes> {
+  const token = (await need().auth.getSession()).data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/teacher/classes/${encodeURIComponent(classId)}/routes`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error("No hem pogut carregar les rutes de la classe");
+  return res.json();
+}
+
+/**
+ * El progrés d'un alumne en les rutes: primer les de la classe i després les predefinides del seu nivell (si es
+ * sap), cada pas amb si està fet i la nota. Una activitat feta compta en totes les rutes on apareix.
+ */
+function routesOf(classRoutes: ClassRoutes, student: string, level?: string): RouteProgress[] {
+  const done = classRoutes.progress[student] ?? {};
+  const progressOf = (p: RouteInfo, kind: RouteProgress['kind']): RouteProgress => ({
+    id: p.id,
+    kind,
+    title: p.title,
+    description: p.description,
+    level: p.level,
+    steps: p.steps.map(s => ({
+      resourceId: s.resource_id,
+      name: s.name,
+      icon: s.icon,
+      category: s.category,
+      done: s.resource_id in done,
+      score: done[s.resource_id]?.score ?? null,
+      total: done[s.resource_id]?.total ?? null,
+    })),
+  });
+  return [
+    ...classRoutes.paths.map(p => progressOf(p, 'class')),
+    ...classRoutes.predefined.filter(p => !level || p.level === level).map(p => progressOf(p, 'predefined')),
+  ];
+}

@@ -5,6 +5,7 @@ import { LessonModal } from '../components/LessonModal';
 import { categoryLabel } from '../components/ScenarioSelect';
 import { fetchLearningPath, fetchResources, regenerateLearningPath } from '../lib/api';
 import type { LearningPath as Path, LearningPathStep, LearningStage, Resource } from '../lib/types';
+import { setRouteContext } from '../features/paths/routeContext';
 
 // Etapes del cicle de la ruta: aprendre → practicar → aplicar → comprovar.
 const STAGES: Record<LearningStage, { label: string; color: string }> = {
@@ -54,6 +55,8 @@ export function LearningPath({ onOpen, onBack }: { onOpen: (resource: Resource) 
   const open = (step: LearningPathStep) => {
     const resource = resourceOf(step);
     if (!resource) return;
+    // L'activitat s'obri des d'esta ruta: en acabar-la es podrà passar a la següent.
+    if (path) setRouteContext(path.steps.map(s => s.resource.id));
     if (step.stage === 'aprendre' && resource.has_lesson && step.status === 'pending') setLesson(resource);
     else onOpen(resource);
   };

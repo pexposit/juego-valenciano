@@ -13,7 +13,7 @@ const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-2xl fo
  * Primer, el PIN de la família (parentPin.ts); després, l'informe
  * del xiquet i les classes del professorat on està (amb el codi que dona la docent).
  */
-export function KidsProgress({ uid, name, onBack, onLesson }: { uid: string | undefined; name: string; onBack: () => void; onLesson: (lesson: string) => void }) {
+export function KidsProgress({ uid, name, isGuest = false, onBack, onLesson }: { uid: string | undefined; name: string; isGuest?: boolean; onBack: () => void; onLesson: (lesson: string) => void }) {
   const [adult, setAdult] = useState(false);
   const [data, setData] = useState<ChildData | null>();
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
@@ -92,13 +92,20 @@ export function KidsProgress({ uid, name, onBack, onLesson }: { uid: string | un
                     {classes.map(c => (
                       <li key={c.id} className="flex items-center gap-3 rounded-2xl bg-gray-50 p-3 text-lg">
                         <span className="flex-1 font-extrabold">{c.name}</span>
-                        <button onClick={() => void leave(c.id, c.name)} className="btn-press flex items-center gap-1 text-base font-bold text-gray-500 hover:text-coral">
-                          <LogOut size={16} /> Eixir
-                        </button>
+                        {!isGuest && (
+                          <button onClick={() => void leave(c.id, c.name)} className="btn-press flex items-center gap-1 text-base font-bold text-gray-500 hover:text-coral">
+                            <LogOut size={16} /> Eixir
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
                 )}
+                {isGuest ? (
+                  <p className="mt-3 rounded-2xl bg-[#E8EFFC] p-3 text-base font-bold text-[#0B3785]">
+                    Heu entrat amb el codi de la classe: no se'n pot eixir ni unir-se a una altra classe sense un compte.
+                  </p>
+                ) : (
                 <form onSubmit={join} className="mt-3 flex gap-2">
                   <input
                     value={code}
@@ -111,6 +118,7 @@ export function KidsProgress({ uid, name, onBack, onLesson }: { uid: string | un
                     Uneix
                   </button>
                 </form>
+                )}
                 {message && <p className={`mt-2 text-base ${message.ok ? 'text-teal' : 'text-coral'}`}>{message.text}</p>}
               </section>
             )}

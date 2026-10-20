@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { AGE_GROUP_OPTIONS, LEVEL_OPTIONS, MOTHER_TONGUE_OPTIONS, type Page } from '../data/content';
 import { ensureSession } from '../lib/api';
 import { isPin, setPin } from '../features/kids/parentPin';
+import { ClassCodeEntry } from './ClassCodeEntry';
 
 const NETWORK_ERROR = 'No hem pogut connectar. Revisa la connexió i torna-ho a provar.';
 // No es demana cap correu per a no guardar dades personals: el compte es crea amb un nom d'usuari i
@@ -49,6 +50,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   // El nivell només es tria en crear el compte: en iniciar sessió es llig del perfil.
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Tercera forma d'entrar: amb el codi d'una classe, sense compte.
+  const [joiningClass, setJoiningClass] = useState(false);
   // La llengua materna només es demana (i es guarda) als xiquets i als adults que trien el Nivell 0.
   const asksMotherTongue = ageGroup === 'child' || (ageGroup === 'adult' && level === 'nivell0');
 
@@ -119,6 +122,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
     // El professorat entra directament a les seues classes.
     setPage(profile.role === 'teacher' ? 'classes' : 'dashboard');
   });
+
+  if (joiningClass) return <ClassCodeEntry onBack={() => setJoiningClass(false)} onDone={() => setPage('dashboard')} />;
 
   return (
     <main className="fade-up grid min-h-screen place-items-center p-6" style={{ background: '#FAFAF9' }}>
@@ -287,6 +292,19 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
             </button>
           </>
         )}
+
+        {/* Tercera via: amb el codi de la classe, sense compte. */}
+        <div className="mt-5 border-t border-gray-100 pt-4 text-center">
+          <p className="text-sm opacity-60">Tens un codi de classe?</p>
+          <button
+            onClick={() => { setJoiningClass(true); setNotice(''); }}
+            disabled={busy}
+            id="auth-class-code"
+            className="btn-press mt-2 w-full rounded-2xl border-2 border-[#0F47AF]/30 py-3 font-extrabold text-[#0F47AF] transition hover:bg-[#0F47AF]/5 disabled:opacity-60"
+          >
+            Entra amb el codi de la classe
+          </button>
+        </div>
 
         {notice && (
           <div

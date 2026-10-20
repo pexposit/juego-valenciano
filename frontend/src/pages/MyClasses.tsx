@@ -1,3 +1,4 @@
+import { useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Check, LayoutGrid, Route, School } from 'lucide-react';
 import { classLevelLabel, levelLabel } from '@parlaval/shared';
@@ -6,6 +7,8 @@ import { LessonModal } from '../components/LessonModal';
 import { categoryLabel } from '../components/ScenarioSelect';
 import { fetchMyClasses, fetchResources, invalidateResources } from '../lib/api';
 import { joinClass } from '../features/kids/tracking';
+import { clearRouteContext } from '../features/paths/routeContext';
+import { classPathRoute, ROUTES } from '../data/content';
 import { PathCard, PathDetail, startActivity } from '../features/paths/PathViews';
 import type { MyClass, Resource } from '../lib/types';
 
@@ -58,13 +61,15 @@ function JoinForm({ onJoined, compact = false }: { onJoined: () => void; compact
  * Secció «Classe» de l'alumne: el que el professorat ha posat a les seues classes. Es tria la
  * classe dalt i, de cada una, es veuen les activitats soltes i les rutes, amb el progrés.
  */
-export function MyClasses({ onOpen, onBack }: { onOpen: (resource: Resource) => void; onBack: () => void }) {
+export function MyClasses({ onOpen, onBack, canJoin = true }: { onOpen: (resource: Resource) => void; onBack: () => void; canJoin?: boolean }) {
   // undefined = carregant; null = error.
   const [classes, setClasses] = useState<MyClass[] | null>();
   const [error, setError] = useState<string>();
   const [catalog, setCatalog] = useState<Map<string, Resource>>(new Map());
   const [selectedId, setSelectedId] = useState<string | undefined>(readSelected);
-  const [pathId, setPathId] = useState<string>();
+  // La ruta oberta és la de l'adreça (/classe/ruta/<id>): així «Tornar» d'una activitat hi torna exactament.
+  const navigate = useNavigate();
+  const pathId = useParams<{ pathId?: string }>().pathId;
   const [lesson, setLesson] = useState<Resource>();
 
   // El progrés canvia en acabar activitats: es torna a demanar en entrar i en recuperar el focus.
@@ -91,16 +96,17 @@ export function MyClasses({ onOpen, onBack }: { onOpen: (resource: Resource) => 
     load();
   };
 
-  const current = classes?.find(c => c.id === selectedId) ?? classes?.[0];
+  // Amb una ruta oberta, la classe és la d'eixa ruta.
+  const current = (pathId && classes?.find(c => c.paths.some(p => p.id === pathId))) || classes?.find(c => c.id === selectedId) || classes?.[0];
   const path = current?.paths.find(p => p.id === pathId);
-  const choose = (id: string) => { setSelectedId(id); writeSelected(id); setPathId(undefined); };
+  const choose = (id: string) => { setSelectedId(id); writeSelected(id); navigate(ROUTES.myclasses); };
 
   return (
     <main className="fade-up relative min-h-screen bg-cream text-ink">
       <header className="classroom-header z-10">
         <div className="relative isolate flex items-center justify-between px-5 p-4">
           <button
-            onClick={path ? () => setPathId(undefined) : onBack}
+            onClick={path ? () => navigate(ROUTES.myclasses) : onBack}
             className="text-xl btn-press rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-teal shadow hover:bg-white transition-colors"
           >
             ← Tornar
@@ -131,7 +137,7 @@ export function MyClasses({ onOpen, onBack }: { onOpen: (resource: Resource) => 
                 Si el teu professor o professora t'ha donat un codi, escriu-lo ací: veuràs les activitats i les rutes que prepara per a la classe.
               </p>
             </section>
-            <JoinForm onJoined={joined} />
+            {canJoin && <JoinForm onJoined={joined} />}
           </>
         )}
 
@@ -177,7 +183,11 @@ export function MyClasses({ onOpen, onBack }: { onOpen: (resource: Resource) => 
                     return (
                       <li key={a.resource_id}>
                         <button
-                          onClick={() => r && startActivity(r, a.done, onOpen, setLesson)}
+                          onClick={() => {
+                            if (!r) return;
+                            clearRouteContext(); // una activitat solta no és d'una ruta
+                            startActivity(r, a.done, onOpen, setLesson);
+                          }}
                           disabled={!r}
                           className="btn-press flex h-full w-full items-center gap-4 rounded-[1.5rem] border border-stone-200 bg-white p-4 text-left shadow-sm hover:border-teal disabled:opacity-60"
                         >
@@ -210,14 +220,15 @@ export function MyClasses({ onOpen, onBack }: { onOpen: (resource: Resource) => 
               <h2 className="mb-3 flex items-center gap-2 text-lg font-black"><Route size={20} /> Rutes</h2>
               {current.paths.length ? (
                 <ul className="flex flex-col gap-3">
-                  {current.paths.map(p => <PathCard key={p.id} path={p} onSelect={() => setPathId(p.id)} />)}
+                  {current.paths.map(p => <PathCard key={p.id} path={p} onSelect={() => navigate(classPathRoute(p.id))} />)}
                 </ul>
               ) : (
                 <p className="rounded-[1.5rem] bg-white p-5 text-base opacity-70">El teu professorat encara no hi ha posat cap ruta.</p>
               )}
             </section>
 
-            <JoinForm onJoined={joined} compact />
+            {/* Qui ha entrat amb el codi d'una classe (sense compte) no pot unir-se a una altra. */}
+            {canJoin && <JoinForm onJoined={joined} compact />}
           </>
         )}
       </div>

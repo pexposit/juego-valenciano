@@ -1,11 +1,15 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { hasPredefinedPaths } from '@parlaval/shared';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { db } from '../db.js';
 
 export const studyPathsRouter = Router();
 
-const toPath = (p: PathRow, done: Set<string>) => ({
+// L'última nota de cada activitat feta (null si no en té, com un escenari): ix en cada pas de la ruta.
+type Grade = { score: number | null; total: number | null };
+
+const toPath = (p: PathRow, done: Map<string, Grade>) => ({
   id: p.id,
   level: p.level,
   title: p.title,
@@ -13,14 +17,32 @@ const toPath = (p: PathRow, done: Set<string>) => ({
   class_name: p.kids_classes?.name ?? null,
   steps: [...p.study_path_steps]
     .sort((a, b) => a.position - b.position)
-    .map(s => ({ resource_id: s.resource_id, done: done.has(s.resource_id) })),
+    .map(s => ({ resource_id: s.resource_id, done: done.has(s.resource_id), score: done.get(s.resource_id)?.score ?? null, total: done.get(s.resource_id)?.total ?? null })),
 });
 
-// Activitats que l'usuari ha acabat alguna vegada.
-async function doneResources(client: any, userId: string): Promise<Set<string>> {
-  const { data, error } = await client.from('user_resource_results').select('resource_id').eq('user_id', userId);
-  if (error) throw error;
-  return new Set((data ?? []).map((r: { resource_id: string }) => r.resource_id));
+// Activitats que l'usuari ha acabat alguna vegada, cada una amb la seua última nota (els resultats vénen de més nou a més antic).
+async function doneResources(client: any, userId: string): Promise<Map<string, Grade>> {
+  const [results, restarts] = await Promise.all([
+    client
+      .from('user_resource_results')
+      .select('resource_id, score, total, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false }),
+    client.from('activity_restarts').select('resource_id, restarted_at').eq('user_id', userId),
+  ]);
+  if (results.error) throw results.error;
+  if (restarts.error) throw restarts.error;
+  // «Tornar a fer»: només compten els resultats posteriors al reinici de l'activitat.
+  const restartedAt = new Map<string, number>(
+    (restarts.data ?? []).map((r: { resource_id: string; restarted_at: string }) => [r.resource_id, Date.parse(r.restarted_at)]),
+  );
+  const latest = new Map<string, Grade>();
+  for (const r of (results.data ?? []) as { resource_id: string; score: number | null; total: number | null; created_at: string }[]) {
+    if (latest.has(r.resource_id)) continue;
+    if (Date.parse(r.created_at) <= (restartedAt.get(r.resource_id) ?? 0)) continue;
+    latest.set(r.resource_id, { score: r.score ?? null, total: r.total ?? null });
+  }
+  return latest;
 }
 
 type PathRow = {
@@ -108,4 +130,22 @@ studyPathsRouter.get('/api/my-classes', requireAuth, async (req: AuthRequest, re
     console.error('[my-classes] Error carregant les classes:', error);
     res.status(500).json({ error: 'No hem pogut carregar les teues classes' });
   }
+});
+
+// L'alumne reinicia una activitat («Tornar a fer»): deixa de comptar com a feta i sense nota fins que es torne a
+// corregir. Els resultats anteriors es conserven (historial per a la ruta personalitzada i la docent).
+studyPathsRouter.post('/api/activities/:resourceId/restart', requireAuth, async (req: AuthRequest, res) => {
+  if (!z.string().uuid().safeParse(req.params.resourceId).success) return res.status(404).json({ error: "L'activitat no existix" });
+  const client = db(req.userId);
+  if (!client || !req.userId) return res.json({ ok: true, demo: true });
+  const restartedAt = new Date().toISOString();
+  const { error } = await client
+    .from('activity_restarts')
+    .upsert({ user_id: req.userId, resource_id: req.params.resourceId, restarted_at: restartedAt });
+  if (error) {
+    console.error('[restart] Error reiniciant l\'activitat:', error);
+    return res.status(500).json({ error: "No s'ha pogut reiniciar l'activitat" });
+  }
+  // La hora (del servidor) es torna al client: amb ella s'ignoren els errors anteriors al reinici.
+  res.json({ ok: true, restarted_at: restartedAt });
 });

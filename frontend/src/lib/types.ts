@@ -172,7 +172,8 @@ export type StudyPath = {
   title: string;
   description: string;
   class_name: string | null;
-  steps: { resource_id: string; done: boolean }[];
+  // `score` i `total`: l'última nota de l'activitat feta (null si no en té, com un escenari).
+  steps: { resource_id: string; done: boolean; score?: number | null; total?: number | null }[];
 };
 
 // Una classe de l'alumne (GET /api/my-classes) amb el que hi ha posat la docent: les activitats

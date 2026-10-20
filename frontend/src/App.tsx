@@ -32,6 +32,7 @@ import { KidsHome } from './features/kids/KidsHome';
 import { KidsIsland } from './features/kids/KidsIsland';
 import { KidsLesson } from './features/kids/KidsLessons';
 import { InstitutionalBar } from './components/InstitutionalLogos';
+import { clearRouteContext, routeBackTo } from './features/paths/routeContext';
 import { installAudioTracking, stopAllAudio } from './lib/audioControl';
 import { stopVoice } from './features/kids/sound';
 import { KidsTranslationProvider, useKidsTranslationLang } from './features/kids/translations';
@@ -82,9 +83,12 @@ function ChatRoute({
   // I els de persones adultes del Nivell 0, els xiquets no els fan.
   if (section && section.difficulty === 'nivell0' && section.audience === 'adult' && kids) return <Navigate to={KIDS_ROUTES.home} replace />;
   if (section === undefined || !ready) return <SceneLoading />;
+  // Obert des d'una ruta, tornar du a la ruta (amb els seus exercicis), no a l'activitat anterior.
+  const back = () => { const to = routeBackTo(section.id); if (to) navigate(to); else onBack(); };
   return (
     <PageTransition>
       <Chat
+        key={scenario}
         scenario={scenario}
         category={section.category}
         title={section.section_name ?? section.name}
@@ -99,8 +103,8 @@ function ChatRoute({
         level={level}
         xp={xp}
         onXpGained={onXpGained}
-        onEnd={onBack}
-        onBack={onBack}
+        onEnd={back}
+        onBack={back}
       />
     </PageTransition>
   );
@@ -116,11 +120,14 @@ function DashboardRoute({ name, ageGroup, showMotherTongue, profileReady, setPag
 // Examen interactiu (/examen/:id): el contingut ve de resources.metadata.exam.
 function ExamRoute({ onBack }: { onBack: () => void }) {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   // undefined = carregant; null = no existix.
   const [exam, setExam] = useState<ExamResource | null>();
 
   useEffect(() => {
     let cancelled = false;
+    // En canviar d'examen (p. ex. «Següent activitat de la ruta») es comença de zero: no es queda el d'abans.
+    setExam(undefined);
     if (!id) return setExam(null);
     fetchExam(id)
       .then(data => { if (!cancelled) setExam(data); })
@@ -133,17 +140,22 @@ function ExamRoute({ onBack }: { onBack: () => void }) {
 
   if (exam === undefined) return null;
   if (!exam) return <Navigate to={ROUTES.scenarioselect} replace />;
-  return <PageTransition><Exam exam={exam} onBack={onBack} /></PageTransition>;
+  // Obert des d'una ruta, «Tornar» du a la ruta (amb els seus exercicis), no a l'activitat anterior.
+  const back = () => { const to = routeBackTo(exam.id); if (to) navigate(to); else onBack(); };
+  return <PageTransition><Exam key={exam.id} exam={exam} onBack={back} /></PageTransition>;
 }
 
 // Exercicis d'un contingut del temari (/practica/:id), de la taula practice_exercises.
 function PracticeRoute({ level, onBack }: { level: string; onBack: () => void }) {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   // undefined = carregant; null = no existix.
   const [practice, setPractice] = useState<PracticeResource | null>();
 
   useEffect(() => {
     let cancelled = false;
+    // En canviar d'activitat (p. ex. «Següent activitat de la ruta») es comença de zero: no es queda l'estat corregit de l'anterior.
+    setPractice(undefined);
     if (!id) return setPractice(null);
     fetchPractice(id)
       .then(data => { if (!cancelled) setPractice(data); })
@@ -156,7 +168,9 @@ function PracticeRoute({ level, onBack }: { level: string; onBack: () => void })
 
   if (practice === undefined) return null;
   if (!practice) return <Navigate to={ROUTES.scenarioselect} replace />;
-  return <PageTransition><Practice practice={practice} userLevel={level} onBack={onBack} /></PageTransition>;
+  // Obert des d'una ruta, «Tornar» du a la ruta (amb els seus exercicis), no a l'activitat anterior.
+  const back = () => { const to = routeBackTo(practice.id); if (to) navigate(to); else onBack(); };
+  return <PageTransition><Practice key={practice.id} practice={practice} userLevel={level} onBack={back} /></PageTransition>;
 }
 
 // Illa del Nivell 0 (/xiquets/illa/:id).
@@ -425,6 +439,32 @@ export function App() {
           )}
         />
         <Route
+          path={`${ROUTES.learningpath}/:pathId`}
+          element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
+            <PageTransition>
+              {/* A2, B1 i B2: rutes predefinides (en el B1 i el B2, amb un enllaç a la de la IA); la resta de nivells, la ruta de la IA. */}
+              {hasPredefinedPaths(level) ? (
+                <StudyPaths
+                  onOpen={resource => {
+                    const route = activityRoute(resource);
+                    if (route) navigate(route);
+                  }}
+                  onBack={goDashboard}
+                  onAiPath={hasAiPath(level) ? () => navigate(AI_PATH_ROUTE) : undefined}
+                />
+              ) : (
+                <LearningPath
+                  onOpen={resource => {
+                    const route = activityRoute(resource);
+                    if (route) navigate(route);
+                  }}
+                  onBack={goDashboard}
+                />
+              )}
+            </PageTransition>
+          )}
+        />
+        <Route
           path={AI_PATH_ROUTE}
           // Fins que no es carrega el perfil no se sap el nivell: no es redirigix abans d'hora.
           element={!profileReady ? null : kids || !hasAiPath(level) ? <Navigate to={ROUTES.learningpath} replace /> : (
@@ -449,6 +489,22 @@ export function App() {
                   if (route) navigate(route);
                 }}
                 onBack={goDashboard}
+                canJoin={!user?.is_anonymous}
+              />
+            </PageTransition>
+          )}
+        />
+        <Route
+          path={`${ROUTES.myclasses}/ruta/:pathId`}
+          element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
+            <PageTransition>
+              <MyClasses
+                onOpen={resource => {
+                  const route = activityRoute(resource);
+                  if (route) navigate(route);
+                }}
+                onBack={goDashboard}
+                canJoin={!user?.is_anonymous}
               />
             </PageTransition>
           )}
@@ -461,6 +517,7 @@ export function App() {
                 name={name}
                 level={level}
                 onSelect={resource => {
+                  clearRouteContext(); // des de la llista d'Activitats no es continua cap ruta
                   const route = activityRoute(resource);
                   if (route) navigate(route);
                 }}
@@ -483,6 +540,7 @@ export function App() {
                 xp={xp}
                 back={() => navigate(-1)}
                 onLogOut={logOut}
+                isGuest={Boolean(user?.is_anonymous)}
                 isDemo={!user}
                 ageGroup={ageGroup}
                 motherTongue={motherTongue}
@@ -521,7 +579,7 @@ export function App() {
         <Route path={ROUTES.lessons} element={<PageTransition><KidsLessons uid={user?.id} onBack={() => navigate(ROUTES.dashboard)} onOpenLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>} />
         <Route
           path={ROUTES.progress}
-          element={<PageTransition><KidsProgress uid={user?.id} name={name} onBack={() => navigate(-1)} onLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>}
+          element={<PageTransition><KidsProgress uid={user?.id} name={name} isGuest={Boolean(user?.is_anonymous)} onBack={() => navigate(-1)} onLesson={id => navigate(`${KIDS_ROUTES.lesson}/${id}`)} /></PageTransition>}
         />
         <Route
           path={ROUTES.classes}

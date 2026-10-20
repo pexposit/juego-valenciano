@@ -7,8 +7,9 @@ import { joinClass, leaveClass, loadJoinedClasses } from '../kids/tracking';
  * Les classes de l'alumne adult (qualsevol nivell): s'hi unix amb el codi que li dona la docent,
  * sense PIN (el PIN de la família és només per als comptes infantils, des del seguiment). La BDD
  * comprova que el nivell de l'alumne és d'algun dels de la classe.
+ * `locked`: qui ha entrat amb el codi d'una classe (sense compte) no en pot eixir ni unir-se a una altra.
  */
-export function StudentClasses({ uid }: { uid: string }) {
+export function StudentClasses({ uid, locked = false }: { uid: string; locked?: boolean }) {
   const [classes, setClasses] = useState<{ id: string; name: string }[]>();
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<{ ok: boolean; text: string }>();
@@ -50,15 +51,22 @@ export function StudentClasses({ uid }: { uid: string }) {
           {classes.map(c => (
             <li key={c.id} className="flex items-center gap-3 rounded-2xl bg-gray-50 px-4 py-2">
               <span className="flex-1 text-lg font-bold">{c.name}</span>
-              <button onClick={() => void leave(c.id, c.name)} className="btn-press flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-coral">
-                <X size={16} /> Eixir
-              </button>
+              {!locked && (
+                <button onClick={() => void leave(c.id, c.name)} className="btn-press flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-coral">
+                  <X size={16} /> Eixir
+                </button>
+              )}
             </li>
           ))}
         </ul>
       ) : (
         classes && <p className="mt-2 text-base opacity-60">Encara no estàs en cap classe.</p>
       )}
+      {locked ? (
+        <p className="mt-4 rounded-2xl bg-[#E8EFFC] p-3 text-sm font-bold text-[#0B3785]">
+          Has entrat amb el codi de la classe: no pots eixir-ne ni unir-te a una altra classe sense un compte.
+        </p>
+      ) : (
       <form onSubmit={join} className="mt-4">
         <label htmlFor="profile-class-code" className="block text-base font-extrabold">Tens un codi de classe?</label>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -76,6 +84,7 @@ export function StudentClasses({ uid }: { uid: string }) {
         </div>
         {message && <p className={`mt-2 text-sm font-bold ${message.ok ? 'text-teal' : 'text-coral'}`}>{message.text}</p>}
       </form>
+      )}
     </section>
   );
 }

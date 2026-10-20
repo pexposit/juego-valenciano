@@ -32,6 +32,11 @@ export const ROUTES: Record<Page, string> = {
 // Ruta personalitzada de la IA en els nivells que també tenen rutes predefinides (B1 i B2).
 export const AI_PATH_ROUTE = `${ROUTES.learningpath}/personalitzada`;
 
+// Detall d'una ruta: les recomanades en /ruta/<id> (la llista és /ruta) i les de la classe en /classe/ruta/<id>.
+// Cada ruta té la seua adreça perquè «Tornar» d'una activitat de la ruta hi torne exactament.
+export const studyPathRoute = (pathId: string) => `${ROUTES.learningpath}/${pathId}`;
+export const classPathRoute = (pathId: string) => `${ROUTES.myclasses}/ruta/${pathId}`;
+
 // Món d'illes del Nivell 0 (xiquets): el tauler i les activitats hi redirigixen.
 export const KIDS_ROUTES = { home: '/xiquets', island: '/xiquets/illa', album: '/xiquets/album', lessons: '/xiquets/llicons', lesson: '/xiquets/llico' };
 

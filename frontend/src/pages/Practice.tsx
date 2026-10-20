@@ -1,11 +1,13 @@
 import { userKey } from '../lib/progressStorage';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { NextInRouteButton } from '../features/paths/NextInRoute';
+import { resetLocalProgress, restartedAtOf } from '../features/paths/progress';
 import { ArrowUp, ChevronLeft, ChevronRight, Headphones, Lightbulb, RotateCcw } from 'lucide-react';
 import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type PracticeArea } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
-import { evaluatePracticeExercise, fixedKey, fetchUserErrors, recordPracticeAnswers, saveActivityResult } from '../lib/api';
+import { evaluatePracticeExercise, fixedKey, fetchUserErrors, recordPracticeAnswers, restartActivity, saveActivityResult } from '../lib/api';
 import type { ExamQuestion, Practice as PracticeResource, PracticeExercise, PracticePassage, WritingEvaluation } from '../lib/types';
 
 type Progress = {
@@ -181,7 +183,9 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
     fetchUserErrors()
       .then(errors => {
         if (cancelled) return;
-        const pending = errors.filter(e => e.source === 'practice' && e.exercise_id && practice.exercises.some(x => x.id === e.exercise_id));
+        // Només els errors posteriors a l'últim reinici («Tornar a fer»): els d'abans no han de tornar a eixir marcats.
+        const restartedAt = restartedAtOf(practice);
+        const pending = errors.filter(e => e.source === 'practice' && e.exercise_id && practice.exercises.some(x => x.id === e.exercise_id) && Date.parse(e.created_at) > restartedAt);
         if (pending.length === 0) return;
         setFailed(new Set(pending.map(e => e.exercise_id!)));
         // La resposta errònia queda marcada: per a les tancades, l'opció amb eixe text.
@@ -233,7 +237,13 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const reset = () => {
-    setProgress(p => ({ ...p, answers: {}, checked: false, retry: {} }));
+    // «Tornar a fer»: en les rutes l'activitat deixa de comptar com a corregida i sense nota fins que es torne a corregir.
+    void restartActivity(practice.id);
+    // Es reinicia tot: les respostes, els textos i formularis amb les seues avaluacions, el que s'havia guardat
+    // dels altres nivells i les preguntes que apareixien com a fallades (dels errors pendents).
+    resetLocalProgress(practice);
+    setFailed(new Set());
+    setProgress({ ...EMPTY });
     setPage(0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -444,6 +454,8 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
                   Continuar <ChevronRight size={18} />
                 </button>
               )}
+              {/* Si l'activitat s'ha obert des d'una ruta, ja corregida es pot passar a la següent. */}
+              {checked && <NextInRouteButton resourceId={practice.id} />}
               {checked ? (
                 <button
                   onClick={reset}

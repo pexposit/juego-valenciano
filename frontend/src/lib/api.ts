@@ -2,6 +2,7 @@ import type { ActivityResult, Exam, LatestEvaluation, LearningPath, Lesson, Prac
 import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
+import { markRestartedAt } from '../features/paths/progress';
 import { addErrors, addEvaluation, addMessages, getMessages, latestEvaluations, listConversations, listErrors, markErrorsResolved, setCurrentTutorConversation, updateConversation, updateMessageTexts, type LocalError, forgetLevelData } from './localStore';
 export type HistoryItem = { role: 'user' | 'character'; content_text: string };
 // Catàleg d'activitats de la BDD (taula resources). Es demana una sola vegada
@@ -423,7 +424,7 @@ export function analyzeMessage(
 
 // Errors sense resoldre de l'usuari, per a la pestanya de pràctica d'errors. El text és en este
 // navegador; el servidor diu quins continuen pendents (la ruta en pot donar per resolts).
-export type UserError = { id: string; error_text: string; correction: string; category: string; subcategory: string | null; explanation: string; message: string | null; scenario: string | null; source: 'chat' | 'practice' | 'writing'; options: string[] | null; resource_id: string | null; exercise_id: string | null };
+export type UserError = { id: string; error_text: string; correction: string; category: string; subcategory: string | null; explanation: string; message: string | null; scenario: string | null; source: 'chat' | 'practice' | 'writing'; options: string[] | null; resource_id: string | null; exercise_id: string | null; created_at: string };
 const errorKey = (e: Pick<LocalError, 'errorText' | 'correction'>) => `${e.errorText.trim().toLowerCase()}|${e.correction.trim().toLowerCase()}`;
 export async function fetchUserErrors(): Promise<UserError[]> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -461,6 +462,7 @@ export async function fetchUserErrors(): Promise<UserError[]> {
       options: e.options,
       resource_id: e.resourceId ?? null,
       exercise_id: e.exerciseId,
+      created_at: e.createdAt,
     }));
 }
 // Marca un error com a resolt (amb els seus duplicats exactes) després de corregir-lo bé en la pràctica.
@@ -687,6 +689,18 @@ export async function regenerateLearningPath(): Promise<LearningPath> {
 }
 
 // Rutes de l'A2, el B1 i el B2 (les predefinides i les del professorat de les classes de l'usuari), amb el progrés.
+// Reinicia una activitat («Tornar a fer»): en les rutes deixa de vore's com a corregida i sense nota fins que es torne a corregir.
+export async function restartActivity(resourceId: string): Promise<void> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/activities/${encodeURIComponent(resourceId)}/restart`, {
+    method: 'POST',
+    headers: await authHeaders(),
+  });
+  if (!res.ok) return console.warn(`[restartActivity] El backend ha respost amb codi ${res.status}`);
+  // L'hora del reinici és la del servidor, com la dels errors: s'apunta perquè els errors anteriors no isquen en l'activitat.
+  const { restarted_at } = await res.json().catch(() => ({})) as { restarted_at?: string };
+  if (restarted_at) markRestartedAt({ id: resourceId }, restarted_at);
+}
+
 export async function fetchStudyPaths(): Promise<{ level: string; paths: StudyPath[] }> {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/study-paths`, { headers: await authHeaders() });
   const payload = await res.json().catch(() => null);

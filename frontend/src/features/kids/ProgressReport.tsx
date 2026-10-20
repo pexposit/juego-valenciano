@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
-import { BookOpen } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { BookOpen, ChevronDown } from 'lucide-react';
 import { ago, percent, stageNote, summarize, summarizeAdult, type AdultItem, type IslandSummary, type Report } from './report';
-import type { ChildData } from './tracking';
+import type { ChildData, RouteProgress } from './tracking';
 
 /**
  * Informe del seguiment d'un xiquet del Nivell 0, per a persones adultes (la família en
@@ -248,6 +248,18 @@ function AdultReport({ data, report }: { data: ChildData; report: Report }) {
         items={adult.domina}
       />
 
+      {/* Les rutes de la classe i les predefinides, per separat. */}
+      <RoutesCard
+        title="Rutes de la classe"
+        hint="El progrés de l'alumne en les rutes que has creat per a esta classe."
+        routes={(data.routes ?? []).filter(r => r.kind === 'class')}
+      />
+      <RoutesCard
+        title="Rutes recomanades"
+        hint="El progrés de l'alumne en les rutes predefinides del seu nivell."
+        routes={(data.routes ?? []).filter(r => r.kind === 'predefined')}
+      />
+
       <Conversations report={report} adult />
     </div>
   );
@@ -267,16 +279,17 @@ function AdultGroup({ title, hint, empty, tone, items }: { title: string; hint: 
       {items.length ? (
         <ul className="mt-3 divide-y divide-gray-100">
           {items.map(i => (
-            <li key={i.key} className="flex flex-wrap items-center gap-3 py-3">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gray-100 text-2xl" aria-hidden="true">{i.emoji}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-lg font-extrabold">{i.name}</span>
-                <span className="block text-base opacity-60">
+            <li key={i.key} className="flex flex-wrap items-center gap-3 py-2">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100 text-base" aria-hidden="true">{i.emoji}</span>
+              {/* El nom i el detall («Escenari · 2/5 objectius · ahir»), en la mateixa línia. */}
+              <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                <span className="text-lg font-extrabold">{i.name}</span>
+                <span className="text-base opacity-60">
                   {KIND_LABEL[i.kind]} · {i.detail} · {ago(i.lastAt)}
                 </span>
                 {i.pendingErrors > 0 && (
-                  <span className="mt-0.5 block text-base font-bold text-amber-700">
-                    {i.pendingErrors} {i.pendingErrors === 1 ? 'error' : 'errors'} per corregir
+                  <span className="text-base font-bold text-amber-700">
+                    · {i.pendingErrors} {i.pendingErrors === 1 ? 'error' : 'errors'} per corregir
                   </span>
                 )}
               </span>
@@ -288,5 +301,74 @@ function AdultGroup({ title, hint, empty, tone, items }: { title: string; hint: 
         <p className="mt-2 text-lg opacity-70">{empty}</p>
       )}
     </Card>
+  );
+}
+
+/**
+ * El progrés de l'alumne en unes rutes (les que la docent ha creat per a la classe o les predefinides del nivell):
+ * per a cada ruta, quantes activitats ha corregit i, desplegant-la, cada activitat feta (amb la nota) o pendent.
+ */
+function RoutesCard({ title, hint, routes }: { title: string; hint: string; routes: RouteProgress[] }) {
+  if (!routes.length) return null;
+  return (
+    <Card>
+      <h3 className="text-2xl font-black">{title}</h3>
+      <p className="mt-1 text-base opacity-60">{hint}</p>
+      <div className="mt-3 divide-y divide-gray-100">
+        {routes.map(route => <RouteRow key={route.id} route={route} />)}
+      </div>
+    </Card>
+  );
+}
+
+/** Una ruta amb el seu resum sempre visible; la llista d'activitats es desplega i es plega. */
+function RouteRow({ route }: { route: RouteProgress }) {
+  const [open, setOpen] = useState(false);
+  const done = route.steps.filter(s => s.done).length;
+  const pct = route.steps.length ? Math.round((done / route.steps.length) * 100) : 0;
+  const listId = `route-steps-${route.id}`;
+  return (
+    <section className="py-3 first:pt-0 last:pb-0" aria-label={route.title}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-controls={listId}
+        className="flex w-full items-center gap-3 rounded-xl text-left hover:bg-gray-50"
+      >
+        <ChevronDown size={20} className={`shrink-0 opacity-50 transition-transform ${open ? '' : '-rotate-90'}`} aria-hidden="true" />
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="text-lg font-extrabold">{route.title}</span>
+            <span className="text-base font-bold opacity-70">{done} de {route.steps.length} activitats · {pct} %</span>
+          </span>
+          <span className="mt-1 block h-2.5 overflow-hidden rounded-full bg-gray-100">
+            <span className="block h-full rounded-full bg-teal transition-all" style={{ width: `${pct}%` }} />
+          </span>
+        </span>
+      </button>
+      {open && (
+        <ul id={listId} className="mt-2 divide-y divide-gray-100 pl-8">
+          {route.steps.map((s, i) => {
+            const ratio = s.done && s.score !== null && s.total ? s.score / s.total : null;
+            const tone = ratio === null ? TONES.teal : ratio >= 0.8 ? TONES.teal : ratio <= 0.5 ? TONES.coral : TONES.amber;
+            return (
+              <li key={s.resourceId} className="flex flex-wrap items-center gap-3 py-2">
+                <span className="w-6 shrink-0 text-center text-sm font-black opacity-40">{i + 1}</span>
+                <span aria-hidden="true" className="text-xl">{s.icon ?? '📘'}</span>
+                <span className={`min-w-0 flex-1 text-base font-bold ${s.done ? '' : 'opacity-60'}`}>{s.name}</span>
+                {s.done ? (
+                  <span className={`shrink-0 rounded-full px-3 py-0.5 text-base font-black ${tone}`}>
+                    ✓ Corregida{ratio !== null ? ` · ${s.score}/${s.total}` : ''}
+                  </span>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-black/5 px-3 py-0.5 text-base font-bold opacity-60">Pendent</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

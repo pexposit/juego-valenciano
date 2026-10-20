@@ -2,8 +2,9 @@ import { userKey } from '../lib/progressStorage';
 import { useEffect, useMemo, useState } from 'react';
 import { BookOpen, Clock, ExternalLink, Headphones, Mic, PenLine, Puzzle, RotateCcw } from 'lucide-react';
 import { Logo } from '../components/ui';
+import { NextInRouteButton } from '../features/paths/NextInRoute';
 import { BinaryExercise, isB1OrB2Writing, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingEvaluationPanel, WritingExercise, writingPassMark } from '../components/ExamExercises';
-import { evaluateExamWriting, saveActivityResult } from '../lib/api';
+import { evaluateExamWriting, restartActivity, saveActivityResult } from '../lib/api';
 import type { Exam as ExamResource, ExamArea, ExamExercise, ExamQuestion, ExamScoring, WritingEvaluation } from '../lib/types';
 
 // Icona de cada àrea segons el títol: el B2 té una àrea més (Estructures lingüístiques).
@@ -115,12 +116,15 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const reset = () =>
+  const reset = () => {
+    // «Tornar a fer»: en les rutes l'examen deixa de comptar com a corregit i sense nota fins que es torne a corregir.
+    void restartActivity(resource.id);
     setProgress(p => {
       const answers = { ...p.answers };
       for (const q of areaQuestions) delete answers[q.n];
       return { ...p, answers, checked: p.checked.filter(n => n !== area.n) };
     });
+  };
   const evaluate = async (exercise: EvaluableExercise) => {
     setEvaluating(exercise.n);
     setEvaluationError(undefined);
@@ -346,6 +350,8 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
                 Corregir l'àrea
               </button>
             )}
+            {/* Examen corregit sencer i obert des d'una ruta: es pot passar a la següent activitat. */}
+            {scoredAreas.length > 0 && checkedScored.length === scoredAreas.length && <NextInRouteButton resourceId={resource.id} />}
             {areaIndex < exam.areas.length - 1 && (
               <button
                 onClick={() => goToArea(areaIndex + 1)}

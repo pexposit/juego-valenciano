@@ -10,7 +10,7 @@ const FIELD_CLASS = 'mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 text-2
 const levelLabel = (value: string) => LEVEL_OPTIONS.find(o => o.value === value)?.label ?? value;
 
 export function Profile({
-  name, setName, level, setLevel, xp, back, onLogOut, isDemo, ageGroup, motherTongue, setMotherTongue, showMotherTongue, setShowMotherTongue,
+  name, setName, level, setLevel, xp, back, onLogOut, isGuest = false, isDemo, ageGroup, motherTongue, setMotherTongue, showMotherTongue, setShowMotherTongue,
   onProgress, isTeacher, onClasses, uid,
 }: {
   name: string;
@@ -21,6 +21,8 @@ export function Profile({
   xp: number;
   back: () => void;
   onLogOut: () => void;
+  // Entra amb el codi d'una classe (sessió anònima): en tancar la sessió perd el progrés.
+  isGuest?: boolean;
   isDemo: boolean;
   ageGroup: string;
   motherTongue: string | null;
@@ -223,7 +225,7 @@ export function Profile({
         )}
 
         {/* Alumnat adult de qualsevol nivell: s'unix a classes amb el codi, sense PIN (el dels xiquets és en el seguiment). */}
-        {!isChild && !isTeacher && uid && <StudentClasses uid={uid} />}
+        {!isChild && !isTeacher && uid && <StudentClasses uid={uid} locked={isGuest} />}
 
         <div className="mt-8 flex flex-col gap-3">
           {/* El seguiment del xiquet (compte infantil) o les classes (només el professorat). */}
@@ -255,7 +257,9 @@ export function Profile({
 
           {!isDemo && (
             <button
-              onClick={() => confirm('Segur que vols tancar la sessió?') && onLogOut()}
+              onClick={() => confirm(isGuest
+                ? "Si tanques la sessió perdràs el teu progrés i hauràs d'entrar de nou amb el codi de la classe (amb un altre apodo). Vols tancar-la?"
+                : 'Segur que vols tancar la sessió?') && onLogOut()}
               id="profile-logout-btn"
               className="btn-press flex items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white py-3 text-xl font-extrabold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
             >
