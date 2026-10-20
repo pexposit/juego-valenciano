@@ -202,7 +202,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   };
 
   return (
-    <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center gap-4 px-5 pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
+    <div className="relative z-20 flex min-h-0 flex-1 items-center gap-4 px-5 pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
       {isRobotAvatarEnabled('dashboard')
         ? <DashboardRobot className="shrink-0 drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} />
         : <img src="/images/avatar_professor.svg" alt="El professor" className="float shrink-0 drop-shadow-lg" width={avatarSize} height={avatarSize} />}
@@ -216,7 +216,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
           {openFailed && <p className="text-center text-lg font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-lg font-bold opacity-60">Un moment...</p>}
           {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
-          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-xl font-bold opacity-60">...</p>}
+          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-base sm:text-lg font-bold opacity-60">...</p>}
         </div>
 
         <div className="mt-3 flex items-center gap-3">

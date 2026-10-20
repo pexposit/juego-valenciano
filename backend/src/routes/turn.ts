@@ -145,7 +145,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     if (exerciseTool && topic && !activity) {
       // Si l'aprenent demana practicar, sempre se li'n dóna un; si el tutor ha explicat, només si n'hi ha un del tema.
       const askedToPractice = /exerci|practic|prova|test/i.test(text);
-      exercise = await pickTutorExercise(topic, level, data.shown_exercises, !askedToPractice, gnvSections);
+      exercise = await pickTutorExercise(topic, level, data.shown_exercises, !askedToPractice, gnvSections, `${text}. ${gnvTopic ?? ''}`.trim());
       // Hi ha pràctica del tema però cap exercici que càpiga en el xat: s'enllaça l'activitat.
       // Només amb una regla de la GNV al darrere o si ho ha demanat: un tema solt (p. ex. el significat d'una paraula) no en dóna prou.
       if (!exercise && (reply.gnv || askedToPractice)) activity = await findTutorActivity(topic, gnvSections);

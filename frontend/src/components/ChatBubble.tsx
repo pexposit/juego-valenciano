@@ -11,12 +11,12 @@ export function ChatBubble({ role, text, gnv, exercise, activity, lessonId, onAn
   const [valencian, ...help] = role === 'character' ? text.split('\n') : [text];
   return (
     <div
-      className={`max-w-[85%] rounded-2xl px-4 py-2 text-xl font-bold ${
+      className={`max-w-[85%] rounded-2xl px-4 py-2 text-base sm:text-lg font-bold ${
         role === 'user' ? 'ml-auto bg-teal text-white' : 'bg-cream text-slate-800'
       }`}
     >
       <p>{valencian}</p>
-      {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-lg font-semibold text-slate-400">{help.join('\n')}</p>}
+      {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-sm sm:text-base font-semibold text-slate-400">{help.join('\n')}</p>}
       {gnv && <GnvRuleCard rule={gnv} />}
       {lessonId && <LessonLink lessonId={lessonId} />}
       {exercise && <ExerciseCard exercise={exercise} onAnswer={onAnswer} />}
@@ -73,7 +73,7 @@ function ExerciseCard({ exercise, onAnswer }: { exercise: TutorExercise; onAnswe
   return (
     <section aria-label="Exercici" className="mt-3 rounded-xl bg-white/80 p-3 text-base font-semibold ring-2 ring-orange/30">
       <p className="text-sm font-extrabold uppercase tracking-wide text-orange">Exercici · {exercise.resource_name} · {exercise.level}</p>
-      <p className="mt-2 whitespace-pre-line text-lg font-bold">{exercise.prompt}</p>
+      <p className="mt-2 whitespace-pre-line text-base font-bold">{exercise.prompt}</p>
       <div className="mt-2 flex flex-col gap-2">
         {exercise.options.map(option => {
           const isRight = answered && option === exercise.answer;
@@ -113,7 +113,7 @@ function LessonLink({ lessonId }: { lessonId: string }) {
     <Link
       to={`${KIDS_ROUTES.lesson}/${lesson.id}`}
       style={{ backgroundColor: lesson.color }}
-      className="btn-press mt-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-xl font-black text-slate-800 shadow ring-2 ring-white"
+      className="btn-press mt-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-lg font-black text-slate-800 shadow ring-2 ring-white"
     >
       <span className="text-4xl" aria-hidden>{lesson.emoji}</span>
       <span>Lliçó: {lesson.title}</span>

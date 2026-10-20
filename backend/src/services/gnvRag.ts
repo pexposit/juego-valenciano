@@ -48,6 +48,23 @@ export async function consultarGnv(consulta: string, k = 4): Promise<GnvResultat
   return response.json() as Promise<GnvResultat>;
 }
 
+/**
+ * Puntua (0 a 1) lo bé que respon cada text a la consulta, amb el reranker del mateix servici. El tutor ho fa servir per a
+ * triar, entre els exercicis d'una activitat, el que tracta de la pregunta de l'aprenent.
+ */
+export async function puntuarTextos(consulta: string, textos: string[]): Promise<number[]> {
+  const response = await fetch(`${baseUrl}/ordenar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ consulta, textos }),
+    signal: AbortSignal.timeout(RAG_GNV_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`El RAG de la GNV ha respost ${response.status}`);
+  const { puntuaciones } = await response.json() as { puntuaciones: number[] };
+  if (!Array.isArray(puntuaciones) || puntuaciones.length !== textos.length) throw new Error('Resposta invàlida del RAG');
+  return puntuaciones;
+}
+
 // Context numerat per al LLM (com contexto_para_llm de rag_gnv.py): ha de citar l'id de la font.
 export function gnvContext(resultat: GnvResultat): string {
   if (!resultat.hay_respaldo) return '';

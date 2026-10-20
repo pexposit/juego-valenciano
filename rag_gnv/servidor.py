@@ -2,6 +2,9 @@
 
 Només l'usa el backend (el tutor), igual que el classificador: no té autenticació.
   GET  /salut      -> {"ok": true} quan els models ja estan carregats
+  POST /ordenar    {"consulta": "...", "textos": ["...", ...]}
+                   -> {"puntuaciones": [0..1, ...]}: lo bien que responde cada texto a la consulta (reranker);
+                      el backend lo usa para elegir, entre los ejercicios de una actividad, el que trata de la pregunta
   POST /consultar  {"consulta": "...", "k": 4}
                    -> el resultat de GNVRetriever.consultar(): hay_respaldo, mejor_puntuacion,
                       mensaje i fuentes [{seccion, ruta, etiqueta, puntuacion, texto}]
@@ -20,6 +23,8 @@ PORT = int(os.environ.get("RAG_GNV_PORT", "8010"))
 HOST = os.environ.get("RAG_GNV_HOST", "127.0.0.1")
 MAX_CONSULTA = 500
 MAX_K = 6
+MAX_TEXTOS = 120      # textos por petición de /ordenar
+MAX_TEXTO = 700       # caracteres de cada uno
 
 retriever = load_retriever()
 retriever._reranker()  # es carrega ara i no en la primera consulta
@@ -41,7 +46,23 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": True})
         self._json(404, {"error": "No existix"})
 
+    def _ordenar(self):
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            data = json.loads(self.rfile.read(min(length, 200_000)) or b"{}")
+            consulta = str(data.get("consulta", "")).strip()[:MAX_CONSULTA]
+            textos = [str(t)[:MAX_TEXTO] for t in list(data.get("textos", []))[:MAX_TEXTOS]]
+        except (ValueError, TypeError):
+            return self._json(400, {"error": "Petició invàlida"})
+        if not consulta or not textos:
+            return self._json(400, {"error": "Falta la consulta o els textos"})
+        with lock:
+            scores = retriever._reranker().predict([(consulta, t) for t in textos], batch_size=16)
+        self._json(200, {"puntuaciones": [float(x) for x in scores]})
+
     def do_POST(self):
+        if self.path == "/ordenar":
+            return self._ordenar()
         if self.path != "/consultar":
             return self._json(404, {"error": "No existix"})
         try:

@@ -15,6 +15,8 @@ if (!python) {
   process.exit(0);
 }
 
-const child = spawn(python, ['servidor.py'], { cwd: here, stdio: 'inherit' });
+// UTF-8 en la sortida: en Windows, amb la sortida redirigida (npm, concurrently), Python usa cp1252 i falla amb els emojis dels logs.
+const env = { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', PYTHONUNBUFFERED: '1' };
+const child = spawn(python, ['servidor.py'], { cwd: here, stdio: 'inherit', env });
 child.on('exit', code => process.exit(code ?? 0));
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));

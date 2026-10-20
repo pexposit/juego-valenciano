@@ -1,4 +1,5 @@
 import { getAdmin } from '../middleware/auth.js';
+import { gnvRagEnabled, puntuarTextos } from './gnvRag.js';
 
 // Exercici del catàleg que el tutor mostra dins del xat. Només preguntes tancades (choice) de les
 // activitats de pràctica del catàleg (no les de docents) i sense text o àudio al davant.
@@ -14,7 +15,14 @@ export type TutorExercise = {
 };
 
 const fold = (text: string) => text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-const words = (text: string) => fold(text).split(/[^a-z0-9]+/).filter(w => w.length >= 4);
+// Paraules que apareixen en quasi tots els temes de llengua («grafies», «regles», «paraules»...): no diuen de què va
+// la pregunta, i deixades en el recompte emparellen el tema amb activitats que no hi tenen res a vore.
+const GENERIC_WORDS = new Set([
+  'grafia', 'grafies', 'lletra', 'lletres', 'paraula', 'paraules', 'regla', 'regles', 'forma', 'formes', 'usos', 'cas', 'casos',
+  'exemple', 'exemples', 'ortografia', 'gramatica', 'normativa', 'llengua', 'valencia', 'valencian', 'escriu', 'escriure',
+  'quan', 'diferencia', 'diferencies', 'tema', 'temes', 'general', 'generals',
+]);
+const words = (text: string) => fold(text).split(/[^a-z0-9]+/).filter(w => w.length >= 4 && !GENERIC_WORDS.has(w));
 
 // Mateixa paraula amb marge per a plurals i derivats (no val un tros d'una altra: «lèxic» no és «lexicalitzats»).
 const same = (a: string, b: string) => {
@@ -107,8 +115,37 @@ function shuffle<T>(items: T[]): T[] {
 const usable = (rows: Row[] | null, exclude: string[]) =>
   (rows ?? []).filter(r => Array.isArray(r.options) && r.options.length >= 2 && r.answers?.length && !exclude.includes(r.id));
 
-// Només s'ofereixen exercicis del nivell exacte de l'aprenent. Sense nivell conegut, tots valen.
-const sameLevel = (exerciseLevel: string, level: string | null | undefined) => !level || exerciseLevel === level;
+const CEFR = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+// Dels exercicis donats, els del nivell de l'aprenent si n'hi ha; si no, els del nivell més pròxim (mai no es deixa de
+// mostrar un exercici del tema per no ser del nivell exacte). Sense nivell conegut, tots valen.
+const closestLevel = (rows: Row[], level: string | null | undefined) => {
+  const learner = CEFR.indexOf(level ?? '');
+  if (learner === -1 || rows.length === 0) return rows;
+  const distance = (r: Row) => Math.abs(CEFR.indexOf(r.level) - learner);
+  const best = Math.min(...rows.map(distance));
+  return rows.filter(r => distance(r) === best);
+};
+
+// Entre els exercicis donats, el que millor respon a la pregunta segons el reranker del RAG (llig enunciat, opcions i
+// explicació: p. ex. distingix els de b/v dels d'altres consonants de la mateixa activitat). Sense RAG, null.
+async function mostRelevant(rows: Row[], query: string): Promise<Row | null> {
+  if (rows.length < 2 || !query.trim() || !gnvRagEnabled()) return null;
+  try {
+    // Enunciat, resposta correcta i explicació: les opcions falses només fan soroll.
+    const candidates = rows.slice(0, 120);
+    const texts = candidates.map(r => `${r.prompt} Resposta: ${r.answers[0]}. ${r.explanation ?? ''}`);
+    const scores = await puntuarTextos(query, texts);
+    // Un dels 3 millors a l'atzar: tots tracten del tema i així no ix sempre el mateix.
+    const top = scores.map((score, i) => ({ score, i })).sort((a, b) => b.score - a.score).slice(0, 3);
+    const chosen = top[Math.floor(Math.random() * top.length)];
+    console.log(`[tutor-exercise] rànquing: ${texts.length} exercicis, triat=${chosen.score.toExponential(2)} «${texts[chosen.i].slice(0, 70)}»`);
+    return candidates[chosen.i];
+  } catch (error) {
+    console.warn("[tutor-exercise] no s'ha pogut ordenar amb el RAG:", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
 
 /**
  * Tria un exercici del catàleg per a què ha explicat el tutor, del nivell de l'aprenent. Criteris, per ordre:
@@ -124,6 +161,8 @@ export async function pickTutorExercise(
   exclude: string[] = [],
   onlyOnTopic = false,
   gnvSections: string[] = [],
+  // El que ha escrit l'aprenent: amb ell es tria, entre els exercicis del tema, el que en parla de debò.
+  question = '',
 ): Promise<TutorExercise | null> {
   const client = getAdmin() as any;
   if (!client) return null;
@@ -144,30 +183,44 @@ export async function pickTutorExercise(
     return usable(data, exclude);
   };
 
-  const attempts: [string, () => Promise<Row[]>][] = [
-    ['secció GNV', () => fromResources(resourcesCitingGnv(catalog, gnvSections))],
-    ["nom d'activitat", () => fromResources(resourcesNamedLike(catalog, topic))],
+  // `found`: el criteri ha identificat activitats o exercicis del tema (siga quin siga el nivell). El primer que ho
+  // aconseguix decidix: si no hi ha exercicis del nivell de l'aprenent, no se'n mostra cap en lloc de
+  // baixar a un criteri més fluix (que hi posaria un exercici de qualsevol cosa).
+  const viaResources = async (resources: CatalogResource[]) => ({ found: resources.length > 0, rows: await fromResources(resources) });
+  const attempts: [string, () => Promise<{ found: boolean; rows: Row[] }>][] = [
+    ['secció GNV', () => viaResources(resourcesCitingGnv(catalog, gnvSections))],
+    ["nom d'activitat", () => viaResources(resourcesNamedLike(catalog, topic))],
     ['text dels exercicis', async () => {
       const wanted = words(topic);
-      if (wanted.length === 0) return [];
+      if (wanted.length === 0) return { found: false, rows: [] };
       const filters = wanted.flatMap(w => [`prompt.ilike.%${w}%`, `explanation.ilike.%${w}%`]).join(',');
       const { data } = await client.from('practice_exercises').select(EXERCISE_COLUMNS)
         .eq('kind', 'choice').is('passage_id', null).in('resource_id', allIds).or(filters).limit(600);
       // Paraules senceres, no trossos d'altres: «grafia» no val per a «fotografia».
-      return usable(data, exclude).filter(r => {
+      const rows = usable(data, exclude).filter(r => {
         const tokens = words(`${r.prompt} ${r.explanation ?? ''}`);
         return wanted.some(w => tokens.some(t => same(t, w)));
       });
+      return { found: rows.length > 0, rows };
     }],
   ];
   let pool: Row[] = [];
   let criterion = '';
+  let identified = false;
   for (const [name, load] of attempts) {
-    // Només del nivell de l'aprenent: un exercici de C1 no és per a qui està en l'A2.
-    const rows = (await load()).filter(r => sameLevel(r.level, level));
-    if (rows.length) { pool = rows; criterion = name; break; }
+    const { found, rows } = await load();
+    if (!found) continue;
+    identified = true;
+    criterion = name;
+    pool = rows;
+    break;
+  }
+  if (identified && pool.length === 0) {
+    console.log(`[tutor-exercise] criteri=${criterion} tema="${topic}" secció=${gnvSections[0] ?? '-'} → l'activitat no té exercicis que càpiguen en el xat`);
+    return null;
   }
   if (pool.length === 0) {
+    // Sense cap coincidència amb el tema: només si l'aprenent ha demanat practicar se li'n dóna un del seu nivell.
     if (onlyOnTopic) return null;
     const { data } = await client.from('practice_exercises').select(EXERCISE_COLUMNS)
       .eq('kind', 'choice').is('passage_id', null).in('resource_id', allIds).eq('level', level ?? 'A2').limit(500);
@@ -182,8 +235,11 @@ export async function pickTutorExercise(
     const tokens = words(`${r.prompt} ${r.explanation ?? ''}`);
     return wantedWords.some(w => tokens.some(t => same(t, w)));
   });
-  const candidates = onTopicRows.length ? onTopicRows : pool;
-  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  // Primer el nivell (el de l'aprenent o el més pròxim) i, dins d'ell, el que tracta de la pregunta (reranker del RAG);
+  // sense RAG, de preferència els que nomenen el tema.
+  const levelPool = closestLevel(pool, level);
+  const fallback = closestLevel(onTopicRows.length ? onTopicRows : pool, level);
+  const pick = (await mostRelevant(levelPool, question || topic)) ?? fallback[Math.floor(Math.random() * fallback.length)];
   const resource = byId.get(pick.resource_id);
   console.log(`[tutor-exercise] criteri=${criterion} tema="${topic}" secció=${gnvSections[0] ?? '-'} → ${resource ? label(resource) : pick.resource_id}`);
   return {
