@@ -8,6 +8,7 @@ import type {
 import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { contentsForPrompt, LANGUAGE_AREAS, type LevelContent } from './levelContents.js';
+import { reasoningEffortFor } from './reasoningEffort.js';
 
 // Variables de entorno
 const UJI_HOST = process.env.UJI_HOST;
@@ -202,7 +203,7 @@ export async function analyzeErrorsWithLocalLLM(
       messages,
       tools: toolsConfig,
       response_format: responseFormat,
-      reasoning_effort: 'none', // Obligatori per a usar tools amb gpt-6-luna en /v1/chat/completions
+      ...reasoningEffortFor(MODEL_NAME),
     });
 
     let choice = response.choices[0];
@@ -241,8 +242,7 @@ export async function analyzeErrorsWithLocalLLM(
         messages,
         tools: toolsConfig,
         response_format: responseFormat,
-        reasoning_effort: 'none', // Obligatori per a usar tools amb gpt-6-luna en /v1/chat/completions
-
+        ...reasoningEffortFor(MODEL_NAME),
       });
 
       choice = response.choices[0];

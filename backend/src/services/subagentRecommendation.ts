@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { reasoningEffortFor } from './reasoningEffort.js';
 
 // Avaluació pedagògica en tancar un recurs (xat). Els errors i les avaluacions anteriors els
 // envia el client (es guarden en el seu navegador, no al servidor): el LLM els rep directament
@@ -76,7 +77,7 @@ export async function runPedagogicalEvaluation(
         { role: 'user', content: JSON.stringify({ errors, avaluacions_anteriors: previous }) },
       ],
       response_format: zodResponseFormat(EvaluationReportSchema, 'evaluation_report'),
-      reasoning_effort: 'none',
+      ...reasoningEffortFor(MODEL_NAME),
     });
 
     console.log(`[Evaluator-Agent] Avaluació completada en: ${Date.now() - tStart}ms`);

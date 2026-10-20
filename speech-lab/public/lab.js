@@ -728,7 +728,12 @@ async function handleCallTurn(text) {
         setCallState("T'he escoltat: parla quan vulgues.", 'hint');
       }
     } else {
-      const message = error instanceof Error ? error.message : String(error);
+      // «Failed to fetch» no diu res de la causa; en la pràctica sempre és que
+      // l'API del joc no respon en eixa URL (en local el port 3001 no es
+      // publica: només hi arriba Caddy). Ho diem en la mateixa línia d'estat.
+      const message = error instanceof TypeError
+        ? `${error.message} — ${agentBase} no respon (en local, publica el port 3001: vegeu docker-compose.local.yml)`
+        : error instanceof Error ? error.message : String(error);
       log(`ERROR de l'agent: ${message}`);
       setCallState(`No s'ha pogut parlar amb l'agent: ${message}`, 'bad');
       await sleepMs(1200);
@@ -888,12 +893,17 @@ const setFileState = (text, kind = 'hint') => {
   fileUi.state.className = kind;
 };
 
-/** Qualsevol àudio (mp3, ogg, webm, wav…) → WAV PCM16 mono 16 kHz. */
-async function fileToWav16k(file) {
+/**
+ * Qualsevol àudio (mp3, ogg, webm, wav…) → WAV PCM16 mono 16 kHz.
+ * `decodeRate` és la freqüència a què el navegador descodifica; amb 16000 ja
+ * hi remostreja ell amb filtre (sense l'aliasing de la interpolació lineal),
+ * que és el que vol el detector de variant per a mesurar les vocals.
+ */
+async function fileToWav16k(file, decodeRate = 44100) {
   const raw = await file.arrayBuffer();
   const OfflineContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   // Primer el descodifiquem tal com és (el navegador sap obrir quasi tot).
-  const decoded = await new OfflineContext(1, 1, 44100).decodeAudioData(raw.slice(0));
+  const decoded = await new OfflineContext(1, 1, decodeRate).decodeAudioData(raw.slice(0));
   const channel = decoded.getChannelData(0);
   // A mono: si duu dos canals, mitjana (el segon només si hi és).
   let mono = channel;
@@ -1055,6 +1065,479 @@ document.querySelectorAll('#sampleRow .sample').forEach((button) => {
       fileUi.compareBtn.disabled = false;
     }
   });
+});
+
+/* ── Generació d'àudio: el mateix text amb qualsevol model ──────────────── */
+// Catàleg de /api/tts/models (remot, Matxa local, fine-tunes, veus derivades i personatges RVC)
+// i síntesi per /api/tts amb `model`. L'historial guarda les últimes
+// generacions per a comparar-les de costat.
+
+const GEN_HISTORY_MAX = 12;
+const genUi = {
+  text: el('genText'), model: el('genModel'), checkpoint: el('genCheckpoint'), btn: el('genBtn'),
+  state: el('genState'), audio: el('genAudio'), metrics: el('genMetrics'), history: el('genHistory'),
+  temp: el('genTemp'), speed: el('genSpeed'), pitch: el('genPitch'), index: el('genIndex'),
+  formant: el('genFormant'),
+};
+let genModels = [];
+/** Últim model sincronitzat: els valors per defecte només s'apliquen en canviar de model. */
+let genSyncedModel = null;
+
+const setGenState = (text, kind = 'hint') => {
+  genUi.state.textContent = text;
+  genUi.state.className = kind;
+};
+
+const genKind = (model) => model?.id.split(':')[0];
+const selectedGenModel = () => genModels.find((m) => m.id === genUi.model.value);
+
+/** Mostra només els controls que el model fa servir (el remot no en té cap). */
+function syncGenControls() {
+  const model = selectedGenModel();
+  const kind = genKind(model);
+  document.querySelectorAll('.gen-params label').forEach((label) => {
+    const target = label.dataset.for;
+    label.hidden = target === 'local' ? kind === 'remot' : !target.split(' ').includes(kind);
+  });
+  genUi.checkpoint.hidden = !model?.checkpoints?.length;
+  genUi.checkpoint.innerHTML = '';
+  for (const checkpoint of model?.checkpoints ?? []) {
+    const option = new Option(
+      checkpoint === model.defaultCheckpoint ? `${checkpoint} (per defecte)` : checkpoint, checkpoint,
+    );
+    genUi.checkpoint.add(option);
+  }
+  if (model?.defaultCheckpoint) genUi.checkpoint.value = model.defaultCheckpoint;
+  // Cada personatge i veu derivada porta els seus valors, que s'apliquen en triar-lo (no en
+  // tornar a llegir el catàleg, que esborraria els retocs). En eixir d'una veu derivada,
+  // temperatura i durada tornen als valors de la pàgina perquè no s'hereten.
+  const previous = genModels.find((m) => m.id === genSyncedModel);
+  if (model?.id === genSyncedModel) return;
+  genSyncedModel = model?.id ?? null;
+  if (genKind(previous) === 'veu' && kind !== 'veu') {
+    for (const input of [genUi.temp, genUi.speed]) {
+      input.value = input.defaultValue;
+      input.dispatchEvent(new Event('input'));
+    }
+  }
+  const defaults = kind === 'rvc'
+    ? [[genUi.pitch, model.pitch ?? 0], [genUi.index, model.indexRate ?? 0.6]]
+    : kind === 'veu'
+      ? [[genUi.temp, model.temperature], [genUi.speed, model.speed],
+          [genUi.pitch, model.pitch ?? 0], [genUi.formant, model.formant ?? 1]]
+      : [];
+  for (const [input, value] of defaults) {
+    if (value === undefined) continue;
+    input.value = String(value);
+    input.dispatchEvent(new Event('input'));
+  }
+}
+
+async function loadGenModels() {
+  try {
+    const response = await fetch('/api/tts/models', { signal: AbortSignal.timeout(10_000) });
+    if (!response.ok) throw new Error(`el servidor ha respost ${response.status}`);
+    genModels = (await response.json()).models ?? [];
+  } catch (error) {
+    setGenState(`No hem pogut llegir els models: ${error.message}`, 'bad');
+    return;
+  }
+  const previous = genUi.model.value;
+  genUi.model.innerHTML = '';
+  const groups = new Map();
+  for (const model of genModels) {
+    if (!groups.has(model.group)) {
+      const group = document.createElement('optgroup');
+      group.label = model.group;
+      groups.set(model.group, group);
+      genUi.model.append(group);
+    }
+    groups.get(model.group).append(new Option(model.label, model.id));
+  }
+  const firstRvc = genModels.find((m) => genKind(m) === 'rvc');
+  genUi.model.value = genModels.some((m) => m.id === previous) ? previous : (firstRvc ?? genModels[0])?.id ?? '';
+  syncGenControls();
+}
+
+for (const [input, output, digits] of [
+  [genUi.temp, 'genTempOut', 2], [genUi.speed, 'genSpeedOut', 2],
+  [genUi.pitch, 'genPitchOut', 0], [genUi.index, 'genIndexOut', 2],
+  [genUi.formant, 'genFormantOut', 2],
+]) {
+  input.addEventListener('input', () => { el(output).textContent = Number(input.value).toFixed(digits); });
+}
+genUi.model.addEventListener('change', syncGenControls);
+
+function addGenHistory(url, label, metrics, text) {
+  const item = document.createElement('li');
+  const title = document.createElement('div');
+  const name = document.createElement('strong');
+  name.textContent = label;
+  const download = document.createElement('a');
+  download.href = url;
+  download.download = `${label.replace(/[^\w.-]+/g, '_')}.wav`;
+  download.textContent = 'descarregar';
+  title.append(name, download);
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = `${metrics} · «${text.slice(0, 60)}${text.length > 60 ? '…' : ''}»`;
+  const audio = document.createElement('audio');
+  audio.controls = true;
+  audio.src = url;
+  item.append(title, meta, audio);
+  genUi.history.prepend(item);
+  while (genUi.history.children.length > GEN_HISTORY_MAX) {
+    const old = genUi.history.lastElementChild;
+    URL.revokeObjectURL(old.querySelector('audio')?.src ?? '');
+    old.remove();
+  }
+}
+
+genUi.btn.addEventListener('click', async () => {
+  const text = genUi.text.value.trim();
+  const model = selectedGenModel();
+  if (!text || !model) {
+    setGenState('Escriu un text i tria un model.', 'warn');
+    return;
+  }
+  const kind = genKind(model);
+  const body = { text, model: model.id };
+  if (model.checkpoints?.length) body.checkpoint = genUi.checkpoint.value;
+  if (kind !== 'remot') {
+    body.temperature = Number(genUi.temp.value);
+    body.speed = Number(genUi.speed.value);
+  }
+  if (kind === 'rvc' || kind === 'veu') body.pitch = Number(genUi.pitch.value);
+  if (kind === 'rvc') body.indexRate = Number(genUi.index.value);
+  if (kind === 'veu') body.formant = Number(genUi.formant.value);
+
+  genUi.btn.disabled = true;
+  setGenState(`Generant amb ${model.label}…`, 'warn');
+  const started = performance.now();
+  try {
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(300_000),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `el servidor ha respost ${response.status}`);
+    }
+    const wav = await response.blob();
+    const wallMs = Math.round(performance.now() - started);
+    const header = (name) => response.headers.get(`x-tts-${name}`);
+    const audioSecs = Number(header('audio-secs')) || 0;
+    const parts = [`total ${wallMs} ms`];
+    if (kind !== 'remot') parts.push(`Matxa ${header('matxa-ms')} ms`);
+    if (header('rvc-ms')) parts.push(`RVC ${header('rvc-ms')} ms`);
+    parts.push(`àudio ${audioSecs.toFixed(1)} s`);
+    if (audioSecs > 0) parts.push(`×${(audioSecs * 1000 / wallMs).toFixed(1)} temps real`);
+    if (header('cached') === '0') parts.push('amb càrrega del model');
+    const metrics = parts.join(' · ');
+
+    const url = URL.createObjectURL(wav);
+    genUi.audio.src = url;
+    genUi.audio.hidden = false;
+    void genUi.audio.play().catch(() => {});
+    genUi.metrics.textContent = metrics;
+    const checkpoint = header('checkpoint');
+    addGenHistory(url, checkpoint ? `${model.label} · ${checkpoint.replace(/\.(ckpt|pth)$/, '')}` : model.label, metrics, text);
+    setGenState('Fet. Les generacions anteriors queden davall per a comparar-les.', 'ok');
+    log(`generat amb ${model.id}${checkpoint ? `@${checkpoint}` : ''}: ${metrics}`);
+  } catch (error) {
+    setGenState(`No hem pogut generar: ${error.message}`, 'bad');
+    log(`ERROR de generació: ${error.message}`);
+  } finally {
+    genUi.btn.disabled = false;
+  }
+});
+
+void loadGenModels();
+// El catàleg canvia quan acaba un entrenament: es torna a llegir en tornar a la pestanya.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !genUi.btn.disabled) void loadGenModels();
+});
+
+/* ── Detector de variant: valencià / central ────────────────────────────── */
+// Gravació pròpia (getUserMedia + MediaRecorder, independent del micròfon en
+// streaming) o fitxer → WAV 16 kHz al navegador → POST /api/variant. Amb
+// «Acumular» les gravacions compartixen sessió al servidor i el veredicte es
+// calcula sobre tota l'evidència junta.
+
+/** Prou per a 10–20 s de parla i un marge; més llarg només alenteix l'anàlisi. */
+const VARIANT_MAX_RECORD_S = 60;
+const varUi = {
+  rec: el('varRec'), file: el('varFile'), ref: el('varRef'), pool: el('varPool'), reset: el('varReset'),
+  state: el('varState'), result: el('varResult'), verdict: el('varVerdict'), p: el('varP'), bar: el('varBar'),
+  reason: el('varReason'), notes: el('varNotes'), contrib: el('varContrib'), segments: el('varSegments'),
+  meta: el('varMeta'), samples: document.querySelectorAll('#varSamples [data-variant-sample]'),
+};
+const variant = {
+  busy: false, sessionId: null,
+  recorder: null, stream: null, chunks: [], timer: 0, startedAt: 0,
+};
+
+const VERDICT_TEXT = {
+  valencia: 'Pronunciació valenciana',
+  central: 'Pronunciació central',
+  indeterminat: 'Pronunciació indeterminada',
+};
+
+const setVarState = (text, kind = 'hint') => {
+  varUi.state.textContent = text;
+  varUi.state.className = kind;
+};
+
+const newSessionId = () => (crypto.randomUUID ? crypto.randomUUID() : `s${Date.now()}${Math.random().toString(16).slice(2)}`);
+
+function setVarBusy(busy) {
+  variant.busy = busy;
+  varUi.file.disabled = busy;
+  varUi.samples.forEach((button) => { button.disabled = busy; });
+  varUi.reset.disabled = busy || !variant.sessionId;
+  if (!variant.recorder) varUi.rec.disabled = busy;
+}
+
+/**
+ * Per defecte usa el text llegit i «Acumular» del formulari; els exemples
+ * sintètics passen `{ ref: '', pool: false }` perquè no s'alineen contra la
+ * frase de la persona ni s'afigen a la seua sessió.
+ */
+async function postVariant(wavBytes, { ref = varUi.ref.value.trim(), pool = varUi.pool.checked } = {}) {
+  const params = new URLSearchParams();
+  if (ref) params.set('ref', ref);
+  if (pool) {
+    variant.sessionId ??= newSessionId();
+    params.set('session', variant.sessionId);
+  }
+  const response = await fetch(`/api/variant?${params}`, {
+    method: 'POST',
+    headers: { 'content-type': 'audio/wav' },
+    body: wavBytes,
+    signal: AbortSignal.timeout(600_000),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error([body.error || `el servidor ha respost ${response.status}`, body.hint].filter(Boolean).join(' '));
+  }
+  return body;
+}
+
+function showVariant(result) {
+  varUi.result.hidden = false;
+  varUi.verdict.textContent = VERDICT_TEXT[result.verdict] ?? result.label;
+  varUi.verdict.dataset.kind = result.verdict;
+  const p = result.pValencia;
+  varUi.p.textContent = p === null ? 'sense probabilitat'
+    : `p(valencià) = ${Math.round(p * 100)} % · model ${result.model === 'no_lex' ? 'sense lèxic (text llegit)' : 'amb lèxic'}`;
+  varUi.bar.style.left = p === null ? '50%' : `${(p * 100).toFixed(1)}%`;
+  varUi.bar.style.opacity = p === null ? '0.2' : '1';
+  varUi.reason.hidden = !result.reasonText;
+  varUi.reason.textContent = result.reasonText ?? '';
+
+  varUi.notes.innerHTML = '';
+  for (const note of result.notes ?? []) {
+    const line = document.createElement('p');
+    line.className = 'hint';
+    line.textContent = note;
+    varUi.notes.append(line);
+  }
+
+  // Contribucions: les que empenyen, de més a menys pes, amb una barreta que
+  // creix cap a la dreta (valencià) o cap a l'esquerra (central) des del centre.
+  varUi.contrib.innerHTML = '';
+  const contributions = (result.contributions ?? []).filter((c) => c.towards);
+  const scale = Math.max(1, ...contributions.map((c) => Math.abs(c.contribution)));
+  for (const c of contributions) {
+    const item = document.createElement('li');
+    const label = document.createElement('span');
+    label.textContent = c.text;
+    const dir = document.createElement('span');
+    dir.className = 'dir';
+    dir.dataset.towards = c.towards;
+    dir.textContent = `${c.towards === 'valencia' ? '→ valencià' : '← central'}`;
+    dir.title = `contribució al logit: ${c.contribution.toFixed(2)}`;
+    const track = document.createElement('span');
+    track.className = 'track';
+    const fill = document.createElement('i');
+    const width = (Math.abs(c.contribution) / scale) * 50;
+    fill.style.width = `${width}%`;
+    fill.style.left = c.contribution >= 0 ? '50%' : `${50 - width}%`;
+    fill.style.background = c.towards === 'valencia' ? 'var(--teal)' : '#4f46e5';
+    track.append(fill);
+    item.append(label, dir, track);
+    varUi.contrib.append(item);
+  }
+  if (contributions.length === 0 && result.pValencia !== null) {
+    varUi.contrib.innerHTML = '<li><span class="hint">Cap variable s\'ha pogut mesurar.</span></li>';
+  }
+
+  varUi.segments.innerHTML = '';
+  for (const segment of result.segments ?? []) {
+    const item = document.createElement('li');
+    const time = document.createElement('time');
+    time.textContent = `${segment.startS.toFixed(1)}–${segment.endS.toFixed(1)}s`;
+    item.append(time);
+    if (segment.usable) {
+      item.append(document.createTextNode(`«${segment.text}» `));
+      const count = document.createElement('span');
+      count.className = 'hint';
+      count.textContent = `· ${segment.nAe} a/e àtones`;
+      item.append(count);
+    } else {
+      item.className = 'rejected';
+      const why = document.createElement('span');
+      why.className = 'why';
+      why.textContent = `descartat: ${segment.reasonText}`;
+      item.append(why);
+    }
+    varUi.segments.append(item);
+  }
+
+  const totals = result.totals ?? {};
+  const recordings = result.session?.recordings;
+  const session = result.session ? ` · sessió: ${recordings} ${recordings === 1 ? 'gravació' : 'gravacions'}` : '';
+  varUi.meta.textContent = `veu útil ${totals.speechSeconds ?? 0} s · ${totals.nAe ?? 0} vocals a/e mesurades`
+    + ` (calen 6) · ${totals.usableSegments ?? 0} ${totals.usableSegments === 1 ? 'segment útil' : 'segments útils'}${session}`
+    + ` · ${((result.timings?.totalMs ?? 0) / 1000).toFixed(1)} s d'anàlisi`;
+}
+
+/** Envia un WAV ja a 16 kHz i pinta el resultat; l'etiqueta és només per als missatges. */
+async function analyseVariant(wavBytes, label, options = {}) {
+  setVarBusy(true);
+  setVarState(`Analitzant ${label}… (tres crides a l'API per cada tros de 3–15 s)`, 'warn');
+  try {
+    const result = await postVariant(wavBytes, options);
+    showVariant(result);
+    varUi.verdict.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const pText = result.pValencia === null ? '—' : result.pValencia.toFixed(2);
+    setVarState(
+      result.session
+        ? 'Fet. Amb «Acumular», la gravació següent s\'afig a esta; «Reinicia» comença de zero.'
+        : 'Fet. Per a un veredicte més segur, activa «Acumular» i grava més trossos.',
+      'ok',
+    );
+    log(`variant: ${result.verdict} p=${pText} model=${result.model} n_ae=${result.totals?.nAe}`
+      + ` veu=${result.totals?.speechSeconds}s (${label})`);
+  } catch (error) {
+    setVarState(`No s'ha pogut analitzar: ${error.message}`, 'bad');
+    log(`ERROR del detector de variant: ${error.message}`);
+  } finally {
+    setVarBusy(false);
+  }
+}
+
+/* Gravació: un flux propi sense els filtres de telefonada (deformen les vocals). */
+async function startVariantRecording() {
+  const deviceId = ui.device.value;
+  try {
+    variant.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false,
+        ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+      },
+    });
+  } catch (error) {
+    setVarState(`No hem pogut obrir el micròfon: ${error.name}. Revisa els permisos del navegador.`, 'bad');
+    return;
+  }
+  variant.chunks = [];
+  variant.recorder = new MediaRecorder(variant.stream);
+  variant.recorder.ondataavailable = (event) => { if (event.data.size) variant.chunks.push(event.data); };
+  variant.recorder.onstop = () => void finishVariantRecording();
+  variant.recorder.start();
+  variant.startedAt = performance.now();
+  varUi.rec.textContent = '■ Parar';
+  varUi.rec.classList.add('rec');
+  setVarBusy(true);
+  varUi.rec.disabled = false;
+  const tick = () => {
+    const secs = (performance.now() - variant.startedAt) / 1000;
+    const hint = secs < 10 ? 'continua parlant (millor 10–20 s)' : secs < 20 ? 'ja n\'hi ha prou: prem «Parar» quan vulgues' : 'prem «Parar»';
+    setVarState(`Gravant… ${Math.floor(secs)} s — ${hint}.`, secs < 10 ? 'warn' : 'ok');
+    if (secs >= VARIANT_MAX_RECORD_S) stopVariantRecording();
+  };
+  tick();
+  variant.timer = setInterval(tick, 500);
+}
+
+function stopVariantRecording() {
+  clearInterval(variant.timer);
+  if (variant.recorder && variant.recorder.state !== 'inactive') variant.recorder.stop();
+}
+
+async function finishVariantRecording() {
+  const secs = (performance.now() - variant.startedAt) / 1000;
+  const type = variant.recorder?.mimeType || 'audio/webm';
+  for (const track of variant.stream?.getTracks() ?? []) track.stop();
+  variant.stream = null;
+  variant.recorder = null;
+  varUi.rec.textContent = '● Gravar';
+  varUi.rec.classList.remove('rec');
+  try {
+    // El mateix camí que els fitxers: el navegador descodifica l'Opus/AAC i passa a 16 kHz.
+    const wav = await fileToWav16k(new Blob(variant.chunks, { type }), TARGET_RATE);
+    await analyseVariant(wav, `la gravació de ${secs.toFixed(0)} s`);
+  } catch (error) {
+    setVarState(`No hem pogut llegir la gravació: ${error.message}`, 'bad');
+    setVarBusy(false);
+  }
+}
+
+varUi.rec.addEventListener('click', () => {
+  if (variant.recorder) stopVariantRecording();
+  else if (!variant.busy) void startVariantRecording();
+});
+
+varUi.file.addEventListener('change', async () => {
+  const file = varUi.file.files?.[0];
+  if (!file) return;
+  try {
+    setVarState(`Convertint «${file.name}» a 16 kHz…`, 'warn');
+    const wav = await fileToWav16k(file, TARGET_RATE);
+    await analyseVariant(wav, `«${file.name}»`);
+  } catch (error) {
+    setVarState(`No hem pogut llegir «${file.name}»: ${error.message}`, 'bad');
+  } finally {
+    varUi.file.value = '';
+  }
+});
+
+varUi.samples.forEach((button) => {
+  button.addEventListener('click', async () => {
+    try {
+      const response = await fetch(button.dataset.variantSample, { signal: AbortSignal.timeout(30_000) });
+      if (!response.ok) throw new Error(`l'exemple ha respost ${response.status}`);
+      // Ja són WAV 16 kHz mono: s'envien tal qual.
+      // Sempre com a parla lliure i fora de la sessió: és veu sintètica, no la de la persona.
+      await analyseVariant(
+        new Uint8Array(await response.arrayBuffer()),
+        `l'${button.textContent.toLowerCase()}`,
+        { ref: '', pool: false },
+      );
+    } catch (error) {
+      setVarState(`No hem pogut carregar l'exemple: ${error.message}`, 'bad');
+    }
+  });
+});
+
+varUi.pool.addEventListener('change', () => {
+  // Desactivar l'acumulació oblida la sessió: la propera vegada en comença una de nova.
+  if (!varUi.pool.checked) variant.sessionId = null;
+  varUi.reset.disabled = variant.busy || !variant.sessionId;
+});
+
+varUi.reset.addEventListener('click', async () => {
+  const id = variant.sessionId;
+  variant.sessionId = null;
+  varUi.reset.disabled = true;
+  varUi.result.hidden = true;
+  setVarState('Sessió reiniciada: la gravació següent comença de zero.', 'hint');
+  if (!id) return;
+  await fetch(`/api/variant?session=${encodeURIComponent(id)}&reset=1`, { method: 'POST' }).catch(() => {});
+  log('variant: sessió reiniciada');
 });
 
 showMetrics({ audioMs: 0, firstPartialMs: null, finalMs: null, computeMs: 0, rtf: null });

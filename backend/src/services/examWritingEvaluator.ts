@@ -5,6 +5,7 @@ import { contentsForPrompt, type LevelContent } from './levelContents.js';
 import { z } from 'zod';
 import { countWords, usedRequiredWords } from '@parlaval/shared';
 import { getMcpTools } from './subagentErrorDetector.js';
+import { reasoningEffortFor } from './reasoningEffort.js';
 
 // Avaluadors de l'Àrea 3 (Expressió i Interacció Escrites) dels exàmens de la
 // JQCV amb la rúbrica oficial de cada nivell: el formulari de l'A1 i la redacció
@@ -182,7 +183,7 @@ async function runEvaluation<T extends z.ZodTypeAny>(args: {
     tools: tools.length > 0 ? tools : undefined,
     tool_choice: tools.length > 0 ? toolChoice : undefined,
     response_format: zodResponseFormat(args.schema, args.name),
-    reasoning_effort: 'none', // Obligatori per a usar tools amb gpt-6-luna en /v1/chat/completions
+    ...reasoningEffortFor(MODEL_NAME),
   });
 
   const tStart = Date.now();

@@ -7,7 +7,7 @@
  *   npx tsx scripts/generate-scenario-audio.ts           # només els que falten
  *   npx tsx scripts/generate-scenario-audio.ts --force   # tots
  *
- * Cal tindre accés al servidor de la UJI (VPN) i la BDD local en marxa.
+ * Cal tindre accés al DeepLab de la UJI (https://krono.act.uji.es/deeplab/speech) i la BDD local en marxa.
  */
 import 'dotenv/config';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';

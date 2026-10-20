@@ -18,13 +18,13 @@ export class UnconfiguredStt implements SpeechToText {
 /**
  * Speech-to-text via an OpenAI-compatible /v1/audio/transcriptions endpoint.
  * El servidor DeepLab de la UJI executa el model matxa (whisper-1) i retorna el JSON { text }.
- * Exemple: curl -X POST http://deeplab.lsi.uji.es:11000/v1/audio/transcriptions \
+ * Exemple: curl -X POST https://krono.act.uji.es/deeplab/speechv1/audio/transcriptions \
  *   -F model=whisper-1 -F language=ca -F file=audio.wav
  */
 export class MatxaStt implements SpeechToText {
   private readonly baseUrl = (process.env.MATXA_STT_URL
     || process.env.MATXA_TTS_URL
-    || 'http://deeplab.lsi.uji.es:11000').replace(/\/$/, '');
+    || 'https://krono.act.uji.es/deeplab/speech').replace(/\/$/, '');
   private readonly model = process.env.MATXA_STT_MODEL || 'whisper-1';
   private readonly language = process.env.MATXA_STT_LANGUAGE || 'ca';
 
@@ -75,7 +75,7 @@ function filenameFromMimeType(mimeType: string): string {
  */
 export class MatxaTts implements TextToSpeech {
   private readonly baseUrl = (process.env.MATXA_TTS_URL
-    || 'http://deeplab.lsi.uji.es:11000').replace(/\/$/, '');
+    || 'https://krono.act.uji.es/deeplab/speech').replace(/\/$/, '');
   private readonly model = process.env.MATXA_TTS_MODEL || 'matxa-tts';
   private readonly voice = process.env.MATXA_TTS_VOICE || 'gina';
 

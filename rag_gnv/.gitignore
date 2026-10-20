@@ -1,0 +1,4 @@
+# Índex generat (Chroma + JSON, ~31 MB): es reconstruïx sol si no hi és o si canvia la GNV.
+index_gnv/
+.venv/
+__pycache__/

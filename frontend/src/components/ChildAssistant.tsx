@@ -169,11 +169,11 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       setMessages(m => {
         const next = [...m];
         if (reply.transcription) next[next.length - 1] = { role: 'user', text: reply.transcription };
-        return [...next, { role: 'character', text: reply.reply_text }];
+        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv }];
       });
       void addMessages(opened.session_resource_id, 'tutor', [
         { role: 'user', text: said || VOICE_MESSAGE_LABEL },
-        { role: 'character', text: reply.reply_text },
+        { role: 'character', text: reply.reply_text, gnv: reply.gnv },
       ]).catch(error => console.error('Error guardant la conversa:', error));
       // Els errors del xat amb el professor compten per a la ruta, però no es practiquen.
       if (reply.analyze_errors && said) {
@@ -201,7 +201,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         >
           {openFailed && <p className="text-center text-lg font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-lg font-bold opacity-60">Un moment...</p>}
-          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} showHelp={showHelp} />)}
+          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} showHelp={showHelp} />)}
           {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-xl font-bold opacity-60">...</p>}
         </div>
 
