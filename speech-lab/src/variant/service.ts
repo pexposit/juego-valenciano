@@ -31,9 +31,9 @@ export const REFERENCE_MAX_S = 20;
 /** Per davall d'esta veu útil el veredicte és orientatiu (~80 % amb 5 s, ~90 % amb 10–20 s). */
 export const RELIABLE_SPEECH_S = 10;
 
-/** Missatge quan l'API no respon: el motiu habitual és estar fora de la xarxa de la UJI. */
+/** Missatge quan l'API no respon. */
 export const PHONETIC_HINT =
-  "L'API fonètica només és accessible des de la intranet de la UJI (o amb la VPN de la UJI).";
+  "L'API fonètica del DeepLab de la UJI no respon (https://krono.act.uji.es/deeplab/api). Comprova la connexió o PHONETIC_API_URL.";
 
 /* ── Remostreig ──────────────────────────────────────────────────────────── */
 
@@ -288,7 +288,7 @@ export type PingResult =
   | { ok: true; url: string; latencyMs: number; model: string | null; device: string | null }
   | { ok: false; url: string; latencyMs: number; error: string };
 
-/** `GET /health` de PhoneticXeus amb un temps curt: per a fallar ràpid fora de la intranet. */
+/** `GET /health` de PhoneticXeus amb un temps curt: per a fallar ràpid si no respon. */
 export async function pingPhoneticApi(
   baseUrl = config.phonetic.baseUrl,
   timeoutMs = 5000,

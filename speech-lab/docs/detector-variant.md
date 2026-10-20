@@ -2,8 +2,7 @@
 
 Dice si la **pronunciación** de un audio suena valenciana o central (catalán
 oriental). Usa la API fonética **PhoneticXeus** de la UJI
-(`http://deeplab.lsi.uji.es:8899`, `POST /transcribe`), que **solo es accesible
-desde la intranet de la UJI** (o con su VPN). El código está en
+(`https://krono.act.uji.es/deeplab/api`, `POST /transcribe`), pública por HTTPS. El código está en
 `src/variant/` (port en TypeScript del prototipo en Python, con paridad
 numérica comprobada sobre los 330 clips del corpus de investigación) y se usa
 desde tres sitios:
@@ -135,9 +134,9 @@ han analizado. Parámetros:
 `zona-dubtosa`. Motivos de descarte de un segmento: `error-api`,
 `pocs-fonemes`, `sense-text`, `sense-alineacio`, `referencia-dubtosa`,
 `paraules-desquadrades`. Si la API fonética no responde, **502** con un
-`hint` («només és accessible des de la intranet de la UJI»): antes de analizar
+`hint` («L'API fonètica del DeepLab de la UJI no respon…»): antes de analizar
 se hace un ping de 5 s a su `/health` para no esperar 2 minutos por llamada
-fuera de la intranet. `GET /api/variant/health` hace ese ping (200 / 502) y
+si está caída. `GET /api/variant/health` hace ese ping (200 / 502) y
 `/health` incluye `phoneticApi` (la URL, sin ping). Cada petición deja una
 línea en el log:
 

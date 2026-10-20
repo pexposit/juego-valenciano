@@ -1,7 +1,7 @@
 /**
  * Detector de variant des del terminal: diu si la pronunciació d'un o més
  * WAV és valenciana o central, amb les contribucions de cada variable.
- * Usa l'API fonètica PhoneticXeus de la UJI (només des de la intranet).
+ * Usa l'API fonètica PhoneticXeus del DeepLab de la UJI.
  *
  * Ús:
  *   npm run variant -- veu-1.wav veu-2.wav          (una persona: s'ajunta tot)

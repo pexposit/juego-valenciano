@@ -555,7 +555,7 @@ Todos usan OpenAI con el modelo de `OPENAI_MODEL` (algunos ficheros caen a `gpt-
 - Interfaces `SpeechToText` y `TextToSpeech` para poder cambiar de proveedor sin tocar rutas.
 - **`MatxaStt`**: `POST {MATXA_STT_URL}/v1/audio/transcriptions` (multipart: `model=whisper-1`, `language=ca`, fichero con la extensión según el MIME). Timeout 120 s. Error si no hay texto.
 - **`MatxaTts`**: `POST {MATXA_TTS_URL}/v1/audio/speech` `{model:'matxa-tts', input, voice (gina por defecto), response_format:'wav', language:'ca-es'}`. Timeout 60 s. **Si falla devuelve `null`** (el TTS nunca impide recibir el texto).
-- Servidor por defecto: `http://deeplab.lsi.uji.es:11000`.
+- Servidor por defecto: `https://krono.act.uji.es/deeplab/speech`.
 
 ### 6.4 Contenidos del nivel (`services/levelContents.ts`)
 
@@ -1267,7 +1267,7 @@ Dockerfiles: backend en 3 etapas `node:22-alpine` (build, dependencias de produc
 | Servicio | Para qué |
 |---|---|
 | OpenAI | Personajes, tutor, detector de errores, evaluación pedagógica, redacciones, ruta de IA, objetivos infantiles, títulos, traducciones, clasificador |
-| DeepLab UJI (`deeplab.lsi.uji.es:11000`) | STT whisper-1 y TTS matxa (voces gina y lluc) |
+| DeepLab UJI (`krono.act.uji.es/deeplab/speech`) | STT whisper-1 y TTS matxa (voces gina y lluc) |
 | AVL lexicval, Apertium, Softcatalà | Herramientas MCP de normativa |
 | Supabase Auth | Cuentas |
 | ARASAAC | Pictogramas (descargados una vez) |

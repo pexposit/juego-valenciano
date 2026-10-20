@@ -8,7 +8,7 @@ mientras aquí se experimenta.
 
 Todo corre en local (`http://localhost:3100`) salvo dos servicios de la UJI: el
 TTS remoto matxa-tts (el mismo que el juego) y la API fonética del detector de
-variante, accesible solo desde la intranet o con VPN.
+variante, ambos públicos por HTTPS (`https://krono.act.uji.es/deeplab/`).
 
 ## Funcionalidades
 
@@ -156,7 +156,7 @@ Formato de cada una en las guías de [docs/](docs/).
 | `TTS_PROVIDER`, `MATXA_TTS_URL`, `MATXA_TTS_VOICE(S)` | `matxa`, servidor UJI, `gina` | TTS remoto (mismas variables que el backend) |
 | `MATXA_PYTHON`, `MATXA_BASE_CKPT`, `MATXA_RUNS_DIR` | `.venv-voz`, checkpoint 629, `tts/runs` | Matxa local |
 | `RVC_PYTHON`, `APPLIO_DIR` | `.venv-rvc`, `tts/rvc/Applio` | RVC |
-| `PHONETIC_API_URL`, `PHONETIC_API_TIMEOUT_MS` | `http://deeplab.lsi.uji.es:8899`, `120000` | API fonética del detector |
+| `PHONETIC_API_URL`, `PHONETIC_API_TIMEOUT_MS` | `https://krono.act.uji.es/deeplab/api`, `120000` | API fonética del detector |
 | `VARIANT_SESSION_TTL_MS`, `VARIANT_MAX_SESSIONS`, `VARIANT_MAX_SECONDS` | `1800000`, `200`, `180` | sesiones y límites de `/api/variant` |
 
 ## Estructura

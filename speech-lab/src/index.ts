@@ -53,14 +53,14 @@ const server = http.createServer(async (req, res) => {
       ttsProvider: config.tts.provider,
       ttsProviders: availableTtsProviders,
       sampleRate: config.sampleRate,
-      // Sense ping ací (seria lent fora de la intranet): /api/variant/health el fa.
+      // Sense ping ací (seria lent si l'API no respon): /api/variant/health el fa.
       phoneticApi: config.phonetic.baseUrl,
     }));
     return;
   }
 
   // ── Detector de variant: GET /api/variant/health ─────────────────────
-  // Comprova que l'API fonètica de la UJI respon (només des de la intranet).
+  // Comprova que l'API fonètica de la UJI respon.
   if (url.pathname === '/api/variant/health' && req.method === 'GET') {
     const ping = await pingPhoneticApi();
     rememberPing(ping);
@@ -307,7 +307,7 @@ function readBody(req: http.IncomingMessage, maxBytes: number): Promise<{ body: 
 const variantSessions = new VariantSessionStore();
 
 /**
- * Darrer ping bo a l'API fonètica. Fora de la intranet una connexió pot
+ * Darrer ping bo a l'API fonètica. Si l'API no respon, una connexió pot
  * quedar penjada fins al temps màxim (2 min per crida): amb el ping de 5 s
  * abans d'analitzar es falla de seguida. Si ha anat bé fa poc, no es repetix.
  */
@@ -383,7 +383,7 @@ async function handleVariant(
   const audio = resampleTo(decoded, TARGET_RATE);
   const resampleMs = Date.now() - decodeStarted;
 
-  // Fallar ràpid si l'API fonètica no és accessible (fora de la intranet).
+  // Fallar ràpid si l'API fonètica no és accessible.
   if (Date.now() - lastPingOk > PING_FRESH_MS) {
     const ping = await pingPhoneticApi();
     rememberPing(ping);
