@@ -7,6 +7,7 @@ import { VoiceInput } from './VoiceInput';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
 import { analyzeMessage, ensureSession, fetchTts, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
 import { addMessages, saveExerciseAnswer } from '../lib/localStore';
+import { ALL_LESSONS } from '../features/kids/lessons';
 import type { TutorExercise } from '../lib/types';
 
 type Message = AssistantConversation['messages'][number];
@@ -165,17 +166,19 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         audio_base64: voice || null,
         history: context,
         shown_exercises: messages.flatMap(m => (m.exercise ? [m.exercise.id] : [])),
+        // El tutor del Nivell 0 pot enllaçar una lliçó: el catàleg és ací, així que s'envia (el servidor només el fa servir amb el Nivell 0).
+        lessons: ALL_LESSONS.map(l => ({ id: l.id, title: l.title, summary: l.summary })),
         include_audio: false,
       });
       const said = reply.transcription || text;
       setMessages(m => {
         const next = [...m];
         if (reply.transcription) next[next.length - 1] = { role: 'user', text: reply.transcription };
-        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise }];
+        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id }];
       });
       void addMessages(opened.session_resource_id, 'tutor', [
         { role: 'user', text: said || VOICE_MESSAGE_LABEL },
-        { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise },
+        { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id },
       ]).catch(error => console.error('Error guardant la conversa:', error));
       // Els errors del xat amb el professor compten per a la ruta, però no es practiquen.
       if (reply.analyze_errors && said) {
@@ -212,7 +215,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         >
           {openFailed && <p className="text-center text-lg font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-lg font-bold opacity-60">Un moment...</p>}
-          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} exercise={m.exercise} onAnswer={answerExercise} showHelp={showHelp} />)}
+          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
           {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-xl font-bold opacity-60">...</p>}
         </div>
 

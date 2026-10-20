@@ -7,7 +7,7 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
-import { pickTutorExercise, type TutorExercise } from '../services/tutorExercise.js';
+import { findSkillActivity, findTutorActivity, pickTutorExercise, type TutorActivity, type TutorExercise } from '../services/tutorExercise.js';
 import { getScenario } from '../services/scenarios.js';
 import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
@@ -88,6 +88,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     let levelZero = false;
     let gnvTool = false;
     let exerciseTool = false;
+    let lessons: { id: string; title: string; summary: string }[] = [];
     if (client && scenario.category === ASSISTANT_CATEGORY) {
       const { data: profile } = await client.from('profiles').select('mother_tongue, level, age_group').eq('id', req.userId!).maybeSingle();
       extraInstructions = motherTongueInstructions(profile?.mother_tongue);
@@ -98,6 +99,9 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       gnvTool = gnvRagEnabled() && !levelZero;
       // Els exercicis del catàleg són per a qui sap llegir: no per al Nivell 0.
       exerciseTool = !levelZero;
+      // El Nivell 0 no fa exercicis del catàleg: als xiquets se'ls enllaça una lliçó de l'app (les envia el client).
+      // Els adults del Nivell 0 no tenen lliçons.
+      lessons = levelZero && profile?.age_group === 'child' ? data.lessons : [];
     } else if (client) {
       // Escenaris del Nivell 0: si el xiquet té activada la llengua materna, el personatge hi afig
       // la traducció de cada resposta (segona línia), que el xat mostra com a subtítol.
@@ -118,13 +122,33 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       levelInstructions,
       gnvTool,
       exerciseTool,
+      lessons,
     });
 
     // El tutor ha oferit un exercici: se'n tria un de real del catàleg (mai inventat).
-    const { exercici_tema, ...replyBody } = reply;
+    const { exercici_tema, area_practica, leccio_id, ...replyBody } = reply;
+    // Només una lliçó de les que s'han enviat (el model no pot inventar-ne).
+    const lessonId = lessons.some(l => l.id === leccio_id) ? leccio_id : undefined;
     let exercise: TutorExercise | null = null;
-    if (exerciseTool && exercici_tema?.trim()) {
-      exercise = await pickTutorExercise(exercici_tema, level, data.shown_exercises);
+    let activity: TutorActivity | null = null;
+    // Si ha respost amb una regla de la GNV, l'exercici és del seu tema (l'últim apartat de la ruta, sense numeració)
+    // encara que el model no haja escrit el tema: primer la norma i després la pràctica.
+    const gnvTopic = reply.gnv?.ruta.split('>').pop()?.replace(/^[\s\d.]+/, '').trim();
+    const topic = exercici_tema?.trim() || gnvTopic;
+    // Seccions de la GNV de la regla (la principal i les que la completen): les activitats que citen la mateixa, primer.
+    const gnvSections = reply.gnv ? [reply.gnv.seccio, ...(reply.gnv.relacionades ?? []).map(x => x.seccio)] : [];
+    // Destreses que no es poden fer dins del xat (redactar, escoltar, llegir, parlar): s'enllaça una activitat de l'àrea.
+    // Si vol practicar la conversa, sempre se li enllaça un escenari concret, encara que el model no ho haja marcat.
+    const wantsConversation = /convers|xarr|xat|xatej|joc de rol|escenari|situaci/i.test(text) && !/exerci/i.test(text);
+    const skill = area_practica || (wantsConversation ? 'escenari' : '');
+    if (exerciseTool && skill) activity = await findSkillActivity(skill, level, text);
+    if (exerciseTool && topic && !activity) {
+      // Si l'aprenent demana practicar, sempre se li'n dóna un; si el tutor ha explicat, només si n'hi ha un del tema.
+      const askedToPractice = /exerci|practic|prova|test/i.test(text);
+      exercise = await pickTutorExercise(topic, level, data.shown_exercises, !askedToPractice, gnvSections);
+      // Hi ha pràctica del tema però cap exercici que càpiga en el xat: s'enllaça l'activitat.
+      // Només amb una regla de la GNV al darrere o si ho ha demanat: un tema solt (p. ex. el significat d'una paraula) no en dóna prou.
+      if (!exercise && (reply.gnv || askedToPractice)) activity = await findTutorActivity(topic, gnvSections);
     }
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
@@ -157,6 +181,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     res.json({
       ...replyBody,
       ...(exercise ? { exercise } : {}),
+      ...(activity ? { activity } : {}),
+      ...(lessonId ? { lesson_id: lessonId } : {}),
       transcription: data.input_mode === 'voice' ? text : null,
       reply_audio_base64: audio?.audio.toString('base64') || null,
       reply_audio_mime_type: audio?.mimeType || null,

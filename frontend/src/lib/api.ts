@@ -1,4 +1,4 @@
-import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorExercise, WritingEvaluation } from './types';
+import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, WritingEvaluation } from './types';
 import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
@@ -96,7 +96,7 @@ export async function evaluateExamWriting(
   }
   return res.json();
 }
-export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];shown_exercises?:string[];include_audio?:boolean}):Promise<TurnResponse>{
+export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];shown_exercises?:string[];lessons?:{id:string;title:string;summary:string}[];include_audio?:boolean}):Promise<TurnResponse>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;
   // L'historial es retalla amb el pressupost compartit abans d'enviar-lo:
   // el servidor, a més, ho tornarà a aplicar (defensa en profunditat).
@@ -510,7 +510,7 @@ export async function recordPracticeAnswers(answers: { exercise_id: string; answ
 export type AssistantConversation = {
   session_id: string;
   session_resource_id: string;
-  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise }[];
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string }[];
 };
 // Llengües maternes amb traducció (les mateixes que els subtítols del Nivell 0).
 const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'];
@@ -561,7 +561,7 @@ async function callAssistant(action: 'open' | 'restart', sessionId: string): Pro
   if (!res.ok) throw new Error("No s'ha pogut obrir la conversa amb el professor");
   const opened = await res.json() as { session_id: string; session_resource_id: string; greeting: string };
   await setCurrentTutorConversation(opened.session_resource_id);
-  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, exercise: m.exercise }));
+  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, exercise: m.exercise, activity: m.activity, lessonId: m.lessonId }));
   // Conversa nova (o d'un altre dispositiu, sense missatges ací): comença amb la salutació.
   if (messages.length === 0) {
     messages = [{ role: 'character', text: opened.greeting }];

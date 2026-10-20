@@ -13,6 +13,10 @@ const outputSchema = z.object({
   consulta_gnv: z.string().optional(),
   // Tutor: el tema de l'exercici del catàleg que vol oferir ('' si no n'ofereix cap).
   exercici_tema: z.string().optional(),
+  // Tutor: la destresa que l'aprenent vol millorar i que no es pot practicar dins del xat ('' si no n'hi ha cap).
+  area_practica: z.string().optional(),
+  // Tutor del Nivell 0: la lliçó de l'app relacionada amb la pregunta ('' si no n'hi ha cap).
+  leccio_id: z.string().optional(),
   // Només quan el tutor ha consultat la GNV i hi ha trobat respaldo.
   gnv: z.object({
     fonts: z.array(z.number().int()),
@@ -52,12 +56,23 @@ const GNV_INSTRUCTIONS = `CONSULTA DE LA GRAMÀTICA NORMATIVA VALENCIANA (GNV):
 - Si no és un dubte de normativa, deixa consulta_gnv buida i respon directament.`;
 
 const EXERCISE_INSTRUCTIONS = `EXERCICIS DEL CATÀLEG:
-- Quan l'aprenent demane practicar, o tu mateix vages a proposar-li un exercici, NO te l'inventes: omple exercici_tema amb el tema que vol practicar (1 a 4 paraules en valencià, p. ex. "accentuació", "pronoms febles", "verbs en passat") i en reply_text digues només una frase curta que presente l'exercici (p. ex. «Prova este exercici!»). L'aplicació li'n mostrarà un de real dins del xat.
-- Si l'aprenent no demana practicar i no cal cap exercici, deixa exercici_tema buit.`;
+- Mai no t'inventes exercicis: l'aplicació en mostra un de real del catàleg dins del xat, si n'hi ha, quan omples exercici_tema.
+- Cada vegada que expliques o resols un dubte sobre la llengua (normativa, ortografia, accents, gramàtica, verbs, lèxic...), omple exercici_tema amb el tema (1 a 3 paraules en valencià, com el nom d'una lliçó: "accentuació", "pronoms febles", "verbs", "plurals"). Si hi ha un exercici d'eixe tema, l'aprenent el veurà davall de la teua resposta. NO el mencions en reply_text: pot ser que no n'hi haja cap.
+- Si l'aprenent demana practicar o fer un exercici, omple exercici_tema amb el tema que vol i en reply_text digues només una frase curta que presente l'exercici (p. ex. «Prova este exercici!»).
+- Si la conversa no tracta de la llengua (salutació, xarrada, cultura...), deixa exercici_tema buit.
+- Si l'aprenent demana com millorar o practicar una DESTRESA que no es pot fer dins del xat (redactar o escriure textos → expressio_escrita; entendre àudios → comprensio_oral; entendre textos escrits → comprensio_escrita; practicar la conversa, xarrar o fer un escenari → escenari; parlar en veu alta o millorar la pronunciació → expressio_oral), omple area_practica amb eixa àrea, dóna-li 2 o 3 consells breus i diu-li que li deixes una activitat per a practicar-ho (l'aplicació l'enllaçarà). En eixe cas deixa exercici_tema buit. Si no, deixa area_practica buit.`;
 
 type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
-function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false) {
+const PRACTICE_SKILLS = ['expressio_escrita', 'comprensio_oral', 'comprensio_escrita', 'expressio_oral', 'escenari'] as const;
+
+export type LessonRef = { id: string; title: string; summary: string };
+
+const lessonInstructions = (lessons: LessonRef[]) => `LLIÇONS DE L'APP:
+- Si el que pregunta o diu el xiquet té relació amb alguna d'estes lliçons, omple leccio_id amb el seu id i digues-li, en una frase molt curta i amb paraules senzilles, que li deixes la lliçó. Només una, la més adequada. Si cap no té relació, deixa leccio_id buit. Mai no t'inventes lliçons ni ids.
+${lessons.map(l => `- ${l.id}: ${l.title}${l.summary ? ` (${l.summary})` : ''}`).join('\n')}`;
+
+function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false, lessons: LessonRef[] = []) {
   return {
     type: 'json_schema',
     json_schema: {
@@ -82,6 +97,8 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             description: 'La resposta directa del personatge a la conversa.',
           },
           ...(askGnvQuery ? { consulta_gnv: { type: 'string', description: GNV_QUERY_DESCRIPTION } } : {}),
+          ...(lessons.length ? { leccio_id: { type: 'string', enum: ['', ...lessons.map(l => l.id)], description: "L'id de la lliçó de l'app relacionada amb la pregunta del xiquet; cadena buida si no n'hi ha cap." } } : {}),
+          ...(askExercise ? { area_practica: { type: 'string', enum: ['', ...PRACTICE_SKILLS], description: "La destresa que l'aprenent vol practicar si no es pot fer dins del xat; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { exercici_tema: { type: 'string', description: "Tema de l'exercici del catàleg que ofereixes a l'aprenent; cadena buida si no n'ofereixes cap." } } : {}),
           ...(withGnv ? {
             gnv: {
@@ -107,7 +124,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             },
           } : {}),
         },
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askExercise ? ['exercici_tema'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askExercise ? ['exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
         additionalProperties: false,
       },
     },
@@ -206,6 +223,8 @@ export async function replyFromAgent(args: {
   gnvTool?: boolean;
   // Tutor: pot oferir un exercici real del catàleg (exercici_tema); el resol qui crida.
   exerciseTool?: boolean;
+  // Tutor del Nivell 0: les lliçons que pot enllaçar (leccio_id); les resol qui crida.
+  lessons?: LessonRef[];
 }): Promise<AgentReply> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY no està configurada');
@@ -235,7 +254,9 @@ export async function replyFromAgent(args: {
 
         ${args.exerciseTool ? EXERCISE_INSTRUCTIONS : ''}
 
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.exerciseTool ? ', exercici_tema' : ''}.`.trim(),
+        ${args.lessons?.length ? lessonInstructions(args.lessons) : ''}
+
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.exerciseTool ? ', exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
     },
     {
       role: 'user',
@@ -266,7 +287,7 @@ export async function replyFromAgent(args: {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         let content = await complete(key, model!, {
-          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool),
+          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons),
           messages,
         });
 
@@ -276,7 +297,7 @@ export async function replyFromAgent(args: {
         if (consulta) {
           gnvResult = await lookupGnv(consulta);
           content = await complete(key, model!, {
-            response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool),
+            response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool, args.lessons),
             messages: [...messages, { role: 'system', content: gnvSourcesMessage(consulta, gnvResult) }],
           });
         }

@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Check, X } from 'lucide-react';
-import { practiceRoute } from '../data/content';
-import type { GnvRule, TutorExercise } from '../lib/types';
+import { BookOpen, Check, Dumbbell, X } from 'lucide-react';
+import { activityRoute, KIDS_ROUTES, practiceRoute } from '../data/content';
+import { lessonById } from '../features/kids/lessons';
+import type { GnvRule, TutorActivity, TutorExercise } from '../lib/types';
 
 // Bombolla d'un missatge del xat amb el tutor. En els missatges del professor, la primera línia és en
 // valencià i la resta, en gris clar, l'ajuda en la llengua materna del xiquet (amagada si `showHelp` és fals).
 // Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial.
-export function ChatBubble({ role, text, gnv, exercise, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
+export function ChatBubble({ role, text, gnv, exercise, activity, lessonId, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
   const [valencian, ...help] = role === 'character' ? text.split('\n') : [text];
   return (
     <div
@@ -17,7 +18,14 @@ export function ChatBubble({ role, text, gnv, exercise, onAnswer, showHelp = tru
       <p>{valencian}</p>
       {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-lg font-semibold text-slate-400">{help.join('\n')}</p>}
       {gnv && <GnvRuleCard rule={gnv} />}
+      {lessonId && <LessonLink lessonId={lessonId} />}
       {exercise && <ExerciseCard exercise={exercise} onAnswer={onAnswer} />}
+      {!exercise && activity && (
+        <Link to={activityRoute({ id: activity.resource_id, type: activity.type, category: activity.category }) ?? practiceRoute(activity.resource_id)} className="mt-3 flex items-center gap-2 rounded-xl bg-white/80 px-3 py-2 text-base font-extrabold text-orange ring-2 ring-orange/30 hover:ring-orange">
+          <Dumbbell size={20} className="shrink-0" aria-hidden />
+          <span>{activity.category === 'escenari' || activity.category === 'expressio_oral' ? 'Practica la conversa' : 'Practica-ho'}: {activity.resource_name}</span>
+        </Link>
+      )}
     </div>
   );
 }
@@ -94,5 +102,21 @@ function ExerciseCard({ exercise, onAnswer }: { exercise: TutorExercise; onAnswe
         </div>
       )}
     </section>
+  );
+}
+
+// Enllaç a una lliçó de l'app (tutor del Nivell 0): gran i amb el dibuix, perquè els xiquets xicotets el reconeguen.
+function LessonLink({ lessonId }: { lessonId: string }) {
+  const lesson = lessonById(lessonId);
+  if (!lesson) return null;
+  return (
+    <Link
+      to={`${KIDS_ROUTES.lesson}/${lesson.id}`}
+      style={{ backgroundColor: lesson.color }}
+      className="btn-press mt-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-xl font-black text-slate-800 shadow ring-2 ring-white"
+    >
+      <span className="text-4xl" aria-hidden>{lesson.emoji}</span>
+      <span>Lliçó: {lesson.title}</span>
+    </Link>
   );
 }

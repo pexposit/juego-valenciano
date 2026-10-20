@@ -40,12 +40,17 @@ const TRANSLATED_GREETING_TIERS: readonly Tier[] = ['nivell0', 'A'];
 
 const tierOf = (level: string | null | undefined): Tier => (level === 'nivell0' ? 'nivell0' : levelBand(level) ?? 'A');
 
+// El xat del tauler no és un escenari: la conversa per a practicar té les seues activitats al catàleg.
+const NO_SCENARIOS_INSTRUCTIONS =
+  "No crees ni proposes escenaris, situacions inventades ni jocs de rol (a la botiga, al metge, en una entrevista...) i no comences cap conversa de pràctica dins d'este xat. " +
+  "Si l'aprenent vol practicar la conversa o parlar, respon-li breument amb consells i digues-li que li deixes una activitat de conversa del catàleg (omple area_practica amb escenari; amb expressio_oral si el que vol és parlar en veu alta). Sempre se li enllaça un escenari concret, mai no n'inventes cap.";
+
 export function assistantGreeting(level: string | null | undefined) {
   return GREETINGS[tierOf(level)];
 }
 
 export function assistantLevelInstructions(level: string | null | undefined, ageGroup: string | null | undefined) {
-  return [LEVEL_INSTRUCTIONS[tierOf(level)], ageGroup === 'child' ? undefined : ADULT_INSTRUCTIONS].filter(Boolean).join(' ');
+  return [LEVEL_INSTRUCTIONS[tierOf(level)], ageGroup === 'child' ? undefined : ADULT_INSTRUCTIONS, NO_SCENARIOS_INSTRUCTIONS].filter(Boolean).join(' ');
 }
 
 export const assistantGreetingIsTranslated = (level: string | null | undefined) =>

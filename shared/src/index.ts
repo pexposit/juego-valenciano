@@ -97,10 +97,20 @@ const wordForms = (word: string) => {
   return new Set([...forms(base), ...(feminine ? forms(base + feminine) : [])]);
 };
 
-/** Paraules de la llista que apareixen en el text (en qualsevol de les seues formes). */
+/**
+ * Paraules de la llista que apareixen en el text (en qualsevol de les seues formes). Una expressió de
+ * diverses paraules («de vegades», «a poc a poc») compta si les seues paraules apareixen seguides i en
+ * este ordre; cada una pot anar en singular o plural.
+ */
 export function usedRequiredWords(text: string, words: string[]): string[] {
-  const tokens = new Set(normalizeWord(text).split(/[^\p{L}·]+/u).filter(Boolean));
-  return words.filter(w => [...wordForms(w)].some(f => tokens.has(f)));
+  const tokens = normalizeWord(text).split(/[^\p{L}·]+/u).filter(Boolean);
+  return words.filter(w => {
+    // La «/» es manté dins de la paraula: «malalt/a» és una sola paraula amb dos gèneres.
+    const parts = normalizeWord(w).split(/[^\p{L}·/]+/u).filter(Boolean);
+    if (parts.length === 0) return false;
+    const forms = parts.map(part => wordForms(part));
+    return tokens.some((_, start) => forms.every((f, i) => start + i < tokens.length && f.has(tokens[start + i])));
+  });
 }
 
 /* ── Pràctica del temari ──────────────────────────────────────────────── */
