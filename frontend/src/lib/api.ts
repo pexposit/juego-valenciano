@@ -107,12 +107,24 @@ export async function sendTurn(payload:{session_id:string;session_resource_id:st
 // Àudio TTS d'un text (veu del personatge de l'escenari). El token fa que la
 // petició compte contra el límit de l'usuari amb sessió: el backend limita molt
 // més les peticions anònimes. Retorna una URL `data:` reproduïble.
-export async function fetchTts(text:string,scenario:Scenario):Promise<string>{
+// Amb `voice` (triada tocant el robot) es parla amb eixa veu en lloc de la de l'escenari.
+export async function fetchTts(text:string,scenario:Scenario,voice?:string):Promise<string>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;
-  const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({text,scenario})});
+  const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({text,scenario,voice})});
   if(!res.ok) throw new Error(`tts ${res.status}`);
   const payload=await res.json() as {audio_base64:string;mime_type:string};
   return `data:${payload.mime_type};base64,${payload.audio_base64}`;
+}
+
+// Veus que es poden triar per al robot: els locutors del servidor i els models del laboratori de veu, per grups.
+export type VoiceOption = { id: string; label: string; group: string };
+export async function fetchVoiceOptions(): Promise<VoiceOption[]> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts/voices`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`voices ${res.status}`);
+  return (await res.json() as { voices: VoiceOption[] }).voices;
 }
 
 // Veu de la Taronjeta (Nivell 0) per a una frase que no té el seu fitxer pregenerat:

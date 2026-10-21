@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, RotateCcw, Volume2 } from 'lucide-react';
 import { useDelayedFlag } from './AudioLoading';
 import { KID_ASSISTANT_TYPE } from '@parlaval/shared';
 import { ChatBubble } from './ChatBubble';
 import { VoiceInput } from './VoiceInput';
+import { RobotVoiceMenu, savedRobotVoice } from './RobotVoiceMenu';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
 import { analyzeMessage, ensureSession, fetchTts, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
 import { addMessages, saveExerciseAnswer } from '../lib/localStore';
@@ -17,6 +18,8 @@ const CHILD_LEVEL = 'A1';
 const VOICE_MESSAGE_LABEL = '🎙️ Missatge de veu';
 const ERROR_REPLY = "No t'he sentit bé, pots repetir-ho?";
 const TTS_ATTEMPTS = 2;
+// El professor ho diu en triar una veu nova en el menú del robot, perquè se senta com sona.
+const VOICE_SAMPLE = 'Hola! Ara parle amb esta veu.';
 
 // Mida del professor segons l'amplada de la pantalla: més xicotet en mòbils i tauletes.
 // En horitzontal en un mòbil (poca altura) el professor va a l'esquerra i ha de cabre en l'altura.
@@ -81,6 +84,12 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   // true mentre la veu del professor es demana o es descarrega i encara no pot sonar.
   const [voiceLoading, setVoiceLoading] = useState(false);
   const showVoiceLoading = useDelayedFlag(voiceLoading);
+  // Veu triada tocant el robot (undefined = la del professor). Es llig en cada frase, per això va en una ref.
+  const [voice, setVoice] = useState(savedRobotVoice);
+  const voiceRef = useRef(voice);
+  const [voiceMenuOpen, setVoiceMenuOpen] = useState(false);
+  const robotRef = useRef<HTMLDivElement>(null);
+  const closeVoiceMenu = useCallback(() => setVoiceMenuOpen(false), []);
   const stopAudio = () => {
     speakRequest.current += 1;
     setVoiceLoading(false);
@@ -98,7 +107,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
     const spoken = text.split('\n')[0].trim();
     for (let attempt = 1; attempt <= TTS_ATTEMPTS; attempt += 1) {
       try {
-        const source = await fetchTts(spoken, KID_ASSISTANT_TYPE);
+        const source = await fetchTts(spoken, KID_ASSISTANT_TYPE, voiceRef.current);
         if (!mounted.current || mine !== speakRequest.current) return;
         const element = new Audio(source);
         element.oncanplay = element.onerror = () => setVoiceLoading(false);
@@ -111,6 +120,12 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       }
     }
     if (mine === speakRequest.current) setVoiceLoading(false);
+  };
+
+  const changeVoice = (next: string | undefined) => {
+    voiceRef.current = next;
+    setVoice(next);
+    void speak(VOICE_SAMPLE);
   };
 
   const lastReply = [...messages].reverse().find(m => m.role === 'character')?.text;
@@ -224,9 +239,21 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
 
   return (
     <div className="relative z-20 flex min-h-0 flex-1 items-center gap-4 px-5 lg:justify-center lg:gap-8pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
-      {isRobotAvatarEnabled('dashboard')
-        ? <DashboardRobot className="shrink-0 drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} />
-        : <img src="/images/avatar_professor.svg" alt="El professor" className="float shrink-0 drop-shadow-lg" width={avatarSize} height={avatarSize} />}
+      {/* Tocant el professor ix el menú per a triar-li la veu. */}
+      <div ref={robotRef} className="relative shrink-0" title="Toca'm per a canviar-me la veu">
+        {isRobotAvatarEnabled('dashboard')
+          ? <DashboardRobot className="drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} onClick={() => setVoiceMenuOpen(open => !open)} />
+          : <img src="/images/avatar_professor.svg" alt="El professor" className="float cursor-pointer drop-shadow-lg" width={avatarSize} height={avatarSize} onClick={() => setVoiceMenuOpen(open => !open)} />}
+        {!voiceMenuOpen && (
+          <button
+            onClick={() => setVoiceMenuOpen(true)}
+            className="absolute left-1/2 top-0 z-10 w-max max-w-full -translate-x-1/2 -translate-y-1/2 rounded-2xl lg:translate-y-0 bg-white px-3 py-1.5 text-center text-sm font-bold text-teal shadow-lg ring-2 ring-white after:absolute after:left-1/2 after:top-full after:-translate-x-1/2 after:border-8 after:border-transparent after:border-t-white after:content-['']"
+          >
+            Fes-me clic i canvia'm la veu!
+          </button>
+        )}
+        {voiceMenuOpen && <RobotVoiceMenu anchor={robotRef} voice={voice} onChange={changeVoice} onClose={closeVoiceMenu} />}
+      </div>
 
       <section className="flex min-h-0 w-full max-w-4xl flex-1 flex-col lg:max-w-[clamp(40rem,62vw,90rem)] [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor" style={CHAT_FONT_STYLE}>
         <div
