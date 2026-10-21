@@ -6,7 +6,8 @@ export interface SpeechToText {
 export type SpeechAudio = { audio: Buffer; mimeType: string };
 
 export interface TextToSpeech {
-  synthesize(text: string, voice?: string): Promise<SpeechAudio | null>
+  // `fallback: false` (scripts que generen àudios estàtics): si la veu demanada no està disponible, no se'n posa una altra.
+  synthesize(text: string, voice?: string, options?: { fallback?: boolean }): Promise<SpeechAudio | null>
 }
 
 export class UnconfiguredStt implements SpeechToText {
@@ -79,7 +80,7 @@ export class MatxaTts implements TextToSpeech {
   private readonly model = process.env.MATXA_TTS_MODEL || 'matxa-tts';
   private readonly voice = process.env.MATXA_TTS_VOICE || 'gina';
 
-  async synthesize(text: string, voice?: string): Promise<SpeechAudio | null> {
+  async synthesize(text: string, voice?: string, _options?: { fallback?: boolean }): Promise<SpeechAudio | null> {
     try {
       const response = await fetch(`${this.baseUrl}/v1/audio/speech`, {
         method: 'POST',
@@ -113,5 +114,52 @@ export class MatxaTts implements TextToSpeech {
   }
 }
 
+/**
+ * Router de veus. Amb SPEECH_LAB_URL (p. ex. http://localhost:3100) TOTES les veus les genera el laboratori de veu
+ * (speech-lab, Matxa + RVC, necessita GPU) i no s'usa el DeepLab de la UJI ni de reserva: si el laboratori no respon,
+ * no hi ha àudio. `gina` i `lluc` són els locutors valencians del Matxa local; les veus de personatge (`rvc:doraemon`,
+ * `rvc:heidi`...) i qualsevol altre model del laboratori (`veu:nena`...) es passen tal qual.
+ * Sense SPEECH_LAB_URL tot va al DeepLab com sempre, i una veu `rvc:*` cau a la veu per defecte.
+ */
+const LAB_MODEL_BY_VOICE: Record<string, string> = { gina: 'matxa:base:7', lluc: 'matxa:base:6' };
+
+export class RoutedTts implements TextToSpeech {
+  constructor(private readonly base: TextToSpeech) {}
+
+  async synthesize(text: string, voice?: string, options: { fallback?: boolean } = {}): Promise<SpeechAudio | null> {
+    const labUrl = process.env.SPEECH_LAB_URL?.replace(/\/$/, '');
+    if (labUrl) return this.fromLab(labUrl, text, labModelFor(voice));
+
+    if (!voice?.startsWith('rvc:')) return this.base.synthesize(text, voice, options);
+    if (options.fallback === false) return null;
+    return this.base.synthesize(text, undefined, options);
+  }
+
+  private async fromLab(labUrl: string, text: string, model: string): Promise<SpeechAudio | null> {
+    try {
+      const response = await fetch(`${labUrl}/api/tts`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text, model }),
+        // La primera frase carrega els models a la GPU (~30 s).
+        signal: AbortSignal.timeout(120_000),
+      });
+      if (!response.ok) throw new Error(`El laboratori de veu ha respost ${response.status}`);
+      const audio = Buffer.from(await response.arrayBuffer());
+      if (audio.length === 0) throw new Error("El laboratori de veu ha retornat un àudio buit");
+      return { audio, mimeType: response.headers.get('content-type')?.split(';')[0] || 'audio/wav' };
+    } catch (error) {
+      console.warn(`Laboratori de veu no disponible (${model}):`, error instanceof Error ? error.message : error);
+      return null;
+    }
+  }
+}
+
+/** El model del laboratori d'una veu del projecte: gina i lluc són locutors del Matxa local; un id amb «:» ja és d'un model. */
+function labModelFor(voice?: string): string {
+  if (voice?.includes(':')) return voice;
+  return LAB_MODEL_BY_VOICE[voice ?? ''] ?? LAB_MODEL_BY_VOICE[process.env.MATXA_TTS_VOICE || 'gina'] ?? LAB_MODEL_BY_VOICE.gina;
+}
+
 export const stt: SpeechToText = new MatxaStt();
-export const tts: TextToSpeech = new MatxaTts();
+export const tts: TextToSpeech = new RoutedTts(new MatxaTts());

@@ -210,9 +210,12 @@ ${translation.initial_prompt}` : text;
       void trackOpenResource(sessionId, sessionResourceId, true); // encara està actiu
       // El personatge ha de recordar el que s'ha dit: li enviem el context de la
       // conversa actual (el primer missatge inclou el salut inicial del personatge).
+      // Del que diu l'aprenent s'envia el text real (en un missatge de veu, la transcripció, no l'etiqueta «Missatge de veu») i
+      // del personatge només la primera línia: la resta és la traducció a la llengua materna, que no forma part de la conversa.
+      const valencian = (text: string) => text.split('\n')[0];
       const context: HistoryItem[] = history.length > 0
-        ? history.map((m) => ({ role: m.role, content_text: m.text }))
-        : [{ role: 'character', content_text: characterText }];
+        ? history.map((m) => ({ role: m.role, content_text: m.role === 'user' ? (m.transcription ?? m.text) : valencian(m.text) }))
+        : [{ role: 'character', content_text: valencian(characterText) }];
       // include_audio:false → el turno responde solo con texto (el usuario ve la
       // respuesta al instante) y el audio se pide en paralelo a /api/tts.
       const r = await sendTurn({

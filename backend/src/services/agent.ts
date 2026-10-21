@@ -66,6 +66,15 @@ type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
 const PRACTICE_SKILLS = ['expressio_escrita', 'comprensio_oral', 'comprensio_escrita', 'expressio_oral', 'escenari'] as const;
 
+// Els objectius de l'escenari (metadata.objectius) arriben al prompt del personatge: la conversa s'ha de centrar a complir-los.
+const objectivesInstructions = (objectius: string[]) => `OBJECTIUS DE L'ESCENARI (la conversa s'ha de centrar a aconseguir-los):
+${objectius.map((o, i) => `${i + 1}. ${o}`).join('\n')}
+- La teua missió com a personatge és portar l'aprenent, de manera natural i pas a pas, a complir TOTS estos objectius. Tot el que digues ha d'encaminar la conversa cap a algun objectiu encara pendent.
+- Segons el que ja s'ha dit en la conversa, decidix quins objectius ja s'han complit i quins falten, i centra't en el següent pendent, d'un en un. No repetisques els que ja s'han complit.
+- Planteja els objectius amb preguntes i situacions pròpies de l'escenari: no els amolles com una llista ni dius la paraula «objectiu».
+- Si l'aprenent s'allunya del tema, respon-li amb amabilitat en una frase breu i torna a l'objectiu pendent. No obris temes nous que no ajuden a complir-los.
+- Quan s'hagen complit tots, tanca la situació amb naturalitat i acomiada't.`;
+
 export type LessonRef = { id: string; title: string; summary: string };
 
 const lessonInstructions = (lessons: LessonRef[]) => `LLIÇONS DE L'APP:
@@ -211,7 +220,7 @@ function gnvRuleFrom(resultat: GnvResultat, gnv: NonNullable<z.infer<typeof outp
 }
 
 export async function replyFromAgent(args: {
-  scenario: Pick<ScenarioDefinition, 'character' | 'systemPrompt'>;
+  scenario: Pick<ScenarioDefinition, 'character' | 'systemPrompt'> & Partial<Pick<ScenarioDefinition, 'objectius'>>;
   level: string;
   message: string;
   history: { role: string; content_text: string }[];
@@ -239,10 +248,14 @@ export async function replyFromAgent(args: {
     {
       role: 'system',
       content: `${def.systemPrompt}
+
+        ${def.objectius?.length ? objectivesInstructions(def.objectius) : ''}
+
         Nivell de referència de l'aprenent: ${args.level}.
 
         INSTRUCCIONS DE CONVERSA:
         - Respon de manera natural i coherent al context de la situació com a personatge.
+        - Tingues sempre en compte tot el que s'ha dit abans en la conversa: continua amb el tema que l'aprenent ha triat o ha dit en l'últim missatge, no el canvies per iniciativa pròpia ni tornes a preguntar el que ja t'ha contat. Si has de canviar de tema o d'activitat, fes-ho només quan l'actual ja s'haja tractat prou i enllaça el canvi amb el que ha dit.
         - Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
         - Tria l'estat d'ànim ('mood') que millor represente la teua reacció com a personatge ('neutral', 'content', 'confus').
 
