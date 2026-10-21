@@ -1,7 +1,8 @@
 """Servici HTTP del RAG de la Gramàtica Normativa Valenciana (GNV).
 
 Només l'usa el backend (el tutor), igual que el classificador: no té autenticació.
-  GET  /salut      -> {"ok": true} quan els models ja estan carregats
+  GET  /salut      -> {"ok": true, "device": "cuda"|"cpu"} quan els models ja estan carregats (el backend
+                      no fa servir les veus de GPU del laboratori mentre el RAG ocupa la GPU)
   POST /ordenar    {"consulta": "...", "textos": ["...", ...]}
                    -> {"puntuaciones": [0..1, ...]}: lo bien que responde cada texto a la consulta (reranker);
                       el backend lo usa para elegir, entre los ejercicios de una actividad, el que trata de la pregunta
@@ -17,7 +18,7 @@ import os
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from rag_gnv import etiqueta_fuente, load_retriever
+from rag_gnv import RERANKER_DEVICE, etiqueta_fuente, load_retriever
 
 PORT = int(os.environ.get("RAG_GNV_PORT", "8010"))
 HOST = os.environ.get("RAG_GNV_HOST", "127.0.0.1")
@@ -43,7 +44,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/salut":
-            return self._json(200, {"ok": True})
+            return self._json(200, {"ok": True, "device": RERANKER_DEVICE})
         self._json(404, {"error": "No existix"})
 
     def _ordenar(self):

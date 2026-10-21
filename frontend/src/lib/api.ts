@@ -117,7 +117,8 @@ export async function fetchTts(text:string,scenario:Scenario,voice?:string):Prom
 }
 
 // Veus que es poden triar per al robot: els locutors del servidor i els models del laboratori de veu, per grups.
-export type VoiceOption = { id: string; label: string; group: string };
+// `busy`: ara no es pot triar (la veu necessita la GPU i l'ocupa el RAG); és el missatge que es mostra.
+export type VoiceOption = { id: string; label: string; group: string; busy?: string };
 export async function fetchVoiceOptions(): Promise<VoiceOption[]> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts/voices`, {

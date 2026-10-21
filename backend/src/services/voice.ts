@@ -1,3 +1,5 @@
+import { gnvRagUsesGpu } from './gnvRag.js';
+
 /** Voice providers live behind this interface so vendors can change without routes changing. */
 export interface SpeechToText {
   transcribe(audio: Buffer, mimeType?: string): Promise<string>
@@ -121,6 +123,7 @@ export class MatxaTts implements TextToSpeech {
  * `rvc:heidi`...) i qualsevol altre model del laboratori (`veu:nena`...) es passen tal qual.
  * Sense SPEECH_LAB_URL tot va al DeepLab com sempre, i una veu `rvc:*` cau a la veu per defecte.
  * `remot:<veu>` (p. ex. `remot:gina`, triada en el menú del robot) va sempre al DeepLab, amb laboratori o sense.
+ * Mentre el RAG de la GNV ocupa la GPU té prioritat: el laboratori no es fa servir i tot va com si no hi haguera.
  */
 const LAB_MODEL_BY_VOICE: Record<string, string> = { gina: 'matxa:base:7', lluc: 'matxa:base:6' };
 
@@ -130,7 +133,7 @@ export class RoutedTts implements TextToSpeech {
   async synthesize(text: string, voice?: string, options: { fallback?: boolean } = {}): Promise<SpeechAudio | null> {
     if (voice?.startsWith('remot:')) return this.base.synthesize(text, voice.slice('remot:'.length), options);
     const labUrl = speechLabUrl();
-    if (labUrl) return this.fromLab(labUrl, text, labModelFor(voice));
+    if (labUrl && !(await gnvRagUsesGpu())) return this.fromLab(labUrl, text, labModelFor(voice));
 
     if (!voice?.startsWith('rvc:')) return this.base.synthesize(text, voice, options);
     if (options.fallback === false) return null;
@@ -159,7 +162,9 @@ export class RoutedTts implements TextToSpeech {
 
 const speechLabUrl = () => process.env.SPEECH_LAB_URL?.replace(/\/$/, '');
 
-export type VoiceOption = { id: string; label: string; group: string };
+// `busy`: la veu necessita la GPU i ara l'ocupa el RAG; el menú la mostra desactivada amb este avís.
+export type VoiceOption = { id: string; label: string; group: string; busy?: string };
+const GPU_BUSY_MESSAGE = 'La GPU està ocupada amb el RAG';
 
 // Del Matxa del servidor de la UJI només es poden triar els locutors valencians.
 const SERVER_VOICES = ['gina', 'lluc'];
@@ -170,7 +175,7 @@ const RVC_LABELS: Record<string, string> = { parlant04: 'Miquel' };
 /**
  * Veus que l'aprenent pot triar per al robot: gina i lluc del servidor de la UJI i, si hi ha laboratori de veu, els
  * personatges RVC que hi ha entrenats (Doraemon, Nobita, Heidi...). El catàleg es llig del laboratori, així un
- * entrenament nou ix sol.
+ * entrenament nou ix sol. Mentre el RAG ocupa la GPU, els personatges ixen marcats com a ocupats.
  */
 export async function voiceOptions(): Promise<VoiceOption[]> {
   const options: VoiceOption[] = SERVER_VOICES.map(voice => ({ id: `remot:${voice}`, label: capitalized(voice), group: 'Veus del servidor' }));
@@ -180,10 +185,11 @@ export async function voiceOptions(): Promise<VoiceOption[]> {
     const response = await fetch(`${labUrl}/api/tts/models`, { signal: AbortSignal.timeout(3_000) });
     if (!response.ok) throw new Error(`El laboratori de veu ha respost ${response.status}`);
     const { models = [] } = await response.json() as { models?: { id: string }[] };
+    const busy = (await gnvRagUsesGpu()) ? GPU_BUSY_MESSAGE : undefined;
     for (const { id } of models) {
       if (!id.startsWith('rvc:')) continue;
       const name = id.slice('rvc:'.length);
-      options.push({ id, label: RVC_LABELS[name] ?? capitalized(name), group: 'Personatges' });
+      options.push({ id, label: RVC_LABELS[name] ?? capitalized(name), group: 'Personatges', busy });
     }
   } catch (error) {
     console.warn('Catàleg del laboratori de veu no disponible:', error instanceof Error ? error.message : error);
