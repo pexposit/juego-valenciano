@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
-import { tts } from '../services/voice.js';
+import { tts, voiceOptions } from '../services/voice.js';
 import { getScenario } from '../services/scenarios.js';
 import { validationError } from '../validation.js';
 import { ttsSchema } from '../schemas.js';
@@ -35,4 +35,9 @@ ttsRouter.post('/api/tts', requireAuth, rateLimit(TTS_RATE_LIMIT), async (req, r
     console.error(error);
     res.status(503).json({ error: 'No hem pogut generar l’àudio' });
   }
+});
+
+// Veus que es poden triar tocant el robot (servidor de la UJI i personatges RVC del laboratori).
+ttsRouter.get('/api/tts/voices', requireAuth, async (_req, res) => {
+  res.json({ voices: await voiceOptions() });
 });

@@ -120,6 +120,7 @@ export class MatxaTts implements TextToSpeech {
  * no hi ha àudio. `gina` i `lluc` són els locutors valencians del Matxa local; les veus de personatge (`rvc:doraemon`,
  * `rvc:heidi`...) i qualsevol altre model del laboratori (`veu:nena`...) es passen tal qual.
  * Sense SPEECH_LAB_URL tot va al DeepLab com sempre, i una veu `rvc:*` cau a la veu per defecte.
+ * `remot:<veu>` (p. ex. `remot:gina`, triada en el menú del robot) va sempre al DeepLab, amb laboratori o sense.
  */
 const LAB_MODEL_BY_VOICE: Record<string, string> = { gina: 'matxa:base:7', lluc: 'matxa:base:6' };
 
@@ -127,7 +128,8 @@ export class RoutedTts implements TextToSpeech {
   constructor(private readonly base: TextToSpeech) {}
 
   async synthesize(text: string, voice?: string, options: { fallback?: boolean } = {}): Promise<SpeechAudio | null> {
-    const labUrl = process.env.SPEECH_LAB_URL?.replace(/\/$/, '');
+    if (voice?.startsWith('remot:')) return this.base.synthesize(text, voice.slice('remot:'.length), options);
+    const labUrl = speechLabUrl();
     if (labUrl) return this.fromLab(labUrl, text, labModelFor(voice));
 
     if (!voice?.startsWith('rvc:')) return this.base.synthesize(text, voice, options);
@@ -153,6 +155,40 @@ export class RoutedTts implements TextToSpeech {
       return null;
     }
   }
+}
+
+const speechLabUrl = () => process.env.SPEECH_LAB_URL?.replace(/\/$/, '');
+
+export type VoiceOption = { id: string; label: string; group: string };
+
+// Del Matxa del servidor de la UJI només es poden triar els locutors valencians.
+const SERVER_VOICES = ['gina', 'lluc'];
+const capitalized = (name: string) => `${name[0]!.toUpperCase()}${name.slice(1)}`;
+// Nom que veu l'aprenent dels personatges RVC que no es diuen com el seu model.
+const RVC_LABELS: Record<string, string> = { parlant04: 'Miquel' };
+
+/**
+ * Veus que l'aprenent pot triar per al robot: gina i lluc del servidor de la UJI i, si hi ha laboratori de veu, els
+ * personatges RVC que hi ha entrenats (Doraemon, Nobita, Heidi...). El catàleg es llig del laboratori, així un
+ * entrenament nou ix sol.
+ */
+export async function voiceOptions(): Promise<VoiceOption[]> {
+  const options: VoiceOption[] = SERVER_VOICES.map(voice => ({ id: `remot:${voice}`, label: capitalized(voice), group: 'Veus del servidor' }));
+  const labUrl = speechLabUrl();
+  if (!labUrl) return options;
+  try {
+    const response = await fetch(`${labUrl}/api/tts/models`, { signal: AbortSignal.timeout(3_000) });
+    if (!response.ok) throw new Error(`El laboratori de veu ha respost ${response.status}`);
+    const { models = [] } = await response.json() as { models?: { id: string }[] };
+    for (const { id } of models) {
+      if (!id.startsWith('rvc:')) continue;
+      const name = id.slice('rvc:'.length);
+      options.push({ id, label: RVC_LABELS[name] ?? capitalized(name), group: 'Personatges' });
+    }
+  } catch (error) {
+    console.warn('Catàleg del laboratori de veu no disponible:', error instanceof Error ? error.message : error);
+  }
+  return options;
 }
 
 /** El model del laboratori d'una veu del projecte: gina i lluc són locutors del Matxa local; un id amb «:» ja és d'un model. */
