@@ -16,6 +16,9 @@ const ERROR_REPLY = "No t'he sentit bé, pots repetir-ho?";
 const TTS_ATTEMPTS = 2;
 const ROUND_BUTTON = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors';
 
+// Mida de lletra fluida segons la pantalla, com en el xat del tauler.
+const SCENARIO_FONT_STYLE = { '--sc-font': 'clamp(12px, 0.4vw + 8px, 17px)' } as React.CSSProperties;
+
 export function Chat({
   scenario, category, title, voice, background, initialPrompt, greetingAudio, actor, summary, objectives, translation, level, xp, onXpGained, onEnd, onBack,
 }: {
@@ -261,13 +264,13 @@ ${translation.initial_prompt}` : text;
   };
 
   return (
-    <main className="relative h-[calc(100dvh-var(--app-footer,0px))] overflow-hidden">
+    <main className="relative h-[calc(100dvh-var(--app-footer,0px))] overflow-hidden" style={SCENARIO_FONT_STYLE}>
       <SceneArt scenario={scenario} background={background} mood={mood} thinking={loading} talking={talking} />
 
       {/* Nom i rol de l'actor, davall seu (resources.metadata.character). */}
       {actor && (
         <div
-          className="absolute left-1/2 top-[76%] z-10 [@media(max-height:500px)_and_(orientation:landscape)]:hidden max-w-[90vw] -translate-x-1/2 truncate rounded-full px-3 py-1 text-sm font-black uppercase tracking-wide [@media(max-width:1023px)_and_(orientation:portrait)]:top-[68%] sm:px-4 sm:py-1.5 sm:text-base sm:tracking-wider lg:text-xl text-slate-800 shadow-md backdrop-blur-sm"
+          className="absolute left-1/2 top-[76%] z-10 [@media(max-height:500px)_and_(orientation:landscape)]:hidden max-w-[90vw] -translate-x-1/2 truncate rounded-full px-3 py-1 text-[length:calc(var(--sc-font)*0.9)] font-black uppercase tracking-wide [@media(max-width:1023px)_and_(orientation:portrait)]:top-[68%] sm:px-4 sm:py-1.5 sm:tracking-wider text-slate-800 shadow-md backdrop-blur-sm"
           style={{ background: 'rgba(255,255,255,0.92)' }}
         >
           {actor}
@@ -285,17 +288,11 @@ ${translation.initial_prompt}` : text;
             ← Eixir
           </button>
           <span
-            className="max-w-[26vw] truncate rounded-full px-3.5 py-1.5 text-xs lg:text-base font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm sm:max-w-none"
+            className="max-w-[26vw] truncate rounded-full px-3.5 py-1.5 text-[length:calc(var(--sc-font)*0.8)] font-black tracking-wider uppercase shadow-md text-slate-800 border border-white/40 backdrop-blur-sm sm:max-w-none"
             style={{ background: 'rgba(255,255,255,0.92)' }}
           >
             {title}
           </span>
-        </div>
-        <div
-          className="absolute left-1/2 hidden -translate-x-1/2 rounded-full px-4 py-2 text-sm lg:text-lg font-black shadow backdrop-blur-sm sm:block"
-          style={{ background: 'rgba(255,255,255,0.9)' }}
-        >
-          ⚡ {xp} XP
         </div>
         <div className="flex items-center gap-2">
           {hasObjectives && (
@@ -326,7 +323,7 @@ ${translation.initial_prompt}` : text;
           className="absolute right-5 top-20 z-20 max-h-[calc(100dvh-11rem)] w-[min(calc(100%-2.5rem),320px)] lg:w-[min(calc(100%-2.5rem),420px)] overflow-y-auto rounded-3xl bg-white/95 p-5 shadow-xl backdrop-blur-sm [@media(max-height:500px)_and_(orientation:landscape)]:inset-x-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-8.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:w-auto [@media(max-height:500px)_and_(orientation:landscape)]:p-3"
         >
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-sm lg:text-base font-black uppercase tracking-wider" style={{ color: '#0F47AF' }}>
+            <h2 className="flex items-center gap-2 text-[length:calc(var(--sc-font)*0.85)] font-black uppercase tracking-wider" style={{ color: '#0F47AF' }}>
               <Target size={16} /> Objectius
             </h2>
             <button onClick={() => setShowObjectives(false)} aria-label="Tancar els objectius" className="btn-press rounded-full p-1 opacity-60 hover:opacity-100">
@@ -334,17 +331,17 @@ ${translation.initial_prompt}` : text;
             </button>
           </div>
           {summary && (
-            <p className="mb-3 text-sm lg:text-lg font-bold opacity-70">
+            <p className="mb-3 text-[length:calc(var(--sc-font)*0.95)] font-bold opacity-70">
               {summary}
-              {translation?.content && <span className="mt-0.5 block text-xs lg:text-base font-semibold text-slate-400">{translation.content}</span>}
+              {translation?.content && <span className="mt-0.5 block text-[length:calc(var(--sc-font)*0.8)] font-semibold text-slate-400">{translation.content}</span>}
             </p>
           )}
           {objectives.length > 0 && (
-            <ol className="flex list-decimal flex-col gap-1.5 lg:gap-2.5 pl-5 text-sm lg:text-lg font-bold">
+            <ol className="flex list-decimal flex-col gap-1.5 lg:gap-2.5 pl-5 text-[length:calc(var(--sc-font)*0.95)] font-bold">
               {objectives.map((o, i) => (
                 <li key={o}>
                   {o}
-                  {translation?.objectius[i] && <span className="block text-xs lg:text-base font-semibold text-slate-400">{translation.objectius[i]}</span>}
+                  {translation?.objectius[i] && <span className="block text-[length:calc(var(--sc-font)*0.8)] font-semibold text-slate-400">{translation.objectius[i]}</span>}
                 </li>
               ))}
             </ol>
@@ -353,20 +350,20 @@ ${translation.initial_prompt}` : text;
       )}
 
       {/* Character bubble with entrance animation */}
-      <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] z-10 max-w-[min(72%,440px)] lg:max-w-[min(72%,600px)] rounded-3xl bg-white p-5 lg:p-7 font-bold shadow-xl text-base lg:text-2xl [@media(max-height:500px)_and_(orientation:landscape)]:left-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:p-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm">
+      <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] z-10 max-w-[min(60%,320px)] sm:max-w-[min(72%,440px)] lg:max-w-[min(55%,460px)] 2xl:max-w-[min(72%,600px)] rounded-3xl bg-white p-4 sm:p-5 lg:p-7 font-bold shadow-xl text-[length:calc(var(--sc-font)*1.15)] [@media(max-height:500px)_and_(orientation:landscape)]:left-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:p-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm">
         <div className="[@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-10.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:overflow-y-auto">
         <p className="leading-relaxed">
           {loading ? <span className="opacity-50">El personatge està escrivint…</span> : characterText}
         </p>
         {!loading && translation && characterHelp.length > 0 && (
-          <p className="mt-1 whitespace-pre-line text-sm lg:text-xl font-semibold text-slate-400">{characterHelp.join('\n')}</p>
+          <p className="mt-1 whitespace-pre-line text-[length:calc(var(--sc-font)*0.95)] font-semibold text-slate-400">{characterHelp.join('\n')}</p>
         )}
         {!loading && (
           <>
             {showAudioLoading && <AudioLoading className="mt-3" />}
             <button
               onClick={replayCharacter}
-              className="btn-press mt-3 flex items-center gap-1 text-sm lg:text-lg font-extrabold"
+              className="btn-press mt-3 flex items-center gap-1 text-[length:calc(var(--sc-font)*0.9)] font-extrabold"
               style={{ color: '#0F47AF' }}
             >
               <Volume2 size={15} /> Escolta de nou
@@ -390,11 +387,11 @@ ${translation.initial_prompt}` : text;
       {user && (
         <div
           key={`user-${bubbleKey}`}
-          className="user-bubble-enter user-bubble absolute bottom-48 lg:bottom-52 right-5 z-10 max-w-[70%] [@media(max-height:500px)_and_(orientation:landscape)]:bottom-24 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[40%] [@media(max-height:500px)_and_(orientation:landscape)]:p-2 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm rounded-3xl p-4 lg:p-5 lg:text-xl font-bold text-white shadow-lg"
+          className="user-bubble-enter user-bubble absolute bottom-48 lg:bottom-52 right-5 z-10 max-w-[70%] [@media(max-height:500px)_and_(orientation:landscape)]:bottom-24 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[40%] [@media(max-height:500px)_and_(orientation:landscape)]:p-2 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm rounded-3xl p-4 lg:p-5 text-[length:calc(var(--sc-font)*1.05)] font-bold text-white shadow-lg"
           style={{ background: '#0F47AF' }}
         >
           <p>{user}</p>
-          {userTranscription && <p className="mt-2 border-t border-white/30 pt-2 text-sm lg:text-lg font-normal">Transcripció: {userTranscription}</p>}
+          {userTranscription && <p className="mt-2 border-t border-white/30 pt-2 text-[length:calc(var(--sc-font)*0.9)] font-normal">Transcripció: {userTranscription}</p>}
         </div>
       )}
 
