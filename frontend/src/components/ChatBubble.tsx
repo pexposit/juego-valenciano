@@ -11,17 +11,17 @@ export function ChatBubble({ role, text, gnv, exercise, activity, lessonId, onAn
   const [valencian, ...help] = role === 'character' ? text.split('\n') : [text];
   return (
     <div
-      className={`max-w-[85%] rounded-2xl px-4 py-2 text-base sm:text-lg font-bold ${
+      className={`max-w-[85%] rounded-2xl px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold ${
         role === 'user' ? 'ml-auto bg-teal text-white' : 'bg-cream text-slate-800'
       }`}
     >
       <p>{valencian}</p>
-      {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-sm sm:text-base font-semibold text-slate-400">{help.join('\n')}</p>}
+      {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-[0.85em] font-semibold text-slate-400">{help.join('\n')}</p>}
       {gnv && <GnvRuleCard rule={gnv} />}
       {lessonId && <LessonLink lessonId={lessonId} />}
       {exercise && <ExerciseCard exercise={exercise} onAnswer={onAnswer} />}
       {!exercise && activity && (
-        <Link to={activityRoute({ id: activity.resource_id, type: activity.type, category: activity.category }) ?? practiceRoute(activity.resource_id)} className="mt-3 flex items-center gap-2 rounded-xl bg-white/80 px-3 py-2 text-base font-extrabold text-orange ring-2 ring-orange/30 hover:ring-orange">
+        <Link to={activityRoute({ id: activity.resource_id, type: activity.type, category: activity.category }) ?? practiceRoute(activity.resource_id)} className="mt-3 flex items-center gap-2 rounded-xl bg-white/80 px-3 py-2 text-[0.9em] font-extrabold text-orange ring-2 ring-orange/30 hover:ring-orange">
           <Dumbbell size={20} className="shrink-0" aria-hidden />
           <span>{activity.category === 'escenari' || activity.category === 'expressio_oral' ? 'Practica la conversa' : 'Practica-ho'}: {activity.resource_name}</span>
         </Link>
@@ -33,27 +33,27 @@ export function ChatBubble({ role, text, gnv, exercise, activity, lessonId, onAn
 function GnvRuleCard({ rule }: { rule: GnvRule }) {
   const related = rule.relacionades ?? [];
   return (
-    <section aria-label="Regla de la Gramàtica Normativa Valenciana" className="mt-3 rounded-xl bg-white/80 p-3 text-base font-semibold ring-2 ring-teal/30">
-      <p className="flex items-start gap-2 text-sm font-extrabold uppercase tracking-wide text-teal">
+    <section aria-label="Regla de la Gramàtica Normativa Valenciana" className="mt-3 rounded-xl bg-white/80 p-3 text-[0.9em] font-semibold ring-2 ring-teal/30">
+      <p className="flex items-start gap-2 text-[0.8em] font-extrabold uppercase tracking-wide text-teal">
         <BookOpen size={18} className="mt-0.5 shrink-0" aria-hidden />
         <span>Regla oficial · GNV{rule.seccio ? ` § ${rule.seccio}` : ''}</span>
       </p>
-      <p className="mt-1 text-sm font-semibold text-slate-500">{rule.ruta}</p>
+      <p className="mt-1 text-[0.8em] font-semibold text-slate-500">{rule.ruta}</p>
       {related.length > 0 && (
-        <p className="mt-1 text-sm font-semibold text-slate-500">
+        <p className="mt-1 text-[0.8em] font-semibold text-slate-500">
           Completen la regla: {related.map(r => r.seccio ? `§ ${r.seccio}` : r.ruta).join(', ')}
         </p>
       )}
 
-      <h3 className="mt-3 text-sm font-extrabold text-slate-700">Què diu la norma</h3>
+      <h3 className="mt-3 text-[0.8em] font-extrabold text-slate-700">Què diu la norma</h3>
       <p className="whitespace-pre-line">{rule.contingut}</p>
 
-      <h3 className="mt-3 text-sm font-extrabold text-slate-700">Explicació fàcil</h3>
+      <h3 className="mt-3 text-[0.8em] font-extrabold text-slate-700">Explicació fàcil</h3>
       <p className="whitespace-pre-line">{rule.explicacio}</p>
 
       <details className="mt-3">
-        <summary className="cursor-pointer text-sm font-extrabold text-teal">Vore el text original de la GNV</summary>
-        <div className="mt-2 max-h-72 space-y-3 overflow-y-auto text-sm font-medium text-slate-600">
+        <summary className="cursor-pointer text-[0.8em] font-extrabold text-teal">Vore el text original de la GNV</summary>
+        <div className="mt-2 max-h-72 space-y-3 overflow-y-auto text-[0.8em] font-medium text-slate-600">
           {[{ regla: rule.regla, text: rule.text_original }, ...related].map(source => (
             <div key={source.regla}>
               <p className="font-extrabold text-slate-700">{source.regla}</p>
@@ -71,9 +71,9 @@ function ExerciseCard({ exercise, onAnswer }: { exercise: TutorExercise; onAnswe
   const answered = exercise.chosen !== undefined;
   const correct = answered && exercise.chosen === exercise.answer;
   return (
-    <section aria-label="Exercici" className="mt-3 rounded-xl bg-white/80 p-3 text-base font-semibold ring-2 ring-orange/30">
-      <p className="text-sm font-extrabold uppercase tracking-wide text-orange">Exercici · {exercise.resource_name} · {exercise.level}</p>
-      <p className="mt-2 whitespace-pre-line text-base font-bold">{exercise.prompt}</p>
+    <section aria-label="Exercici" className="mt-3 rounded-xl bg-white/80 p-3 text-[0.9em] font-semibold ring-2 ring-orange/30">
+      <p className="text-[0.8em] font-extrabold uppercase tracking-wide text-orange">Exercici · {exercise.resource_name} · {exercise.level}</p>
+      <p className="mt-2 whitespace-pre-line text-[0.95em] font-bold">{exercise.prompt}</p>
       <div className="mt-2 flex flex-col gap-2">
         {exercise.options.map(option => {
           const isRight = answered && option === exercise.answer;
@@ -97,8 +97,8 @@ function ExerciseCard({ exercise, onAnswer }: { exercise: TutorExercise; onAnswe
       {answered && (
         <div className="mt-3">
           <p className={`font-extrabold ${correct ? 'text-green-600' : 'text-red-500'}`}>{correct ? 'Molt bé! 🎉' : `Quasi! La correcta és «${exercise.answer}».`}</p>
-          {exercise.explanation && <p className="mt-1 whitespace-pre-line text-sm font-semibold text-slate-600">{exercise.explanation}</p>}
-          <Link to={practiceRoute(exercise.resource_id)} className="mt-2 inline-block text-sm font-extrabold text-teal underline">Fer més exercicis d'esta activitat</Link>
+          {exercise.explanation && <p className="mt-1 whitespace-pre-line text-[0.8em] font-semibold text-slate-600">{exercise.explanation}</p>}
+          <Link to={practiceRoute(exercise.resource_id)} className="mt-2 inline-block text-[0.8em] font-extrabold text-teal underline">Fer més exercicis d'esta activitat</Link>
         </div>
       )}
     </section>
@@ -113,7 +113,7 @@ function LessonLink({ lessonId }: { lessonId: string }) {
     <Link
       to={`${KIDS_ROUTES.lesson}/${lesson.id}`}
       style={{ backgroundColor: lesson.color }}
-      className="btn-press mt-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-lg font-black text-slate-800 shadow ring-2 ring-white"
+      className="btn-press mt-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-[1em] font-black text-slate-800 shadow ring-2 ring-white"
     >
       <span className="text-4xl" aria-hidden>{lesson.emoji}</span>
       <span>Lliçó: {lesson.title}</span>

@@ -21,13 +21,34 @@ const TTS_ATTEMPTS = 2;
 // Mida del professor segons l'amplada de la pantalla: més xicotet en mòbils i tauletes.
 // En horitzontal en un mòbil (poca altura) el professor va a l'esquerra i ha de cabre en l'altura.
 const isShortLandscape = () => window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
-const avatarSizeFor = (width: number) =>
-  isShortLandscape() ? Math.min(200, window.innerHeight - 160) : width < 640 ? 190 : width < 1024 ? 240 : 320;
+// En ordenador (≥ 1024 px) el professor creix amb la finestra, tant en amplada com en altura (entre 280 i 560 px): en un
+// monitor gran no es queda xicotet i en un portàtil baix no tapa el xat. Reserva la capçalera i la barra del peu.
+const DESKTOP_MIN_WIDTH = 1024;
+// Ordenador: entre 280 i 560 px, un 26 % de l'amplada. Mòbils i tauletes: entre 140 i 320 px, un 32 % (el professor va
+// al costat del xat i no ha de menjar-se'l). Sempre limitat per l'altura que queda sota la capçalera i damunt del peu.
+const AVATAR_LIMITS = {
+  desktop: { min: 280, max: 560, ofWidth: 0.26 },
+  compact: { min: 140, max: 320, ofWidth: 0.32 },
+};
+const HEADER_AND_PADDING = 140;
+
+// Mida del text del xat: creix de forma contínua amb l'amplada de la pantalla (15 px en mòbils i tauletes, 17 px a 1366 px,
+// 22 px en monitors grans). Tot el que hi ha dins de les bombolles (targetes, exercicis) va en em, relatiu a esta.
+const CHAT_FONT_STYLE = { '--chat-font': 'clamp(15px, 0.5vw + 10px, 22px)' } as React.CSSProperties;
+const adaptiveAvatarSize = (width: number, height: number) => {
+  const { min, max, ofWidth } = width >= DESKTOP_MIN_WIDTH ? AVATAR_LIMITS.desktop : AVATAR_LIMITS.compact;
+  const footer = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--app-footer'), 10) || 0;
+  const availableHeight = height - footer - HEADER_AND_PADDING;
+  const size = Math.min(width * ofWidth, availableHeight * 0.85);
+  return Math.round(Math.max(min, Math.min(max, size)));
+};
+const avatarSizeFor = (width: number, height = window.innerHeight) =>
+  isShortLandscape() ? Math.min(200, height - 160) : adaptiveAvatarSize(width, height);
 
 function useAvatarSize() {
   const [size, setSize] = useState(() => avatarSizeFor(window.innerWidth));
   useEffect(() => {
-    const update = () => setSize(avatarSizeFor(window.innerWidth));
+    const update = () => setSize(avatarSizeFor(window.innerWidth, window.innerHeight));
     window.addEventListener('resize', update);
     window.addEventListener('orientationchange', update);
     return () => {
@@ -202,21 +223,21 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   };
 
   return (
-    <div className="relative z-20 flex min-h-0 flex-1 items-center gap-4 px-5 pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
+    <div className="relative z-20 flex min-h-0 flex-1 items-center gap-4 px-5 lg:justify-center lg:gap-8pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
       {isRobotAvatarEnabled('dashboard')
         ? <DashboardRobot className="shrink-0 drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} />
         : <img src="/images/avatar_professor.svg" alt="El professor" className="float shrink-0 drop-shadow-lg" width={avatarSize} height={avatarSize} />}
 
-      <section className="flex min-h-0 w-full max-w-4xl flex-1 flex-col [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor">
+      <section className="flex min-h-0 w-full max-w-4xl flex-1 flex-col lg:max-w-[clamp(40rem,62vw,90rem)] [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor" style={CHAT_FONT_STYLE}>
         <div
           ref={listRef}
           aria-live="polite"
-          className="flex max-h-[36rem] min-h-24 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-var(--app-footer,0px)-14rem)]"
+          className="flex max-h-[36rem] min-h-24 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white lg:h-[calc(100dvh-var(--app-footer,0px)-14rem)] lg:max-h-[60rem] lg:min-h-[20rem] lg:p-5[@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-var(--app-footer,0px)-14rem)]"
         >
-          {openFailed && <p className="text-center text-lg font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
-          {!ready && !openFailed && <p className="text-center text-lg font-bold opacity-60">Un moment...</p>}
+          {openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
+          {!ready && !openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold opacity-60">Un moment...</p>}
           {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
-          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-base sm:text-lg font-bold opacity-60">...</p>}
+          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60">...</p>}
         </div>
 
         <div className="mt-3 flex items-center gap-3">
