@@ -7,11 +7,11 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
-import { findSkillActivity, findTutorActivity, pickTutorExercise, type TutorActivity, type TutorExercise } from '../services/tutorExercise.js';
+import { findSkillActivity, findTutorActivity, pickTutorExercise, TOO_HIGH, TOO_HIGH_MESSAGE, type TutorActivity, type TutorExercise } from '../services/tutorExercise.js';
 import { getScenario } from '../services/scenarios.js';
 import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
-import { assistantLevelInstructions } from '../services/assistantLevel.js';
+import { ADULT_VALENCIAN_ONLY_INSTRUCTIONS, assistantLevelInstructions } from '../services/assistantLevel.js';
 import { stt, tts } from '../services/voice.js';
 import { gnvRagEnabled } from '../services/gnvRag.js';
 
@@ -105,8 +105,9 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     } else if (client) {
       // Escenaris del Nivell 0: si el xiquet té activada la llengua materna, el personatge hi afig
       // la traducció de cada resposta (segona línia), que el xat mostra com a subtítol.
-      const { data: profile } = await client.from('profiles').select('mother_tongue, level, show_mother_tongue').eq('id', req.userId!).maybeSingle();
+      const { data: profile } = await client.from('profiles').select('mother_tongue, level, show_mother_tongue, age_group').eq('id', req.userId!).maybeSingle();
       levelZero = profile?.level === 'nivell0';
+      if (profile?.age_group && profile.age_group !== 'child') levelInstructions = ADULT_VALENCIAN_ONLY_INSTRUCTIONS;
       if (levelZero && profile?.show_mother_tongue !== false) {
         extraInstructions = motherTongueInstructions(profile.mother_tongue);
       }
@@ -131,6 +132,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     const lessonId = lessons.some(l => l.id === leccio_id) ? leccio_id : undefined;
     let exercise: TutorExercise | null = null;
     let activity: TutorActivity | null = null;
+    let tooHigh = false;
     // Si ha respost amb una regla de la GNV, l'exercici és del seu tema (l'últim apartat de la ruta, sense numeració)
     // encara que el model no haja escrit el tema: primer la norma i després la pràctica.
     const gnvTopic = reply.gnv?.ruta.split('>').pop()?.replace(/^[\s\d.]+/, '').trim();
@@ -145,10 +147,16 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     if (exerciseTool && topic && !activity) {
       // Si l'aprenent demana practicar, sempre se li'n dóna un; si el tutor ha explicat, només si n'hi ha un del tema.
       const askedToPractice = /exerci|practic|prova|test/i.test(text);
-      exercise = await pickTutorExercise(topic, level, data.shown_exercises, !askedToPractice, gnvSections, `${text}. ${gnvTopic ?? ''}`.trim());
+      const picked = await pickTutorExercise(topic, level, data.shown_exercises, !askedToPractice, gnvSections, `${text}. ${gnvTopic ?? ''}`.trim());
+      if (picked === TOO_HIGH) {
+        // Només hi ha exercicis d'un nivell superior: la resposta passa a ser l'avís (el text del model, com «Prova este
+        // exercici!», ja no té sentit, ni la seua traducció) i no s'enllaça cap activitat.
+        replyBody.reply_text = `${TOO_HIGH_MESSAGE}.`;
+        tooHigh = true;
+      } else exercise = picked;
       // Hi ha pràctica del tema però cap exercici que càpiga en el xat: s'enllaça l'activitat.
       // Només amb una regla de la GNV al darrere o si ho ha demanat: un tema solt (p. ex. el significat d'una paraula) no en dóna prou.
-      if (!exercise && (reply.gnv || askedToPractice)) activity = await findTutorActivity(topic, gnvSections);
+      if (!exercise && !tooHigh && (reply.gnv || askedToPractice)) activity = await findTutorActivity(topic, gnvSections);
     }
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);

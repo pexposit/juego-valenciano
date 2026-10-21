@@ -35,6 +35,11 @@ const ADULT_INSTRUCTIONS =
   "L'aprenent és una persona adulta, no un xiquet: tracta-la com a tal, amb un to cordial i respectuós, sense llenguatge infantil. " +
   'Ignora la indicació del to per a xiquets i el límit de 2 o 3 frases: pots explicar-te amb més detall quan calga.';
 
+// Els adults han de practicar en valencià: si escriuen o parlen en una altra llengua, el personatge ho assenyala.
+export const ADULT_VALENCIAN_ONLY_INSTRUCTIONS =
+  "Si l'aprenent (persona adulta) t'escriu o et parla en una llengua diferent del valencià (castellà, anglés, àrab, etc.), " +
+  "no responguis en eixa llengua: digues-li amablement però amb fermesa, en valencià senzill, que ha d'usar el valencià per a practicar i convida'l a tornar-ho a intentar, encara que ho faça amb frases curtes o amb errors.";
+
 // Els nivells alts no porten la traducció de la salutació a la llengua materna.
 const TRANSLATED_GREETING_TIERS: readonly Tier[] = ['nivell0', 'A'];
 
@@ -50,7 +55,7 @@ export function assistantGreeting(level: string | null | undefined) {
 }
 
 export function assistantLevelInstructions(level: string | null | undefined, ageGroup: string | null | undefined) {
-  return [LEVEL_INSTRUCTIONS[tierOf(level)], ageGroup === 'child' ? undefined : ADULT_INSTRUCTIONS, NO_SCENARIOS_INSTRUCTIONS].filter(Boolean).join(' ');
+  return [LEVEL_INSTRUCTIONS[tierOf(level)], ageGroup === 'child' ? undefined : ADULT_INSTRUCTIONS, ageGroup === 'child' ? undefined : ADULT_VALENCIAN_ONLY_INSTRUCTIONS, NO_SCENARIOS_INSTRUCTIONS].filter(Boolean).join(' ');
 }
 
 export const assistantGreetingIsTranslated = (level: string | null | undefined) =>

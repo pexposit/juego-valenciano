@@ -8,7 +8,7 @@ import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar';
 import { analyzeMessage, ensureSession, fetchTts, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
 import { addMessages, saveExerciseAnswer } from '../lib/localStore';
 import { ALL_LESSONS } from '../features/kids/lessons';
-import type { TutorExercise } from '../lib/types';
+import type { Mood, TutorExercise } from '../lib/types';
 
 type Message = AssistantConversation['messages'][number];
 
@@ -68,6 +68,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   const [openFailed, setOpenFailed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [talking, setTalking] = useState(false);
+  const [mood, setMood] = useState<Mood>('neutral');
   const avatarSize = useAvatarSize();
   const listRef = useRef<HTMLDivElement>(null);
   const audio = useRef<{ text: string; element: HTMLAudioElement } | null>(null);
@@ -155,6 +156,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       const fresh = await ensureSession(CHILD_LEVEL).then(restartAssistant);
       conversation.current = Promise.resolve(fresh);
       setMessages(fresh.messages);
+      setMood('neutral');
       void speak(fresh.messages[0].text);
     } catch (error) {
       console.error('Error reiniciant la conversa:', error);
@@ -191,6 +193,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         lessons: ALL_LESSONS.map(l => ({ id: l.id, title: l.title, summary: l.summary })),
         include_audio: false,
       });
+      setMood(reply.mood);
       const said = reply.transcription || text;
       setMessages(m => {
         const next = [...m];
@@ -225,7 +228,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   return (
     <div className="relative z-20 flex min-h-0 flex-1 items-center gap-4 px-5 lg:justify-center lg:gap-8pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
       {isRobotAvatarEnabled('dashboard')
-        ? <DashboardRobot className="shrink-0 drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} />
+        ? <DashboardRobot className="shrink-0 drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} mood={mood} />
         : <img src="/images/avatar_professor.svg" alt="El professor" className="float shrink-0 drop-shadow-lg" width={avatarSize} height={avatarSize} />}
 
       <section className="flex min-h-0 w-full max-w-4xl flex-1 flex-col lg:self-stretch lg:pb-4 lg:max-w-[clamp(40rem,62vw,90rem)] [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor" style={CHAT_FONT_STYLE}>

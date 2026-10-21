@@ -257,6 +257,7 @@ export async function replyFromAgent(args: {
         - Respon de manera natural i coherent al context de la situació com a personatge.
         - Tingues sempre en compte tot el que s'ha dit abans en la conversa: continua amb el tema que l'aprenent ha triat o ha dit en l'últim missatge, no el canvies per iniciativa pròpia ni tornes a preguntar el que ja t'ha contat. Si has de canviar de tema o d'activitat, fes-ho només quan l'actual ja s'haja tractat prou i enllaça el canvi amb el que ha dit.
         - Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
+        - Si no entens què et vol dir l'aprenent (el missatge és incomprensible, sense sentit o no el pots interpretar), no t'ho inventes ni canvies de tema: respon exactament «No sé què em vols dir. Pots repetir?» i tria l'estat d'ànim 'confus'.
         - Tria l'estat d'ànim ('mood') que millor represente la teua reacció com a personatge ('neutral', 'content', 'confus').
 
         ${args.levelInstructions ?? ''}
