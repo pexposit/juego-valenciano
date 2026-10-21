@@ -307,7 +307,14 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
               <span className="shrink-0 rounded-xl bg-orange px-3 py-1 text-sm font-black text-white">Exercici {exercise.n}</span>
               <p className="font-bold opacity-80">{exercise.instructions}</p>
             </div>
-            {'reading' in exercise && exercise.reading && <Reading reading={exercise.reading} />}
+            {/* Si hi ha text de lectura: text a l'esquerra i respostes a la dreta (en pantalles grans). */}
+            <div className={'reading' in exercise && exercise.reading ? 'lg:grid lg:grid-cols-2 lg:items-start lg:gap-8' : ''}>
+            {'reading' in exercise && exercise.reading && (
+              <div className="lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:rounded-2xl [&>div]:mb-6 lg:[&>div]:mb-0">
+                <Reading reading={exercise.reading} />
+              </div>
+            )}
+            <div className="min-w-0">
             <ExerciseBody
               level={exam.level}
               exercise={exercise}
@@ -331,6 +338,8 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
                 onEvaluate={() => evaluate(exercise)}
               />
             )}
+            </div>
+            </div>
           </article>
         ))}
 

@@ -36,6 +36,9 @@ type CatalogResource = {
   id: string; name: string; type: string; category: string; section_name: string | null;
   sources: { gram?: string; section?: string }[] | null; practice_exercises?: { count: number }[];
 };
+// El tema té exercicis, però tots d'un nivell superior al de l'aprenent.
+export const TOO_HIGH = 'too_high' as const;
+export const TOO_HIGH_MESSAGE = "És massa prompte per a este tema. Practica primer amb les activitats del teu nivell i de les rutes d'aprenentatge";
 const label = (r: { section_name: string | null; name: string }) => r.section_name || r.name;
 
 // Activitats de pràctica del catàleg (no les de docents), amb les seccions de la GNV que citen les seues lliçons.
@@ -117,14 +120,16 @@ const usable = (rows: Row[] | null, exclude: string[]) =>
 
 const CEFR = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
-// Dels exercicis donats, els del nivell de l'aprenent si n'hi ha; si no, els del nivell més pròxim (mai no es deixa de
-// mostrar un exercici del tema per no ser del nivell exacte). Sense nivell conegut, tots valen.
+// Dels exercicis donats, els del nivell de l'aprenent si n'hi ha; si no, els del nivell més pròxim per davall (mai
+// d'un nivell superior al seu). Sense nivell conegut, tots valen.
 const closestLevel = (rows: Row[], level: string | null | undefined) => {
   const learner = CEFR.indexOf(level ?? '');
-  if (learner === -1 || rows.length === 0) return rows;
-  const distance = (r: Row) => Math.abs(CEFR.indexOf(r.level) - learner);
-  const best = Math.min(...rows.map(distance));
-  return rows.filter(r => distance(r) === best);
+  if (learner === -1) return rows;
+  const allowed = rows.filter(r => CEFR.indexOf(r.level) <= learner);
+  if (allowed.length === 0) return [];
+  const distance = (r: Row) => learner - CEFR.indexOf(r.level);
+  const best = Math.min(...allowed.map(distance));
+  return allowed.filter(r => distance(r) === best);
 };
 
 // Entre els exercicis donats, el que millor respon a la pregunta segons el reranker del RAG (llig enunciat, opcions i
@@ -163,7 +168,7 @@ export async function pickTutorExercise(
   gnvSections: string[] = [],
   // El que ha escrit l'aprenent: amb ell es tria, entre els exercicis del tema, el que en parla de debò.
   question = '',
-): Promise<TutorExercise | null> {
+): Promise<TutorExercise | typeof TOO_HIGH | null> {
   const client = getAdmin() as any;
   if (!client) return null;
   const catalog = await loadCatalog();
@@ -238,7 +243,13 @@ export async function pickTutorExercise(
   // Primer el nivell (el de l'aprenent o el més pròxim) i, dins d'ell, el que tracta de la pregunta (reranker del RAG);
   // sense RAG, de preferència els que nomenen el tema.
   const levelPool = closestLevel(pool, level);
+  // Si tot el que hi ha del tema és d'un nivell superior al de l'aprenent, no se li'n mostra cap.
+  if (levelPool.length === 0) {
+    console.log(`[tutor-exercise] criteri=${criterion} tema="${topic}" → només hi ha exercicis de nivell superior a ${level}`);
+    return TOO_HIGH;
+  }
   const fallback = closestLevel(onTopicRows.length ? onTopicRows : pool, level);
+  if (fallback.length === 0) return null;
   const pick = (await mostRelevant(levelPool, question || topic)) ?? fallback[Math.floor(Math.random() * fallback.length)];
   const resource = byId.get(pick.resource_id);
   console.log(`[tutor-exercise] criteri=${criterion} tema="${topic}" secció=${gnvSections[0] ?? '-'} → ${resource ? label(resource) : pick.resource_id}`);

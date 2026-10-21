@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { RobotAvatar } from './RobotAvatar';
-import type { RobotState } from './states';
+import { robotStateFromMood, type RobotState } from './states';
+import type { Mood } from '../../lib/types';
 
 /**
  * [robot-avatar] Robot del Dashboard (substituïx avatar_professor.svg).
  * Saluda en aparéixer i quan li passes el ratolí per damunt; fa un bot d'alegria si el cliques (i avisa `onClick`).
  */
-export function DashboardRobot({ className = '', size = 400, talking = false, thinking = false, onClick }: { className?: string; size?: number; talking?: boolean; thinking?: boolean; onClick?: () => void }) {
+export function DashboardRobot({ className = '', size = 400, talking = false, thinking = false, mood = 'neutral', onClick }: { className?: string; size?: number; talking?: boolean; thinking?: boolean; mood?: Mood; onClick?: () => void }) {
   const [state, setState] = useState<RobotState>('wave');
   const [until, setUntil] = useState(Date.now() + 3200);
 
@@ -27,7 +28,7 @@ export function DashboardRobot({ className = '', size = 400, talking = false, th
       onMouseEnter={() => state === 'idle' && trigger('wave', 2400)}
       onClick={() => { trigger('happy', 1600); onClick?.(); }}
     >
-      <RobotAvatar state={thinking ? 'thinking' : state} talking={talking} label="El robot professor" className="h-full w-full" />
+      <RobotAvatar state={thinking ? 'thinking' : mood === 'confus' ? robotStateFromMood(mood) : state} talking={talking} label="El robot professor" className="h-full w-full" />
     </div>
   );
 }

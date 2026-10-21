@@ -76,6 +76,14 @@ function OptionChips({ q, options, answers, checked, onAnswer }: AnswerProps & {
   );
 }
 
+/* En les redaccions no es pot copiar, retallar ni apegar (tampoc arrossegar text). */
+export const noClipboard = {
+  onCopy: (e: React.ClipboardEvent) => e.preventDefault(),
+  onCut: (e: React.ClipboardEvent) => e.preventDefault(),
+  onPaste: (e: React.ClipboardEvent) => e.preventDefault(),
+  onDrop: (e: React.DragEvent) => e.preventDefault(),
+};
+
 /* ── Text de lectura dels exercicis de comprensió escrita ─────────────── */
 export function Reading({ reading }: { reading: ExamReading }) {
   return (
@@ -288,6 +296,7 @@ export function FormExercise({
                     value={values[field] ?? ''}
                     maxLength={FORM_FIELD_MAX_CHARS}
                     onChange={e => onChange(field, e.target.value)}
+                    {...noClipboard}
                     className="rounded-xl border-2 border-ink/10 bg-cream px-3 py-2 outline-none transition-colors focus:border-teal"
                   />
                 ) : (
@@ -295,6 +304,7 @@ export function FormExercise({
                     value={values[field] ?? ''}
                     maxLength={FORM_FIELD_MAX_CHARS}
                     onChange={e => onChange(field, e.target.value)}
+                    {...noClipboard}
                     className="rounded-xl border-2 border-ink/10 bg-cream px-3 py-2 outline-none transition-colors focus:border-teal"
                   />
                 )}
@@ -383,6 +393,7 @@ export function WritingExercise({
           value={value}
           maxLength={maxChars}
           onChange={e => onChange(e.target.value)}
+          {...noClipboard}
           placeholder="Escriu ací el teu text..."
           className="w-full resize-y bg-[repeating-linear-gradient(transparent,transparent_31px,#E7E5E4_32px)] px-5 py-3 leading-8 outline-none"
         />

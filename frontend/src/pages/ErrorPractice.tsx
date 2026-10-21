@@ -42,8 +42,10 @@ function ErrorCard({ error, n, total, onFixed }: { error: UserError; n: number; 
       <p className="text-sm font-extrabold uppercase tracking-wider opacity-55">
         Error {n} de {total} · {categoryLabel(error.category)}{error.subcategory ? ` · ${error.subcategory}` : ''}
       </p>
+      {/* Amb context: text a l'esquerra i respostes a la dreta (en pantalles grans). */}
+      <div className={error.message ? 'lg:mt-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8' : ''}>
       {error.message && (
-        <div className="mt-4 rounded-2xl bg-cream px-4 py-3">
+        <div className="mt-4 rounded-2xl bg-cream px-4 py-3 lg:sticky lg:top-4 lg:mt-0 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
           <p className="text-xs font-extrabold uppercase tracking-wider opacity-55">
             {error.source === 'practice' ? 'Pregunta' : 'Context'}{error.scenario ? ` · ${error.scenario}` : ''}
           </p>
@@ -61,7 +63,8 @@ function ErrorCard({ error, n, total, onFixed }: { error: UserError; n: number; 
           )}
         </div>
       )}
-      <p className="mt-4 font-bold">{error.source === 'practice' ? 'La teua resposta (errònia):' : 'Com es corregix?'}</p>
+      <div className="min-w-0">
+      <p className="mt-4 font-bold lg:mt-0">{error.source === 'practice' ? 'La teua resposta (errònia):' : 'Com es corregix?'}</p>
       <p className="mt-1 rounded-2xl bg-orange/10 px-4 py-3 text-xl font-black text-orange">{error.error_text}</p>
 
       {options ? (
@@ -113,6 +116,8 @@ function ErrorCard({ error, n, total, onFixed }: { error: UserError; n: number; 
           <p className="mt-1 font-semibold opacity-80">{error.explanation}</p>
         </div>
       )}
+      </div>
+      </div>
     </article>
   );
 }
@@ -169,7 +174,7 @@ export function ErrorPractice({ onBack }: { onBack: () => void }) {
           <span className="w-24" aria-hidden="true" />
         </div>
       </header>
-      <div className="mx-auto max-w-2xl px-5 pt-6 pb-24">
+      <div className="mx-auto max-w-2xl px-5 pt-6 lg:max-w-5xl pb-24">
         <h1 className="mb-6 text-center text-4xl font-black uppercase tracking-wider opacity-55">Els meus errors</h1>
         {body()}
       </div>

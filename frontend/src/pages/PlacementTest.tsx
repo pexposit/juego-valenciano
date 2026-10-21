@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { countWords, levelLabel, WRITING_MAX_CHARS } from '@parlaval/shared';
 import { Logo } from '../components/ui';
+import { noClipboard } from '../components/ExamExercises';
 import { fetchPlacementTest, submitPlacementTest, type PlacementResult, type PlacementTest as Test } from '../lib/api';
 
 type Step = 'intro' | 'test' | 'sending' | 'result' | 'changed';
@@ -128,6 +129,7 @@ export function PlacementTest({ level, onAccept, onDone }: {
                 value={text}
                 onChange={e => setText(e.target.value)}
                 maxLength={WRITING_MAX_CHARS}
+                {...noClipboard}
                 disabled={step === 'sending'}
                 rows={7}
                 className="mt-3 w-full rounded-2xl border-2 border-gray-100 p-3 text-lg outline-none focus:border-[#0F47AF] transition-colors"
