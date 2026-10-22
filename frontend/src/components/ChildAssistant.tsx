@@ -8,6 +8,8 @@ import { RobotVoiceMenu, savedRobotVoice } from './RobotVoiceMenu';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
 import { analyzeMessage, ensureSession, fetchTts, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
 import { addMessages, saveExerciseAnswer } from '../lib/localStore';
+import { useThinkingSound } from '../lib/useThinkingSound';
+import { ThinkingIndicator } from './ThinkingIndicator';
 import { ALL_LESSONS } from '../features/kids/lessons';
 import type { Mood, TutorExercise } from '../lib/types';
 
@@ -70,6 +72,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   const [ready, setReady] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
   const [loading, setLoading] = useState(false);
+  useThinkingSound(loading);
   const [talking, setTalking] = useState(false);
   const [mood, setMood] = useState<Mood>('neutral');
   const avatarSize = useAvatarSize();
@@ -267,7 +270,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
           {openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold opacity-60">Un moment...</p>}
           {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
-          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60">...</p>}
+          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
         </div>
 
         <div className="mt-3 flex items-center gap-3">

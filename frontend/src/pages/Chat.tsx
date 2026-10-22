@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, Target, Volume2, X } from 'lucide-react';
 import { AudioLoading, useDelayedFlag } from '../components/AudioLoading';
+import { useThinkingSound } from '../lib/useThinkingSound';
+import { ThinkingIndicator } from '../components/ThinkingIndicator';
 import { SceneArt } from '../components/SceneArt';
 import { VoiceInput } from '../components/VoiceInput';
 import { HistoryModal, type Msg } from '../components/HistoryModal';
@@ -60,6 +62,7 @@ ${translation.initial_prompt}` : text;
   const [user, setUser] = useState('');
   const [userTranscription, setUserTranscription] = useState<string>();
   const [loading, setLoading] = useState(false);
+  useThinkingSound(loading);
   const [history, setHistory] = useState<Msg[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   // En pantalles estretes el quadre tapa la bombolla del personatge: comença tancat.
@@ -353,7 +356,7 @@ ${translation.initial_prompt}` : text;
       <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] z-10 max-w-[min(60%,320px)] sm:max-w-[min(72%,440px)] lg:max-w-[min(55%,460px)] 2xl:max-w-[min(72%,600px)] rounded-3xl bg-white p-4 sm:p-5 lg:p-7 font-bold shadow-xl text-[length:calc(var(--sc-font)*1.15)] [@media(max-height:500px)_and_(orientation:landscape)]:left-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:p-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm">
         <div className="[@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-10.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:overflow-y-auto">
         <p className="leading-relaxed">
-          {loading ? <span className="opacity-50">El personatge està escrivint…</span> : characterText}
+          {loading ? <ThinkingIndicator className="opacity-60" /> : characterText}
         </p>
         {!loading && translation && characterHelp.length > 0 && (
           <p className="mt-1 whitespace-pre-line text-[length:calc(var(--sc-font)*0.95)] font-semibold text-slate-400">{characterHelp.join('\n')}</p>
