@@ -132,23 +132,33 @@ const closestLevel = (rows: Row[], level: string | null | undefined) => {
   return allowed.filter(r => distance(r) === best);
 };
 
+// Puntuació mínima (0 a 1) del reranker perquè un exercici es considere del tema. Per davall, és preferible no mostrar
+// cap exercici que un d'irrellevant. Ajustable amb TUTOR_EXERCISE_MIN_SCORE segons el que mostren els logs de rànquing.
+const MIN_RELEVANCE = Number(process.env.TUTOR_EXERCISE_MIN_SCORE ?? 0.1);
+
 // Entre els exercicis donats, el que millor respon a la pregunta segons el reranker del RAG (llig enunciat, opcions i
-// explicació: p. ex. distingix els de b/v dels d'altres consonants de la mateixa activitat). Sense RAG, null.
-async function mostRelevant(rows: Row[], query: string): Promise<Row | null> {
-  if (rows.length < 2 || !query.trim() || !gnvRagEnabled()) return null;
+// explicació: p. ex. distingix els de b/v dels d'altres consonants de la mateixa activitat). Sense RAG o si el reranker
+// falla, `undefined` (es tria sense rànquing); si cap no arriba a la puntuació mínima, `null` (no es mostra cap).
+async function mostRelevant(rows: Row[], query: string): Promise<Row | null | undefined> {
+  if (rows.length < 2 || !query.trim() || !gnvRagEnabled()) return undefined;
   try {
     // Enunciat, resposta correcta i explicació: les opcions falses només fan soroll.
     const candidates = rows.slice(0, 120);
     const texts = candidates.map(r => `${r.prompt} Resposta: ${r.answers[0]}. ${r.explanation ?? ''}`);
     const scores = await puntuarTextos(query, texts);
+    const ranked = scores.map((score, i) => ({ score, i })).sort((a, b) => b.score - a.score);
+    const top = ranked.slice(0, 3).filter(x => x.score >= MIN_RELEVANCE);
+    if (top.length === 0) {
+      console.log(`[tutor-exercise] rànquing: ${texts.length} exercicis, el millor (${ranked[0].score.toExponential(2)}) no arriba al mínim ${MIN_RELEVANCE} → cap`);
+      return null;
+    }
     // Un dels 3 millors a l'atzar: tots tracten del tema i així no ix sempre el mateix.
-    const top = scores.map((score, i) => ({ score, i })).sort((a, b) => b.score - a.score).slice(0, 3);
     const chosen = top[Math.floor(Math.random() * top.length)];
     console.log(`[tutor-exercise] rànquing: ${texts.length} exercicis, triat=${chosen.score.toExponential(2)} «${texts[chosen.i].slice(0, 70)}»`);
     return candidates[chosen.i];
   } catch (error) {
     console.warn("[tutor-exercise] no s'ha pogut ordenar amb el RAG:", error instanceof Error ? error.message : error);
-    return null;
+    return undefined;
   }
 }
 
@@ -157,14 +167,13 @@ async function mostRelevant(rows: Row[], query: string): Promise<Row | null> {
  *   1. activitats que citen la mateixa secció de la GNV que la regla donada (`gnvSections`);
  *   2. activitats el nom de les quals parla del tema;
  *   3. exercicis l'enunciat o l'explicació dels quals parlen del tema;
- *   4. (només si `onlyOnTopic` és fals, és a dir, si l'aprenent ha demanat practicar) qualsevol del seu nivell.
+ * Si el reranker del RAG no troba cap exercici amb la puntuació mínima, no es mostra cap.
  * `exclude`: els que ja s'han mostrat en esta conversa.
  */
 export async function pickTutorExercise(
   topic: string,
   level: string | null | undefined,
   exclude: string[] = [],
-  onlyOnTopic = false,
   gnvSections: string[] = [],
   // El que ha escrit l'aprenent: amb ell es tria, entre els exercicis del tema, el que en parla de debò.
   question = '',
@@ -224,14 +233,7 @@ export async function pickTutorExercise(
     console.log(`[tutor-exercise] criteri=${criterion} tema="${topic}" secció=${gnvSections[0] ?? '-'} → l'activitat no té exercicis que càpiguen en el xat`);
     return null;
   }
-  if (pool.length === 0) {
-    // Sense cap coincidència amb el tema: només si l'aprenent ha demanat practicar se li'n dóna un del seu nivell.
-    if (onlyOnTopic) return null;
-    const { data } = await client.from('practice_exercises').select(EXERCISE_COLUMNS)
-      .eq('kind', 'choice').is('passage_id', null).in('resource_id', allIds).eq('level', level ?? 'A2').limit(500);
-    pool = usable(data, exclude);
-    criterion = 'nivell';
-  }
+  // Sense cap coincidència amb el tema no es mostra res: un exercici «de qualsevol cosa» del nivell seria irrellevant.
   if (pool.length === 0) return null;
 
   // Dins de l'activitat triada, de preferència els exercicis que parlen del tema.
@@ -250,7 +252,9 @@ export async function pickTutorExercise(
   }
   const fallback = closestLevel(onTopicRows.length ? onTopicRows : pool, level);
   if (fallback.length === 0) return null;
-  const pick = (await mostRelevant(levelPool, question || topic)) ?? fallback[Math.floor(Math.random() * fallback.length)];
+  const ranked = await mostRelevant(levelPool, question || topic);
+  if (ranked === null) return null;
+  const pick = ranked ?? fallback[Math.floor(Math.random() * fallback.length)];
   const resource = byId.get(pick.resource_id);
   console.log(`[tutor-exercise] criteri=${criterion} tema="${topic}" secció=${gnvSections[0] ?? '-'} → ${resource ? label(resource) : pick.resource_id}`);
   return {

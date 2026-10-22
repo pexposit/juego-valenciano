@@ -15,6 +15,8 @@ const UJI_HOST = process.env.UJI_HOST;
 const UJI_MODEL = process.env.UJI_LLM_MODEL || 'qwen2.5:32b';
 const MCP_SERVER_SCRIPT = process.env.MCPDETECTOR_SERVER_PATH || './mcp/ErrorDetector/index.js';
 const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-4o';
+// Màxim de crides a ferramentes (MCP) per cada anàlisi: el prompt demana repetir el bucle fins a la perfecció i, sense límit, podria no acabar mai.
+const MAX_TOOL_CALLS = 500;
 // 1. Cliente OpenAI persistente
 const ujiClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -209,24 +211,30 @@ export async function analyzeErrorsWithLocalLLM(
     let choice = response.choices[0];
 
     // 2. Bucle de resolución de tools (solo se activa si el modelo decide llamar a una herramienta)
+    let toolCallCount = 0;
     while (choice?.message?.tool_calls && choice.message.tool_calls.length > 0) {
       messages.push(choice.message);
 
       for (const toolCall of choice.message.tool_calls) {
         if (toolCall.type !== 'function') continue;
 
-        // Sense els arguments: porten text de l'usuari, que no ha de quedar en els logs.
-        console.log(`[MCP Tool Exec] ${toolCall.function.name}`);
-
         let toolOutput: any;
-        try {
-          const result = await mcp.callTool({
-            name: toolCall.function.name,
-            arguments: JSON.parse(toolCall.function.arguments || '{}'),
-          });
-          toolOutput = result.content;
-        } catch (err: any) {
-          toolOutput = { error: `Error executant ferramenta: ${err.message}` };
+        if (toolCallCount >= MAX_TOOL_CALLS) {
+          // Cada tool_call ha de tindre la seua resposta: passat el límit no s'executa, es respon amb un avís.
+          toolOutput = { error: `S'ha arribat al límit de ${MAX_TOOL_CALLS} crides a ferramentes. Dóna ja l'eixida final.` };
+        } else {
+          toolCallCount++;
+          // Sense els arguments: porten text de l'usuari, que no ha de quedar en els logs.
+          console.log(`[MCP Tool Exec] ${toolCall.function.name} (${toolCallCount}/${MAX_TOOL_CALLS})`);
+          try {
+            const result = await mcp.callTool({
+              name: toolCall.function.name,
+              arguments: JSON.parse(toolCall.function.arguments || '{}'),
+            });
+            toolOutput = result.content;
+          } catch (err: any) {
+            toolOutput = { error: `Error executant ferramenta: ${err.message}` };
+          }
         }
 
         messages.push({
@@ -236,11 +244,11 @@ export async function analyzeErrorsWithLocalLLM(
         });
       }
 
-      // Siguiente llamada manteniendo tools y response_format activos
+      // Siguiente llamada manteniendo tools y response_format activos (sin tools al llegar al límite: así cierra el bucle)
       response = await ujiClient.chat.completions.parse({
         model: MODEL_NAME,
         messages,
-        tools: toolsConfig,
+        tools: toolCallCount >= MAX_TOOL_CALLS ? undefined : toolsConfig,
         response_format: responseFormat,
         ...reasoningEffortFor(MODEL_NAME),
       });

@@ -7,7 +7,7 @@ import type { GnvRule, TutorActivity, TutorExercise } from '../lib/types';
 // Bombolla d'un missatge del xat amb el tutor. En els missatges del professor, la primera línia és en
 // valencià i la resta, en gris clar, l'ajuda en la llengua materna del xiquet (amagada si `showHelp` és fals).
 // Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial.
-export function ChatBubble({ role, text, gnv, exercise, activity, lessonId, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
+export function ChatBubble({ role, text, transcription, gnv, exercise, activity, lessonId, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
   const [valencian, ...help] = role === 'character' ? text.split('\n') : [text];
   return (
     <div
@@ -16,6 +16,7 @@ export function ChatBubble({ role, text, gnv, exercise, activity, lessonId, onAn
       }`}
     >
       <p>{valencian}</p>
+      {transcription && <p className="mt-2 border-t border-white/30 pt-2 text-[0.85em] font-normal">Transcripció: {transcription}</p>}
       {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-[0.85em] font-semibold text-slate-400">{help.join('\n')}</p>}
       {gnv && <GnvRuleCard rule={gnv} />}
       {lessonId && <LessonLink lessonId={lessonId} />}

@@ -17,6 +17,10 @@ import { gnvRagEnabled } from '../services/gnvRag.js';
 
 export const turnRouter = Router();
 
+// Transcripció d'un àudio en què no s'ha entés res, i l'única resposta que ha de rebre.
+const UNINTELLIGIBLE = 'Intel·ligible';
+const ASK_TO_REPEAT = "Ho sent, no t'he escoltat bé. El pots repetir?";
+
 const TURN_RATE_LIMIT = {
   windowMs: 60_000,
   max: Number(process.env.RATE_LIMIT_AUTHED_PER_MIN) || 30,
@@ -43,8 +47,12 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     if (data.input_mode === 'voice') {
       if (!data.audio_base64) return res.status(400).json({ error: "Falta l'àudio" });
       const sttStart = Date.now();
-      text = await stt.transcribe(Buffer.from(data.audio_base64, 'base64'), 'audio/webm');
-      console.log(`[turn] stt=${Date.now() - sttStart}ms`);
+      // Si el model no reconeix cap paraula, la transcripció per defecte és «Intel·ligible». El frontend envia
+      // «silence» en lloc de l'àudio quan la gravació és silenci (whisper s'inventaria el text).
+      const silent = data.audio_base64 === 'silence';
+      const heard = silent ? '' : await stt.transcribe(Buffer.from(data.audio_base64, 'base64'), 'audio/webm');
+      text = heard || UNINTELLIGIBLE;
+      console.log(`[turn] stt=${Date.now() - sttStart}ms ${silent ? '(silenci detectat pel client)' : `audio=${data.audio_base64.length}B text="${heard}"`}`);
     }
     if (!text) return res.status(400).json({ error: 'No hi ha cap missatge' });
 
@@ -76,6 +84,22 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
         if (sessionResourceError) console.warn('[turn] error consultant el session_resource:', sessionResourceError.message);
         return res.status(403).json({ error: 'Recurs de sessió no vàlid o no autoritzat' });
       }
+    }
+
+    // Si no s'ha entés l'àudio, el personatge només demana que ho repetisca (sense passar pel model ni donar XP).
+    if (data.input_mode === 'voice' && text === UNINTELLIGIBLE) {
+      const audio = data.include_audio ? await tts.synthesize(ASK_TO_REPEAT, scenario.voice) : null;
+      return res.json({
+        reply_text: ASK_TO_REPEAT,
+        mood: 'confus',
+        detected_level_signal: 'on',
+        error_flags: [],
+        transcription: text,
+        reply_audio_base64: audio?.audio.toString('base64') || null,
+        reply_audio_mime_type: audio?.mimeType || null,
+        xp_delta: 0,
+        analyze_errors: false,
+      });
     }
 
     // 2. Historial de la conversa, enviat pel client (no es guarda al servidor).
@@ -145,9 +169,9 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     const skill = area_practica || (wantsConversation ? 'escenari' : '');
     if (exerciseTool && skill) activity = await findSkillActivity(skill, level, text);
     if (exerciseTool && topic && !activity) {
-      // Si l'aprenent demana practicar, sempre se li'n dóna un; si el tutor ha explicat, només si n'hi ha un del tema.
+      // Només es mostra un exercici si n'hi ha un prou relacionat amb el tema (també quan l'aprenent demana practicar).
       const askedToPractice = /exerci|practic|prova|test/i.test(text);
-      const picked = await pickTutorExercise(topic, level, data.shown_exercises, !askedToPractice, gnvSections, `${text}. ${gnvTopic ?? ''}`.trim());
+      const picked = await pickTutorExercise(topic, level, data.shown_exercises, gnvSections, `${text}. ${gnvTopic ?? ''}`.trim());
       if (picked === TOO_HIGH) {
         // Només hi ha exercicis d'un nivell superior: la resposta passa a ser l'avís (el text del model, com «Prova este
         // exercici!», ja no té sentit, ni la seua traducció) i no s'enllaça cap activitat.

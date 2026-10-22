@@ -24,6 +24,8 @@ export class UnconfiguredStt implements SpeechToText {
  * Exemple: curl -X POST https://krono.act.uji.es/deeplab/speechv1/audio/transcriptions \
  *   -F model=whisper-1 -F language=ca -F file=audio.wav
  */
+const MAX_SEGMENT_OVERRUN_SECONDS = 1.5;
+
 export class MatxaStt implements SpeechToText {
   private readonly baseUrl = (process.env.MATXA_STT_URL
     || process.env.MATXA_TTS_URL
@@ -35,6 +37,7 @@ export class MatxaStt implements SpeechToText {
     const form = new FormData();
     form.append('model', this.model);
     form.append('language', this.language);
+    form.append('response_format', 'verbose_json'); // inclou la durada de l'àudio i la de cada segment
     form.append(
       'file',
       new Blob([new Uint8Array(audio)], { type: mimeType }),
@@ -48,10 +51,15 @@ export class MatxaStt implements SpeechToText {
     });
     if (!response.ok) throw new Error(`Matxa STT ha respost ${response.status}`);
 
-    const body = await response.json() as { text?: string };
-    const text = body.text?.trim();
-    if (!text) throw new Error('Matxa STT no ha retornat text');
-    return text;
+    const body = await response.json() as { text?: string; duration?: number; segments?: { end?: number; text?: string }[] };
+    // Davant d'un so sense paraules (xiuxiueig, soroll, un sense-sentit) whisper s'inventa una frase («Bona nit»...) i
+    // l'estén a tota la finestra de 30 s: un segment que acaba molt després del final de l'àudio és inventat.
+    const { duration, segments } = body;
+    const text = duration && segments?.length
+      ? segments.filter(s => (s.end ?? 0) <= duration + MAX_SEGMENT_OVERRUN_SECONDS).map(s => s.text ?? '').join(' ')
+      : body.text;
+    // Text buit = el model no ha reconegut cap paraula; qui crida decideix què mostrar.
+    return text?.replace(/\s+/g, ' ').trim() ?? '';
   }
 }
 
