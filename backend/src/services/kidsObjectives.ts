@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { guardedFetch } from './openaiGuard.js';
 
 /**
  * Converses del Nivell 0: en acabar un escenari (p. ex. «El mag i la poció màgica»), el LLM
@@ -13,7 +14,7 @@ const MAX_MESSAGES = 60;
 let client: OpenAI | null = null;
 const openai = () => {
   if (!process.env.OPENAI_API_KEY) return null;
-  client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 1, timeout: 30_000 });
+  client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, fetch: guardedFetch, maxRetries: 1, timeout: 30_000 });
   return client;
 };
 

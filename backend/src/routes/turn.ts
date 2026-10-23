@@ -14,12 +14,31 @@ import { motherTongueInstructions } from '../services/motherTongue.js';
 import { ADULT_VALENCIAN_ONLY_INSTRUCTIONS, assistantLevelInstructions } from '../services/assistantLevel.js';
 import { stt, tts } from '../services/voice.js';
 import { gnvRagEnabled } from '../services/gnvRag.js';
+import { detectPromptInjection, INJECTION_REPLY } from '../services/promptInjection.js';
+import { createRepeatTracker, isLoopError, LOOP_STOPPED_MESSAGE, requestAbortSignal } from '../services/loopGuard.js';
 
 export const turnRouter = Router();
 
 // Transcripció d'un àudio en què no s'ha entés res, i l'única resposta que ha de rebre.
 const UNINTELLIGIBLE = 'Intel·ligible';
 const ASK_TO_REPEAT = "Ho sent, no t'he escoltat bé. El pots repetir?";
+
+// El mateix missatge enviat una vegada i una altra (p. ex. un bucle de reintents al client) no arriba al model.
+const repeatedTurns = createRepeatTracker();
+
+// Resposta (sense passar pel model) quan s'ha tallat un bucle: l'usuari rep l'avís dins del xat.
+const loopStoppedReply = () => ({
+  reply_text: LOOP_STOPPED_MESSAGE,
+  mood: 'confus',
+  detected_level_signal: 'on',
+  error_flags: [],
+  transcription: null,
+  reply_audio_base64: null,
+  reply_audio_mime_type: null,
+  xp_delta: 0,
+  analyze_errors: false,
+  loop_stopped: true,
+});
 
 const TURN_RATE_LIMIT = {
   windowMs: 60_000,
@@ -31,6 +50,8 @@ const TURN_RATE_LIMIT = {
 // conversa (que guarda en el seu navegador) i rep la resposta. Els errors del missatge es busquen
 // a banda, amb /api/errors/analyze, perquè la resposta no haja d'esperar-los.
 turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req: AuthRequest, res) => {
+  // S'avorta si el client tanca la connexió (botó «Aturar», pestanya tancada): talla també les crides al model en vol.
+  const abortSignal = requestAbortSignal(req, res);
   try {
     const data = turnSchema.parse(req.body);
     let text = data.text.trim();
@@ -55,6 +76,12 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       console.log(`[turn] stt=${Date.now() - sttStart}ms ${silent ? '(silenci detectat pel client)' : `audio=${data.audio_base64.length}B text="${heard}"`}`);
     }
     if (!text) return res.status(400).json({ error: 'No hi ha cap missatge' });
+
+    // Mateix missatge repetit massa voltes en poc de temps: es talla abans de gastar cap crida.
+    if (repeatedTurns.hit(req.userId, text).exceeded) {
+      console.warn(`[turn] missatge repetit massa voltes (usuari=${req.userId ?? '-'}); petició aturada`);
+      return res.json(loopStoppedReply());
+    }
 
     const client = db(req.userId);
 
@@ -102,8 +129,29 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       });
     }
 
-    // 2. Historial de la conversa, enviat pel client (no es guarda al servidor).
-    const history = sanitizeHistory(data.history as HistoryMessage[]);
+    // Prompt injection: si el missatge intenta manipular el model, el personatge no passa pel model, ho
+    // desvia amb una frase fixa i no se'n donen XP.
+    const injection = detectPromptInjection(text);
+    if (injection.flagged) {
+      console.warn(`[turn] possible prompt injection (usuari=${req.userId ?? '-'} motius=${injection.reasons.join(',')} puntuació=${injection.score})`);
+      const audio = data.include_audio ? await tts.synthesize(INJECTION_REPLY, scenario.voice) : null;
+      return res.json({
+        reply_text: INJECTION_REPLY,
+        mood: 'neutral',
+        detected_level_signal: 'on',
+        error_flags: [],
+        transcription: data.input_mode === 'voice' ? text : null,
+        reply_audio_base64: audio?.audio.toString('base64') || null,
+        reply_audio_mime_type: audio?.mimeType || null,
+        xp_delta: 0,
+        analyze_errors: false,
+      });
+    }
+
+    // 2. Historial de la conversa, enviat pel client (no es guarda al servidor). El client el pot haver manipulat:
+    // els missatges de l'aprenent que semblen una injecció es descarten abans d'arribar al model.
+    const history = sanitizeHistory(data.history as HistoryMessage[])
+      .filter(message => message.role !== 'user' || !detectPromptInjection(message.content_text).flagged);
 
     // El tutor del tauler té en compte la llengua materna, el nivell i el públic (xiquet o adult) de l'usuari.
     let extraInstructions: string | undefined;
@@ -148,6 +196,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       gnvTool,
       exerciseTool,
       lessons,
+      signal: abortSignal,
     });
 
     // El tutor ha oferit un exercici: se'n tria un de real del catàleg (mai inventat).
@@ -227,6 +276,12 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     if (error instanceof z.ZodError) {
       console.warn('[turn] Petició invàlida:', error.issues);
       return validationError(res, error);
+    }
+    // Bucle tallat: si l'ha cancel·lat el client no hi ha ningú a qui avisar; si no, l'avís va dins de la resposta.
+    if (isLoopError(error)) {
+      console.warn(error.message);
+      if (error.userCancelled || res.headersSent) return;
+      return res.json(loopStoppedReply());
     }
     console.error(error);
     res.status(500).json({ error: 'No hem pogut processar el torn' });

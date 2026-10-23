@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { guardedFetch } from './openaiGuard.js';
 import { motherTongueLabel } from '@parlaval/shared';
 
 /**
@@ -11,7 +12,7 @@ import { motherTongueLabel } from '@parlaval/shared';
 let client: OpenAI | null = null;
 const openai = () => {
   if (!process.env.OPENAI_API_KEY) return null;
-  client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 1, timeout: 40_000 });
+  client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, fetch: guardedFetch, maxRetries: 1, timeout: 40_000 });
   return client;
 };
 

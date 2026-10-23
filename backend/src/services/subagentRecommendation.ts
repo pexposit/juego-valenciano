@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { guardedFetch } from './openaiGuard.js';
 import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { reasoningEffortFor } from './reasoningEffort.js';
@@ -10,7 +11,7 @@ import { reasoningEffortFor } from './reasoningEffort.js';
 const MODEL_NAME = process.env.OPENAI_MODEL!;
 // Es crea en la primera crida: així el mòdul es pot importar (p. ex. als tests) sense clau.
 let openaiClient: OpenAI | undefined;
-const openai = () => (openaiClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 1, timeout: 60_000 }));
+const openai = () => (openaiClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, fetch: guardedFetch, maxRetries: 1, timeout: 60_000 }));
 
 // -------------------------------------------------------------
 // ESQUEMES DE VALIDACIÓ ZOD (Eixida estructurada de l'avaluació)

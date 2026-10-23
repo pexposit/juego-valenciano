@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { guardedFetch } from './openaiGuard.js';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { z } from 'zod';
@@ -14,7 +15,7 @@ import { loadLearningSignals, type LearningSignals } from './learningSignals.js'
 const MODEL_NAME = process.env.OPENAI_MODEL!;
 // Es crea en la primera crida: així el mòdul es pot importar (p. ex. als tests) sense clau.
 let openaiClient: OpenAI | undefined;
-const openai = () => (openaiClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 1, timeout: 60_000 }));
+const openai = () => (openaiClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, fetch: guardedFetch, maxRetries: 1, timeout: 60_000 }));
 
 export const STAGES = ['aprendre', 'practicar', 'aplicar', 'comprovar'] as const;
 export const MIN_STEPS = 5;

@@ -7,6 +7,8 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { analyzeSchema } from '../schemas.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
+import { detectPromptInjection } from '../services/promptInjection.js';
+import { createRepeatTracker, isLoopError, LOOP_STOPPED_MESSAGE, requestAbortSignal } from '../services/loopGuard.js';
 import { classify, loadLevelContents, type LevelContent } from '../services/levelContents.js';
 
 export const errorsRouter = Router();
@@ -106,6 +108,9 @@ errorsRouter.post('/api/errors/resolve', requireAuth, async (req: AuthRequest, r
   res.json({ ok: true });
 });
 
+// El mateix missatge analitzat una vegada i una altra (p. ex. un bucle de reintents al client) es talla.
+const repeatedAnalyses = createRepeatTracker();
+
 const ANALYZE_RATE_LIMIT = {
   windowMs: 60_000,
   max: Number(process.env.RATE_LIMIT_AUTHED_PER_MIN) || 30,
@@ -121,6 +126,20 @@ errorsRouter.post('/api/errors/analyze', requireAuth, rateLimit(ANALYZE_RATE_LIM
   const client = db(req.userId);
   if (!client || !req.userId) return res.json([]);
   const { session_id, session_resource_id, text } = parsed.data;
+  // S'avorta si el client tanca la connexió: talla també les crides al model i a les ferramentes.
+  const abortSignal = requestAbortSignal(req, res);
+
+  if (repeatedAnalyses.hit(req.userId, text).exceeded) {
+    console.warn(`[analyze] missatge repetit massa voltes (usuari=${req.userId}); petició aturada`);
+    return res.status(508).json({ error: LOOP_STOPPED_MESSAGE, loop_stopped: true });
+  }
+
+  // Prompt injection: un missatge que intenta manipular el model no s'envia al detector d'errors.
+  const injection = detectPromptInjection(text);
+  if (injection.flagged) {
+    console.warn(`[analyze] possible prompt injection (usuari=${req.userId} motius=${injection.reasons.join(',')} puntuació=${injection.score})`);
+    return res.json([]);
+  }
 
   try {
     // El session_resource ha de ser d'una sessió de l'usuari.
@@ -141,7 +160,7 @@ errorsRouter.post('/api/errors/analyze', requireAuth, rateLimit(ANALYZE_RATE_LIM
     // Els errors es classifiquen en els continguts del nivell de l'alumne.
     const start = Date.now();
     const contents = await loadLevelContents(client, profile.level);
-    const detected = await analyzeErrorsWithLocalLLM(text, { level: profile.level, contents });
+    const detected = await analyzeErrorsWithLocalLLM(text, { level: profile.level, contents, signal: abortSignal });
     const saved = await insertErrors(client, req.userId, detected.flatMap(e => {
       const { category, content_id, subcategory } = classify(contents, e.area, e.contingut);
       // Amb llista de continguts, un error que no encaixa en cap és d'un nivell superior.
@@ -163,6 +182,12 @@ errorsRouter.post('/api/errors/analyze', requireAuth, rateLimit(ANALYZE_RATE_LIM
     console.log(`[analyze] ${saved.length} errors en ${Date.now() - start}ms`);
     res.json(saved);
   } catch (error: any) {
+    // Bucle tallat (el model demanava una vegada i una altra el mateix): s'avisa l'usuari; si ha cancel·lat ell, no cal.
+    if (isLoopError(error)) {
+      console.warn(error.message);
+      if (error.userCancelled || res.headersSent) return;
+      return res.status(508).json({ error: LOOP_STOPPED_MESSAGE, loop_stopped: true });
+    }
     console.error('[analyze] Error analitzant el missatge:', error.message ?? error);
     res.status(500).json({ error: "No hem pogut analitzar el missatge" });
   }

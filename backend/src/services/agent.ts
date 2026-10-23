@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import type { ScenarioDefinition } from './scenarios.js';
 import { consultarGnv, gnvContext, type GnvResultat, type GnvRule } from './gnvRag.js';
+import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
+import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
+import { createLoopGuard, type LoopGuard } from './loopGuard.js';
 
 
 
@@ -141,14 +144,19 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
 }
 
 // Una petició a chat/completions; retorna el contingut de la resposta.
-async function complete(key: string, model: string, body: Record<string, unknown>): Promise<string | null | undefined> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+// `fresh`: en un reintent no es llig la cache (la resposta anterior ha fallat) i la nova no la substituïx fins que es valide.
+async function complete(guard: LoopGuard, key: string, model: string, body: Record<string, unknown>, fresh = false): Promise<string | null | undefined> {
+  // L'últim missatge enviat: si és el mateix una vegada i una altra, el model no avança.
+  const last = (body.messages as { content?: unknown }[] | undefined)?.at(-1)?.content;
+  guard.llmCall(typeof last === 'string' ? last : JSON.stringify(last ?? ''));
+  const response = await guardedFetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
+      ...(fresh ? { [NO_CACHE_HEADER]: '1' } : {}),
     },
-    signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
+    signal: AbortSignal.any([AbortSignal.timeout(OPENAI_TIMEOUT_MS), guard.signal]),
     body: JSON.stringify({ model, ...body }),
   });
   if (!response.ok) throw new Error(`OpenAI API error (${model}): ${response.status}`);
@@ -234,6 +242,8 @@ export async function replyFromAgent(args: {
   exerciseTool?: boolean;
   // Tutor del Nivell 0: les lliçons que pot enllaçar (leccio_id); les resol qui crida.
   lessons?: LessonRef[];
+  // Cancel·lació externa (el client tanca la connexió): talla el bucle i les crides en vol.
+  signal?: AbortSignal;
 }): Promise<AgentReply> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY no està configurada');
@@ -296,24 +306,26 @@ export async function replyFromAgent(args: {
     return gnvLookups.get(consulta)!;
   };
 
+  // Detecció de bucles: massa crides o el mateix missatge una vegada i una altra talla la petició (LoopDetectedError).
+  const guard = createLoopGuard({ label: 'agent', signal: args.signal, maxIterations: 8 });
   let lastError = 'OpenAI no ha retornat una resposta vàlida';
   for (const model of OPENAI_MODELS) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        let content = await complete(key, model!, {
+        let content = await complete(guard, key, model!, {
           response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons),
           messages,
-        });
+        }, attempt > 0);
 
         // El model ha decidit que és un dubte de normativa: es consulta la GNV i es torna a demanar la resposta.
         let gnvResult: GnvResultat | null = null;
         const consulta = args.gnvTool && content ? gnvQueryOf(content) : '';
         if (consulta) {
           gnvResult = await lookupGnv(consulta);
-          content = await complete(key, model!, {
+          content = await complete(guard, key, model!, {
             response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool, args.lessons),
             messages: [...messages, { role: 'system', content: gnvSourcesMessage(consulta, gnvResult) }],
-          });
+          }, attempt > 0);
         }
 
         if (!content) {
@@ -323,6 +335,13 @@ export async function replyFromAgent(args: {
         console.log(`[agent] resposta vàlida de ${model}`);
 
         const { help_text, gnv, consulta_gnv: _, ...parsed } = outputSchema.parse(parseJsonResponse(content));
+        // Filtre d'eixida: si la resposta reproduïx el prompt del sistema, no arriba a l'aprenent (ni res del que du
+        // associat: exercici, activitat, lliçó o regla de la GNV).
+        const leak = detectPromptLeak([parsed.reply_text, help_text, gnv?.contingut, gnv?.explicacio], [messages[0].content]);
+        if (leak.leaked) {
+          console.warn(`[agent] possible fuita del prompt del sistema (motius=${leak.reasons.join(',')}); es substituïx la resposta`);
+          return { reply_text: LEAK_REPLY, mood: 'neutral' };
+        }
         const reply: AgentReply = gnv && gnvResult?.hay_respaldo
           ? { ...parsed, reply_text: plain(parsed.reply_text), gnv: gnvRuleFrom(gnvResult, gnv) }
           : parsed;
@@ -330,7 +349,9 @@ export async function replyFromAgent(args: {
         return help_text?.trim() ? { ...reply, reply_text: `${reply.reply_text.trim()}
 ${help_text.trim()}` } : reply;
       } catch (error) {
-        //console.error('[agent DEBUG ERROR]:', error); // <--- AÑADE ESTO
+        // Un bucle tallat (o una petició cancel·lada) no es reintenta: es propaga a qui crida.
+        const stop = guard.stopped(error);
+        if (stop) throw stop;
         lastError = error instanceof Error ? error.message : lastError;
       }
     }
