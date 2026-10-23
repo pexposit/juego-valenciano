@@ -1,5 +1,5 @@
 import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, WritingEvaluation } from './types';
-import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
+import { sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
 import { markRestartedAt } from '../features/paths/progress';
@@ -833,6 +833,26 @@ export const fetchClassActivities = (classId: string) =>
 
 export async function assignClassActivities(classId: string, resourceIds: string[]): Promise<void> {
   await teacherRequest(`/api/teacher/classes/${encodeURIComponent(classId)}/activities`, { method: 'POST', body: JSON.stringify({ resource_ids: resourceIds }) }, "No hem pogut assignar les activitats");
+}
+
+/* ── Agent del professorat: esborranys d'activitats i rutes a partir d'un prompt ── */
+// No es guarda res: la docent els revisa i els guarda amb els formularis de sempre. `signal` permet aturar la petició.
+// `documentId`: l'examen o temari adjuntat (uploadAgentDocument); el servidor en tria els fragments més rellevants.
+export const generateActivityDraft = (prompt: string, level: CefrLevel, signal?: AbortSignal, documentId?: string, kind?: TeacherActivityKind) =>
+  teacherRequest<AgentActivityResult>('/api/teacher/agent/activity', { method: 'POST', body: JSON.stringify({ prompt, level, document_id: documentId, kind }), signal }, "No hem pogut generar l'activitat");
+
+export const generatePathDraft = (prompt: string, classId: string, signal?: AbortSignal, documentId?: string) =>
+  teacherRequest<AgentPathResult>('/api/teacher/agent/path', { method: 'POST', body: JSON.stringify({ prompt, class_id: classId, document_id: documentId }), signal }, 'No hem pogut generar la ruta');
+
+// Puja un examen o temari (PDF, Word o text). El servidor no guarda el fitxer: en conserva el text una hora, en la memòria.
+export async function uploadAgentDocument(file: File): Promise<AgentDocument> {
+  const data = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(new Error("No s'ha pogut llegir el fitxer"));
+    reader.readAsDataURL(file);
+  });
+  return teacherRequest<AgentDocument>('/api/teacher/agent/document', { method: 'POST', body: JSON.stringify({ name: file.name, data_base64: data }) }, "No hem pogut llegir el document");
 }
 
 export async function unassignClassActivity(classId: string, resourceId: string): Promise<void> {

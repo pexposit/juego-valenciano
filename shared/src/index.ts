@@ -292,3 +292,42 @@ export function toggleClassLevel(selected: readonly string[], level: string): st
   const contiguous = next.length === 2 && order.indexOf(next[1]) - order.indexOf(next[0]) === 1;
   return next.length === 1 || contiguous ? next : [level];
 }
+
+/* ── Agent del professorat: activitats i rutes a partir d'un prompt ──── */
+// Màxim de caràcters del prompt de la docent.
+export const TEACHER_AGENT_PROMPT_MAX = 1000;
+// Tipus d'activitat que l'agent sap crear (els de les plantilles tancades).
+export const TEACHER_AGENT_KINDS: readonly TeacherActivityKind[] = ['exercises', 'reading', 'writing', 'scenario'];
+
+/** Un esborrany d'activitat (sense classes: la docent la revisa i la guarda). `ok: false` si no s'ha pogut generar. */
+export type AgentActivityResult =
+  | { ok: true; activity: TeacherActivityInput; notes: string }
+  | { ok: false; message: string };
+
+/** Una activitat que ja existix i que l'agent posa en la ruta, amb el motiu perquè la docent comprove que és rellevant. */
+export type AgentPathStep = { resource_id: string; title: string; category: string; icon: string | null; own: boolean; reason: string };
+/** Una activitat que falta per a completar la ruta, amb un prompt per a crear-la amb l'agent d'activitats. */
+// `kind`: el tipus d'activitat que cal crear; sempre és un dels que l'agent sap crear (TEACHER_AGENT_KINDS).
+export type AgentMissingActivity = { title: string; why: string; suggested_prompt: string; kind: TeacherActivityKind };
+
+/**
+ * Ruta generada amb activitats que ja existixen. `ok`: totes les passes eren al catàleg o a les de la docent;
+ * `partial`: n'hi ha prou per a una ruta però falten activitats (`missing`); `insufficient`: no hi ha prou activitats
+ * (no es torna ruta) i es proposa crear-ne de noves.
+ */
+export type AgentPathResult =
+  | { status: 'ok' | 'partial'; level: string; title: string; description: string; steps: AgentPathStep[]; missing: AgentMissingActivity[]; message: string }
+  | { status: 'insufficient'; message: string; missing: AgentMissingActivity[]; steps: AgentPathStep[] }
+  | { status: 'error'; message: string };
+
+/* ── Documents que la docent adjunta a l'agent (examen o temari) ─────── */
+// El fitxer no es guarda: se n'extrau el text i es conserva en la memòria del servidor una estona (no a disc), només per
+// a les peticions de la docent. En cada petició s'hi trien els fragments més rellevants (fins a TEACHER_DOCUMENT_MAX_CHARS).
+export const TEACHER_DOCUMENT_MAX_BYTES = 100 * 1024 * 1024;
+// Text del document que es conserva (la resta es descarta) i text que arriba al model en cada petició.
+export const TEACHER_DOCUMENT_MAX_STORED_CHARS = 20_000_000;
+export const TEACHER_DOCUMENT_MAX_CHARS = 40_000;
+export const TEACHER_DOCUMENT_EXTENSIONS = ['.pdf', '.docx', '.txt', '.md'] as const;
+
+/** Un document adjuntat: el client només en té l'identificador (el text és al servidor). `truncated`: era massa llarg. */
+export type AgentDocument = { id: string; name: string; chars: number; truncated: boolean };

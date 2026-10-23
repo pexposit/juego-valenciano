@@ -7,8 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "vitest run src/services/agent.test.ts src/services/learningPath.test.ts src/services/kidsObjectives.test.ts src/services/levelContents.test.ts src/services/reasoningEffort.test.ts src/middleware/rateLimit.test.ts src/services/openaiGuard.test.ts src/services/promptInjection.test.ts src/services/outputGuard.test.ts src/services/loopGuard.test.ts",
-    "test:watch": "vitest src/services/agent.test.ts src/services/learningPath.test.ts src/middleware/rateLimit.test.ts src/services/openaiGuard.test.ts src/services/promptInjection.test.ts src/services/outputGuard.test.ts src/services/loopGuard.test.ts",
+    "test": "vitest run src/services/agent.test.ts src/services/learningPath.test.ts src/services/kidsObjectives.test.ts src/services/levelContents.test.ts src/services/reasoningEffort.test.ts src/middleware/rateLimit.test.ts src/services/openaiGuard.test.ts src/services/promptInjection.test.ts src/services/outputGuard.test.ts src/services/loopGuard.test.ts src/services/teacherAgent.test.ts src/services/documentText.test.ts src/services/documentSelect.test.ts src/services/documentStore.test.ts src/services/documentPrivacy.test.ts",
+    "test:watch": "vitest src/services/agent.test.ts src/services/learningPath.test.ts src/middleware/rateLimit.test.ts src/services/openaiGuard.test.ts src/services/promptInjection.test.ts src/services/outputGuard.test.ts src/services/loopGuard.test.ts src/services/teacherAgent.test.ts src/services/documentText.test.ts src/services/documentSelect.test.ts src/services/documentStore.test.ts src/services/documentPrivacy.test.ts",
     "test:integration": "vitest run src/services/agent.integration.test.ts"
   },
   "dependencies": {
@@ -19,7 +19,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "fflate": "^0.8.3",
     "p-queue": "^9.3.3",
+    "unpdf": "^1.9.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {

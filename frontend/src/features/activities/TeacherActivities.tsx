@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Pencil, Plus, Target, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, Sparkles, Target, Trash2, X } from 'lucide-react';
 import { type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { categoryLabel } from '../../components/ScenarioSelect';
 import { deleteTeacherActivity, fetchTeacherActivities } from '../../lib/api';
-import { Practice } from '../../pages/Practice';
 import type { KidsClass } from '../kids/tracking';
 import { ActivityEditor } from './ActivityEditor';
-import { ACTIVITY_KINDS, emptyActivity, toPracticePreview } from './drafts';
+import { ActivityAgent } from '../agent/ActivityAgent';
+import { ACTIVITY_KINDS, emptyActivity } from './drafts';
+import { ActivityPreview } from './ActivityPreview';
 
 type Editing = { id?: string; initial: TeacherActivityInput };
 
@@ -20,6 +21,9 @@ export function TeacherActivities({ classes }: { classes: KidsClass[] }) {
   const [activities, setActivities] = useState<TeacherActivity[]>();
   const [error, setError] = useState<string>();
   const [choosing, setChoosing] = useState(false);
+  // «Genera amb IA»: el quadre del prompt i, quan hi ha esborrany, l'avís que s'ha de revisar.
+  const [generating, setGenerating] = useState(false);
+  const [draftNotes, setDraftNotes] = useState<string>();
   const [editing, setEditing] = useState<Editing>();
   const [preview, setPreview] = useState<TeacherActivityInput>();
 
@@ -42,37 +46,27 @@ export function TeacherActivities({ classes }: { classes: KidsClass[] }) {
   const saved = (activity: TeacherActivity) => {
     setActivities(list => [activity, ...(list ?? []).filter(a => a.id !== activity.id)]);
     setEditing(undefined);
+    setDraftNotes(undefined);
   };
-
-  const previewModal = preview && (() => {
-    const practice = toPracticePreview(preview);
-    return (
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-cream">
-        <div className="sticky top-0 z-[60] flex items-center justify-between gap-3 bg-[#0F47AF] px-5 py-2 text-white">
-          <span className="font-extrabold">Vista prèvia: així ho veurà l'alumnat. No es guarda res.</span>
-          <button onClick={() => setPreview(undefined)} className="btn-press flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 font-bold">
-            <X size={18} /> Tanca
-          </button>
-        </div>
-        {practice ? (
-          <Practice practice={practice} userLevel={preview.level} onBack={() => setPreview(undefined)} preview />
-        ) : preview.content.kind === 'scenario' && <ScenarioPreview activity={preview} />}
-      </div>
-    );
-  })();
 
   if (editing) {
     return (
       <>
+        {draftNotes && (
+          <p className="mb-4 flex items-start gap-2 rounded-2xl bg-[#0F47AF]/10 p-4 text-lg" role="status">
+            <Sparkles size={20} className="mt-1 shrink-0 text-[#0F47AF]" />
+            <span><b>Esborrany creat amb IA.</b> {draftNotes} Comprova que el contingut és rellevant i que les respostes són correctes.</span>
+          </p>
+        )}
         <ActivityEditor
           initial={editing.initial}
           id={editing.id}
           classes={classes}
           onSaved={saved}
-          onCancel={() => setEditing(undefined)}
+          onCancel={() => { setEditing(undefined); setDraftNotes(undefined); }}
           onPreview={setPreview}
         />
-        {previewModal}
+        {preview && <ActivityPreview activity={preview} onClose={() => setPreview(undefined)} />}
       </>
     );
   }
@@ -85,13 +79,27 @@ export function TeacherActivities({ classes }: { classes: KidsClass[] }) {
           <p className="mt-2 text-lg opacity-70">Crea activitats per a l'alumnat adult (A2 i B1) i assigna-les a les teues classes.</p>
         </div>
         {!choosing && (
-          <button onClick={() => setChoosing(true)} className="btn-press flex items-center gap-2 rounded-2xl bg-[#0F47AF] px-5 py-3 text-lg font-extrabold text-white">
-            <Plus size={20} /> Nova activitat
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {!generating && (
+              <button onClick={() => setGenerating(true)} className="btn-press flex items-center gap-2 rounded-2xl border-2 border-[#0F47AF] px-5 py-3 text-lg font-extrabold text-[#0F47AF]">
+                <Sparkles size={20} /> Genera amb IA
+              </button>
+            )}
+            <button onClick={() => setChoosing(true)} className="btn-press flex items-center gap-2 rounded-2xl bg-[#0F47AF] px-5 py-3 text-lg font-extrabold text-white">
+              <Plus size={20} /> Nova activitat
+            </button>
+          </div>
         )}
       </div>
 
       {error && <p className="mt-4 rounded-2xl bg-coral/10 p-3 text-lg text-coral">{error}</p>}
+
+      {generating && (
+        <ActivityAgent
+          onClose={() => setGenerating(false)}
+          onDraft={(activity, notes) => { setGenerating(false); setDraftNotes(notes); setEditing({ initial: activity }); }}
+        />
+      )}
 
       {choosing && (
         <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm">
@@ -157,29 +165,7 @@ export function TeacherActivities({ classes }: { classes: KidsClass[] }) {
           })}
         </ul>
       )}
-      {previewModal}
+      {preview && <ActivityPreview activity={preview} onClose={() => setPreview(undefined)} />}
     </>
-  );
-}
-
-/** Com veurà l'alumne l'escenari en obrir-lo: el lloc, el personatge, la primera frase i els objectius. */
-function ScenarioPreview({ activity }: { activity: TeacherActivityInput }) {
-  const c = activity.content;
-  if (c.kind !== 'scenario') return null;
-  return (
-    <div className="relative min-h-[calc(100dvh-2.5rem)] bg-cover bg-center" style={{ backgroundImage: `url('${c.background}')` }}>
-      <div className="absolute left-[8%] top-[12%] max-w-[min(72%,440px)] rounded-3xl bg-white p-5 text-lg font-bold shadow-xl">{c.greeting}</div>
-      <aside className="absolute right-5 top-24 w-[min(calc(100%-2.5rem),320px)] rounded-3xl bg-white/95 p-5 shadow-xl">
-        <h2 className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-wider text-[#0F47AF]"><Target size={16} /> Objectius</h2>
-        {activity.description && <p className="mb-3 text-sm font-bold opacity-70">{activity.description}</p>}
-        <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm font-bold">
-          {c.objectives.map(o => <li key={o}>{o}</li>)}
-        </ol>
-      </aside>
-      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-4 py-1.5 text-base font-black uppercase tracking-wide shadow">{c.character}</div>
-      <p className="absolute inset-x-4 bottom-6 mx-auto max-w-xl rounded-2xl bg-white/90 p-3 text-center text-sm font-bold">
-        En la vista prèvia no es pot xarrar: la conversa amb la IA la fa l'alumnat de les classes on l'assignes, des de «Activitats».
-      </p>
-    </div>
   );
 }

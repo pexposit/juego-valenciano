@@ -7,6 +7,7 @@ import { ProgressReport } from '../features/kids/ProgressReport';
 import { ClassPaths } from '../features/paths/ClassPaths';
 import { ClassActivities } from '../features/paths/ClassActivities';
 import { TeacherActivities } from '../features/activities/TeacherActivities';
+import { TeacherPathsTab } from '../features/paths/TeacherPathsTab';
 import { StudentsByClass } from '../features/kids/StudentsByClass';
 import { ago, groupAdultStruggles, groupStruggles, percent, summarize, summarizeAdult } from '../features/kids/report';
 import {
@@ -30,8 +31,8 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
   const [newLevels, setNewLevels] = useState<string[]>([]);
   const [error, setError] = useState<string>();
   const [copied, setCopied] = useState(false);
-  // Pantalla principal de la docent: les classes o la biblioteca d'activitats.
-  const [tab, setTab] = useState<'classes' | 'students' | 'activities'>('classes');
+  // Pantalla principal de la docent: les classes, l'alumnat, la biblioteca d'activitats o les rutes.
+  const [tab, setTab] = useState<'classes' | 'students' | 'activities' | 'paths'>('classes');
   // Alumne que s'obri directament des de la pestanya «Alumnat» (en canviar de classe, l'efecte l'esborraria).
   const openStudent = useRef<Student>();
   // Si la fitxa s'ha obert des de «Alumnat», «Tornar» hi torna directament (no a la classe).
@@ -147,7 +148,7 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
         ) : (
           <>
             <div className="mb-6 flex gap-2 rounded-full bg-white p-1 shadow-sm sm:w-fit" role="tablist">
-              {([['classes', 'Classes'], ['students', 'Alumnat'], ['activities', 'Activitats']] as const).map(([id, label]) => (
+              {([['classes', 'Classes'], ['students', 'Alumnat'], ['activities', 'Activitats'], ['paths', 'Rutes']] as const).map(([id, label]) => (
                 <button
                   key={id}
                   role="tab"
@@ -159,7 +160,7 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
                 </button>
               ))}
             </div>
-            {tab === 'activities' ? <TeacherActivities classes={classes ?? []} /> : tab === 'students' ? (
+            {tab === 'activities' ? <TeacherActivities classes={classes ?? []} /> : tab === 'paths' ? <TeacherPathsTab classes={classes ?? []} /> : tab === 'students' ? (
               <StudentsByClass classes={classes ?? []} onOpen={(c, s) => { openStudent.current = s; setFromStudents(true); setSelected(c); }} />
             ) : (
           <>
@@ -265,7 +266,7 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
         <>
           {/* En guardar una ruta, les activitats pròpies que hi ha s'assignen a la classe: es tornen a carregar. */}
           <ClassActivities key={pathsVersion} classId={klass.id} classLevels={klass.levels} />
-          <ClassPaths classId={klass.id} classLevels={klass.levels} onSaved={() => setPathsVersion(v => v + 1)} />
+          <ClassPaths classId={klass.id} className={klass.name} classLevels={klass.levels} onSaved={() => setPathsVersion(v => v + 1)} />
         </>
       )}
 
