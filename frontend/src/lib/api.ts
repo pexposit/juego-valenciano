@@ -1,4 +1,4 @@
-import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, WritingEvaluation } from './types';
+import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, PronunciationResult, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, WritingEvaluation } from './types';
 import { sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
@@ -53,6 +53,22 @@ export async function fetchLesson(id: string): Promise<Lesson | null> {
   return res.json();
 }
 // Avalua amb el LLM una redacció o un formulari de l'àrea d'Expressió escrita.
+// Corregix la lectura en veu alta d'un exercici de pronúncia: s'envia la gravació i el backend torna, paraula per
+// paraula, si els sons de l'exercici s'han dit bé.
+export async function checkPronunciation(exerciseId: string, audioBase64: string, mimeType: string): Promise<PronunciationResult> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/practice/exercises/${encodeURIComponent(exerciseId)}/pronunciation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ audio_base64: audioBase64, mime_type: mimeType }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(body?.error ?? 'No hem pogut escoltar la gravació');
+  }
+  return res.json();
+}
+
 export async function evaluatePracticeExercise(
   exerciseId: string,
   body: { answers: Record<string, string> } | { text: string },
@@ -130,12 +146,13 @@ export async function fetchVoiceOptions(): Promise<VoiceOption[]> {
 
 // Veu de la Taronjeta (Nivell 0) per a una frase que no té el seu fitxer pregenerat:
 // la mateixa veu del TTS que fa servir scripts/generate-kids-audio.ts.
-export async function fetchKidsVoice(text: string): Promise<string> {
+// `voice`: p. ex. `remot:gina`, que va sempre al DeepLab encara que el laboratori de veu no estiga en marxa.
+export async function fetchKidsVoice(text: string, voice = 'gina'): Promise<string> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: JSON.stringify({ text, voice: 'gina' }),
+    body: JSON.stringify({ text, voice }),
   });
   if (!res.ok) throw new Error(`tts ${res.status}`);
   const payload = await res.json() as { audio_base64: string; mime_type: string };

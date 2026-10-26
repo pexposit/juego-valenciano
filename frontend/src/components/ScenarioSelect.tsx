@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, Circle, CircleDashed, Clock, Target } from 'lucide-react';
+import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, Circle, CircleDashed, Clock, Mic, Target } from 'lucide-react';
 import { CONVERSATION_AREAS, PRACTICE_AREAS } from '@parlaval/shared';
 import { Logo, ProfileButton } from './ui';
 import { LessonModal } from './LessonModal';
@@ -239,6 +239,7 @@ export function ScenarioSelect({
               // El backend decidix si la categoria té pantalla i la fila en té les dades.
               const playable = list.find(r => r.playable);
               const withLesson = list.find(r => r.has_lesson);
+              const microphone = list.some(r => r.uses_microphone);
               // Estat de l'activitat: el del recurs que s'obri (o, si no, el de qualsevol de la secció).
               const status = statuses && (statuses[(playable ?? first).id] ?? list.map(r => statuses[r.id]).find(Boolean));
               return (
@@ -261,6 +262,16 @@ export function ScenarioSelect({
                       style={{ background: color }}
                     >
                       <span className="text-6xl select-none">{icon}</span>
+                      {/* Cal parlar: Expressió oral o exercicis de «Llig en veu alta». */}
+                      {microphone && (
+                        <span
+                          title="Activitat amb micròfon"
+                          aria-label="Activitat amb micròfon"
+                          className="absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-white text-orange shadow"
+                        >
+                          <Mic className="h-4 w-4" strokeWidth={2.5} />
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-1 flex-col justify-center gap-1 px-4 py-3">
                       <h2 className="block text-2xl font-black">{title}</h2>
