@@ -20,7 +20,7 @@ const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-4o';
 // Màxim de crides a ferramentes (MCP) per cada anàlisi: el prompt demana repetir el bucle fins a la perfecció i, sense límit, podria no acabar mai.
 // Passat este límit «suau» el model ja no rep ferramentes i ha de donar l'eixida final. A més, el LoopGuard talla
 // (amb LoopDetectedError) si es passa del límit dur, si repetix la mateixa crida o si triga massa.
-const MAX_TOOL_CALLS = 40;
+const MAX_TOOL_CALLS = 60;
 const GUARD_LIMITS = { maxIterations: 30, maxToolCalls: 60, maxMs: 180_000 };
 // 1. Cliente OpenAI persistente
 const ujiClient = new OpenAI({
@@ -127,6 +127,7 @@ FASE 1: DESPIECE I COMPROVACIÓ LÈXICA (TOLERÀNCIA ZERO)
 - Analitza cada terme de la frase de manera aïllada.
 - Si una paraula NO estàs al 100% segur que és normativa segons l'AVL, o si presenta qualsevol indici de castellanisme (ex: arrels estranyes, sufixos dubtosos, grafies no valencianes com 'ch' final, 'k', 'j/g' dubtoses, etc.), invoca 'consultar_dnv'.
 - Si la paraula remet a una altra forma principal o apareix com a no normativa, aplica la substitució pel terme formal i genuí fixat per l'AVL.
+- Si el DNV diu que una forma és admesa o és una variant admesa d'una altra (p. ex. «reconéixer (o reconèixer)»), NO la marques com a error ni proposes la variant com a correcció: totes les formes admeses són correctes. Si el DNV no té entrada exacta per a una paraula, això no prova per si sol que siga una errada (pot ser una forma flexionada).
 
 FASE 2: ANÀLISI DE SINTAGMES I COL·LOCACIONS (COMBINATÒRIA CONTEXTUAL)
 - Molt important: analitza la combinació de 2, 3 o més paraules consecutives. Recorda que paraules que per separat són 100% vàlides poden:

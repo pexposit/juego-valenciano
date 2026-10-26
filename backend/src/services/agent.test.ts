@@ -258,6 +258,28 @@ describe('estado de la petición enviada a OpenAI', () => {
     });
   });
 
+  describe('tutor del tauler (dashboardAgent)', () => {
+    it('usa sempre gpt-6-luna amb reasoning_effort low, encara que OPENAI_MODEL siga un altre, i sense models de reserva', async () => {
+      const { replyFromAgent } = await loadAgent({ model: 'gpt-4o' });
+      fetchMock.mockResolvedValue(openAiResponse('', { ok: false, status: 500 }));
+
+      await expect(replyFromAgent({ ...defaultArgs, dashboardAgent: true })).rejects.toThrow('OpenAI API error');
+
+      expect(requestedModels()).toEqual(['gpt-6-luna', 'gpt-6-luna']);
+      const bodies = fetchMock.mock.calls.map(([, init]) => JSON.parse((init as { body: string }).body));
+      expect(bodies.every(body => body.reasoning_effort === 'low')).toBe(true);
+    });
+
+    it('sense dashboardAgent no envia reasoning_effort (gpt-4o) ni força el model', async () => {
+      const { replyFromAgent } = await loadAgent({ model: 'gpt-4o' });
+      fetchMock.mockResolvedValue(openAiResponse(jsonReply()));
+      await replyFromAgent(defaultArgs);
+      const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body);
+      expect(body.model).toBe('gpt-4o');
+      expect(body.reasoning_effort).toBeUndefined();
+    });
+  });
+
   describe('consulta de la GNV (tutor)', () => {
     const gnvArgs = { ...defaultArgs, message: "Quan porta accent 'què'?", gnvTool: true };
     const ragResult = {

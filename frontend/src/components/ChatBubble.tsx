@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Check, Dumbbell, X } from 'lucide-react';
+import { BookOpen, Check, Dumbbell, Puzzle, SpellCheck, Tag, X } from 'lucide-react';
+import { isGroupLine, isItemLine, parseCorrections, type CorrectionGroup } from '../lib/corrections';
 import { activityRoute, KIDS_ROUTES, practiceRoute } from '../data/content';
 import { lessonById } from '../features/kids/lessons';
 import type { GnvRule, TutorActivity, TutorExercise } from '../lib/types';
@@ -8,7 +9,12 @@ import type { GnvRule, TutorActivity, TutorExercise } from '../lib/types';
 // valencià i la resta, en gris clar, l'ajuda en la llengua materna del xiquet (amagada si `showHelp` és fals).
 // Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial.
 export function ChatBubble({ role, text, transcription, gnv, exercise, activity, lessonId, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
-  const [valencian, ...help] = role === 'character' ? text.split('\n') : [text];
+  const [valencian, ...rest] = role === 'character' ? text.split('\n') : [text];
+  // Correcció d'un text: després de la primera línia, una línia per error numerada («1) ...»), que es mostra com a llista.
+  // La resta de línies són l'ajuda en la llengua materna.
+  const isCorrection = (line: string) => isGroupLine(line) || isItemLine(line);
+  const corrections = parseCorrections(rest.filter(isCorrection));
+  const help = rest.filter(line => !isCorrection(line));
   return (
     <div
       className={`max-w-[85%] rounded-2xl px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold ${
@@ -16,6 +22,7 @@ export function ChatBubble({ role, text, transcription, gnv, exercise, activity,
       }`}
     >
       <p>{valencian}</p>
+      {corrections.length > 0 && <CorrectionGroups groups={corrections} />}
       {transcription && <p className="mt-2 border-t border-white/30 pt-2 text-[0.85em] font-normal">Transcripció: {transcription}</p>}
       {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-[0.85em] font-semibold text-slate-400">{help.join('\n')}</p>}
       {gnv && <GnvRuleCard rule={gnv} />}
@@ -27,6 +34,49 @@ export function ChatBubble({ role, text, transcription, gnv, exercise, activity,
           <span>{activity.category === 'escenari' || activity.category === 'expressio_oral' ? 'Practica la conversa' : 'Practica-ho'}: {activity.resource_name}</span>
         </Link>
       )}
+    </div>
+  );
+}
+
+// Estil de cada tipologia d'error (per títol de grup): color i icona.
+const GROUP_STYLE: Record<string, { Icon: typeof SpellCheck; box: string; badge: string }> = {
+  'Ortografia i fonètica': { Icon: SpellCheck, box: 'border-sky-400 bg-sky-50', badge: 'bg-sky-500' },
+  Morfosintaxi: { Icon: Puzzle, box: 'border-violet-400 bg-violet-50', badge: 'bg-violet-500' },
+  'Lèxic i semàntica': { Icon: BookOpen, box: 'border-amber-400 bg-amber-50', badge: 'bg-amber-500' },
+};
+const DEFAULT_GROUP_STYLE = { Icon: Tag, box: 'border-slate-300 bg-slate-50', badge: 'bg-slate-500' };
+
+// Errors d'un text corregit, agrupats per tipologia: cada error mostra el fragment erroni ratllat i la forma correcta.
+function CorrectionGroups({ groups }: { groups: CorrectionGroup[] }) {
+  return (
+    <div className="mt-3 space-y-3">
+      {groups.map(group => {
+        const { Icon, box, badge } = GROUP_STYLE[group.title] ?? DEFAULT_GROUP_STYLE;
+        return (
+          <section key={group.title} aria-label={group.title} className={`rounded-xl border-l-4 p-3 ${box}`}>
+            <h3 className="flex items-center gap-2 text-[0.8em] font-extrabold uppercase tracking-wide text-slate-600">
+              <Icon size={18} className="shrink-0" aria-hidden />
+              <span>{group.title}</span>
+              <span className={`ml-auto rounded-full px-2 py-0.5 text-[0.9em] text-white ${badge}`}>{group.items.length}</span>
+            </h3>
+            <ul className="mt-2 space-y-2">
+              {group.items.map(item => (
+                <li key={item.number} className="rounded-lg bg-white/90 px-3 py-2 text-[0.9em] font-semibold shadow-sm">
+                  {(item.wrong || item.right) && (
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="rounded-md bg-red-100 px-2 py-0.5 font-extrabold text-red-700 line-through decoration-2">{item.wrong}</span>
+                      <span aria-hidden className="text-slate-400">→</span>
+                      <span className="rounded-md bg-green-100 px-2 py-0.5 font-extrabold text-green-700">{item.right}</span>
+                    </p>
+                  )}
+                  {item.explanation && <p className="mt-1 text-[0.95em] font-normal text-slate-600">{item.explanation}</p>}
+                  {item.cite && <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-teal/10 px-2 py-0.5 text-[0.8em] font-extrabold text-teal"><BookOpen size={14} aria-hidden />GNV § {item.cite}</p>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }

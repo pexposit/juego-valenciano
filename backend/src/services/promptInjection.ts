@@ -39,7 +39,7 @@ const RULES: Rule[] = [
   {
     id: 'camps_de_l_eixida',
     weight: 2,
-    pattern: /\b(reply_text|exercici_tema|tipus_dubte|consulta_gnv|area_practica|leccio_id|help_text|response_format|json_schema)\b/,
+    pattern: /\b(reply_text|exercici_tema|tipus_dubte|consulta_gnv|corregir_text|area_practica|leccio_id|help_text|response_format|json_schema)\b/,
   },
   {
     id: 'canvi_de_rol',

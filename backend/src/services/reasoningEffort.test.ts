@@ -10,6 +10,7 @@ describe('reasoningEffortFor', () => {
   it('l\'envia als models de raonament', () => {
     for (const m of ['gpt-6-luna', 'gpt-5-mini', 'o3', 'o4-mini']) {
       expect(reasoningEffortFor(m)).toEqual({ reasoning_effort: 'none' });
+      expect(reasoningEffortFor(m, 'low')).toEqual({ reasoning_effort: 'low' });
     }
   });
 });
