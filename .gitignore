@@ -3,6 +3,8 @@ dist
 .env
 .env.local
 coverage
+AGENTS.md
+CLAUDE.md
 
 # TypeScript incremental build cache
 *.tsbuildinfo
