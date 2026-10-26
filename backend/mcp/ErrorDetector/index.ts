@@ -37,8 +37,25 @@ server.registerTool(
       };
     }
 
+    // El portal torna l'entrada més pròxima per a una paraula que no hi és: no és cap confirmació.
+    if (resultat.exacta === false) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: [
+              `El DNV no té una entrada exacta per a "${paraula}": l'entrada més pròxima és «${resultat.lema}»${resultat.variants?.length ? ` (admet també: ${resultat.variants.join(', ')})` : ''}.`,
+              `Això NO confirma que "${paraula}" siga normativa (pot ser una errada d'escriptura) ni que siga errada: pot ser una forma flexionada (plural, femení, conjugació) que el diccionari no llista com a entrada. Decidix amb la morfologia i la norma, i no la marques com a error només per este resultat.`,
+              `Font oficial: ${resultat.url}`,
+            ].join('\n'),
+          },
+        ],
+      };
+    }
+
     const info = [
-      `NORMATIVA CONFIRMADA: "${paraula}" ÉS una forma vàlida en el DNV de l'AVL.`,
+      `NORMATIVA CONFIRMADA: "${paraula}" ÉS una forma vàlida en el DNV de l'AVL${resultat.lema && resultat.lema.toLowerCase() !== paraula.trim().toLowerCase() ? ` (variant admesa de «${resultat.lema}»)` : ''}.`,
+      resultat.variants?.length ? `Variants admeses: ${[resultat.lema, ...resultat.variants].join(', ')}. Cap d'elles és una errada.` : null,
       resultat.categoria ? `Categoria gramatical: ${resultat.categoria}` : null,
       resultat.definicions && resultat.definicions.length > 0
         ? `Definicions: ${resultat.definicions.join('; ')}`

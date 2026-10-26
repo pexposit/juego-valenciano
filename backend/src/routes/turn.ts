@@ -196,11 +196,15 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       gnvTool,
       exerciseTool,
       lessons,
+      // El tutor del tauler: sempre gpt-6-luna amb esforç 'low' (DASHBOARD_AGENT).
+      dashboardAgent: scenario.category === ASSISTANT_CATEGORY,
       signal: abortSignal,
     });
 
     // El tutor ha oferit un exercici: se'n tria un de real del catàleg (mai inventat).
-    const { exercici_tema, tipus_dubte, area_practica, leccio_id, ...replyBody } = reply;
+    const { exercici_tema, tipus_dubte, area_practica, leccio_id, corregir_text, ...replyBody } = reply;
+    // Text per a corregir: el client mostra després la llista d'errors de l'anàlisi; ací ni exercicis ni activitats.
+    const correctText = Boolean(corregir_text) && exerciseTool && !levelZero;
     // Només una lliçó de les que s'han enviat (el model no pot inventar-ne).
     const lessonId = lessons.some(l => l.id === leccio_id) ? leccio_id : undefined;
     let exercise: TutorExercise | null = null;
@@ -212,7 +216,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     // Tipus de pregunta: una regla de la GNV és sempre un dubte complex; si no, el que diu el model. Qui demana practicar
     // sempre rep l'exercici (o l'avís que no n'hi ha); «cap» no en dóna mai.
     const askedToPractice = tipus_dubte === 'demana_exercici' || /exerci/i.test(text);
-    const mode: ExerciseMode | null = askedToPractice ? 'request'
+    const mode: ExerciseMode | null = correctText ? null
+      : askedToPractice ? 'request'
       : reply.gnv || tipus_dubte === 'complex' ? 'complex'
       : tipus_dubte === 'simple' ? 'simple' : null;
     // El tema que normalitza el model; el de la GNV només hi ajuda en els dubtes complexos.
@@ -223,7 +228,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     // Si vol practicar la conversa, sempre se li enllaça un escenari concret, encara que el model no ho haja marcat.
     const wantsConversation = /convers|xarr|xat|xatej|joc de rol|escenari|situaci/i.test(text) && !/exerci/i.test(text);
     const wantsOral = /expres+i[oó]n?\s+oral/i.test(text);
-    const skill = area_practica || (wantsOral ? 'expressio_oral' : '') || (wantsConversation ? 'escenari' : '');
+    const skill = correctText ? '' : area_practica || (wantsOral ? 'expressio_oral' : '') || (wantsConversation ? 'escenari' : '');
     if (exerciseTool && skill) activity = await findSkillActivity(skill, level, text);
     // Conversa i expressió oral: només s'enllaça un escenari real del catàleg i la frase la posa l'app, perquè el model
     // no puga descriure ni proposar escenaris inventats (ni enllaçar-ne cap si no n'hi ha).
@@ -276,6 +281,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
 
     res.json({
       ...replyBody,
+      ...(correctText ? { correct_text: true } : {}),
       ...(exercise ? { exercise } : {}),
       ...(activity ? { activity } : {}),
       ...(lessonId ? { lesson_id: lessonId } : {}),

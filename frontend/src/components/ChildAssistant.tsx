@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, RotateCcw, Volume2 } from 'lucide-react';
+import { Loader2, RotateCcw, Square, Volume2 } from 'lucide-react';
 import { useDelayedFlag } from './AudioLoading';
 import { KID_ASSISTANT_TYPE } from '@parlaval/shared';
 import { ChatBubble } from './ChatBubble';
 import { VoiceInput } from './VoiceInput';
 import { RobotVoiceMenu, savedRobotVoice } from './RobotVoiceMenu';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
-import { analyzeMessage, ensureSession, fetchTts, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
+import { analyzeMessage, ensureSession, fetchErrorCitations, fetchTts, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem, type TextError } from '../lib/api';
 import { addMessages, saveExerciseAnswer } from '../lib/localStore';
+import { correctionsText } from '../lib/corrections';
 import { useThinkingSound } from '../lib/useThinkingSound';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { ALL_LESSONS } from '../features/kids/lessons';
@@ -163,7 +164,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         conversation.current = undefined;
         if (!cancelled) setOpenFailed(true);
       });
-    return () => { cancelled = true; mounted.current = false; stopAudio(); };
+    return () => { cancelled = true; mounted.current = false; stopAudio(); turnAbort.current?.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -191,9 +192,36 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Petició al professor en curs: el botó d'aturar la cancel·la (el servidor talla la crida al model en tancar-se la connexió).
+  const turnAbort = useRef<AbortController | null>(null);
+  const [sending, setSending] = useState(false);
+  const stopTurn = () => turnAbort.current?.abort();
+  // Corregint un text: l'anàlisi d'errors tarda; el botó d'aturar descarta el resultat (l'anàlisi continua i es guarda igual).
+  const [correcting, setCorrecting] = useState(false);
+  const correctionCancelled = useRef(false);
+
+  // Mostra en el xat els errors que l'anàlisi ha trobat en el text de l'aprenent, amb la cita de la GNV de cada contingut.
+  const showCorrections = async (sessionResourceId: string, analysis: Promise<TextError[]>) => {
+    correctionCancelled.current = false;
+    setCorrecting(true);
+    try {
+      const errors = await analysis;
+      const citations = errors.length ? await fetchErrorCitations(errors) : [];
+      if (correctionCancelled.current || !mounted.current) return;
+      const text = errors.length ? correctionsText(errors, citations) : "No he trobat cap error en el teu text. Bona feina!";
+      setMessages(m => [...m, { role: 'character', text }]);
+      void addMessages(sessionResourceId, 'tutor', [{ role: 'character', text }]).catch(error => console.error('Error guardant la conversa:', error));
+    } finally {
+      setCorrecting(false);
+    }
+  };
+
   const send = async (text: string, voice?: string) => {
     if ((!text && !voice) || loading || !conversation.current) return;
     stopAudio();
+    const abort = new AbortController();
+    turnAbort.current = abort;
+    setSending(true);
     const context: HistoryItem[] = messages.map(m => ({ role: m.role, content_text: m.transcription ?? m.text }));
     setMessages(m => [...m, { role: 'user', text: text || VOICE_MESSAGE_LABEL }]);
     setLoading(true);
@@ -213,7 +241,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         // El tutor del Nivell 0 pot enllaçar una lliçó: el catàleg és ací, així que s'envia (el servidor només el fa servir amb el Nivell 0).
         lessons: ALL_LESSONS.map(l => ({ id: l.id, title: l.title, summary: l.summary })),
         include_audio: false,
-      });
+      }, abort.signal);
       setMood(reply.mood);
       const said = reply.transcription || text;
       setMessages(m => {
@@ -227,12 +255,16 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       ]).catch(error => console.error('Error guardant la conversa:', error));
       // Els errors del xat amb el professor compten per a la ruta, però no es practiquen.
       if (reply.analyze_errors && said) {
-        analyzeMessage({ session_id: opened.session_id, session_resource_id: opened.session_resource_id, text: said }, { scenario: null, practicable: false });
+        const analysis = analyzeMessage({ session_id: opened.session_id, session_resource_id: opened.session_resource_id, text: said }, { scenario: null, practicable: false });
+        if (reply.correct_text) void showCorrections(opened.session_resource_id, analysis);
       }
       void speak(reply.reply_text);
     } catch {
-      setMessages(m => [...m, { role: 'character', text: ERROR_REPLY }]);
+      // Aturada per l'usuari: no és un error, simplement no hi ha resposta.
+      if (!abort.signal.aborted) setMessages(m => [...m, { role: 'character', text: ERROR_REPLY }]);
     } finally {
+      turnAbort.current = null;
+      setSending(false);
       setLoading(false);
     }
   };
@@ -273,13 +305,23 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
           {openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold opacity-60">Un moment...</p>}
           {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
-          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
+          {(loading || correcting) && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
         </div>
 
         <div className="mt-3 flex items-center gap-3">
           <div className="min-w-0 flex-1">
-            <VoiceInput onSend={send} disabled={!ready || loading} />
+            <VoiceInput onSend={send} disabled={!ready || loading || correcting} />
           </div>
+          {(sending || correcting) && (
+            <button
+              onClick={() => { if (correcting) correctionCancelled.current = true; setCorrecting(false); stopTurn(); }}
+              aria-label="Atura la resposta del professor"
+              title="Atura la resposta del professor"
+              className="btn-press grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/90 text-red-600 shadow-lg ring-2 ring-white"
+            >
+              <Square size={20} fill="currentColor" />
+            </button>
+          )}
           <button
             onClick={() => void restart()}
             disabled={!ready || loading}

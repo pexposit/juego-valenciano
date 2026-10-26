@@ -3,6 +3,7 @@ import type { ScenarioDefinition } from './scenarios.js';
 import { consultarGnv, gnvContext, type GnvResultat, type GnvRule } from './gnvRag.js';
 import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
 import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
+import { reasoningEffortFor, type ReasoningEffort } from './reasoningEffort.js';
 import { createLoopGuard, type LoopGuard } from './loopGuard.js';
 
 
@@ -14,6 +15,8 @@ const outputSchema = z.object({
   help_text: z.string().optional(),
   // Tutor: la consulta per a la GNV que ha decidit fer el model (buida si no és de normativa).
   consulta_gnv: z.string().optional(),
+  // Tutor: l'aprenent ha enviat un text perquè el corregisca; la llista d'errors la dóna l'anàlisi, no esta resposta.
+  corregir_text: z.boolean().optional(),
   // Tutor: el tema de l'exercici del catàleg que vol oferir ('' si no n'ofereix cap).
   exercici_tema: z.string().optional(),
   // Tutor: tipus de la pregunta de l'aprenent; decidix si es pot mostrar un exercici i amb quin rigor.
@@ -35,6 +38,9 @@ export type AgentReply = Omit<z.infer<typeof outputSchema>, 'gnv' | 'help_text' 
 // Cadena de models: el principal (OPENAI_MODEL) i dos de reserva per si falla.
 // El nom ha d'existir a OpenAI: un valor inventat gasta dos intents (404) en
 // cada torn abans de passar al model de reserva.
+// El tutor del tauler va fix amb este model i este esforç de raonament: mai un altre (gpt-4o, models de reserva...).
+export const DASHBOARD_AGENT = { model: 'gpt-6-luna', reasoningEffort: 'low' } as const satisfies { model: string; reasoningEffort: ReasoningEffort };
+
 const OPENAI_MODELS = [
   process.env.OPENAI_MODEL
 ].filter((model, index, models) => models.indexOf(model) === index);
@@ -56,8 +62,12 @@ const GNV_QUERY_DESCRIPTION =
   'en el sintagma nominal, la casa seua i la seua casa". Cadena buida si NO és un dubte de normativa (salutació, ' +
   "conversa, significat o traducció d'una paraula, cultura, consells d'estudi...).";
 
+const CORRECT_TEXT_DESCRIPTION =
+  "true només si l'últim missatge de l'aprenent és un text seu (diverses frases) que et demana corregir o revisar; false en un dubte puntual, una pregunta o una conversa.";
+
 const GNV_INSTRUCTIONS = `CONSULTA DE LA GRAMÀTICA NORMATIVA VALENCIANA (GNV):
 - Si l'aprenent pregunta un dubte de normativa (com es pronuncia, com s'escriu, quan porta accent, com es forma el plural o el femení, com es conjuga, quina preposició o pronom va...), omple consulta_gnv: després rebràs la regla oficial de la GNV per a respondre-la.
+- Si l'aprenent t'envia un text (diverses frases seues) perquè el corregisques o el revises, posa corregir_text a true i deixa consulta_gnv buida: l'aplicació li mostrarà després la llista completa d'errors. En eixe cas, en reply_text escriu només una frase curta dient que revises el text i que ara li mostres els errors, sense corregir res ni citar cap regla.
 - Si no és un dubte de normativa, deixa consulta_gnv buida i respon directament.`;
 
 const EXERCISE_INSTRUCTIONS = `EXERCICIS DEL CATÀLEG:
@@ -117,6 +127,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             description: 'La resposta directa del personatge a la conversa.',
           },
           ...(askGnvQuery ? { consulta_gnv: { type: 'string', description: GNV_QUERY_DESCRIPTION } } : {}),
+          ...(askGnvQuery ? { corregir_text: { type: 'boolean', description: CORRECT_TEXT_DESCRIPTION } } : {}),
           ...(lessons.length ? { leccio_id: { type: 'string', enum: ['', ...lessons.map(l => l.id)], description: "L'id de la lliçó de l'app relacionada amb la pregunta del xiquet; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { area_practica: { type: 'string', enum: ['', ...PRACTICE_SKILLS], description: "La destresa que l'aprenent vol practicar si no es pot fer dins del xat; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { tipus_dubte: { type: 'string', enum: ['cap', 'simple', 'complex', 'demana_exercici'], description: "Tipus de l'últim missatge de l'aprenent: dubte de llengua complex, dubte simple, petició d'exercici o res de llengua ('cap')." } } : {}),
@@ -145,7 +156,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             },
           } : {}),
         },
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv', 'corregir_text'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
         additionalProperties: false,
       },
     },
@@ -200,6 +211,15 @@ Respon ara l'últim missatge de l'aprenent NOMÉS amb el que diuen estes fonts, 
   - Simplificar NO vol dir llevar la condició que decidix la regla: si depén del so (com sona la s, si la e és oberta o tancada...), explica com distingir-ho amb la comparació senzilla. Abans d'escriure el truc, comprova'l amb l'exemple del cas contrari: ha d'encertar en els dos (p. ex. un truc per a la ss ha de funcionar amb «cassa» i també amb «casa»).`;
 }
 
+// El model ha detectat un text per a corregir (la llista d'errors la mostra el client amb l'anàlisi).
+function correctTextOf(content: string): boolean {
+  try {
+    return (parseJsonResponse(content) as { corregir_text?: unknown }).corregir_text === true;
+  } catch {
+    return false;
+  }
+}
+
 // La consulta per a la GNV de la primera resposta del tutor ('' si no n'hi ha o no es pot llegir).
 function gnvQueryOf(content: string): string {
   try {
@@ -251,6 +271,8 @@ export async function replyFromAgent(args: {
   exerciseTool?: boolean;
   // Tutor del Nivell 0: les lliçons que pot enllaçar (leccio_id); les resol qui crida.
   lessons?: LessonRef[];
+  // Tutor del tauler: SEMPRE el model i l'esforç de DASHBOARD_AGENT, independentment d'OPENAI_MODEL i sense models de reserva.
+  dashboardAgent?: boolean;
   // Cancel·lació externa (el client tanca la connexió): talla el bucle i les crides en vol.
   signal?: AbortSignal;
 }): Promise<AgentReply> {
@@ -289,7 +311,7 @@ export async function replyFromAgent(args: {
 
         ${args.lessons?.length ? lessonInstructions(args.lessons) : ''}
 
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv, corregir_text' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
     },
     {
       role: 'user',
@@ -317,21 +339,24 @@ export async function replyFromAgent(args: {
 
   // Detecció de bucles: massa crides o el mateix missatge una vegada i una altra talla la petició (LoopDetectedError).
   const guard = createLoopGuard({ label: 'agent', signal: args.signal, maxIterations: 8 });
+  const effort = (model: string) => (args.dashboardAgent ? reasoningEffortFor(model, DASHBOARD_AGENT.reasoningEffort) : {});
   let lastError = 'OpenAI no ha retornat una resposta vàlida';
-  for (const model of OPENAI_MODELS) {
+  for (const model of args.dashboardAgent ? [DASHBOARD_AGENT.model] : OPENAI_MODELS) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         let content = await complete(guard, key, model!, {
+          ...effort(model!),
           response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons),
           messages,
         }, attempt > 0);
 
         // El model ha decidit que és un dubte de normativa: es consulta la GNV i es torna a demanar la resposta.
         let gnvResult: GnvResultat | null = null;
-        const consulta = args.gnvTool && content ? gnvQueryOf(content) : '';
+        const consulta = args.gnvTool && content && !correctTextOf(content) ? gnvQueryOf(content) : '';
         if (consulta) {
           gnvResult = await lookupGnv(consulta);
           content = await complete(guard, key, model!, {
+            ...effort(model!),
             response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool, args.lessons),
             messages: [...messages, { role: 'system', content: gnvSourcesMessage(consulta, gnvResult) }],
           }, attempt > 0);

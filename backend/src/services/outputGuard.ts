@@ -21,7 +21,7 @@ const MARKERS: RegExp[] = [
   /\bconsulta de la gramatica normativa valenciana \(gnv\)/,
   /\bllicons de l'app\b/,
   /\bprotocol d'avaluacio\b/,
-  /\b(consulta_gnv|exercici_tema|tipus_dubte|area_practica|leccio_id|help_text)\b/,
+  /\b(consulta_gnv|corregir_text|exercici_tema|tipus_dubte|area_practica|leccio_id|help_text)\b/,
   /\bsystem prompt\b/,
   /\bprompt del sistema\b/,
 ];
