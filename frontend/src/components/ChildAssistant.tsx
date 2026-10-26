@@ -305,8 +305,6 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
           {openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold opacity-60">Un moment...</p>}
           {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} conjugacio={m.conjugacio} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
-          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
-          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
           {(loading || correcting) && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
         </div>
 

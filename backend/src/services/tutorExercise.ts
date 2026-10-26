@@ -128,19 +128,23 @@ const closestLevel = (rows: Row[], level: string | null | undefined) =>
   CEFR.includes(level ?? '') ? rows.filter(r => r.level === level) : rows;
 
 // Puntuació mínima (0 a 1) del reranker perquè un exercici es considere del tema. Per davall, és preferible no mostrar
-// cap exercici que un d'irrellevant. Cada reranker té la seua escala; ajustables amb TUTOR_EXERCISE_MIN_SCORE (local) i
-// TUTOR_EXERCISE_MIN_SCORE_JEV segons el que mostren els logs de rànquing.
-const MIN_RELEVANCE: Record<Reranker, number> = {
-  local: Number(process.env.TUTOR_EXERCISE_MIN_SCORE ?? 0.1),
-  jev: Number(process.env.TUTOR_EXERCISE_MIN_SCORE_JEV ?? 0.5),
-};
-// cap exercici que un d'irrellevant. Ajustable amb TUTOR_EXERCISE_MIN_SCORE segons el que mostren els logs de rànquing.
-// Segons el tipus de pregunta: en un dubte complex o quan demana practicar, el mínim de sempre; en un dubte simple, molt
-// més exigent (només si l'exercici tracta de debò del que pregunta). Ajustables amb TUTOR_EXERCISE_MIN_SCORE_SIMPLE.
+// cap exercici que un d'irrellevant. Cada reranker té la seua escala i, dins d'ella, el mínim depén del tipus de pregunta:
+// en un dubte complex o quan demana practicar, el mínim de sempre; en un dubte simple, molt més exigent (només si
+// l'exercici tracta de debò del que pregunta). Ajustables segons el que mostren els logs de rànquing:
+// TUTOR_EXERCISE_MIN_SCORE i TUTOR_EXERCISE_MIN_SCORE_SIMPLE (local), TUTOR_EXERCISE_MIN_SCORE_JEV i
+// TUTOR_EXERCISE_MIN_SCORE_SIMPLE_JEV (JEV).
 export type ExerciseMode = 'complex' | 'simple' | 'request';
-const MIN_RELEVANCE = Number(process.env.TUTOR_EXERCISE_MIN_SCORE ?? 0.1);
-const MIN_RELEVANCE_SIMPLE = Number(process.env.TUTOR_EXERCISE_MIN_SCORE_SIMPLE ?? 0.5);
-const minRelevance = (mode: ExerciseMode) => (mode === 'simple' ? MIN_RELEVANCE_SIMPLE : MIN_RELEVANCE);
+const MIN_RELEVANCE: Record<Reranker, { base: number; simple: number }> = {
+  local: {
+    base: Number(process.env.TUTOR_EXERCISE_MIN_SCORE ?? 0.1),
+    simple: Number(process.env.TUTOR_EXERCISE_MIN_SCORE_SIMPLE ?? 0.5),
+  },
+  jev: {
+    base: Number(process.env.TUTOR_EXERCISE_MIN_SCORE_JEV ?? 0.5),
+    simple: Number(process.env.TUTOR_EXERCISE_MIN_SCORE_SIMPLE_JEV ?? 0.8),
+  },
+};
+const minRelevance = (reranker: Reranker, mode: ExerciseMode) => MIN_RELEVANCE[reranker][mode === 'simple' ? 'simple' : 'base'];
 
 // Entre els exercicis donats, el que millor respon a la pregunta segons el reranker del RAG (llig enunciat, opcions i
 // explicació: p. ex. distingix els de b/v dels d'altres consonants de la mateixa activitat). Sense RAG o si el reranker
@@ -149,18 +153,16 @@ async function mostRelevant(rows: Row[], query: string, mode: ExerciseMode): Pro
   if (!query.trim() || !gnvRagEnabled()) return undefined;
   // Un dubte simple només admet un exercici que el reranker avale, encara que n'hi haja un de sol.
   if (rows.length < 2 && mode !== 'simple') return undefined;
-  const min = minRelevance(mode);
   try {
     // Enunciat, resposta correcta i explicació: les opcions falses només fan soroll.
     const candidates = rows.slice(0, 120);
     const texts = candidates.map(r => `${r.prompt} Resposta: ${r.answers[0]}. ${r.explanation ?? ''}`);
     const { scores, reranker } = await puntuarTextos(query, texts);
-    const min = MIN_RELEVANCE[reranker];
+    const min = minRelevance(reranker, mode);
     const ranked = scores.map((score, i) => ({ score, i })).sort((a, b) => b.score - a.score);
     const top = ranked.slice(0, 3).filter(x => x.score >= min);
     if (top.length === 0) {
-      console.log(`[tutor-exercise] rànquing (${reranker}): ${texts.length} exercicis, el millor (${ranked[0].score.toExponential(2)}) no arriba al mínim ${min} → cap`);
-      console.log(`[tutor-exercise] rànquing: ${texts.length} exercicis, el millor (${ranked[0].score.toExponential(2)}) no arriba al mínim ${min} (${mode}) → cap`);
+      console.log(`[tutor-exercise] rànquing (${reranker}): ${texts.length} exercicis, el millor (${ranked[0].score.toExponential(2)}) no arriba al mínim ${min} (${mode}) → cap`);
       return null;
     }
     // Un dels 3 millors a l'atzar: tots tracten del tema i així no ix sempre el mateix.
@@ -213,7 +215,7 @@ export async function pickTutorExercise(
   // aconseguix decidix: si no hi ha exercicis del nivell de l'aprenent, no se'n mostra cap en lloc de
   // baixar a un criteri més fluix (que hi posaria un exercici de qualsevol cosa).
   const viaResources = async (resources: CatalogResource[]) => ({ found: resources.length > 0, rows: await fromResources(resources) });
-  // Per seccions de la GNV, el primer grup amb exercicis que l'aprenent ja pot fer; si cap en té, el primer (massa prompte).
+  // Per seccions de la GNV, el primer grup amb exercicis del nivell de l'aprenent; si cap en té, el primer.
   const viaGnv = async () => {
     let first: { found: boolean; rows: Row[] } | undefined;
     for (const group of gnvCitationGroups(catalog, gnvSections)) {

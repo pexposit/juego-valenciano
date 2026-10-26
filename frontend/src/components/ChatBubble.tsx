@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Check, Dumbbell, ExternalLink, Table, X } from 'lucide-react';
-import { BookOpen, Check, Dumbbell, Puzzle, SpellCheck, Tag, X } from 'lucide-react';
+import { BookOpen, Check, Dumbbell, ExternalLink, Puzzle, SpellCheck, Table, Tag, X } from 'lucide-react';
 import { isGroupLine, isItemLine, parseCorrections, type CorrectionGroup } from '../lib/corrections';
 import { activityRoute, KIDS_ROUTES, practiceRoute } from '../data/content';
 import { lessonById } from '../features/kids/lessons';
@@ -11,9 +10,6 @@ import type { GnvRule, TutorActivity, TutorExercise, VerbConjugation } from '../
 // Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial; si li han demanat la
 // conjugació d'un verb, la taula del DNV.
 export function ChatBubble({ role, text, transcription, gnv, conjugacio, exercise, activity, lessonId, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; conjugacio?: VerbConjugation; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
-  const [valencian, ...help] = role === 'character' ? text.split('\n') : [text];
-// Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial.
-export function ChatBubble({ role, text, transcription, gnv, exercise, activity, lessonId, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
   const [valencian, ...rest] = role === 'character' ? text.split('\n') : [text];
   // Correcció d'un text: després de la primera línia, una línia per error numerada («1) ...»), que es mostra com a llista.
   // La resta de línies són l'ajuda en la llengua materna.

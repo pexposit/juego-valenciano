@@ -4,7 +4,6 @@ import { consultarGnv, gnvContext, type GnvResultat, type GnvRule } from './gnvR
 import { conjugationContext, consultarConjugacioVerb, type VerbConjugation } from './conjugacio.js';
 import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
 import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
-import { reasoningEffortFor, type ReasoningEffort } from './reasoningEffort.js';
 import { createLoopGuard, type LoopGuard } from './loopGuard.js';
 import { reasoningEffortFor, type ReasoningEffort } from './reasoningEffort.js';
 
@@ -173,8 +172,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             },
           } : {}),
         },
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askVerb ? ['verb_conjugar'] : []), ...(askExercise ? ['exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv', 'corregir_text'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv', 'corregir_text'] : []), ...(askVerb ? ['verb_conjugar'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
         additionalProperties: false,
       },
     },
@@ -233,6 +231,15 @@ Respon ara l'últim missatge de l'aprenent NOMÉS amb el que diuen estes fonts, 
   - Simplificar NO vol dir llevar la condició que decidix la regla: si depén del so (com sona la s, si la e és oberta o tancada...), explica com distingir-ho amb la comparació senzilla. Abans d'escriure el truc, comprova'l amb l'exemple del cas contrari: ha d'encertar en els dos (p. ex. un truc per a la ss ha de funcionar amb «cassa» i també amb «casa»).`;
 }
 
+// El model ha detectat un text per a corregir (la llista d'errors la mostra el client amb l'anàlisi).
+function correctTextOf(content: string): boolean {
+  try {
+    return (parseJsonResponse(content) as { corregir_text?: unknown }).corregir_text === true;
+  } catch {
+    return false;
+  }
+}
+
 // Conjugació del DNV per al LLM, en un missatge final abans de demanar-li la resposta.
 // `undefined`: la consulta ha fallat; `null`: el DNV no té la conjugació d'eixe verb.
 function conjugationMessage(verb: string, conjugation: VerbConjugation | null | undefined): string {
@@ -253,17 +260,6 @@ L'aplicació mostrarà la taula completa davall de la teua resposta. Respon ara 
 
 // Un camp de text de la primera resposta del tutor ('' si no n'hi ha o no es pot llegir).
 function queryFieldOf(content: string, field: 'consulta_gnv' | 'verb_conjugar', max: number): string {
-// El model ha detectat un text per a corregir (la llista d'errors la mostra el client amb l'anàlisi).
-function correctTextOf(content: string): boolean {
-  try {
-    return (parseJsonResponse(content) as { corregir_text?: unknown }).corregir_text === true;
-  } catch {
-    return false;
-  }
-}
-
-// La consulta per a la GNV de la primera resposta del tutor ('' si no n'hi ha o no es pot llegir).
-function gnvQueryOf(content: string): string {
   try {
     const value = (parseJsonResponse(content) as Record<string, unknown>)[field];
     return typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -357,8 +353,7 @@ export async function replyFromAgent(args: {
 
         ${args.lessons?.length ? lessonInstructions(args.lessons) : ''}
 
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.conjugationTool ? ', verb_conjugar' : ''}${args.exerciseTool ? ', exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv, corregir_text' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv, corregir_text' : ''}${args.conjugationTool ? ', verb_conjugar' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
     },
     {
       role: 'user',
@@ -412,28 +407,28 @@ export async function replyFromAgent(args: {
         // La primera crida decidix què fer (respondre, consultar la GNV, proposar exercici): un poc de raonament (low).
         // La segunda només redacta amb les fonts que ja té: sense raonament (none).
         let content = await complete(guard, key, model!, {
-          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons, args.conjugationTool),
           ...effort(model!),
-          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons),
+          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons, args.conjugationTool),
           messages,
         }, attempt > 0, 'low');
 
         // L'aprenent demana la conjugació d'un verb: es consulta el DNV i es torna a demanar la resposta (té preferència
         // sobre la GNV: la taula ja respon la pregunta).
         let conjugation: VerbConjugation | null | undefined;
-        const verb = args.conjugationTool && content ? queryFieldOf(content, 'verb_conjugar', 60).toLowerCase() : '';
+        // Un text per a corregir no consulta res: la llista d'errors la mostra el client amb l'anàlisi.
+        const correcting = content ? correctTextOf(content) : false;
+        const verb = args.conjugationTool && content && !correcting ? queryFieldOf(content, 'verb_conjugar', 60).toLowerCase() : '';
         // El model ha decidit que és un dubte de normativa: es consulta la GNV i es torna a demanar la resposta.
         let gnvResult: GnvResultat | null = null;
-        const consulta = !verb && args.gnvTool && content ? queryFieldOf(content, 'consulta_gnv', 500) : '';
+        const consulta = !verb && args.gnvTool && content && !correcting ? queryFieldOf(content, 'consulta_gnv', 500) : '';
         if (verb) {
           conjugation = await lookupConjugation(verb);
           content = await complete(guard, key, model!, {
+            ...effort(model!),
             response_format: replySchema(withHelp, false, false, args.exerciseTool, args.lessons),
             messages: [...messages, { role: 'system', content: conjugationMessage(verb, conjugation) }],
           }, attempt > 0);
         } else if (consulta) {
-        const consulta = args.gnvTool && content && !correctTextOf(content) ? gnvQueryOf(content) : '';
-        if (consulta) {
           gnvResult = await lookupGnv(consulta);
           content = await complete(guard, key, model!, {
             ...effort(model!),

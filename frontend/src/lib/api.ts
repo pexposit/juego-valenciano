@@ -1,5 +1,4 @@
-import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, VerbConjugation, WritingEvaluation } from './types';
-import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, PronunciationResult, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, WritingEvaluation } from './types';
+import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, PronunciationResult, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, VerbConjugation, WritingEvaluation } from './types';
 import { sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
