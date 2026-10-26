@@ -159,6 +159,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     let level = data.level;
     let levelZero = false;
     let gnvTool = false;
+    let conjugationTool = false;
     let exerciseTool = false;
     let lessons: { id: string; title: string; summary: string }[] = [];
     if (client && scenario.category === ASSISTANT_CATEGORY) {
@@ -169,6 +170,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       levelZero = profile?.level === 'nivell0';
       // Els dubtes de normativa es responen amb la GNV (RAG), però no en el Nivell 0 (xiquets que no lligen).
       gnvTool = gnvRagEnabled() && !levelZero;
+      // La conjugació d'un verb (DNV, via el MCP) es mostra en una taula: tampoc per al Nivell 0.
+      conjugationTool = !levelZero;
       // Els exercicis del catàleg són per a qui sap llegir: no per al Nivell 0.
       exerciseTool = !levelZero;
       // El Nivell 0 no fa exercicis del catàleg: als xiquets se'ls enllaça una lliçó de l'app (les envia el client).
@@ -194,6 +197,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       extraInstructions,
       levelInstructions,
       gnvTool,
+      conjugationTool,
       exerciseTool,
       lessons,
       signal: abortSignal,

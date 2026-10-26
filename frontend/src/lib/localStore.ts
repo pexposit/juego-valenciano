@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { GnvRule, TutorActivity, TutorExercise } from './types';
+import type { GnvRule, TutorActivity, TutorExercise, VerbConjugation } from './types';
 
 /**
  * Dades de l'usuari que poden ser sensibles (el que escriu o diu): es guarden només en este
@@ -33,6 +33,8 @@ export type LocalMessage = {
   text: string;
   // Tutor: la regla de la GNV amb què ha respost (si n'hi ha).
   gnv?: GnvRule;
+  // Tutor: la conjugació del DNV que ha mostrat (si l'aprenent l'ha demanada).
+  conjugacio?: VerbConjugation;
   // Tutor: l'exercici del catàleg que ha mostrat (amb la resposta de l'aprenent, si ja l'ha feta).
   exercise?: TutorExercise;
   // Tutor: l'activitat que ha enllaçat (si n'hi ha pràctica del tema però no s'ha pogut mostrar l'exercici).
@@ -183,7 +185,7 @@ const byDate = <T extends { createdAt: string }>(a: T, b: T) => a.createdAt.loca
 export async function addMessages(
   conversationId: string,
   kind: ConversationKind,
-  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; createdAt?: string }[],
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; createdAt?: string }[],
 ) {
   const userId = await currentUserId();
   if (!userId || messages.length === 0) return;
@@ -196,6 +198,7 @@ export async function addMessages(
     role: m.role,
     text: m.text,
     ...(m.gnv ? { gnv: m.gnv } : {}),
+    ...(m.conjugacio ? { conjugacio: m.conjugacio } : {}),
     ...(m.exercise ? { exercise: m.exercise } : {}),
     ...(m.activity ? { activity: m.activity } : {}),
     ...(m.lessonId ? { lessonId: m.lessonId } : {}),

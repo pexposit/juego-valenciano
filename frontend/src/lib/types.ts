@@ -11,11 +11,15 @@ export type GnvRule = {
   relacionades?: { regla: string; seccio: string; ruta: string; text: string }[];
 };
 
+// Conjugació d'un verb segons el DNV de l'AVL, que el tutor mostra quan l'aprenent la demana.
+// `modes`: mode -> temps -> formes (6 persones en els temps personals; en l'imperatiu la 1a és buida).
+export type VerbConjugation = { verb: string; modes: Record<string, Record<string, string[]>>; observacions: string[]; url: string };
+
 // Exercici del catàleg que el tutor mostra dins del xat; `chosen` és la resposta que ha donat l'aprenent.
 export type TutorExercise={id:string;resource_id:string;resource_name:string;level:string;prompt:string;options:string[];answer:string;explanation:string;chosen?:string};
 // Activitat del catàleg que el tutor enllaça quan hi ha pràctica del tema però cap exercici que càpiga en el xat.
 export type TutorActivity={resource_id:string;resource_name:string;type:string;category:string};
-export type TurnResponse={reply_text:string;gnv?:GnvRule;exercise?:TutorExercise;activity?:TutorActivity;lesson_id?:string;transcription?:string|null;reply_audio_base64?:string|null;reply_audio_mime_type?:string|null;mood:Mood;detected_level_signal:'below'|'on'|'above';error_flags:string[];xp_delta:number;analyze_errors?:boolean};
+export type TurnResponse={reply_text:string;gnv?:GnvRule;conjugacio?:VerbConjugation;exercise?:TutorExercise;activity?:TutorActivity;lesson_id?:string;transcription?:string|null;reply_audio_base64?:string|null;reply_audio_mime_type?:string|null;mood:Mood;detected_level_signal:'below'|'on'|'above';error_flags:string[];xp_delta:number;analyze_errors?:boolean};
 
 // Fila de la taula resources: `category` agrupa les activitats (p. ex. 'escenari')
 // i `type` n'és la secció dins de la categoria (p. ex. 'mercat').

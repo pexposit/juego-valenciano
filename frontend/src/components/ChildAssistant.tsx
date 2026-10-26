@@ -217,11 +217,11 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       setMessages(m => {
         const next = [...m];
         if (reply.transcription) next[next.length - 1] = { role: 'user', text: VOICE_MESSAGE_LABEL, transcription: reply.transcription };
-        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id }];
+        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id }];
       });
       void addMessages(opened.session_resource_id, 'tutor', [
         { role: 'user', text: said || VOICE_MESSAGE_LABEL },
-        { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id },
+        { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id },
       ]).catch(error => console.error('Error guardant la conversa:', error));
       // Els errors del xat amb el professor compten per a la ruta, però no es practiquen.
       if (reply.analyze_errors && said) {
@@ -270,7 +270,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         >
           {openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold opacity-60">Un moment...</p>}
-          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
+          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} conjugacio={m.conjugacio} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
           {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
         </div>
 

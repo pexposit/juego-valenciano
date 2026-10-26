@@ -163,6 +163,13 @@ server.registerTool(
         .string()
         .describe('Verb en infinitiu, sense pronoms (ex: "anar", "cantar", "rentar").'),
     }),
+    // A més del text per al LLM, la taula estructurada: el tutor del xat la mostra a l'aprenent.
+    outputSchema: z.object({
+      existeix: z.boolean(),
+      modes: z.record(z.record(z.array(z.string()))).optional(),
+      observacions: z.array(z.string()).optional(),
+      url: z.string(),
+    }),
   },
   async ({ verb }) => {
     const resultat = await consultarConjugacio(verb);
@@ -175,6 +182,7 @@ server.registerTool(
             text: `No s'ha trobat la conjugació de "${verb}" al DNV. Comprova que siga un verb en infinitiu i sense pronoms.`,
           },
         ],
+        structuredContent: { ...resultat },
       };
     }
 
@@ -203,6 +211,7 @@ server.registerTool(
           text: info,
         },
       ],
+      structuredContent: { ...resultat },
     };
   }
 );

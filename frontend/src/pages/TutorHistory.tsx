@@ -198,7 +198,7 @@ export function TutorHistory({ onBack, onResume, showHelp }: { onBack: () => voi
       <div className="flex flex-col gap-3 rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white">
         {messages === undefined && <p className="text-center text-lg font-bold opacity-60">Carregant…</p>}
         {messages === null && <p className="text-center text-lg font-bold text-orange">No hem pogut carregar la conversa.</p>}
-        {messages?.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} showHelp={showHelp} />)}
+        {messages?.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} conjugacio={m.conjugacio} showHelp={showHelp} />)}
       </div>
     </div>
   );

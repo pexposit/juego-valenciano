@@ -1,4 +1,4 @@
-import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, WritingEvaluation } from './types';
+import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, VerbConjugation, WritingEvaluation } from './types';
 import { sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
@@ -523,7 +523,7 @@ export async function recordPracticeAnswers(answers: { exercise_id: string; answ
 export type AssistantConversation = {
   session_id: string;
   session_resource_id: string;
-  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string }[];
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string }[];
 };
 // Llengües maternes amb traducció (les mateixes que els subtítols del Nivell 0).
 const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'];
@@ -574,7 +574,7 @@ async function callAssistant(action: 'open' | 'restart', sessionId: string): Pro
   if (!res.ok) throw new Error("No s'ha pogut obrir la conversa amb el professor");
   const opened = await res.json() as { session_id: string; session_resource_id: string; greeting: string };
   await setCurrentTutorConversation(opened.session_resource_id);
-  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, exercise: m.exercise, activity: m.activity, lessonId: m.lessonId }));
+  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, conjugacio: m.conjugacio, exercise: m.exercise, activity: m.activity, lessonId: m.lessonId }));
   // Conversa nova (o d'un altre dispositiu, sense missatges ací): comença amb la salutació.
   if (messages.length === 0) {
     messages = [{ role: 'character', text: opened.greeting }];
@@ -589,10 +589,10 @@ export const restartAssistant = (sessionId: string) => callAssistant('restart', 
 // Converses anteriors del xiquet amb el tutor (pestanya «Converses» del tauler infantil).
 // `title`: el nom que ha posat l'usuari (title_edited) o el resum del LLM; si encara no n'hi ha, el primer missatge.
 export type TutorConversation = { id: string; started_at: string; message_count: number; title: string; title_edited: boolean; preview: string; current: boolean };
-export type TutorMessage = { role: 'user' | 'character'; text: string; gnv?: GnvRule; created_at: string };
+export type TutorMessage = { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; created_at: string };
 
 const toTutorMessages = (messages: Awaited<ReturnType<typeof getMessages>>): TutorMessage[] =>
-  messages.map(m => ({ role: m.role, text: m.text, gnv: m.gnv, created_at: m.createdAt }));
+  messages.map(m => ({ role: m.role, text: m.text, gnv: m.gnv, conjugacio: m.conjugacio, created_at: m.createdAt }));
 
 // Reobri una conversa anterior com a l'actual; en tornar al tauler el professor la continua.
 export async function resumeTutorConversation(id: string): Promise<void> {

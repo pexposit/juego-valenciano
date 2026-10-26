@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ScenarioDefinition } from './scenarios.js';
 import { consultarGnv, gnvContext, type GnvResultat, type GnvRule } from './gnvRag.js';
+import { conjugationContext, consultarConjugacioVerb, type VerbConjugation } from './conjugacio.js';
 import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
 import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
 import { createLoopGuard, type LoopGuard } from './loopGuard.js';
@@ -15,6 +16,8 @@ const outputSchema = z.object({
   help_text: z.string().optional(),
   // Tutor: la consulta per a la GNV que ha decidit fer el model (buida si no és de normativa).
   consulta_gnv: z.string().optional(),
+  // Tutor: el verb (en infinitiu) del qual l'aprenent demana la conjugació ('' si no en demana cap).
+  verb_conjugar: z.string().optional(),
   // Tutor: el tema de l'exercici del catàleg que vol oferir ('' si no n'ofereix cap).
   exercici_tema: z.string().optional(),
   // Tutor: la destresa que l'aprenent vol millorar i que no es pot practicar dins del xat ('' si no n'hi ha cap).
@@ -29,7 +32,7 @@ const outputSchema = z.object({
   }).optional(),
 });
 
-export type AgentReply = Omit<z.infer<typeof outputSchema>, 'gnv' | 'help_text' | 'consulta_gnv'> & { gnv?: GnvRule };
+export type AgentReply = Omit<z.infer<typeof outputSchema>, 'gnv' | 'help_text' | 'consulta_gnv' | 'verb_conjugar'> & { gnv?: GnvRule; conjugacio?: VerbConjugation };
 
 // Cadena de models: el principal (OPENAI_MODEL) i dos de reserva per si falla.
 // El nom ha d'existir a OpenAI: un valor inventat gasta dos intents (404) en
@@ -59,6 +62,18 @@ const GNV_INSTRUCTIONS = `CONSULTA DE LA GRAMÀTICA NORMATIVA VALENCIANA (GNV):
 - Si l'aprenent pregunta un dubte de normativa (com es pronuncia, com s'escriu, quan porta accent, com es forma el plural o el femení, com es conjuga, quina preposició o pronom va...), omple consulta_gnv: després rebràs la regla oficial de la GNV per a respondre-la.
 - Si no és un dubte de normativa, deixa consulta_gnv buida i respon directament.`;
 
+// Tutor: si l'aprenent demana la conjugació d'un verb concret, el model n'escriu l'infinitiu i l'aplicació la consulta
+// al DNV (ferramenta consultar_conjugacio del MCP). Com la GNV, és un camp de la resposta estructurada i no una eina.
+const VERB_QUERY_DESCRIPTION =
+  "Si l'últim missatge de l'aprenent demana la conjugació (o les formes, o un temps) d'un verb concret, eixe verb en " +
+  'infinitiu, en minúscules i sense pronoms ("Com es conjuga anar?" -> "anar"; "el present de rentar-se" -> "rentar"; ' +
+  '"conjugació de vindre" -> "vindre"; "com és el passat de fer?" -> "fer"). Cadena buida si no demana la conjugació ' +
+  "d'un verb concret (dubtes generals sobre verbs, salutació, conversa...).";
+
+const CONJUGATION_INSTRUCTIONS = `CONJUGACIÓ DE VERBS (DICCIONARI NORMATIU VALENCIÀ):
+- Si l'aprenent demana com es conjuga un verb concret (o un temps o les formes d'un verb concret), omple verb_conjugar amb el verb en infinitiu i sense pronoms: després rebràs la conjugació oficial del DNV i l'aplicació li mostrarà la taula completa. En eixe cas deixa consulta_gnv buida.
+- Per a dubtes generals sobre els verbs (com es formen els temps, quan s'usa un temps...) deixa verb_conjugar buit.`;
+
 const EXERCISE_INSTRUCTIONS = `EXERCICIS DEL CATÀLEG:
 - Mai no t'inventes exercicis: l'aplicació en mostra un de real del catàleg dins del xat, si n'hi ha, quan omples exercici_tema.
 - Cada vegada que expliques o resols un dubte sobre la llengua (normativa, ortografia, accents, gramàtica, verbs, lèxic...), omple exercici_tema amb el tema (1 a 3 paraules en valencià, com el nom d'una lliçó: "accentuació", "pronoms febles", "verbs", "plurals"). Si hi ha un exercici d'eixe tema, l'aprenent el veurà davall de la teua resposta. NO el mencions en reply_text: pot ser que no n'hi haja cap.
@@ -85,7 +100,7 @@ const lessonInstructions = (lessons: LessonRef[]) => `LLIÇONS DE L'APP:
 - Si el que pregunta o diu el xiquet té relació amb alguna d'estes lliçons, omple leccio_id amb el seu id i digues-li, en una frase molt curta i amb paraules senzilles, que li deixes la lliçó. Només una, la més adequada. Si cap no té relació, deixa leccio_id buit. Mai no t'inventes lliçons ni ids.
 ${lessons.map(l => `- ${l.id}: ${l.title}${l.summary ? ` (${l.summary})` : ''}`).join('\n')}`;
 
-function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false, lessons: LessonRef[] = []) {
+function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false, lessons: LessonRef[] = [], askVerb = false) {
   return {
     type: 'json_schema',
     json_schema: {
@@ -110,6 +125,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             description: 'La resposta directa del personatge a la conversa.',
           },
           ...(askGnvQuery ? { consulta_gnv: { type: 'string', description: GNV_QUERY_DESCRIPTION } } : {}),
+          ...(askVerb ? { verb_conjugar: { type: 'string', description: VERB_QUERY_DESCRIPTION } } : {}),
           ...(lessons.length ? { leccio_id: { type: 'string', enum: ['', ...lessons.map(l => l.id)], description: "L'id de la lliçó de l'app relacionada amb la pregunta del xiquet; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { area_practica: { type: 'string', enum: ['', ...PRACTICE_SKILLS], description: "La destresa que l'aprenent vol practicar si no es pot fer dins del xat; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { exercici_tema: { type: 'string', description: "Tema de l'exercici del catàleg que ofereixes a l'aprenent; cadena buida si no n'ofereixes cap." } } : {}),
@@ -137,7 +153,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             },
           } : {}),
         },
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askExercise ? ['exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askVerb ? ['verb_conjugar'] : []), ...(askExercise ? ['exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
         additionalProperties: false,
       },
     },
@@ -196,11 +212,29 @@ Respon ara l'últim missatge de l'aprenent NOMÉS amb el que diuen estes fonts, 
   - Simplificar NO vol dir llevar la condició que decidix la regla: si depén del so (com sona la s, si la e és oberta o tancada...), explica com distingir-ho amb la comparació senzilla. Abans d'escriure el truc, comprova'l amb l'exemple del cas contrari: ha d'encertar en els dos (p. ex. un truc per a la ss ha de funcionar amb «cassa» i també amb «casa»).`;
 }
 
-// La consulta per a la GNV de la primera resposta del tutor ('' si no n'hi ha o no es pot llegir).
-function gnvQueryOf(content: string): string {
+// Conjugació del DNV per al LLM, en un missatge final abans de demanar-li la resposta.
+// `undefined`: la consulta ha fallat; `null`: el DNV no té la conjugació d'eixe verb.
+function conjugationMessage(verb: string, conjugation: VerbConjugation | null | undefined): string {
+  const intro = `Has consultat la conjugació del verb «${verb}» en el Diccionari Normatiu Valencià (DNV) de l'AVL.`;
+  if (conjugation === undefined) {
+    return `${intro} La consulta no està disponible ara mateix. Digues-li a l'aprenent, amb naturalitat, que ara no pots mostrar-li la conjugació i que ho torne a provar d'ací a un moment; no t'inventes formes verbals.`;
+  }
+  if (conjugation === null) {
+    return `${intro} No l'has trobada: pot ser que no siga un verb o que no estiga escrit en infinitiu. Digues-li-ho amb naturalitat i demana-li el verb en infinitiu; no t'inventes formes verbals.`;
+  }
+  return `${intro} Esta és la conjugació oficial:
+
+${conjugationContext(conjugation)}
+
+L'aplicació mostrarà la taula completa davall de la teua resposta. Respon ara l'últim missatge de l'aprenent en text pla (sense Markdown ni asteriscs; per a citar paraules usa cometes «»):
+- reply_text: 1-3 frases breus. Presenta la conjugació (p. ex. «Ací tens la conjugació del verb «anar».») i, si ha preguntat per un temps o una forma concreta, respon-ho directament. Si el verb és irregular, destaca una o dues formes que solen costar. No copies la taula sencera i usa NOMÉS formes que apareguen en la conjugació de dalt.`;
+}
+
+// Un camp de text de la primera resposta del tutor ('' si no n'hi ha o no es pot llegir).
+function queryFieldOf(content: string, field: 'consulta_gnv' | 'verb_conjugar', max: number): string {
   try {
-    const value = parseJsonResponse(content) as { consulta_gnv?: unknown };
-    return typeof value.consulta_gnv === 'string' ? value.consulta_gnv.trim().slice(0, 500) : '';
+    const value = (parseJsonResponse(content) as Record<string, unknown>)[field];
+    return typeof value === 'string' ? value.trim().slice(0, max) : '';
   } catch {
     return '';
   }
@@ -243,6 +277,8 @@ export async function replyFromAgent(args: {
   levelInstructions?: string;
   // Tutor: pot consultar la Gramàtica Normativa Valenciana (RAG) quan el missatge és un dubte de normativa.
   gnvTool?: boolean;
+  // Tutor: pot mostrar la conjugació d'un verb del DNV (ferramenta consultar_conjugacio del MCP).
+  conjugationTool?: boolean;
   // Tutor: pot oferir un exercici real del catàleg (exercici_tema); el resol qui crida.
   exerciseTool?: boolean;
   // Tutor del Nivell 0: les lliçons que pot enllaçar (leccio_id); les resol qui crida.
@@ -281,11 +317,13 @@ export async function replyFromAgent(args: {
 
         ${args.gnvTool ? GNV_INSTRUCTIONS : ''}
 
+        ${args.conjugationTool ? CONJUGATION_INSTRUCTIONS : ''}
+
         ${args.exerciseTool ? EXERCISE_INSTRUCTIONS : ''}
 
         ${args.lessons?.length ? lessonInstructions(args.lessons) : ''}
 
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.exerciseTool ? ', exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.conjugationTool ? ', verb_conjugar' : ''}${args.exerciseTool ? ', exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
     },
     {
       role: 'user',
@@ -311,6 +349,24 @@ export async function replyFromAgent(args: {
     return gnvLookups.get(consulta)!;
   };
 
+  // La conjugació també es consulta una sola vegada per verb.
+  const conjugationLookups = new Map<string, Promise<VerbConjugation | null | undefined>>();
+  const lookupConjugation = (verb: string) => {
+    if (!conjugationLookups.has(verb)) {
+      const started = Date.now();
+      conjugationLookups.set(verb, consultarConjugacioVerb(verb)
+        .then((conjugation) => {
+          console.log(`[agent] conjugació="${verb}" trobada=${Boolean(conjugation)} ${Date.now() - started}ms`);
+          return conjugation;
+        })
+        .catch((error) => {
+          console.warn('[agent] la consulta de la conjugació ha fallat:', error instanceof Error ? error.message : error);
+          return undefined;
+        }));
+    }
+    return conjugationLookups.get(verb)!;
+  };
+
   // Detecció de bucles: massa crides o el mateix missatge una vegada i una altra talla la petició (LoopDetectedError).
   const guard = createLoopGuard({ label: 'agent', signal: args.signal, maxIterations: 8 });
   let lastError = 'OpenAI no ha retornat una resposta vàlida';
@@ -320,14 +376,24 @@ export async function replyFromAgent(args: {
         // La primera crida decidix què fer (respondre, consultar la GNV, proposar exercici): un poc de raonament (low).
         // La segunda només redacta amb les fonts que ja té: sense raonament (none).
         let content = await complete(guard, key, model!, {
-          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons),
+          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons, args.conjugationTool),
           messages,
         }, attempt > 0, 'low');
 
+        // L'aprenent demana la conjugació d'un verb: es consulta el DNV i es torna a demanar la resposta (té preferència
+        // sobre la GNV: la taula ja respon la pregunta).
+        let conjugation: VerbConjugation | null | undefined;
+        const verb = args.conjugationTool && content ? queryFieldOf(content, 'verb_conjugar', 60).toLowerCase() : '';
         // El model ha decidit que és un dubte de normativa: es consulta la GNV i es torna a demanar la resposta.
         let gnvResult: GnvResultat | null = null;
-        const consulta = args.gnvTool && content ? gnvQueryOf(content) : '';
-        if (consulta) {
+        const consulta = !verb && args.gnvTool && content ? queryFieldOf(content, 'consulta_gnv', 500) : '';
+        if (verb) {
+          conjugation = await lookupConjugation(verb);
+          content = await complete(guard, key, model!, {
+            response_format: replySchema(withHelp, false, false, args.exerciseTool, args.lessons),
+            messages: [...messages, { role: 'system', content: conjugationMessage(verb, conjugation) }],
+          }, attempt > 0);
+        } else if (consulta) {
           gnvResult = await lookupGnv(consulta);
           content = await complete(guard, key, model!, {
             response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool, args.lessons),
@@ -341,7 +407,7 @@ export async function replyFromAgent(args: {
         }
         console.log(`[agent] resposta vàlida de ${model}`);
 
-        const { help_text, gnv, consulta_gnv: _, ...parsed } = outputSchema.parse(parseJsonResponse(content));
+        const { help_text, gnv, consulta_gnv: _, verb_conjugar: __, ...parsed } = outputSchema.parse(parseJsonResponse(content));
         // Filtre d'eixida: si la resposta reproduïx el prompt del sistema, no arriba a l'aprenent (ni res del que du
         // associat: exercici, activitat, lliçó o regla de la GNV).
         const leak = detectPromptLeak([parsed.reply_text, help_text, gnv?.contingut, gnv?.explicacio], [messages[0].content]);
@@ -351,7 +417,9 @@ export async function replyFromAgent(args: {
         }
         const reply: AgentReply = gnv && gnvResult?.hay_respaldo
           ? { ...parsed, reply_text: plain(parsed.reply_text), gnv: gnvRuleFrom(gnvResult, gnv) }
-          : parsed;
+          : conjugation
+            ? { ...parsed, reply_text: plain(parsed.reply_text), conjugacio: conjugation }
+            : parsed;
         // La llengua materna va en una línia a part: el TTS només llig la primera (en valencià).
         return help_text?.trim() ? { ...reply, reply_text: `${reply.reply_text.trim()}
 ${help_text.trim()}` } : reply;

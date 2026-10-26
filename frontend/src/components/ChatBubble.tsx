@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Check, Dumbbell, X } from 'lucide-react';
+import { BookOpen, Check, Dumbbell, ExternalLink, Table, X } from 'lucide-react';
 import { activityRoute, KIDS_ROUTES, practiceRoute } from '../data/content';
 import { lessonById } from '../features/kids/lessons';
-import type { GnvRule, TutorActivity, TutorExercise } from '../lib/types';
+import type { GnvRule, TutorActivity, TutorExercise, VerbConjugation } from '../lib/types';
 
 // Bombolla d'un missatge del xat amb el tutor. En els missatges del professor, la primera línia és en
 // valencià i la resta, en gris clar, l'ajuda en la llengua materna del xiquet (amagada si `showHelp` és fals).
-// Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial.
-export function ChatBubble({ role, text, transcription, gnv, exercise, activity, lessonId, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
+// Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial; si li han demanat la
+// conjugació d'un verb, la taula del DNV.
+export function ChatBubble({ role, text, transcription, gnv, conjugacio, exercise, activity, lessonId, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; conjugacio?: VerbConjugation; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
   const [valencian, ...help] = role === 'character' ? text.split('\n') : [text];
   return (
     <div
@@ -19,6 +20,7 @@ export function ChatBubble({ role, text, transcription, gnv, exercise, activity,
       {transcription && <p className="mt-2 border-t border-white/30 pt-2 text-[0.85em] font-normal">Transcripció: {transcription}</p>}
       {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-[0.85em] font-semibold text-slate-400">{help.join('\n')}</p>}
       {gnv && <GnvRuleCard rule={gnv} />}
+      {conjugacio && <ConjugationCard conjugation={conjugacio} />}
       {lessonId && <LessonLink lessonId={lessonId} />}
       {exercise && <ExerciseCard exercise={exercise} onAnswer={onAnswer} />}
       {!exercise && activity && (
@@ -63,6 +65,58 @@ function GnvRuleCard({ rule }: { rule: GnvRule }) {
           ))}
         </div>
       </details>
+    </section>
+  );
+}
+
+// Persones dels temps personals, en l'ordre en què les dona el DNV.
+const PERSONS = ['jo', 'tu', 'ell, ella, vosté', 'nosaltres', 'vosaltres', 'ells, elles, vostés'];
+
+// Conjugació d'un verb del DNV: un desplegable per mode (l'indicatiu, obert) amb un bloc per temps.
+function ConjugationCard({ conjugation }: { conjugation: VerbConjugation }) {
+  return (
+    <section aria-label={`Conjugació del verb ${conjugation.verb}`} className="mt-3 rounded-xl bg-white/80 p-3 text-[0.9em] font-semibold ring-2 ring-teal/30">
+      <p className="flex items-start gap-2 text-[0.8em] font-extrabold uppercase tracking-wide text-teal">
+        <Table size={18} className="mt-0.5 shrink-0" aria-hidden />
+        <span>Conjugació · DNV</span>
+      </p>
+      <p className="mt-1 text-[1.1em] font-black text-slate-800">{conjugation.verb}</p>
+
+      {Object.entries(conjugation.modes).map(([mode, tenses], i) => (
+        <details key={mode} open={i === 0} className="mt-3">
+          <summary className="cursor-pointer text-[0.85em] font-extrabold capitalize text-slate-700">{mode}</summary>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {Object.entries(tenses).map(([tense, forms]) => (
+              <div key={tense} className="rounded-lg bg-cream/60 px-3 py-2">
+                {tense !== 'formes' && <p className="text-[0.75em] font-extrabold uppercase tracking-wide text-teal">{tense}</p>}
+                {forms.length === PERSONS.length ? (
+                  <dl className="text-[0.85em]">
+                    {forms.map((form, person) => form && (
+                      <div key={person} className="flex gap-2">
+                        <dt className="w-24 shrink-0 font-medium text-slate-400">{PERSONS[person]}</dt>
+                        <dd className="font-bold text-slate-800">{form}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className="text-[0.85em] font-bold text-slate-800">{forms.filter(Boolean).join(', ')}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
+      ))}
+
+      {conjugation.observacions.length > 0 && (
+        <>
+          <h3 className="mt-3 text-[0.8em] font-extrabold text-slate-700">Observacions</h3>
+          {conjugation.observacions.map(o => <p key={o} className="text-[0.8em] font-medium text-slate-600">{o}</p>)}
+        </>
+      )}
+
+      <a href={conjugation.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-[0.8em] font-extrabold text-teal underline">
+        Vore-la en el DNV de l'AVL <ExternalLink size={14} aria-hidden />
+      </a>
     </section>
   );
 }
