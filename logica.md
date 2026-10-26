@@ -1101,27 +1101,27 @@ Se guardan con la **misma forma que el catálogo** (`resources` + `practice_exer
 
 ## 13. Catálogo de contenidos
 
-Todo el contenido se carga con migraciones SQL. Recuento en la BD local: **245 recursos, 5477 ejercicios, 66 pasajes** (antes de los contenidos C1, que añaden 52 recursos y 2318 ejercicios).
+Todo el contenido se carga con migraciones SQL. Recuento actual en la BD local: **402 recursos, 10 218 ejercicios y 84 pasajes**, incluidos C1 y C2. C2 aporta 66 recursos (14 escenarios y 52 contenidos lingüísticos) y 2310 ejercicios.
 
 ### 13.1 Recursos por categoría y nivel
 
-| Categoría | A1 | A2 | B1 | B2 | C1 | nivell0 |
-|---|---|---|---|---|---|---|
-| escenari | 1 | 12 | 16 | 9 | 13 | 4 |
-| examen | 1 | 4 | 3 | 4 | 4 | – |
-| assistent | – | 1 (el tutor, con nivel A2 heredado) | – | – | – | – |
-| fonetica_ortografia | – | 10 | 12 | 13 | 13 | – |
-| morfosintaxi | – | 8 | 16 | 18 | 19 | – |
-| lexic_semantica | – | 10 | 20 | 15 | 20 | – |
-| comprensio_oral | – | 7 | 6 | 6 | – | – |
-| comprensio_escrita | – | 6 | 6 | 6 | 6 | – |
-| expressio_escrita | – | 5 | 6 | 6 | 6 | – |
-| expressio_oral | – | 4 | 5 | 5 | 6 | – |
+| Categoría | A1 | A2 | B1 | B2 | C1 | C2 | nivell0 |
+|---|---|---|---|---|---|---|---|
+| escenari | 1 | 12 | 16 | 9 | 13 | 14 | 4 |
+| examen | 1 | 4 | 3 | 4 | 4 | – | – |
+| assistent | – | 1 (el tutor, con nivel A2 heredado) | – | – | – | – | – |
+| fonetica_ortografia | – | 10 | 12 | 13 | 13 | 13 | – |
+| morfosintaxi | – | 8 | 16 | 18 | 19 | 17 | – |
+| lexic_semantica | – | 10 | 20 | 15 | 20 | 22 | – |
+| comprensio_oral | – | 7 | 6 | 6 | – | – | – |
+| comprensio_escrita | – | 6 | 6 | 6 | 6 | – | – |
+| expressio_escrita | – | 5 | 6 | 6 | 6 | – | – |
+| expressio_oral | – | 4 | 5 | 5 | 6 | – | – |
 
-- Las lecciones fijas (`metadata.lesson`) existen en **B1, B2 y C1 de fonética y morfosintaxis** (91 recursos), redactadas a mano a partir de la *Gramàtica valenciana bàsica* (GVB) y la *Gramàtica normativa valenciana* (GNV) de l'AVL y de los Quaderns de nivell de la JQCV (`assets-src/avl/`). La app no consulta la AVL en tiempo real.
-- Ejercicios (choice + fill): A2 ≈ 1100, B1 ≈ 1940, B2 ≈ 2030, C1 = 2318 (584 de fonética, 847 de morfosintaxis y 887 de léxico); comprensión oral 36/53/80; comprensión escrita 31/50/93; expresión escrita 13/16/17.
+- Las lecciones fijas (`metadata.lesson`) existen en **B1, B2 y C1 de fonética y morfosintaxis** (91 recursos) y también en C2 (13 de fonética y 17 de morfosintaxis). La GVB/GNV de l'AVL es la referencia normativa; los Quaderns de nivell de la JQCV delimitan el temario, el nivel y el tipo de actividad que corresponde a cada bloque. La app no consulta la AVL en tiempo real.
+- Ejercicios (choice + fill): A2 ≈ 1100, B1 ≈ 1940, B2 ≈ 2030, C1 = 2318 (584 de fonética, 847 de morfosintaxis y 887 de léxico); C2 = 2310 de lengua (599 de fonética, 771 de morfosintaxis y 940 de léxico); comprensión oral 36/53/80; comprensión escrita 31/50/93; expresión escrita 13/16/17.
 - Contenidos B1 de vocabulario: bloques 3.1.1–3.1.12 del temario + 8 de vocabulario «usual»; B2 de léxico: ámbitos, formación de palabras, locuciones, polisemia, barbarismos, metáfora, relaciones semánticas…
-- C1: 13 contenidos de fonética, 19 de morfosintaxis (ambos con lección fija) y 20 de léxico (Quadern C1, 3.2.1–3.2.3); los errores de los alumnos C1 ya se clasifican por contenido. Destrezas C1: comprensión escrita (6 contenidos, 12 textos, 96 preguntas), expresión escrita (6 contenidos, 16 redacciones corregidas con la rúbrica C1) y expresión oral (6 chats); el Quadern C1 no tiene comprensión oral y su objetivo 2.2 (Estructures lingüístiques) calibra la rúbrica. Exámenes C1: octubre 2025, abril 2025, octubre 2024 y mayo 2024 (cuatro áreas: comprensión escrita 10 %, estructuras 20 %, expresión escrita 35 % y oral 35 %; en el ejercicio 5 cada opción lleva su infografía, `choices[].image` e `image_text`). Sin rutas todavía. C2 no tiene escenarios.
+- C1: 13 contenidos de fonética, 19 de morfosintaxis (ambos con lección fija) y 20 de léxico (Quadern C1, 3.2.1–3.2.3); los errores de los alumnos C1 ya se clasifican por contenido. Destrezas C1: comprensión escrita (6 contenidos, 12 textos, 96 preguntas), expresión escrita (6 contenidos, 16 redacciones corregidas con la rúbrica C1) y expresión oral (6 chats); el Quadern C1 no tiene comprensión oral y su objetivo 2.2 (Estructures lingüístiques) calibra la rúbrica. Exámenes C1: octubre 2025, abril 2025, octubre 2024 y mayo 2024 (cuatro áreas: comprensión escrita 10 %, estructuras 20 %, expresión escrita 35 % y oral 35 %; en el ejercicio 5 cada opción lleva su infografía, `choices[].image` e `image_text`). Sin rutas todavía. C2: 14 escenarios (`20261025160000`); fonética, 13 contenidos y 599 preguntas, con 13 lecciones; morfosintaxis, 17 contenidos y 771 preguntas, con 17 lecciones; léxico, 22 contenidos y 940 preguntas (migraciones aplicadas y recuentos verificados en BD local). La GNV/GVB aporta la normativa gramatical y el DNV verifica léxico y formas; para onomástica se contrastaron topónimos valencianos con publicaciones de l'AVL y exónimos con usos documentados. La web de la GNV no admite consulta automatizada, así que se ha usado la copia local. Siguen pendientes las destrezas C2, los exámenes y activar C2 en las rutas.
 
 ### 13.2 Exámenes (`metadata.exam`)
 
@@ -1159,6 +1159,7 @@ Audios en `/audio/Audio_<nivel>_<sesión>.mp3`; imágenes en `/exams/<nivel>-<se
 | B1 | ajuntament (Amparo), bar (Maria), taller (sin personaje), turisme (Laura); b1_persones (Elena), b1_relacions (Pau), b1_vida_quotidiana (Amparo), b1_llocs (Joan), b1_viatges (Neus), b1_oci_esport (Andreu), b1_administracio (Teresa), b1_treball (Sergi), b1_salut (Marc), b1_territori (Hannah), b1_cultura (Àlex), b1_natura_clima (Pilar) |
 | B2 | b2_gent (Carme), b2_estudis_treball (Ferran), b2_viatges (Núria), b2_menjar_salut (Toni), b2_cultura_espectacles (Marta), b2_mitjans (Pau), b2_politica_societat (Empar), b2_actualitat (Hèctor), b2_cultura_llengua (la tia Pepeta) |
 | C1 | c1_relacions (Neus), c1_casa (Vicent), c1_treball (Sílvia), c1_alimentacio (Empar), c1_temps_lliure (Jordi), c1_mitjans (Laia), c1_salut (Marc), c1_cultura (Teresa), c1_comerc (Rafel), c1_ensenyanca (Karim), c1_economia (Sergi), c1_medi_clima (Pilar), c1_sociocultural (Marina): uno por bloque de 3.1 del Quadern C1 |
+| C2 | c2_relacions (Ernest), c2_casa (Remei), c2_treball (Andreu), c2_alimentacio (Mar), c2_temps_lliure (Toni), c2_mitjans (Noelia), c2_salut (Amparo), c2_cultura (Octavi), c2_comerc (Rebeca), c2_ensenyanca (Joaquim), c2_economia (Isabel), c2_medi_clima (Ferran), c2_politica (Carme), c2_llengua (Xavier): uno por bloque de 3.1 del Quadern C2 (14 bloques) |
 | Expressió oral | A2: eo_descripcio, eo_entrevista, eo_exposicio, eo_estrategies; B1: b1_eo_{experiencies, opinio, imprevistos, mediacio, exposicio}; B2: b2_eo_{exposicio, debat, experiencies, reunio, entrevista}; C1: c1_eo_{exposicio, instruccions, social, discussio, entrevistador, entrevistat} |
 
 Metadata de un escenario: `{icon, color, background, voice, character, character_role, section_name, initial_prompt, objectius[], system_prompt, greeting_audio?, translations?}`. Las familias `a2_*`, `b1_*`, `b2_*` generan el `system_prompt` como: prompt propio + «Pautes» comunes del nivel + lista de objetivos + cerrar la conversación cuando se cumplan.
@@ -1348,6 +1349,11 @@ Dockerfiles: backend en 3 etapas `node:22-alpine` (build, dependencias de produc
 | 109 | `…practice_skills_c1` | Destrezas C1: comprensión escrita, expresión escrita y expresión oral |
 | 110 | `…escenaris_c1` | 13 escenarios C1 |
 | 111–114 | `20261015130000…160000` | Exámenes C1 (octubre 2025, abril 2025, octubre 2024, mayo 2024) |
+| C2 | `20261025160000_escenaris_c2` | 14 escenarios del Quadern C2 |
+| C2 | `20261026100000_practice_fonetica_c2`, `20261026120000_llicons_fonetica_c2` | Fonética: 13 contenidos, 599 preguntas y 13 lecciones |
+| C2 | `20261027110000_practice_morfosintaxi_c2`, `20261027130000_llicons_morfosintaxi_c2` | Morfosintaxis: 17 contenidos, 771 preguntas y 17 lecciones |
+| C2 | `20261028140000_practice_lexic_c2` | Léxico: 22 contenidos y 940 preguntas |
+| C2 | `20261029140000_practice_lexic_c2` | Reaplica el catálogo léxico final tras las correcciones de revisión; conserva 22 contenidos y 940 preguntas |
 
 ---
 
@@ -1386,7 +1392,7 @@ Efecto lateral: A1, C1 y C2 siguen viendo `LearningPath` en `/ruta`, pero el bac
 14. ~~El nivel no se puede cambiar~~: resuelto (perfil y prueba de nivel, §20).
 15. Las evaluaciones de redacciones **del examen** no generan errores ni resultado (a diferencia de la práctica).
 16. `forn` y `taller` no tienen `system_prompt`, personaje ni objetivos (son jugables por `character_role` y usan el prompt por defecto); `forn` está en una ruta A2.
-17. El tutor `ajuda_infantil` tiene nivel A2 (herencia del mapeo); `colegi` pasó al A1; C2 no tiene contenidos de práctica; C1 tiene contenidos de lengua, destrezas, escenarios y exámenes, pero no rutas.
+17. El tutor `ajuda_infantil` tiene nivel A2 (herencia del mapeo); `colegi` pasó al A1; C2 ya tiene práctica de fonética, morfosintaxis y léxico además de escenarios, pero aún no tiene destrezas, exámenes ni rutas; C1 tiene contenidos de lengua, destrezas, escenarios y exámenes, pero no rutas.
 18. Las marcas infantiles (`badges`) se escriben sin atomicidad; álbum, fallos para repaso y modo fácil son solo locales.
 19. `kids_word_stats` se guarda pero no se usa en el informe.
 20. Las rutas predefinidas dependen del `type`: si una migración de catálogo recrea un recurso con otro id, sus pasos desaparecen en cascada y hay que reaplicar el fichero de rutas. Las migraciones A2/B1 de escenarios hacen `DELETE` previo (borra en cascada sesiones, errores y resultados que los referencien); la B2 hace upsert.
