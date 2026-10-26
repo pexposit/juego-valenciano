@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { consultarDnv } from './dnvClient.js';
+import { consultarConjugacio } from './dnvConjugacio.js';
 import { traduirApertium } from './apertiumClient.js';
 import { corregirSoftvalencia } from './softvalenciaClient.js';
 
@@ -148,6 +149,61 @@ server.registerTool(
         ],
       };
     }
+  }
+);
+
+// Eina 4: Conjugació verbal del DNV
+server.registerTool(
+  'consultar_conjugacio',
+  {
+    description:
+      "Obté la conjugació completa d'un verb segons el Diccionari Normatiu Valencià (DNV) de l'AVL. Útil per a comprovar si una forma verbal és normativa.",
+    inputSchema: z.object({
+      verb: z
+        .string()
+        .describe('Verb en infinitiu, sense pronoms (ex: "anar", "cantar", "rentar").'),
+    }),
+  },
+  async ({ verb }) => {
+    const resultat = await consultarConjugacio(verb);
+
+    if (!resultat.existeix || !resultat.modes) {
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `No s'ha trobat la conjugació de "${verb}" al DNV. Comprova que siga un verb en infinitiu i sense pronoms.`,
+          },
+        ],
+      };
+    }
+
+    const seccions = Object.entries(resultat.modes).map(([mode, temps]) => {
+      const linies = Object.entries(temps).map(
+        ([nomTemps, formes]) => `  ${nomTemps}: ${formes.filter(Boolean).join(', ')}`
+      );
+      return `${mode.toUpperCase()}\n${linies.join('\n')}`;
+    });
+
+    const info = [
+      `CONJUGACIÓ DEL VERB "${verb}" (DNV):`,
+      ...seccions,
+      resultat.observacions && resultat.observacions.length > 0
+        ? `Observacions: ${resultat.observacions.join(' ')}`
+        : null,
+      `Font oficial: ${resultat.url}`,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: info,
+        },
+      ],
+    };
   }
 );
 

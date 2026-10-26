@@ -4,6 +4,7 @@ import { consultarGnv, gnvContext, type GnvResultat, type GnvRule } from './gnvR
 import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
 import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
 import { createLoopGuard, type LoopGuard } from './loopGuard.js';
+import { reasoningEffortFor, type ReasoningEffort } from './reasoningEffort.js';
 
 
 
@@ -145,7 +146,9 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
 
 // Una petició a chat/completions; retorna el contingut de la resposta.
 // `fresh`: en un reintent no es llig la cache (la resposta anterior ha fallat) i la nova no la substituïx fins que es valide.
-async function complete(guard: LoopGuard, key: string, model: string, body: Record<string, unknown>, fresh = false): Promise<string | null | undefined> {
+async function complete(
+  guard: LoopGuard, key: string, model: string, body: Record<string, unknown>, fresh = false, effort: ReasoningEffort = 'none',
+): Promise<string | null | undefined> {
   // L'últim missatge enviat: si és el mateix una vegada i una altra, el model no avança.
   const last = (body.messages as { content?: unknown }[] | undefined)?.at(-1)?.content;
   guard.llmCall(typeof last === 'string' ? last : JSON.stringify(last ?? ''));
@@ -157,7 +160,9 @@ async function complete(guard: LoopGuard, key: string, model: string, body: Reco
       ...(fresh ? { [NO_CACHE_HEADER]: '1' } : {}),
     },
     signal: AbortSignal.any([AbortSignal.timeout(OPENAI_TIMEOUT_MS), guard.signal]),
-    body: JSON.stringify({ model, ...body }),
+    // Amb l'esforç per defecte, gpt-6-luna dedicava ~1200 tokens a pensar la resposta amb la regla de la GNV (~15 s de
+    // 21); sense raonament, la regla i l'explicació són igual de correctes. Qui crida tria l'esforç de cada crida.
+    body: JSON.stringify({ model, ...reasoningEffortFor(model, effort), ...body }),
   });
   if (!response.ok) throw new Error(`OpenAI API error (${model}): ${response.status}`);
   const payload = (await response.json()) as { choices?: { message?: { content?: string | null } }[] };
@@ -312,10 +317,12 @@ export async function replyFromAgent(args: {
   for (const model of OPENAI_MODELS) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
+        // La primera crida decidix què fer (respondre, consultar la GNV, proposar exercici): un poc de raonament (low).
+        // La segunda només redacta amb les fonts que ja té: sense raonament (none).
         let content = await complete(guard, key, model!, {
           response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons),
           messages,
-        }, attempt > 0);
+        }, attempt > 0, 'low');
 
         // El model ha decidit que és un dubte de normativa: es consulta la GNV i es torna a demanar la resposta.
         let gnvResult: GnvResultat | null = null;
