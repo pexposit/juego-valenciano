@@ -7,15 +7,38 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
-import { pickTutorExercise, type TutorExercise } from '../services/tutorExercise.js';
+import { findSkillActivity, findTutorActivity, pickTutorExercise, TOO_HIGH, TOO_HIGH_MESSAGE, type TutorActivity, type TutorExercise } from '../services/tutorExercise.js';
 import { getScenario } from '../services/scenarios.js';
 import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
-import { assistantLevelInstructions } from '../services/assistantLevel.js';
+import { ADULT_VALENCIAN_ONLY_INSTRUCTIONS, assistantLevelInstructions } from '../services/assistantLevel.js';
 import { stt, tts } from '../services/voice.js';
 import { gnvRagEnabled } from '../services/gnvRag.js';
+import { detectPromptInjection, INJECTION_REPLY } from '../services/promptInjection.js';
+import { createRepeatTracker, isLoopError, LOOP_STOPPED_MESSAGE, requestAbortSignal } from '../services/loopGuard.js';
 
 export const turnRouter = Router();
+
+// Transcripció d'un àudio en què no s'ha entés res, i l'única resposta que ha de rebre.
+const UNINTELLIGIBLE = 'Intel·ligible';
+const ASK_TO_REPEAT = "Ho sent, no t'he escoltat bé. El pots repetir?";
+
+// El mateix missatge enviat una vegada i una altra (p. ex. un bucle de reintents al client) no arriba al model.
+const repeatedTurns = createRepeatTracker();
+
+// Resposta (sense passar pel model) quan s'ha tallat un bucle: l'usuari rep l'avís dins del xat.
+const loopStoppedReply = () => ({
+  reply_text: LOOP_STOPPED_MESSAGE,
+  mood: 'confus',
+  detected_level_signal: 'on',
+  error_flags: [],
+  transcription: null,
+  reply_audio_base64: null,
+  reply_audio_mime_type: null,
+  xp_delta: 0,
+  analyze_errors: false,
+  loop_stopped: true,
+});
 
 const TURN_RATE_LIMIT = {
   windowMs: 60_000,
@@ -27,6 +50,8 @@ const TURN_RATE_LIMIT = {
 // conversa (que guarda en el seu navegador) i rep la resposta. Els errors del missatge es busquen
 // a banda, amb /api/errors/analyze, perquè la resposta no haja d'esperar-los.
 turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req: AuthRequest, res) => {
+  // S'avorta si el client tanca la connexió (botó «Aturar», pestanya tancada): talla també les crides al model en vol.
+  const abortSignal = requestAbortSignal(req, res);
   try {
     const data = turnSchema.parse(req.body);
     let text = data.text.trim();
@@ -43,10 +68,20 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     if (data.input_mode === 'voice') {
       if (!data.audio_base64) return res.status(400).json({ error: "Falta l'àudio" });
       const sttStart = Date.now();
-      text = await stt.transcribe(Buffer.from(data.audio_base64, 'base64'), 'audio/webm');
-      console.log(`[turn] stt=${Date.now() - sttStart}ms`);
+      // Si el model no reconeix cap paraula, la transcripció per defecte és «Intel·ligible». El frontend envia
+      // «silence» en lloc de l'àudio quan la gravació és silenci (whisper s'inventaria el text).
+      const silent = data.audio_base64 === 'silence';
+      const heard = silent ? '' : await stt.transcribe(Buffer.from(data.audio_base64, 'base64'), 'audio/webm');
+      text = heard || UNINTELLIGIBLE;
+      console.log(`[turn] stt=${Date.now() - sttStart}ms ${silent ? '(silenci detectat pel client)' : `audio=${data.audio_base64.length}B text="${heard}"`}`);
     }
     if (!text) return res.status(400).json({ error: 'No hi ha cap missatge' });
+
+    // Mateix missatge repetit massa voltes en poc de temps: es talla abans de gastar cap crida.
+    if (repeatedTurns.hit(req.userId, text).exceeded) {
+      console.warn(`[turn] missatge repetit massa voltes (usuari=${req.userId ?? '-'}); petició aturada`);
+      return res.json(loopStoppedReply());
+    }
 
     const client = db(req.userId);
 
@@ -78,8 +113,45 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       }
     }
 
-    // 2. Historial de la conversa, enviat pel client (no es guarda al servidor).
-    const history = sanitizeHistory(data.history as HistoryMessage[]);
+    // Si no s'ha entés l'àudio, el personatge només demana que ho repetisca (sense passar pel model ni donar XP).
+    if (data.input_mode === 'voice' && text === UNINTELLIGIBLE) {
+      const audio = data.include_audio ? await tts.synthesize(ASK_TO_REPEAT, scenario.voice) : null;
+      return res.json({
+        reply_text: ASK_TO_REPEAT,
+        mood: 'confus',
+        detected_level_signal: 'on',
+        error_flags: [],
+        transcription: text,
+        reply_audio_base64: audio?.audio.toString('base64') || null,
+        reply_audio_mime_type: audio?.mimeType || null,
+        xp_delta: 0,
+        analyze_errors: false,
+      });
+    }
+
+    // Prompt injection: si el missatge intenta manipular el model, el personatge no passa pel model, ho
+    // desvia amb una frase fixa i no se'n donen XP.
+    const injection = detectPromptInjection(text);
+    if (injection.flagged) {
+      console.warn(`[turn] possible prompt injection (usuari=${req.userId ?? '-'} motius=${injection.reasons.join(',')} puntuació=${injection.score})`);
+      const audio = data.include_audio ? await tts.synthesize(INJECTION_REPLY, scenario.voice) : null;
+      return res.json({
+        reply_text: INJECTION_REPLY,
+        mood: 'neutral',
+        detected_level_signal: 'on',
+        error_flags: [],
+        transcription: data.input_mode === 'voice' ? text : null,
+        reply_audio_base64: audio?.audio.toString('base64') || null,
+        reply_audio_mime_type: audio?.mimeType || null,
+        xp_delta: 0,
+        analyze_errors: false,
+      });
+    }
+
+    // 2. Historial de la conversa, enviat pel client (no es guarda al servidor). El client el pot haver manipulat:
+    // els missatges de l'aprenent que semblen una injecció es descarten abans d'arribar al model.
+    const history = sanitizeHistory(data.history as HistoryMessage[])
+      .filter(message => message.role !== 'user' || !detectPromptInjection(message.content_text).flagged);
 
     // El tutor del tauler té en compte la llengua materna, el nivell i el públic (xiquet o adult) de l'usuari.
     let extraInstructions: string | undefined;
@@ -88,6 +160,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     let levelZero = false;
     let gnvTool = false;
     let exerciseTool = false;
+    let lessons: { id: string; title: string; summary: string }[] = [];
     if (client && scenario.category === ASSISTANT_CATEGORY) {
       const { data: profile } = await client.from('profiles').select('mother_tongue, level, age_group').eq('id', req.userId!).maybeSingle();
       extraInstructions = motherTongueInstructions(profile?.mother_tongue);
@@ -98,11 +171,15 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       gnvTool = gnvRagEnabled() && !levelZero;
       // Els exercicis del catàleg són per a qui sap llegir: no per al Nivell 0.
       exerciseTool = !levelZero;
+      // El Nivell 0 no fa exercicis del catàleg: als xiquets se'ls enllaça una lliçó de l'app (les envia el client).
+      // Els adults del Nivell 0 no tenen lliçons.
+      lessons = levelZero && profile?.age_group === 'child' ? data.lessons : [];
     } else if (client) {
       // Escenaris del Nivell 0: si el xiquet té activada la llengua materna, el personatge hi afig
       // la traducció de cada resposta (segona línia), que el xat mostra com a subtítol.
-      const { data: profile } = await client.from('profiles').select('mother_tongue, level, show_mother_tongue').eq('id', req.userId!).maybeSingle();
+      const { data: profile } = await client.from('profiles').select('mother_tongue, level, show_mother_tongue, age_group').eq('id', req.userId!).maybeSingle();
       levelZero = profile?.level === 'nivell0';
+      if (profile?.age_group && profile.age_group !== 'child') levelInstructions = ADULT_VALENCIAN_ONLY_INSTRUCTIONS;
       if (levelZero && profile?.show_mother_tongue !== false) {
         extraInstructions = motherTongueInstructions(profile.mother_tongue);
       }
@@ -118,13 +195,41 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       levelInstructions,
       gnvTool,
       exerciseTool,
+      lessons,
+      signal: abortSignal,
     });
 
     // El tutor ha oferit un exercici: se'n tria un de real del catàleg (mai inventat).
-    const { exercici_tema, ...replyBody } = reply;
+    const { exercici_tema, area_practica, leccio_id, ...replyBody } = reply;
+    // Només una lliçó de les que s'han enviat (el model no pot inventar-ne).
+    const lessonId = lessons.some(l => l.id === leccio_id) ? leccio_id : undefined;
     let exercise: TutorExercise | null = null;
-    if (exerciseTool && exercici_tema?.trim()) {
-      exercise = await pickTutorExercise(exercici_tema, level, data.shown_exercises);
+    let activity: TutorActivity | null = null;
+    let tooHigh = false;
+    // Si ha respost amb una regla de la GNV, l'exercici és del seu tema (l'últim apartat de la ruta, sense numeració)
+    // encara que el model no haja escrit el tema: primer la norma i després la pràctica.
+    const gnvTopic = reply.gnv?.ruta.split('>').pop()?.replace(/^[\s\d.]+/, '').trim();
+    const topic = exercici_tema?.trim() || gnvTopic;
+    // Seccions de la GNV de la regla (la principal i les que la completen): les activitats que citen la mateixa, primer.
+    const gnvSections = reply.gnv ? [reply.gnv.seccio, ...(reply.gnv.relacionades ?? []).map(x => x.seccio)] : [];
+    // Destreses que no es poden fer dins del xat (redactar, escoltar, llegir, parlar): s'enllaça una activitat de l'àrea.
+    // Si vol practicar la conversa, sempre se li enllaça un escenari concret, encara que el model no ho haja marcat.
+    const wantsConversation = /convers|xarr|xat|xatej|joc de rol|escenari|situaci/i.test(text) && !/exerci/i.test(text);
+    const skill = area_practica || (wantsConversation ? 'escenari' : '');
+    if (exerciseTool && skill) activity = await findSkillActivity(skill, level, text);
+    if (exerciseTool && topic && !activity) {
+      // Només es mostra un exercici si n'hi ha un prou relacionat amb el tema (també quan l'aprenent demana practicar).
+      const askedToPractice = /exerci|practic|prova|test/i.test(text);
+      const picked = await pickTutorExercise(topic, level, data.shown_exercises, gnvSections, `${text}. ${gnvTopic ?? ''}`.trim());
+      if (picked === TOO_HIGH) {
+        // Només hi ha exercicis d'un nivell superior: la resposta passa a ser l'avís (el text del model, com «Prova este
+        // exercici!», ja no té sentit, ni la seua traducció) i no s'enllaça cap activitat.
+        replyBody.reply_text = `${TOO_HIGH_MESSAGE}.`;
+        tooHigh = true;
+      } else exercise = picked;
+      // Hi ha pràctica del tema però cap exercici que càpiga en el xat: s'enllaça l'activitat.
+      // Només amb una regla de la GNV al darrere o si ho ha demanat: un tema solt (p. ex. el significat d'una paraula) no en dóna prou.
+      if (!exercise && !tooHigh && (reply.gnv || askedToPractice)) activity = await findTutorActivity(topic, gnvSections);
     }
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
@@ -157,6 +262,8 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     res.json({
       ...replyBody,
       ...(exercise ? { exercise } : {}),
+      ...(activity ? { activity } : {}),
+      ...(lessonId ? { lesson_id: lessonId } : {}),
       transcription: data.input_mode === 'voice' ? text : null,
       reply_audio_base64: audio?.audio.toString('base64') || null,
       reply_audio_mime_type: audio?.mimeType || null,
@@ -169,6 +276,12 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     if (error instanceof z.ZodError) {
       console.warn('[turn] Petició invàlida:', error.issues);
       return validationError(res, error);
+    }
+    // Bucle tallat: si l'ha cancel·lat el client no hi ha ningú a qui avisar; si no, l'avís va dins de la resposta.
+    if (isLoopError(error)) {
+      console.warn(error.message);
+      if (error.userCancelled || res.headersSent) return;
+      return res.json(loopStoppedReply());
     }
     console.error(error);
     res.status(500).json({ error: 'No hem pogut processar el torn' });

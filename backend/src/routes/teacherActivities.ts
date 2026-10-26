@@ -10,7 +10,7 @@ import { practiceRows, resourceFields, teacherActivitySchema } from '../services
 export const teacherActivitiesRouter = Router();
 
 // Només el professorat (profiles.role = 'teacher') gestiona activitats.
-async function requireTeacher(req: AuthRequest, res: Response, next: NextFunction) {
+export async function requireTeacher(req: AuthRequest, res: Response, next: NextFunction) {
   const client = db(req.userId);
   if (!client || !req.userId) return res.status(401).json({ error: 'Cal iniciar sessió' });
   const { data } = await client.from('profiles').select('role').eq('id', req.userId).maybeSingle();

@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": ["shared", "frontend", "backend", "speech-lab"],
   "scripts": {
-    "dev": "npm run build -w shared && concurrently \"npm run dev -w frontend\" \"npm run dev -w backend\"",
+    "dev": "npm run build -w shared && concurrently \"npm run dev -w frontend\" \"npm run dev -w backend\" \"npm run dev:rag\"",
     "build": "npm run build -w shared && npm run build -w frontend && npm run build -w backend",
     "test": "npm run build -w shared && npm run test -w backend",
     "setup:speech": "bash speech-lab/scripts/setup-vosk.sh",
@@ -13,7 +13,7 @@
     "smoke:speech": "npm run smoke -w speech-lab",
     "wer:speech": "npm run wer -w speech-lab",
     "test:speech": "npm run test -w speech-lab",
-    "dev:rag": "cd rag_gnv && ${RAG_GNV_PYTHON:-.venv/bin/python} servidor.py"
+    "dev:rag": "node rag_gnv/dev.mjs"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1",

@@ -369,7 +369,7 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-3xl flex-col gap-6 px-5 pt-6 pb-24">
+      <div className="mx-auto flex max-w-3xl flex-col gap-6 lg:max-w-6xl px-5 pt-6 pb-24">
         {/* Portada */}
         <section className="relative overflow-hidden rounded-[2rem] bg-navy p-8 text-white shadow-xl">
           <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-mustard/20" aria-hidden="true" />
@@ -404,8 +404,17 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
         {checked && gradable.length > 0 && <PracticeResult correct={correct} total={gradable.length} onReset={reset} />}
 
         {currentPage.map(group => (
-          <section key={group.passage?.id ?? group.exercises[0].exercise.id} className="flex flex-col gap-4">
-            {group.passage && <Passage passage={group.passage} showTranscript={checked} />}
+          <section
+            key={group.passage?.id ?? group.exercises[0].exercise.id}
+            className={`flex flex-col gap-4 ${group.passage?.media === 'text' ? 'lg:grid lg:grid-cols-2 lg:items-start lg:gap-8' : ''}`}
+          >
+            {/* Text de lectura: text a l'esquerra i preguntes a la dreta (en pantalles grans). */}
+            {group.passage && (
+              <div className={group.passage.media === 'text' ? 'lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:rounded-2xl' : ''}>
+                <Passage passage={group.passage} showTranscript={checked} />
+              </div>
+            )}
+            <div className="flex min-w-0 flex-col gap-4">
             {group.exercises.map(({ exercise: e, n }) => (
               <article key={e.id} id={`pregunta-${e.id}`} className={`rounded-[1.75rem] bg-white p-6 shadow-sm ${e.id === focusId ? 'ring-4 ring-mustard' : ''}`}>
                 {renderExercise(e, n)}
@@ -434,6 +443,7 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
                 )}
               </article>
             ))}
+            </div>
           </section>
         ))}
 

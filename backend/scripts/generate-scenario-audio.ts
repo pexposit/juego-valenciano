@@ -7,6 +7,9 @@
  *   npx tsx scripts/generate-scenario-audio.ts           # només els que falten
  *   npx tsx scripts/generate-scenario-audio.ts --force   # tots
  *
+ * Les veus de personatge (`rvc:doraemon`...) les genera el laboratori de veu (SPEECH_LAB_URL) i, si no està disponible,
+ * el script falla en compte de guardar una altra veu.
+ *
  * Cal tindre accés al DeepLab de la UJI (https://krono.act.uji.es/deeplab/speech) i la BDD local en marxa.
  */
 import 'dotenv/config';
@@ -50,7 +53,7 @@ async function main() {
 
 async function synthesizeWithRetry(text: string, voice?: string, attempts = 4) {
   for (let i = 0; i < attempts; i++) {
-    const audio = await tts.synthesize(text, voice);
+    const audio = await tts.synthesize(text, voice, { fallback: false });
     if (audio) return audio;
     await new Promise(r => setTimeout(r, 2000 * (i + 1)));
   }

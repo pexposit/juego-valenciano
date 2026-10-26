@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { guardedFetch } from './openaiGuard.js';
 
 /**
  * Títol curt per a una conversa amb el tutor (pestanya «Converses»): el LLM resumix de
@@ -13,7 +14,7 @@ const MAX_CHARS = 40; // el mateix límit que el nom que posa l'usuari
 let client: OpenAI | null = null;
 const openai = () => {
   if (!process.env.OPENAI_API_KEY) return null;
-  client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 1, timeout: 20_000 });
+  client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY, fetch: guardedFetch, maxRetries: 1, timeout: 20_000 });
   return client;
 };
 

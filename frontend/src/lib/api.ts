@@ -1,5 +1,5 @@
-import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorExercise, WritingEvaluation } from './types';
-import { sanitizeHistory, type TeacherActivity, type TeacherActivityInput } from '@parlaval/shared';
+import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, WritingEvaluation } from './types';
+import { sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
 import { markRestartedAt } from '../features/paths/progress';
@@ -96,7 +96,7 @@ export async function evaluateExamWriting(
   }
   return res.json();
 }
-export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];shown_exercises?:string[];include_audio?:boolean}):Promise<TurnResponse>{
+export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];shown_exercises?:string[];lessons?:{id:string;title:string;summary:string}[];include_audio?:boolean}):Promise<TurnResponse>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;
   // L'historial es retalla amb el pressupost compartit abans d'enviar-lo:
   // el servidor, a més, ho tornarà a aplicar (defensa en profunditat).
@@ -107,12 +107,25 @@ export async function sendTurn(payload:{session_id:string;session_resource_id:st
 // Àudio TTS d'un text (veu del personatge de l'escenari). El token fa que la
 // petició compte contra el límit de l'usuari amb sessió: el backend limita molt
 // més les peticions anònimes. Retorna una URL `data:` reproduïble.
-export async function fetchTts(text:string,scenario:Scenario):Promise<string>{
+// Amb `voice` (triada tocant el robot) es parla amb eixa veu en lloc de la de l'escenari.
+export async function fetchTts(text:string,scenario:Scenario,voice?:string):Promise<string>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;
-  const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({text,scenario})});
+  const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify({text,scenario,voice})});
   if(!res.ok) throw new Error(`tts ${res.status}`);
   const payload=await res.json() as {audio_base64:string;mime_type:string};
   return `data:${payload.mime_type};base64,${payload.audio_base64}`;
+}
+
+// Veus que es poden triar per al robot: els locutors del servidor i els models del laboratori de veu, per grups.
+// `busy`: ara no es pot triar (la veu necessita la GPU i l'ocupa el RAG); és el missatge que es mostra.
+export type VoiceOption = { id: string; label: string; group: string; busy?: string };
+export async function fetchVoiceOptions(): Promise<VoiceOption[]> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts/voices`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`voices ${res.status}`);
+  return (await res.json() as { voices: VoiceOption[] }).voices;
 }
 
 // Veu de la Taronjeta (Nivell 0) per a una frase que no té el seu fitxer pregenerat:
@@ -510,7 +523,7 @@ export async function recordPracticeAnswers(answers: { exercise_id: string; answ
 export type AssistantConversation = {
   session_id: string;
   session_resource_id: string;
-  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise }[];
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string }[];
 };
 // Llengües maternes amb traducció (les mateixes que els subtítols del Nivell 0).
 const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'];
@@ -561,7 +574,7 @@ async function callAssistant(action: 'open' | 'restart', sessionId: string): Pro
   if (!res.ok) throw new Error("No s'ha pogut obrir la conversa amb el professor");
   const opened = await res.json() as { session_id: string; session_resource_id: string; greeting: string };
   await setCurrentTutorConversation(opened.session_resource_id);
-  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, exercise: m.exercise }));
+  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, exercise: m.exercise, activity: m.activity, lessonId: m.lessonId }));
   // Conversa nova (o d'un altre dispositiu, sense missatges ací): comença amb la salutació.
   if (messages.length === 0) {
     messages = [{ role: 'character', text: opened.greeting }];
@@ -820,6 +833,26 @@ export const fetchClassActivities = (classId: string) =>
 
 export async function assignClassActivities(classId: string, resourceIds: string[]): Promise<void> {
   await teacherRequest(`/api/teacher/classes/${encodeURIComponent(classId)}/activities`, { method: 'POST', body: JSON.stringify({ resource_ids: resourceIds }) }, "No hem pogut assignar les activitats");
+}
+
+/* ── Agent del professorat: esborranys d'activitats i rutes a partir d'un prompt ── */
+// No es guarda res: la docent els revisa i els guarda amb els formularis de sempre. `signal` permet aturar la petició.
+// `documentId`: l'examen o temari adjuntat (uploadAgentDocument); el servidor en tria els fragments més rellevants.
+export const generateActivityDraft = (prompt: string, level: CefrLevel, signal?: AbortSignal, documentId?: string, kind?: TeacherActivityKind) =>
+  teacherRequest<AgentActivityResult>('/api/teacher/agent/activity', { method: 'POST', body: JSON.stringify({ prompt, level, document_id: documentId, kind }), signal }, "No hem pogut generar l'activitat");
+
+export const generatePathDraft = (prompt: string, classId: string, signal?: AbortSignal, documentId?: string) =>
+  teacherRequest<AgentPathResult>('/api/teacher/agent/path', { method: 'POST', body: JSON.stringify({ prompt, class_id: classId, document_id: documentId }), signal }, 'No hem pogut generar la ruta');
+
+// Puja un examen o temari (PDF, Word o text). El servidor no guarda el fitxer: en conserva el text una hora, en la memòria.
+export async function uploadAgentDocument(file: File): Promise<AgentDocument> {
+  const data = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(new Error("No s'ha pogut llegir el fitxer"));
+    reader.readAsDataURL(file);
+  });
+  return teacherRequest<AgentDocument>('/api/teacher/agent/document', { method: 'POST', body: JSON.stringify({ name: file.name, data_base64: data }) }, "No hem pogut llegir el document");
 }
 
 export async function unassignClassActivity(classId: string, resourceId: string): Promise<void> {

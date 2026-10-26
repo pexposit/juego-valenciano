@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { guardedFetch } from './openaiGuard.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type {
@@ -9,15 +10,22 @@ import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { contentsForPrompt, LANGUAGE_AREAS, type LevelContent } from './levelContents.js';
 import { reasoningEffortFor } from './reasoningEffort.js';
+import { createLoopGuard } from './loopGuard.js';
 
 // Variables de entorno
 const UJI_HOST = process.env.UJI_HOST;
 const UJI_MODEL = process.env.UJI_LLM_MODEL || 'qwen2.5:32b';
 const MCP_SERVER_SCRIPT = process.env.MCPDETECTOR_SERVER_PATH || './mcp/ErrorDetector/index.js';
 const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-6-luna';
+// Màxim de crides a ferramentes (MCP) per cada anàlisi: el prompt demana repetir el bucle fins a la perfecció i, sense límit, podria no acabar mai.
+// Passat este límit «suau» el model ja no rep ferramentes i ha de donar l'eixida final. A més, el LoopGuard talla
+// (amb LoopDetectedError) si es passa del límit dur, si repetix la mateixa crida o si triga massa.
+const MAX_TOOL_CALLS = 40;
+const GUARD_LIMITS = { maxIterations: 30, maxToolCalls: 60, maxMs: 180_000 };
 // 1. Cliente OpenAI persistente
 const ujiClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  fetch: guardedFetch,
   maxRetries: 1,
   timeout: 60_000,
 });
@@ -178,12 +186,13 @@ ${contentsForPrompt(contents)}
 
 export async function analyzeErrorsWithLocalLLM(
   content: string,
-  { level, contents }: { level: string; contents: LevelContent[] },
+  { level, contents, signal }: { level: string; contents: LevelContent[]; signal?: AbortSignal },
 ): Promise<DetectedError[]> {
   const trimmed = content.trim();
   if (!trimmed) return [];
 
   const tStart = Date.now();
+  const guard = createLoopGuard({ label: 'error-detector', signal, ...GUARD_LIMITS });
 
   try {
     const { client: mcp, tools } = await getMcpTools();
@@ -198,35 +207,44 @@ export async function analyzeErrorsWithLocalLLM(
     const toolsConfig = tools.length > 0 ? tools : undefined;
 
     // 1. Invocación única: el modelo recibe el esquema forzado y las tools al mismo tiempo
+    guard.llmCall(trimmed);
     let response = await ujiClient.chat.completions.parse({
       model: MODEL_NAME,
       messages,
       tools: toolsConfig,
       response_format: responseFormat,
       ...reasoningEffortFor(MODEL_NAME),
-    });
+    }, { signal: guard.signal });
 
     let choice = response.choices[0];
 
     // 2. Bucle de resolución de tools (solo se activa si el modelo decide llamar a una herramienta)
+    let toolCallCount = 0;
     while (choice?.message?.tool_calls && choice.message.tool_calls.length > 0) {
       messages.push(choice.message);
 
       for (const toolCall of choice.message.tool_calls) {
         if (toolCall.type !== 'function') continue;
 
-        // Sense els arguments: porten text de l'usuari, que no ha de quedar en els logs.
-        console.log(`[MCP Tool Exec] ${toolCall.function.name}`);
-
         let toolOutput: any;
-        try {
-          const result = await mcp.callTool({
-            name: toolCall.function.name,
-            arguments: JSON.parse(toolCall.function.arguments || '{}'),
-          });
-          toolOutput = result.content;
-        } catch (err: any) {
-          toolOutput = { error: `Error executant ferramenta: ${err.message}` };
+        if (toolCallCount >= MAX_TOOL_CALLS) {
+          // Cada tool_call ha de tindre la seua resposta: passat el límit no s'executa, es respon amb un avís.
+          toolOutput = { error: `S'ha arribat al límit de ${MAX_TOOL_CALLS} crides a ferramentes. Dóna ja l'eixida final.` };
+        } else {
+          // Talla el bucle si la mateixa ferramenta es crida una vegada i una altra amb els mateixos arguments.
+          guard.toolCall(toolCall.function.name, toolCall.function.arguments);
+          toolCallCount++;
+          // Sense els arguments: porten text de l'usuari, que no ha de quedar en els logs.
+          console.log(`[MCP Tool Exec] ${toolCall.function.name} (${toolCallCount}/${MAX_TOOL_CALLS})`);
+          try {
+            const result = await mcp.callTool({
+              name: toolCall.function.name,
+              arguments: JSON.parse(toolCall.function.arguments || '{}'),
+            });
+            toolOutput = result.content;
+          } catch (err: any) {
+            toolOutput = { error: `Error executant ferramenta: ${err.message}` };
+          }
         }
 
         messages.push({
@@ -236,14 +254,16 @@ export async function analyzeErrorsWithLocalLLM(
         });
       }
 
-      // Siguiente llamada manteniendo tools y response_format activos
+      // Siguiente llamada manteniendo tools y response_format activos (sin tools al llegar al límite: así cierra el bucle)
+      const lastMessage = messages.at(-1)?.content;
+      guard.llmCall(typeof lastMessage === 'string' ? lastMessage : JSON.stringify(lastMessage ?? ''));
       response = await ujiClient.chat.completions.parse({
         model: MODEL_NAME,
         messages,
-        tools: toolsConfig,
+        tools: toolCallCount >= MAX_TOOL_CALLS ? undefined : toolsConfig,
         response_format: responseFormat,
         ...reasoningEffortFor(MODEL_NAME),
-      });
+      }, { signal: guard.signal });
 
       choice = response.choices[0];
     }
@@ -259,6 +279,12 @@ export async function analyzeErrorsWithLocalLLM(
       (err: DetectedError) => err.error_text.trim().toLowerCase() !== err.correction.trim().toLowerCase()
     );
   } catch (error: any) {
+    // Un bucle tallat (o una anàlisi cancel·lada) no es dissimula amb una llista buida: es propaga perquè la ruta avise.
+    const stop = guard.stopped(error);
+    if (stop) {
+      console.warn(`[OpenAI-UJI] ${stop.message}`);
+      throw stop;
+    }
     console.error('[OpenAI-UJI] Error processant resposta estructurada:', error.message);
     return [];
   }

@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import type { ScenarioDefinition } from './scenarios.js';
 import { consultarGnv, gnvContext, type GnvResultat, type GnvRule } from './gnvRag.js';
+import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
+import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
+import { createLoopGuard, type LoopGuard } from './loopGuard.js';
 
 
 
@@ -13,6 +16,10 @@ const outputSchema = z.object({
   consulta_gnv: z.string().optional(),
   // Tutor: el tema de l'exercici del catàleg que vol oferir ('' si no n'ofereix cap).
   exercici_tema: z.string().optional(),
+  // Tutor: la destresa que l'aprenent vol millorar i que no es pot practicar dins del xat ('' si no n'hi ha cap).
+  area_practica: z.string().optional(),
+  // Tutor del Nivell 0: la lliçó de l'app relacionada amb la pregunta ('' si no n'hi ha cap).
+  leccio_id: z.string().optional(),
   // Només quan el tutor ha consultat la GNV i hi ha trobat respaldo.
   gnv: z.object({
     fonts: z.array(z.number().int()),
@@ -52,12 +59,32 @@ const GNV_INSTRUCTIONS = `CONSULTA DE LA GRAMÀTICA NORMATIVA VALENCIANA (GNV):
 - Si no és un dubte de normativa, deixa consulta_gnv buida i respon directament.`;
 
 const EXERCISE_INSTRUCTIONS = `EXERCICIS DEL CATÀLEG:
-- Quan l'aprenent demane practicar, o tu mateix vages a proposar-li un exercici, NO te l'inventes: omple exercici_tema amb el tema que vol practicar (1 a 4 paraules en valencià, p. ex. "accentuació", "pronoms febles", "verbs en passat") i en reply_text digues només una frase curta que presente l'exercici (p. ex. «Prova este exercici!»). L'aplicació li'n mostrarà un de real dins del xat.
-- Si l'aprenent no demana practicar i no cal cap exercici, deixa exercici_tema buit.`;
+- Mai no t'inventes exercicis: l'aplicació en mostra un de real del catàleg dins del xat, si n'hi ha, quan omples exercici_tema.
+- Cada vegada que expliques o resols un dubte sobre la llengua (normativa, ortografia, accents, gramàtica, verbs, lèxic...), omple exercici_tema amb el tema (1 a 3 paraules en valencià, com el nom d'una lliçó: "accentuació", "pronoms febles", "verbs", "plurals"). Si hi ha un exercici d'eixe tema, l'aprenent el veurà davall de la teua resposta. NO el mencions en reply_text: pot ser que no n'hi haja cap.
+- Si l'aprenent demana practicar o fer un exercici, omple exercici_tema amb el tema que vol i en reply_text digues només una frase curta que presente l'exercici (p. ex. «Prova este exercici!»).
+- Si la conversa no tracta de la llengua (salutació, xarrada, cultura...), deixa exercici_tema buit.
+- Si l'aprenent demana com millorar o practicar una DESTRESA que no es pot fer dins del xat (redactar o escriure textos → expressio_escrita; entendre àudios → comprensio_oral; entendre textos escrits → comprensio_escrita; practicar la conversa, xarrar o fer un escenari → escenari; parlar en veu alta o millorar la pronunciació → expressio_oral), omple area_practica amb eixa àrea, dóna-li 2 o 3 consells breus i diu-li que li deixes una activitat per a practicar-ho (l'aplicació l'enllaçarà). En eixe cas deixa exercici_tema buit. Si no, deixa area_practica buit.`;
 
 type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
-function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false) {
+const PRACTICE_SKILLS = ['expressio_escrita', 'comprensio_oral', 'comprensio_escrita', 'expressio_oral', 'escenari'] as const;
+
+// Els objectius de l'escenari (metadata.objectius) arriben al prompt del personatge: la conversa s'ha de centrar a complir-los.
+const objectivesInstructions = (objectius: string[]) => `OBJECTIUS DE L'ESCENARI (la conversa s'ha de centrar a aconseguir-los):
+${objectius.map((o, i) => `${i + 1}. ${o}`).join('\n')}
+- La teua missió com a personatge és portar l'aprenent, de manera natural i pas a pas, a complir TOTS estos objectius. Tot el que digues ha d'encaminar la conversa cap a algun objectiu encara pendent.
+- Segons el que ja s'ha dit en la conversa, decidix quins objectius ja s'han complit i quins falten, i centra't en el següent pendent, d'un en un. No repetisques els que ja s'han complit.
+- Planteja els objectius amb preguntes i situacions pròpies de l'escenari: no els amolles com una llista ni dius la paraula «objectiu».
+- Si l'aprenent s'allunya del tema, respon-li amb amabilitat en una frase breu i torna a l'objectiu pendent. No obris temes nous que no ajuden a complir-los.
+- Quan s'hagen complit tots, tanca la situació amb naturalitat i acomiada't.`;
+
+export type LessonRef = { id: string; title: string; summary: string };
+
+const lessonInstructions = (lessons: LessonRef[]) => `LLIÇONS DE L'APP:
+- Si el que pregunta o diu el xiquet té relació amb alguna d'estes lliçons, omple leccio_id amb el seu id i digues-li, en una frase molt curta i amb paraules senzilles, que li deixes la lliçó. Només una, la més adequada. Si cap no té relació, deixa leccio_id buit. Mai no t'inventes lliçons ni ids.
+${lessons.map(l => `- ${l.id}: ${l.title}${l.summary ? ` (${l.summary})` : ''}`).join('\n')}`;
+
+function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false, lessons: LessonRef[] = []) {
   return {
     type: 'json_schema',
     json_schema: {
@@ -82,6 +109,8 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             description: 'La resposta directa del personatge a la conversa.',
           },
           ...(askGnvQuery ? { consulta_gnv: { type: 'string', description: GNV_QUERY_DESCRIPTION } } : {}),
+          ...(lessons.length ? { leccio_id: { type: 'string', enum: ['', ...lessons.map(l => l.id)], description: "L'id de la lliçó de l'app relacionada amb la pregunta del xiquet; cadena buida si no n'hi ha cap." } } : {}),
+          ...(askExercise ? { area_practica: { type: 'string', enum: ['', ...PRACTICE_SKILLS], description: "La destresa que l'aprenent vol practicar si no es pot fer dins del xat; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { exercici_tema: { type: 'string', description: "Tema de l'exercici del catàleg que ofereixes a l'aprenent; cadena buida si no n'ofereixes cap." } } : {}),
           ...(withGnv ? {
             gnv: {
@@ -107,7 +136,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             },
           } : {}),
         },
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askExercise ? ['exercici_tema'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askExercise ? ['exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
         additionalProperties: false,
       },
     },
@@ -115,14 +144,19 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
 }
 
 // Una petició a chat/completions; retorna el contingut de la resposta.
-async function complete(key: string, model: string, body: Record<string, unknown>): Promise<string | null | undefined> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+// `fresh`: en un reintent no es llig la cache (la resposta anterior ha fallat) i la nova no la substituïx fins que es valide.
+async function complete(guard: LoopGuard, key: string, model: string, body: Record<string, unknown>, fresh = false): Promise<string | null | undefined> {
+  // L'últim missatge enviat: si és el mateix una vegada i una altra, el model no avança.
+  const last = (body.messages as { content?: unknown }[] | undefined)?.at(-1)?.content;
+  guard.llmCall(typeof last === 'string' ? last : JSON.stringify(last ?? ''));
+  const response = await guardedFetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
+      ...(fresh ? { [NO_CACHE_HEADER]: '1' } : {}),
     },
-    signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
+    signal: AbortSignal.any([AbortSignal.timeout(OPENAI_TIMEOUT_MS), guard.signal]),
     body: JSON.stringify({ model, ...body }),
   });
   if (!response.ok) throw new Error(`OpenAI API error (${model}): ${response.status}`);
@@ -194,7 +228,7 @@ function gnvRuleFrom(resultat: GnvResultat, gnv: NonNullable<z.infer<typeof outp
 }
 
 export async function replyFromAgent(args: {
-  scenario: Pick<ScenarioDefinition, 'character' | 'systemPrompt'>;
+  scenario: Pick<ScenarioDefinition, 'character' | 'systemPrompt'> & Partial<Pick<ScenarioDefinition, 'objectius'>>;
   level: string;
   message: string;
   history: { role: string; content_text: string }[];
@@ -206,6 +240,10 @@ export async function replyFromAgent(args: {
   gnvTool?: boolean;
   // Tutor: pot oferir un exercici real del catàleg (exercici_tema); el resol qui crida.
   exerciseTool?: boolean;
+  // Tutor del Nivell 0: les lliçons que pot enllaçar (leccio_id); les resol qui crida.
+  lessons?: LessonRef[];
+  // Cancel·lació externa (el client tanca la connexió): talla el bucle i les crides en vol.
+  signal?: AbortSignal;
 }): Promise<AgentReply> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY no està configurada');
@@ -220,11 +258,16 @@ export async function replyFromAgent(args: {
     {
       role: 'system',
       content: `${def.systemPrompt}
+
+        ${def.objectius?.length ? objectivesInstructions(def.objectius) : ''}
+
         Nivell de referència de l'aprenent: ${args.level}.
 
         INSTRUCCIONS DE CONVERSA:
         - Respon de manera natural i coherent al context de la situació com a personatge.
+        - Tingues sempre en compte tot el que s'ha dit abans en la conversa: continua amb el tema que l'aprenent ha triat o ha dit en l'últim missatge, no el canvies per iniciativa pròpia ni tornes a preguntar el que ja t'ha contat. Si has de canviar de tema o d'activitat, fes-ho només quan l'actual ja s'haja tractat prou i enllaça el canvi amb el que ha dit.
         - Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
+        - Si no entens què et vol dir l'aprenent (el missatge és incomprensible, sense sentit o no el pots interpretar), no t'ho inventes ni canvies de tema: respon exactament «No sé què em vols dir. Pots repetir?» i tria l'estat d'ànim 'confus'.
         - Tria l'estat d'ànim ('mood') que millor represente la teua reacció com a personatge ('neutral', 'content', 'confus').
 
         ${args.levelInstructions ?? ''}
@@ -235,7 +278,9 @@ export async function replyFromAgent(args: {
 
         ${args.exerciseTool ? EXERCISE_INSTRUCTIONS : ''}
 
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.exerciseTool ? ', exercici_tema' : ''}.`.trim(),
+        ${args.lessons?.length ? lessonInstructions(args.lessons) : ''}
+
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.exerciseTool ? ', exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
     },
     {
       role: 'user',
@@ -261,24 +306,26 @@ export async function replyFromAgent(args: {
     return gnvLookups.get(consulta)!;
   };
 
+  // Detecció de bucles: massa crides o el mateix missatge una vegada i una altra talla la petició (LoopDetectedError).
+  const guard = createLoopGuard({ label: 'agent', signal: args.signal, maxIterations: 8 });
   let lastError = 'OpenAI no ha retornat una resposta vàlida';
   for (const model of OPENAI_MODELS) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        let content = await complete(key, model!, {
-          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool),
+        let content = await complete(guard, key, model!, {
+          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons),
           messages,
-        });
+        }, attempt > 0);
 
         // El model ha decidit que és un dubte de normativa: es consulta la GNV i es torna a demanar la resposta.
         let gnvResult: GnvResultat | null = null;
         const consulta = args.gnvTool && content ? gnvQueryOf(content) : '';
         if (consulta) {
           gnvResult = await lookupGnv(consulta);
-          content = await complete(key, model!, {
-            response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool),
+          content = await complete(guard, key, model!, {
+            response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool, args.lessons),
             messages: [...messages, { role: 'system', content: gnvSourcesMessage(consulta, gnvResult) }],
-          });
+          }, attempt > 0);
         }
 
         if (!content) {
@@ -288,6 +335,13 @@ export async function replyFromAgent(args: {
         console.log(`[agent] resposta vàlida de ${model}`);
 
         const { help_text, gnv, consulta_gnv: _, ...parsed } = outputSchema.parse(parseJsonResponse(content));
+        // Filtre d'eixida: si la resposta reproduïx el prompt del sistema, no arriba a l'aprenent (ni res del que du
+        // associat: exercici, activitat, lliçó o regla de la GNV).
+        const leak = detectPromptLeak([parsed.reply_text, help_text, gnv?.contingut, gnv?.explicacio], [messages[0].content]);
+        if (leak.leaked) {
+          console.warn(`[agent] possible fuita del prompt del sistema (motius=${leak.reasons.join(',')}); es substituïx la resposta`);
+          return { reply_text: LEAK_REPLY, mood: 'neutral' };
+        }
         const reply: AgentReply = gnv && gnvResult?.hay_respaldo
           ? { ...parsed, reply_text: plain(parsed.reply_text), gnv: gnvRuleFrom(gnvResult, gnv) }
           : parsed;
@@ -295,7 +349,9 @@ export async function replyFromAgent(args: {
         return help_text?.trim() ? { ...reply, reply_text: `${reply.reply_text.trim()}
 ${help_text.trim()}` } : reply;
       } catch (error) {
-        //console.error('[agent DEBUG ERROR]:', error); // <--- AÑADE ESTO
+        // Un bucle tallat (o una petició cancel·lada) no es reintenta: es propaga a qui crida.
+        const stop = guard.stopped(error);
+        if (stop) throw stop;
         lastError = error instanceof Error ? error.message : lastError;
       }
     }

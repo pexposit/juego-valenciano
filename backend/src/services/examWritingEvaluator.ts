@@ -1,4 +1,6 @@
 import OpenAI from 'openai';
+import { guardedFetch } from './openaiGuard.js';
+import { createLoopGuard } from './loopGuard.js';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { contentsForPrompt, type LevelContent } from './levelContents.js';
@@ -18,6 +20,7 @@ const MAX_TOOL_ROUNDS = 8;
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  fetch: guardedFetch,
   maxRetries: 1,
   timeout: 90_000,
 });
@@ -177,14 +180,21 @@ async function runEvaluation<T extends z.ZodTypeAny>(args: {
   ];
 
   const { client: mcp, tools } = await getMcpTools();
-  const request = (toolChoice?: 'none') => client.chat.completions.parse({
-    model: MODEL_NAME,
-    messages,
-    tools: tools.length > 0 ? tools : undefined,
-    tool_choice: tools.length > 0 ? toolChoice : undefined,
-    response_format: zodResponseFormat(args.schema, args.name),
-    ...reasoningEffortFor(MODEL_NAME),
-  });
+  // Detecció de bucles: la mateixa ferramenta amb els mateixos arguments, massa crides o massa temps talla l'avaluació
+  // (LoopDetectedError; la ruta respon amb un error i l'alumne pot tornar-ho a provar).
+  const guard = createLoopGuard({ label: `exam-eval:${args.name}` });
+  const request = (toolChoice?: 'none') => {
+    const last = messages.at(-1)?.content;
+    guard.llmCall(typeof last === 'string' ? last : JSON.stringify(last ?? ''));
+    return client.chat.completions.parse({
+      model: MODEL_NAME,
+      messages,
+      tools: tools.length > 0 ? tools : undefined,
+      tool_choice: tools.length > 0 ? toolChoice : undefined,
+      response_format: zodResponseFormat(args.schema, args.name),
+      ...reasoningEffortFor(MODEL_NAME),
+    }, { signal: guard.signal });
+  };
 
   const tStart = Date.now();
   let choice = (await request()).choices[0];
@@ -193,6 +203,7 @@ async function runEvaluation<T extends z.ZodTypeAny>(args: {
     for (const toolCall of choice.message.tool_calls) {
       if (toolCall.type !== 'function') continue;
       console.log(`[exam-eval MCP] ${toolCall.function.name}(${toolCall.function.arguments})`);
+      guard.toolCall(toolCall.function.name, toolCall.function.arguments);
       let toolOutput: unknown;
       try {
         const result = await mcp.callTool({

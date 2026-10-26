@@ -15,7 +15,7 @@ export type ClassPath = {
 };
 
 // Nivells del MECR per als quals el professorat pot crear rutes (com save_study_path a la BDD).
-export const PATH_LEVELS = (['A1', 'A2', 'B1', 'B2'] as const).map(l => ({ value: l, label: l }));
+export const PATH_LEVELS = (['A1', 'A2', 'B1', 'B2', 'C1'] as const).map(l => ({ value: l, label: l }));
 
 const need = () => {
   if (!supabase) throw new Error('Cal connexió amb el servidor');

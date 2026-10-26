@@ -5,6 +5,7 @@ import { rateLimit } from '../middleware/rateLimit.js';
 import { validationError } from '../validation.js';
 import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing, evaluateC1Writing } from '../services/examWritingEvaluator.js';
 import { loadLevelContents } from '../services/levelContents.js';
+import { isLoopError, LOOP_STOPPED_MESSAGE } from '../services/loopGuard.js';
 import { characterOf, isScenarioPlayable } from '../services/scenarios.js';
 import { ASSISTANT_CATEGORY, CHAT_CATEGORIES, FORM_FIELD_MAX_CHARS, isPracticeArea, WRITING_MAX_CHARS_C1, writingMaxChars } from '@parlaval/shared';
 import { saveWritingErrors } from './errors.js';
@@ -285,6 +286,8 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
     res.json(await evaluate());
   } catch (err) {
     console.error('[exams] Error avaluant l’exercici:', err);
+    // Bucle tallat (el model repetia les mateixes consultes): s'avisa l'alumne.
+    if (isLoopError(err)) return res.status(508).json({ error: LOOP_STOPPED_MESSAGE, loop_stopped: true });
     res.status(503).json({ error: 'No hem pogut avaluar l’exercici. Torna-ho a provar.' });
   }
 });
@@ -360,6 +363,8 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
     res.json({ ...(evaluation as object), saved_errors: savedErrors });
   } catch (err) {
     console.error('[practice] Error avaluant l’exercici:', err);
+    // Bucle tallat (el model repetia les mateixes consultes): s'avisa l'alumne.
+    if (isLoopError(err)) return res.status(508).json({ error: LOOP_STOPPED_MESSAGE, loop_stopped: true });
     res.status(503).json({ error: 'No hem pogut avaluar l’exercici. Torna-ho a provar.' });
   }
 });

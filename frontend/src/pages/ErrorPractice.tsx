@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Trash2, XCircle } from 'lucide-react';
 import { normalizeAnswer } from '@parlaval/shared';
 import { Logo } from '../components/ui';
 import { categoryLabel } from '../components/ScenarioSelect';
@@ -21,7 +21,7 @@ function Highlighted({ text, part }: { text: string; part: string }) {
 
 // Una targeta per error: es mostra el text erroni i cal escriure'n la correcció.
 // Si l'encerta, l'error queda resolt a la BDD.
-function ErrorCard({ error, n, total, onFixed }: { error: UserError; n: number; total: number; onFixed: () => void }) {
+function ErrorCard({ error, n, total, onFixed, onDiscard }: { error: UserError; n: number; total: number; onFixed: () => void; onDiscard: () => void }) {
   const [answer, setAnswer] = useState('');
   const [result, setResult] = useState<Result | null>(null);
   // Ordre estable però barrejat: en la BDD la correcta és sempre la primera.
@@ -37,13 +37,32 @@ function ErrorCard({ error, n, total, onFixed }: { error: UserError; n: number; 
     }
   };
 
+  // Descartar un error el dona per resolt: ix de la llista i deixa de comptar com a pendent.
+  const discard = () => {
+    if (!window.confirm("Vols descartar este error? No el tornaràs a practicar.")) return;
+    onDiscard();
+    resolveUserError(error.id).catch(err => console.error(err));
+  };
+
   return (
     <article className="rounded-3xl bg-white p-6 shadow-lg">
-      <p className="text-sm font-extrabold uppercase tracking-wider opacity-55">
-        Error {n} de {total} · {categoryLabel(error.category)}{error.subcategory ? ` · ${error.subcategory}` : ''}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-extrabold uppercase tracking-wider opacity-55">
+          Error {n} de {total} · {categoryLabel(error.category)}{error.subcategory ? ` · ${error.subcategory}` : ''}
+        </p>
+        <button
+          onClick={discard}
+          aria-label={`Descarta l'error ${n}`}
+          title="Descarta este error"
+          className="btn-press flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-sm font-extrabold text-ink/50 hover:bg-orange/10 hover:text-orange"
+        >
+          <Trash2 size={16} /> Descarta
+        </button>
+      </div>
+      {/* Amb context: text a l'esquerra i respostes a la dreta (en pantalles grans). */}
+      <div className={error.message ? 'lg:mt-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8' : ''}>
       {error.message && (
-        <div className="mt-4 rounded-2xl bg-cream px-4 py-3">
+        <div className="mt-4 rounded-2xl bg-cream px-4 py-3 lg:sticky lg:top-4 lg:mt-0 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
           <p className="text-xs font-extrabold uppercase tracking-wider opacity-55">
             {error.source === 'practice' ? 'Pregunta' : 'Context'}{error.scenario ? ` · ${error.scenario}` : ''}
           </p>
@@ -61,7 +80,8 @@ function ErrorCard({ error, n, total, onFixed }: { error: UserError; n: number; 
           )}
         </div>
       )}
-      <p className="mt-4 font-bold">{error.source === 'practice' ? 'La teua resposta (errònia):' : 'Com es corregix?'}</p>
+      <div className="min-w-0">
+      <p className="mt-4 font-bold lg:mt-0">{error.source === 'practice' ? 'La teua resposta (errònia):' : 'Com es corregix?'}</p>
       <p className="mt-1 rounded-2xl bg-orange/10 px-4 py-3 text-xl font-black text-orange">{error.error_text}</p>
 
       {options ? (
@@ -113,6 +133,8 @@ function ErrorCard({ error, n, total, onFixed }: { error: UserError; n: number; 
           <p className="mt-1 font-semibold opacity-80">{error.explanation}</p>
         </div>
       )}
+      </div>
+      </div>
     </article>
   );
 }
@@ -122,6 +144,7 @@ export function ErrorPractice({ onBack }: { onBack: () => void }) {
   // undefined = carregant; null = error de càrrega.
   const [errors, setErrors] = useState<UserError[] | null>();
   const [fixed, setFixed] = useState(0);
+  const discard = (id: string) => setErrors(list => list && list.filter(e => e.id !== id));
 
   useEffect(() => {
     let cancelled = false;
@@ -149,7 +172,7 @@ export function ErrorPractice({ onBack }: { onBack: () => void }) {
       <div className="flex flex-col gap-5">
         <p className="text-center font-bold opacity-70">Corregits: {fixed} de {errors.length}</p>
         {errors.map((error, i) => (
-          <ErrorCard key={error.id} error={error} n={i + 1} total={errors.length} onFixed={() => setFixed(n => n + 1)} />
+          <ErrorCard key={error.id} error={error} n={i + 1} total={errors.length} onFixed={() => setFixed(n => n + 1)} onDiscard={() => discard(error.id)} />
         ))}
       </div>
     );
@@ -169,7 +192,7 @@ export function ErrorPractice({ onBack }: { onBack: () => void }) {
           <span className="w-24" aria-hidden="true" />
         </div>
       </header>
-      <div className="mx-auto max-w-2xl px-5 pt-6 pb-24">
+      <div className="mx-auto max-w-2xl px-5 pt-6 lg:max-w-5xl pb-24">
         <h1 className="mb-6 text-center text-4xl font-black uppercase tracking-wider opacity-55">Els meus errors</h1>
         {body()}
       </div>

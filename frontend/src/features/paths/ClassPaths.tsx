@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Pencil, Plus, Route, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Pencil, Plus, Route, Sparkles, Trash2, X } from 'lucide-react';
 import { categoryLabel } from '../../components/ScenarioSelect';
 import { ActivityPicker } from './ActivityPicker';
+import { PathAgent } from '../agent/PathAgent';
 import { fetchResources } from '../../lib/api';
 import type { Resource } from '../../lib/types';
 import { deleteClassPath, loadClassPaths, PATH_LEVELS, saveClassPath, type ClassPath } from './teacherPaths';
@@ -14,20 +15,25 @@ const messageOf = (error: unknown) => (error as { message?: string } | null)?.me
 type Draft = { id?: string; level: string; title: string; description: string; resources: string[] };
 
 /**
- * Rutes d'aprenentatge que la docent crea per a una classe (de l'A1 al B2). L'alumnat de la classe
+ * Rutes d'aprenentatge que la docent crea per a una classe (de l'A1 al C1). L'alumnat de la classe
  * les veu en «La meua ruta», al costat de les rutes predefinides del seu nivell.
  */
-export function ClassPaths({ classId, classLevels, onSaved }: { classId: string; classLevels: string[]; onSaved?: () => void }) {
-  // Les rutes són de l'A1 al B2: només els d'estos nivells que té la classe.
+export function ClassPaths({ classId, className = 'Esta classe', classLevels, onSaved }: { classId: string; className?: string; classLevels: string[]; onSaved?: () => void }) {
+  // Les rutes són de l'A1 al C1: només els d'estos nivells que té la classe.
   const levels = PATH_LEVELS.filter(l => classLevels.includes(l.value));
   const [paths, setPaths] = useState<ClassPath[]>();
   const [catalog, setCatalog] = useState<Resource[]>([]);
   const [draft, setDraft] = useState<Draft>();
   const [error, setError] = useState<string>();
+  // «Genera amb IA»: el quadre del prompt i, quan hi ha un esborrany en l'editor, l'avís que s'ha de revisar.
+  const [generating, setGenerating] = useState(false);
+  const [fromAgent, setFromAgent] = useState<string>();
 
   useEffect(() => {
     setPaths(undefined);
     setDraft(undefined);
+    setGenerating(false);
+    setFromAgent(undefined);
     loadClassPaths(classId).then(setPaths).catch(e => { console.error(e); setError("No s'han pogut carregar les rutes."); });
   }, [classId]);
 
@@ -53,6 +59,7 @@ export function ClassPaths({ classId, classLevels, onSaved }: { classId: string;
       return [path, ...others];
     });
     setDraft(undefined);
+    setFromAgent(undefined);
     onSaved?.();
   };
 
@@ -61,20 +68,50 @@ export function ClassPaths({ classId, classLevels, onSaved }: { classId: string;
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-2xl font-black"><Route size={24} /> Rutes d'aprenentatge</h3>
         {!draft && levels.length > 0 && (
-          <button
-            onClick={() => setDraft({ level: levels[0].value, title: '', description: '', resources: [] })}
-            className="btn-press flex items-center gap-2 rounded-2xl bg-[#0F47AF] px-4 py-2 font-extrabold text-white"
-          >
-            <Plus size={18} /> Nova ruta
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {!generating && (
+              <button onClick={() => setGenerating(true)} className="btn-press flex items-center gap-2 rounded-2xl border-2 border-[#0F47AF] px-4 py-2 font-extrabold text-[#0F47AF]">
+                <Sparkles size={18} /> Genera amb IA
+              </button>
+            )}
+            <button
+              onClick={() => setDraft({ level: levels[0].value, title: '', description: '', resources: [] })}
+              className="btn-press flex items-center gap-2 rounded-2xl bg-[#0F47AF] px-4 py-2 font-extrabold text-white"
+            >
+              <Plus size={18} /> Nova ruta
+            </button>
+          </div>
         )}
       </div>
       <p className="mt-1 text-base opacity-60">
         {levels.length
           ? "Rutes per a l'alumnat d'esta classe: les veuen en la secció «Classe»."
-          : "Les rutes són per a classes d'A1 a B2."}
+          : "Les rutes són per a classes d'A1 a C1."}
       </p>
       {error && <p className="mt-3 rounded-2xl bg-coral/10 p-3 text-coral">{error}</p>}
+
+      {generating && !draft && (
+        <PathAgent
+          classId={classId}
+          className={className}
+          classLevels={classLevels}
+          onClose={() => setGenerating(false)}
+          // Una activitat creada des de la ruta ha d'eixir en el catàleg de l'editor.
+          onActivityCreated={() => { fetchResources().then(rs => setCatalog(rs.filter(r => r.playable))).catch(console.error); }}
+          onDraft={(d, message) => {
+            setGenerating(false);
+            setFromAgent(message);
+            setDraft(d);
+          }}
+        />
+      )}
+
+      {draft && fromAgent && (
+        <p className="mt-4 flex items-start gap-2 rounded-2xl bg-[#0F47AF]/10 p-4 text-base" role="status">
+          <Sparkles size={18} className="mt-0.5 shrink-0 text-[#0F47AF]" />
+          <span><b>Esborrany creat amb IA.</b> {fromAgent} Comprova que les activitats són rellevants i l'ordre és el que vols abans de guardar-la.</span>
+        </p>
+      )}
 
       {draft ? (
         <PathEditor
@@ -83,7 +120,7 @@ export function ClassPaths({ classId, classLevels, onSaved }: { classId: string;
           classLevels={classLevels}
           catalog={catalog}
           byId={byId}
-          onCancel={() => setDraft(undefined)}
+          onCancel={() => { setDraft(undefined); setFromAgent(undefined); }}
           onSave={async d => {
             setError(undefined);
             try {

@@ -10,10 +10,12 @@ import { assistantRouter } from './routes/assistant.js';
 import { learningPathRouter } from './routes/learningPath.js';
 import { studyPathsRouter } from './routes/studyPaths.js';
 import { teacherActivitiesRouter } from './routes/teacherActivities.js';
+import { teacherAgentRouter } from './routes/teacherAgent.js';
 import { teacherReportRouter } from './routes/teacherReport.js';
 import { profileRouter } from './routes/profile.js';
 
 const app = express();
+const DOCUMENT_UPLOAD_PATH = '/api/teacher/agent/document';
 
 // Darrere d'un proxy invers (Render, Railway, Fly.io) cal confiar en la primera
 // cabecera X-Forwarded-For: si no, `req.ip` seria sempre la IP del proxy i el
@@ -32,9 +34,12 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
 }));
-app.use(express.json({ limit: '12mb' }));
+// La pujada de documents de l'agent del professorat (fins a 100 MB) té el seu propi límit, després de comprovar qui és:
+// la resta de rutes tenen 12 MB.
+const json = express.json({ limit: '12mb' });
+app.use((req, res, next) => (req.path === DOCUMENT_UPLOAD_PATH ? next() : json(req, res, next)));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
-app.use(resourcesRouter, learningPathRouter, ttsRouter, sessionsRouter, turnRouter, errorsRouter, assistantRouter, studyPathsRouter, teacherActivitiesRouter, teacherReportRouter, profileRouter);
+app.use(resourcesRouter, learningPathRouter, ttsRouter, sessionsRouter, turnRouter, errorsRouter, assistantRouter, studyPathsRouter, teacherActivitiesRouter, teacherAgentRouter, teacherReportRouter, profileRouter);
 
 app.listen(Number(process.env.PORT) || 3001, () => console.log('ParlaVal agent listening'));

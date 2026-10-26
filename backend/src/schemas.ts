@@ -26,6 +26,12 @@ export const turnSchema = z.object({
   })).max(HISTORY_MAX_MESSAGES).optional().default([]),
   // Tutor: exercicis del catàleg ja mostrats en la conversa (no es repetixen).
   shown_exercises: z.array(z.string().uuid()).max(100).optional().default([]),
+  // Tutor del Nivell 0: les lliçons de l'app (el catàleg és al frontend), per a enllaçar-ne una a la pregunta del xiquet.
+  lessons: z.array(z.object({
+    id: z.string().max(60),
+    title: z.string().max(120),
+    summary: z.string().max(200).optional().default(''),
+  })).max(80).optional().default([]),
 });
 
 export const ttsSchema = z.object({

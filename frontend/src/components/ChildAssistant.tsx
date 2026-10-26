@@ -1,32 +1,60 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, RotateCcw, Volume2 } from 'lucide-react';
 import { useDelayedFlag } from './AudioLoading';
 import { KID_ASSISTANT_TYPE } from '@parlaval/shared';
 import { ChatBubble } from './ChatBubble';
 import { VoiceInput } from './VoiceInput';
+import { RobotVoiceMenu, savedRobotVoice } from './RobotVoiceMenu';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
 import { analyzeMessage, ensureSession, fetchTts, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem } from '../lib/api';
 import { addMessages, saveExerciseAnswer } from '../lib/localStore';
-import type { TutorExercise } from '../lib/types';
+import { useThinkingSound } from '../lib/useThinkingSound';
+import { ThinkingIndicator } from './ThinkingIndicator';
+import { ALL_LESSONS } from '../features/kids/lessons';
+import type { Mood, TutorExercise } from '../lib/types';
 
-type Message = AssistantConversation['messages'][number];
+// `transcription`: en un missatge de veu, el que ha entés el model; es mostra davall l'etiqueta del missatge.
+type Message = AssistantConversation['messages'][number] & { transcription?: string };
 
 // El tutor dels xiquets parla com en l'A1 (és el que fixa el registre infantil).
 const CHILD_LEVEL = 'A1';
 const VOICE_MESSAGE_LABEL = '🎙️ Missatge de veu';
 const ERROR_REPLY = "No t'he sentit bé, pots repetir-ho?";
 const TTS_ATTEMPTS = 2;
+// El professor ho diu en triar una veu nova en el menú del robot, perquè se senta com sona.
+const VOICE_SAMPLE = 'Hola! Ara parle amb esta veu.';
 
 // Mida del professor segons l'amplada de la pantalla: més xicotet en mòbils i tauletes.
 // En horitzontal en un mòbil (poca altura) el professor va a l'esquerra i ha de cabre en l'altura.
 const isShortLandscape = () => window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
-const avatarSizeFor = (width: number) =>
-  isShortLandscape() ? Math.min(200, window.innerHeight - 160) : width < 640 ? 190 : width < 1024 ? 240 : 320;
+// En ordenador (≥ 1024 px) el professor creix amb la finestra, tant en amplada com en altura (entre 280 i 560 px): en un
+// monitor gran no es queda xicotet i en un portàtil baix no tapa el xat. Reserva la capçalera i la barra del peu.
+const DESKTOP_MIN_WIDTH = 1024;
+// Ordenador: entre 280 i 560 px, un 26 % de l'amplada. Mòbils i tauletes: entre 140 i 320 px, un 32 % (el professor va
+// al costat del xat i no ha de menjar-se'l). Sempre limitat per l'altura que queda sota la capçalera i damunt del peu.
+const AVATAR_LIMITS = {
+  desktop: { min: 280, max: 560, ofWidth: 0.26 },
+  compact: { min: 140, max: 320, ofWidth: 0.32 },
+};
+const HEADER_AND_PADDING = 140;
+
+// Mida del text del xat: creix de forma contínua amb l'amplada de la pantalla (15 px en mòbils i tauletes, 17 px a 1366 px,
+// 22 px en monitors grans). Tot el que hi ha dins de les bombolles (targetes, exercicis) va en em, relatiu a esta.
+const CHAT_FONT_STYLE = { '--chat-font': 'clamp(15px, 0.5vw + 10px, 22px)' } as React.CSSProperties;
+const adaptiveAvatarSize = (width: number, height: number) => {
+  const { min, max, ofWidth } = width >= DESKTOP_MIN_WIDTH ? AVATAR_LIMITS.desktop : AVATAR_LIMITS.compact;
+  const footer = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--app-footer'), 10) || 0;
+  const availableHeight = height - footer - HEADER_AND_PADDING;
+  const size = Math.min(width * ofWidth, availableHeight * 0.85);
+  return Math.round(Math.max(min, Math.min(max, size)));
+};
+const avatarSizeFor = (width: number, height = window.innerHeight) =>
+  isShortLandscape() ? Math.min(200, height - 160) : adaptiveAvatarSize(width, height);
 
 function useAvatarSize() {
   const [size, setSize] = useState(() => avatarSizeFor(window.innerWidth));
   useEffect(() => {
-    const update = () => setSize(avatarSizeFor(window.innerWidth));
+    const update = () => setSize(avatarSizeFor(window.innerWidth, window.innerHeight));
     window.addEventListener('resize', update);
     window.addEventListener('orientationchange', update);
     return () => {
@@ -45,7 +73,9 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   const [ready, setReady] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
   const [loading, setLoading] = useState(false);
+  useThinkingSound(loading);
   const [talking, setTalking] = useState(false);
+  const [mood, setMood] = useState<Mood>('neutral');
   const avatarSize = useAvatarSize();
   const listRef = useRef<HTMLDivElement>(null);
   const audio = useRef<{ text: string; element: HTMLAudioElement } | null>(null);
@@ -59,6 +89,12 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   // true mentre la veu del professor es demana o es descarrega i encara no pot sonar.
   const [voiceLoading, setVoiceLoading] = useState(false);
   const showVoiceLoading = useDelayedFlag(voiceLoading);
+  // Veu triada tocant el robot (undefined = la del professor). Es llig en cada frase, per això va en una ref.
+  const [voice, setVoice] = useState(savedRobotVoice);
+  const voiceRef = useRef(voice);
+  const [voiceMenuOpen, setVoiceMenuOpen] = useState(false);
+  const robotRef = useRef<HTMLDivElement>(null);
+  const closeVoiceMenu = useCallback(() => setVoiceMenuOpen(false), []);
   const stopAudio = () => {
     speakRequest.current += 1;
     setVoiceLoading(false);
@@ -76,7 +112,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
     const spoken = text.split('\n')[0].trim();
     for (let attempt = 1; attempt <= TTS_ATTEMPTS; attempt += 1) {
       try {
-        const source = await fetchTts(spoken, KID_ASSISTANT_TYPE);
+        const source = await fetchTts(spoken, KID_ASSISTANT_TYPE, voiceRef.current);
         if (!mounted.current || mine !== speakRequest.current) return;
         const element = new Audio(source);
         element.oncanplay = element.onerror = () => setVoiceLoading(false);
@@ -89,6 +125,12 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       }
     }
     if (mine === speakRequest.current) setVoiceLoading(false);
+  };
+
+  const changeVoice = (next: string | undefined) => {
+    voiceRef.current = next;
+    setVoice(next);
+    void speak(VOICE_SAMPLE);
   };
 
   const lastReply = [...messages].reverse().find(m => m.role === 'character')?.text;
@@ -133,6 +175,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       const fresh = await ensureSession(CHILD_LEVEL).then(restartAssistant);
       conversation.current = Promise.resolve(fresh);
       setMessages(fresh.messages);
+      setMood('neutral');
       void speak(fresh.messages[0].text);
     } catch (error) {
       console.error('Error reiniciant la conversa:', error);
@@ -149,7 +192,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   const send = async (text: string, voice?: string) => {
     if ((!text && !voice) || loading || !conversation.current) return;
     stopAudio();
-    const context: HistoryItem[] = messages.map(m => ({ role: m.role, content_text: m.text }));
+    const context: HistoryItem[] = messages.map(m => ({ role: m.role, content_text: m.transcription ?? m.text }));
     setMessages(m => [...m, { role: 'user', text: text || VOICE_MESSAGE_LABEL }]);
     setLoading(true);
     try {
@@ -165,17 +208,20 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         audio_base64: voice || null,
         history: context,
         shown_exercises: messages.flatMap(m => (m.exercise ? [m.exercise.id] : [])),
+        // El tutor del Nivell 0 pot enllaçar una lliçó: el catàleg és ací, així que s'envia (el servidor només el fa servir amb el Nivell 0).
+        lessons: ALL_LESSONS.map(l => ({ id: l.id, title: l.title, summary: l.summary })),
         include_audio: false,
       });
+      setMood(reply.mood);
       const said = reply.transcription || text;
       setMessages(m => {
         const next = [...m];
-        if (reply.transcription) next[next.length - 1] = { role: 'user', text: reply.transcription };
-        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise }];
+        if (reply.transcription) next[next.length - 1] = { role: 'user', text: VOICE_MESSAGE_LABEL, transcription: reply.transcription };
+        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id }];
       });
       void addMessages(opened.session_resource_id, 'tutor', [
         { role: 'user', text: said || VOICE_MESSAGE_LABEL },
-        { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise },
+        { role: 'character', text: reply.reply_text, gnv: reply.gnv, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id },
       ]).catch(error => console.error('Error guardant la conversa:', error));
       // Els errors del xat amb el professor compten per a la ruta, però no es practiquen.
       if (reply.analyze_errors && said) {
@@ -199,21 +245,33 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   };
 
   return (
-    <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center gap-4 px-5 pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
-      {isRobotAvatarEnabled('dashboard')
-        ? <DashboardRobot className="shrink-0 drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} />
-        : <img src="/images/avatar_professor.svg" alt="El professor" className="float shrink-0 drop-shadow-lg" width={avatarSize} height={avatarSize} />}
+    <div className="relative z-20 flex min-h-0 flex-1 items-center gap-4 px-5 lg:justify-center lg:gap-8pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
+      {/* Tocant el professor ix el menú per a triar-li la veu. */}
+      <div ref={robotRef} className="relative shrink-0" title="Toca'm per a canviar-me la veu">
+        {isRobotAvatarEnabled('dashboard')
+          ? <DashboardRobot className="drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} mood={mood} onClick={() => setVoiceMenuOpen(open => !open)} />
+          : <img src="/images/avatar_professor.svg" alt="El professor" className="float cursor-pointer drop-shadow-lg" width={avatarSize} height={avatarSize} onClick={() => setVoiceMenuOpen(open => !open)} />}
+        {!voiceMenuOpen && (
+          <button
+            onClick={() => setVoiceMenuOpen(true)}
+            className="absolute left-1/2 top-0 z-10 w-max max-w-full -translate-x-1/2 -translate-y-1/2 rounded-2xl lg:translate-y-0 bg-white px-3 py-1.5 text-center text-sm font-bold text-teal shadow-lg ring-2 ring-white after:absolute after:left-1/2 after:top-full after:-translate-x-1/2 after:border-8 after:border-transparent after:border-t-white after:content-['']"
+          >
+            Fes-me clic i canvia'm la veu!
+          </button>
+        )}
+        {voiceMenuOpen && <RobotVoiceMenu anchor={robotRef} voice={voice} onChange={changeVoice} onClose={closeVoiceMenu} />}
+      </div>
 
-      <section className="flex min-h-0 w-full max-w-4xl flex-1 flex-col [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor">
+      <section className="flex min-h-0 w-full max-w-4xl flex-1 flex-col lg:self-stretch lg:pb-4 lg:max-w-[clamp(40rem,62vw,90rem)] [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor" style={CHAT_FONT_STYLE}>
         <div
           ref={listRef}
           aria-live="polite"
-          className="flex max-h-[36rem] min-h-24 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-var(--app-footer,0px)-14rem)]"
+          className="flex max-h-[36rem] min-h-24 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white lg:max-h-none lg:min-h-0 lg:p-5[@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-var(--app-footer,0px)-14rem)]"
         >
-          {openFailed && <p className="text-center text-lg font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
-          {!ready && !openFailed && <p className="text-center text-lg font-bold opacity-60">Un moment...</p>}
-          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} gnv={m.gnv} exercise={m.exercise} onAnswer={answerExercise} showHelp={showHelp} />)}
-          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-xl font-bold opacity-60">...</p>}
+          {openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
+          {!ready && !openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold opacity-60">Un moment...</p>}
+          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
+          {loading && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
         </div>
 
         <div className="mt-3 flex items-center gap-3">

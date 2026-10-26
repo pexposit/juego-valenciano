@@ -1,12 +1,14 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Copy, LogOut, Plus, Trash2, UserMinus } from 'lucide-react';
-import { OrangeHeader } from '../components/ui';
+import { Logo, OrangeHeader } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { CLASS_LEVELS, classLevelLabel, isLevel0Class, toggleClassLevel } from '@parlaval/shared';
 import { ProgressReport } from '../features/kids/ProgressReport';
 import { ClassPaths } from '../features/paths/ClassPaths';
 import { ClassActivities } from '../features/paths/ClassActivities';
 import { TeacherActivities } from '../features/activities/TeacherActivities';
+import { TeacherPathsTab } from '../features/paths/TeacherPathsTab';
+import { StudentsByClass } from '../features/kids/StudentsByClass';
 import { ago, groupAdultStruggles, groupStruggles, percent, summarize, summarizeAdult } from '../features/kids/report';
 import {
   createClass, deleteClass, loadMyClasses, loadStudents, removeStudent, type KidsClass, type Student,
@@ -29,8 +31,12 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
   const [newLevels, setNewLevels] = useState<string[]>([]);
   const [error, setError] = useState<string>();
   const [copied, setCopied] = useState(false);
-  // Pantalla principal de la docent: les classes o la biblioteca d'activitats.
-  const [tab, setTab] = useState<'classes' | 'activities'>('classes');
+  // Pantalla principal de la docent: les classes, l'alumnat, la biblioteca d'activitats o les rutes.
+  const [tab, setTab] = useState<'classes' | 'students' | 'activities' | 'paths'>('classes');
+  // Alumne que s'obri directament des de la pestanya «Alumnat» (en canviar de classe, l'efecte l'esborraria).
+  const openStudent = useRef<Student>();
+  // Si la fitxa s'ha obert des de «Alumnat», «Tornar» hi torna directament (no a la classe).
+  const [fromStudents, setFromStudents] = useState(false);
   const online = !!supabase && !!uid;
 
   useEffect(() => {
@@ -43,7 +49,8 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
 
   useEffect(() => {
     setStudents(undefined);
-    setStudent(undefined);
+    setStudent(openStudent.current);
+    openStudent.current = undefined;
     if (!selected) return;
     let cancelled = false;
     loadStudents(selected.id, !isLevel0Class(selected.levels))
@@ -88,20 +95,28 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
     window.setTimeout(() => setCopied(false), 1500);
   };
 
-  const back = () => (student ? setStudent(undefined) : setSelected(undefined));
+  const back = () => {
+    if (student && fromStudents) {
+      setFromStudents(false);
+      setStudent(undefined);
+      setSelected(undefined);
+    } else if (student) setStudent(undefined);
+    else setSelected(undefined);
+  };
 
   return (
     <main className="fade-up" style={{ background: '#FAFAF9', minHeight: '100vh' }}>
       <OrangeHeader showOranges={false}>
         {/* El professorat només té esta pantalla: dins d'una classe es torna enrere; a la llista, es tanca la sessió. */}
-        <div className="flex justify-between px-5 pb-2">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-5 pb-2">
           {selected ? (
-            <button onClick={back} className="text-xl btn-press rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-teal shadow hover:bg-white transition-colors">
+            <button onClick={back} className="text-xl btn-press justify-self-start rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-teal shadow hover:bg-white transition-colors">
               ← Tornar
             </button>
           ) : <span />}
-          <button onClick={onLogOut} id="classes-logout-btn" className="btn-press flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-coral shadow hover:bg-white transition-colors">
-            <LogOut size={16} /> Tanca la sessió
+          <Logo size="lg" />
+          <button onClick={onLogOut} id="classes-logout-btn" className="btn-press flex items-center gap-2 justify-self-end rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-coral shadow hover:bg-white transition-colors">
+            <LogOut size={16} /> <span className="hidden sm:inline">Tanca la sessió</span>
           </button>
         </div>
       </OrangeHeader>
@@ -133,7 +148,7 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
         ) : (
           <>
             <div className="mb-6 flex gap-2 rounded-full bg-white p-1 shadow-sm sm:w-fit" role="tablist">
-              {([['classes', 'Classes'], ['activities', 'Activitats']] as const).map(([id, label]) => (
+              {([['classes', 'Classes'], ['students', 'Alumnat'], ['activities', 'Activitats'], ['paths', 'Rutes']] as const).map(([id, label]) => (
                 <button
                   key={id}
                   role="tab"
@@ -145,7 +160,9 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
                 </button>
               ))}
             </div>
-            {tab === 'activities' ? <TeacherActivities classes={classes ?? []} /> : (
+            {tab === 'activities' ? <TeacherActivities classes={classes ?? []} /> : tab === 'paths' ? <TeacherPathsTab classes={classes ?? []} /> : tab === 'students' ? (
+              <StudentsByClass classes={classes ?? []} onOpen={(c, s) => { openStudent.current = s; setFromStudents(true); setSelected(c); }} />
+            ) : (
           <>
             <h1 className="text-5xl font-black">Les meues classes</h1>
             <p className="mt-2 text-lg opacity-70">Classes d'infantil (Nivell 0) i d'adults (A1-C2): l'alumnat s'hi unix amb el codi.</p>
@@ -249,7 +266,7 @@ function ClassView({ klass, students, copied, onCopy, onOpen, onKick, onDelete }
         <>
           {/* En guardar una ruta, les activitats pròpies que hi ha s'assignen a la classe: es tornen a carregar. */}
           <ClassActivities key={pathsVersion} classId={klass.id} classLevels={klass.levels} />
-          <ClassPaths classId={klass.id} classLevels={klass.levels} onSaved={() => setPathsVersion(v => v + 1)} />
+          <ClassPaths classId={klass.id} className={klass.name} classLevels={klass.levels} onSaved={() => setPathsVersion(v => v + 1)} />
         </>
       )}
 
