@@ -73,7 +73,6 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   const [ready, setReady] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
   const [loading, setLoading] = useState(false);
-  useThinkingSound(loading);
   const [talking, setTalking] = useState(false);
   const [mood, setMood] = useState<Mood>('neutral');
   const avatarSize = useAvatarSize();
@@ -89,6 +88,9 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   // true mentre la veu del professor es demana o es descarrega i encara no pot sonar.
   const [voiceLoading, setVoiceLoading] = useState(false);
   const showVoiceLoading = useDelayedFlag(voiceLoading);
+  // El robot pensa des que s'envia la pregunta (resposta del tutor, amb el RAG de la GNV si cal) fins que comença a parlar.
+  const thinking = loading || voiceLoading;
+  useThinkingSound(thinking);
   // Veu triada tocant el robot (undefined = la del professor). Es llig en cada frase, per això va en una ref.
   const [voice, setVoice] = useState(savedRobotVoice);
   const voiceRef = useRef(voice);
@@ -249,7 +251,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       {/* Tocant el professor ix el menú per a triar-li la veu. */}
       <div ref={robotRef} className="relative shrink-0" title="Toca'm per a canviar-me la veu">
         {isRobotAvatarEnabled('dashboard')
-          ? <DashboardRobot className="drop-shadow-lg" size={avatarSize} talking={talking} thinking={loading} mood={mood} onClick={() => setVoiceMenuOpen(open => !open)} />
+          ? <DashboardRobot className="drop-shadow-lg" size={avatarSize} talking={talking} thinking={thinking} mood={mood} onClick={() => setVoiceMenuOpen(open => !open)} />
           : <img src="/images/avatar_professor.svg" alt="El professor" className="float cursor-pointer drop-shadow-lg" width={avatarSize} height={avatarSize} onClick={() => setVoiceMenuOpen(open => !open)} />}
         {!voiceMenuOpen && (
           <button

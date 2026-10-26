@@ -11,6 +11,7 @@ import {
   IDLE_BODY_CLIP, LAYER_BONES, STATE_CLIPS, STATE_EYE_COLOR, TALK_CLIP,
   type RobotLayer, type RobotState,
 } from './states';
+import { attachRobotBook } from './robotBook';
 
 export type RobotEngineOptions = {
   modelUrl: string;
@@ -132,6 +133,8 @@ export async function createRobotEngine(container: HTMLElement, opts: RobotEngin
     actions.set(clip.name, mixer.clipAction(filtered));
   }
 
+  const book = attachRobotBook(model, reducedMotion);
+
   const current: Partial<Record<RobotLayer, THREE.AnimationAction>> = {};
   const play = (layer: RobotLayer, name: string, once = false) => {
     const next = actions.get(name);
@@ -207,9 +210,10 @@ export async function createRobotEngine(container: HTMLElement, opts: RobotEngin
     if (!visible || document.hidden) return;
     elapsed += dt;
     mixer.update(dt);
+    book?.update(dt, elapsed, state === 'reading');
     if (faceMat) faceMat.emissive.lerp(targetEye, Math.min(1, dt * 4));
     if (antennaMat) {
-      const speed = state === 'thinking' ? 7 : talking ? 11 : 1.6;
+      const speed = state === 'thinking' || state === 'reading' ? 7 : talking ? 11 : 1.6;
       antennaMat.emissiveIntensity = antennaBase * (0.55 + 0.45 * (0.5 + 0.5 * Math.sin(elapsed * speed)));
     }
     renderer.render(scene, camera);
@@ -221,6 +225,7 @@ export async function createRobotEngine(container: HTMLElement, opts: RobotEngin
     ro.disconnect();
     io.disconnect();
     mixer.stopAllAction();
+    book?.dispose();
     model.traverse(o => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;

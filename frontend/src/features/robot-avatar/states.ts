@@ -5,7 +5,7 @@ import type { Mood } from '../../lib/types';
  * en /avatar-robot/robot.glb). L'animació va en tres capes independents perquè
  * es puguen combinar: cos (postura/gest), ulls i boca (parlar substituïx la boca).
  */
-export type RobotState = 'idle' | 'wave' | 'happy' | 'confused' | 'thinking';
+export type RobotState = 'idle' | 'wave' | 'happy' | 'confused' | 'thinking' | 'reading';
 
 export type RobotLayer = 'body' | 'eyes' | 'mouth';
 
@@ -25,6 +25,8 @@ export const STATE_CLIPS: Record<RobotState, StateClips> = {
   happy: { body: 'body_happy', eyes: 'eyes_happy', mouth: 'mouth_happy', bodyOnce: true },
   confused: { body: 'body_confused', eyes: 'eyes_confused', mouth: 'mouth_confused' },
   thinking: { body: 'body_thinking', eyes: 'eyes_thinking', mouth: 'mouth_thinking' },
+  // Pensa consultant el diccionari (robotBook.ts posa el llibre i la postura damunt d'aquests clips).
+  reading: { body: 'body_thinking', eyes: 'eyes_neutral', mouth: 'mouth_thinking' },
 };
 
 export const TALK_CLIP = 'mouth_talk';
@@ -37,6 +39,7 @@ export const STATE_EYE_COLOR: Record<RobotState, string> = {
   happy: '#5CFFB0',
   confused: '#FFC24A',
   thinking: '#B794FF',
+  reading: '#B794FF',
 };
 
 /** Traducció dels estats del xat (Mood del backend) a estats del robot. */
