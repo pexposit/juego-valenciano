@@ -1,0 +1,163 @@
+-- Migració agrupada: 001_esquema_base
+-- Conté, per ordre, les 4 migracions originals següents:
+--   001_initial_schema
+--   002_fix_new_user_trigger
+--   003_add_colegi_scenario
+--   004_add_turisme_scenario
+
+-- ============================================================
+-- Origen: 001_initial_schema.sql
+-- ============================================================
+create type learner_level as enum ('principiant','intermedi','avancat'); 
+create type scenario_key as enum ('mercat','bar','oficina','ajuntament','colegi','turisme'); 
+create type scenario_status as enum ('locked','unlocked','completed'); 
+create type message_role as enum ('user','character'); 
+create type input_mode as enum ('text','voice'); 
+create type level_signal as enum ('below','on','above'); 
+create type character_mood as enum ('neutral','content','confus');
+
+create table profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  display_name text,
+  level learner_level not null default 'principiant',
+  xp integer not null default 0 check(xp>=0),
+  streak_days integer not null default 0,
+  last_active_on date,
+  badges text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table scenario_progress (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  scenario scenario_key not null,
+  status scenario_status not null default 'locked',
+  xp_earned integer not null default 0,
+  completed_at timestamptz,
+  updated_at timestamptz not null default now(),
+  unique(user_id,scenario)
+);
+
+-- Aquí se llamaba conversation_sessions originalmente
+create table conversation_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  scenario scenario_key not null,
+  started_at timestamptz not null default now(),
+  ended_at timestamptz,
+  level_at_start learner_level not null,
+  xp_earned integer not null default 0
+);
+
+create table conversation_messages (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references conversation_sessions(id) on delete cascade,
+  role message_role not null,
+  content_text text not null,
+  audio_url text,
+  input_mode input_mode not null,
+  detected_level_signal level_signal,
+  error_flags text[],
+  created_at timestamptz not null default now()
+);
+
+alter table profiles enable row level security; 
+alter table scenario_progress enable row level security; 
+alter table conversation_sessions enable row level security; 
+alter table conversation_messages enable row level security;
+
+create policy "own profile" on profiles for all using(auth.uid()=id) with check(auth.uid()=id); 
+create policy "own progress" on scenario_progress for all using(auth.uid()=user_id) with check(auth.uid()=user_id); 
+create policy "own sessions" on conversation_sessions for all using(auth.uid()=user_id) with check(auth.uid()=user_id); 
+create policy "own messages" on conversation_messages for select using(exists(select 1 from conversation_sessions s where s.id=session_id and s.user_id=auth.uid()));
+
+create or replace function apply_turn_xp(p_user_id uuid,p_session_id uuid,p_scenario scenario_key,p_xp_delta integer,p_threshold integer) returns void language plpgsql security definer as $$ 
+declare 
+  total integer; 
+  next_s scenario_key; 
+begin 
+  update profiles set xp=xp+p_xp_delta,updated_at=now() where id=p_user_id; 
+  update conversation_sessions set xp_earned=xp_earned+p_xp_delta where id=p_session_id; 
+  insert into scenario_progress(user_id,scenario,status,xp_earned) values(p_user_id,p_scenario,'unlocked',p_xp_delta) on conflict(user_id,scenario) do update set xp_earned=scenario_progress.xp_earned+p_xp_delta,updated_at=now() returning xp_earned into total; 
+  if total>=p_threshold then 
+    update scenario_progress set status='completed',completed_at=now() where user_id=p_user_id and scenario=p_scenario; 
+    next_s:=case p_scenario when 'mercat' then 'bar' when 'bar' then 'oficina' when 'oficina' then 'ajuntament' when 'ajuntament' then 'colegi' when 'colegi' then 'turisme' else null end; 
+    if next_s is not null then 
+      insert into scenario_progress(user_id,scenario,status) values(p_user_id,next_s,'unlocked') on conflict(user_id,scenario) do nothing; 
+    end if; 
+  end if; 
+end $$;
+
+create or replace function handle_new_user() returns trigger language plpgsql security definer as $$ 
+begin 
+  insert into public.profiles(id,display_name,level) values(new.id,coalesce(new.raw_user_meta_data->>'display_name',''),coalesce((new.raw_user_meta_data->>'level')::learner_level,'principiant')); 
+  insert into public.scenario_progress(user_id,scenario,status) values(new.id,'mercat','unlocked'); 
+  return new; 
+end $$; 
+
+create trigger on_auth_user_created after insert on auth.users for each row execute procedure handle_new_user();
+
+-- ============================================================
+-- Origen: 002_fix_new_user_trigger.sql
+-- ============================================================
+-- Repair the Auth trigger used when a person signs in for the first time.
+-- Run this migration in Supabase SQL Editor after 001_initial_schema.sql.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  initial_level learner_level;
+begin
+  initial_level := case new.raw_user_meta_data ->> 'level'
+    when 'intermedi' then 'intermedi'::learner_level
+    when 'avancat' then 'avancat'::learner_level
+    else 'principiant'::learner_level
+  end;
+
+  insert into public.profiles (id, display_name, level)
+  values (new.id, coalesce(new.raw_user_meta_data ->> 'display_name', ''), initial_level)
+  on conflict (id) do nothing;
+
+  insert into public.scenario_progress (user_id, scenario, status)
+  values (new.id, 'mercat', 'unlocked')
+  on conflict (user_id, scenario) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- ============================================================
+-- Origen: 003_add_colegi_scenario.sql
+-- ============================================================
+-- Afegeix l'escenari "L'Escola" (colegi) a l'enum scenario_key i encadena
+-- el seu desbloqueig després de completar l'ajuntament.
+--
+-- Per a instal·lacions noves n'hi ha prou amb 001_initial_schema.sql (ja actualitzat);
+-- per a bases ja existents, aquesta migració amplia l'enum i recrea la funció
+-- apply_turn_xp amb la nova cadena de desbloqueig.
+alter type scenario_key add value if not exists 'colegi';
+
+create or replace function apply_turn_xp(p_user_id uuid,p_session_id uuid,p_scenario scenario_key,p_xp_delta integer,p_threshold integer) returns void language plpgsql security definer as $$ declare total integer; next_s scenario_key; begin update profiles set xp=xp+p_xp_delta,updated_at=now() where id=p_user_id; update conversation_sessions set xp_earned=xp_earned+p_xp_delta where id=p_session_id; insert into scenario_progress(user_id,scenario,status,xp_earned) values(p_user_id,p_scenario,'unlocked',p_xp_delta) on conflict(user_id,scenario) do update set xp_earned=scenario_progress.xp_earned+p_xp_delta,updated_at=now() returning xp_earned into total; if total>=p_threshold then update scenario_progress set status='completed',completed_at=now() where user_id=p_user_id and scenario=p_scenario; next_s:=case p_scenario when 'mercat' then 'bar' when 'bar' then 'oficina' when 'oficina' then 'ajuntament' when 'ajuntament' then 'colegi' else null end; if next_s is not null then insert into scenario_progress(user_id,scenario,status) values(p_user_id,next_s,'unlocked') on conflict(user_id,scenario) do nothing; end if; end if; end $$;
+
+-- ============================================================
+-- Origen: 004_add_turisme_scenario.sql
+-- ============================================================
+-- Afegeix l'escenari "Oficina de Turisme" (turisme) a l'enum scenario_key i encadena
+-- el seu desbloqueig després de completar l'escola (colegi).
+--
+-- Per a instal·lacions noves n'hi ha prou amb 001_initial_schema.sql (ja actualitzat);
+-- per a bases ja existents, aquesta migració amplia l'enum i recrea la funció
+-- apply_turn_xp amb la nova cadena de desbloqueig.
+alter type scenario_key add value if not exists 'turisme';
+
+create or replace function apply_turn_xp(p_user_id uuid,p_session_id uuid,p_scenario scenario_key,p_xp_delta integer,p_threshold integer) returns void language plpgsql security definer as $$ declare total integer; next_s scenario_key; begin update profiles set xp=xp+p_xp_delta,updated_at=now() where id=p_user_id; update conversation_sessions set xp_earned=xp_earned+p_xp_delta where id=p_session_id; insert into scenario_progress(user_id,scenario,status,xp_earned) values(p_user_id,p_scenario,'unlocked',p_xp_delta) on conflict(user_id,scenario) do update set xp_earned=scenario_progress.xp_earned+p_xp_delta,updated_at=now() returning xp_earned into total; if total>=p_threshold then update scenario_progress set status='completed',completed_at=now() where user_id=p_user_id and scenario=p_scenario; next_s:=case p_scenario when 'mercat' then 'bar' when 'bar' then 'oficina' when 'oficina' then 'ajuntament' when 'ajuntament' then 'colegi' when 'colegi' then 'turisme' else null end; if next_s is not null then insert into scenario_progress(user_id,scenario,status) values(p_user_id,next_s,'unlocked') on conflict(user_id,scenario) do nothing; end if; end if; end $$;
+

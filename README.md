@@ -29,8 +29,16 @@ El frontend queda en `http://localhost:5173` y la API en `http://localhost:3001`
 
 - `frontend/`: autenticación pública de Supabase, UI mobile-first, MediaRecorder y reproducción de voz.
 - `backend/`: verifica el JWT con Supabase, obtiene contexto, llama a OpenAI con salida JSON, persiste progreso y aplica XP.
+- `rag_gnv/`: RAG de la Gramática Normativa Valenciana (Python, puerto 8010), con su `Dockerfile` y su `.env`. `npm run dev` lo arranca si existe `rag_gnv/.venv`; en `docker compose` es el servicio `rag`.
+- `mcp/`: servidor MCP lingüístico (DNV, conjugación, Apertium y SoftValència) por HTTP, con su propio `Dockerfile` y `.env`. El backend lo llama con `MCP_URL` (`npm run dev` lo arranca en el puerto 3002; en `docker compose` es el servicio `mcp`).
 - `backend/src/services/voice.ts`: interfaces STT/TTS para conectar Whisper/Google y ElevenLabs/Google/Azure sin tocar la ruta.
 - `supabase/migrations/`: tablas, RLS, trigger de perfil y función transaccional de XP/desbloqueos.
+
+## Migraciones
+
+`supabase/migrations/` agrupa por temas las migraciones relacionadas (16 archivos en lugar de 140), manteniendo el orden de ejecución; cada archivo lista las originales que contiene. Se comprobó que el esquema y los datos del catálogo resultantes son idénticos a los de las 140 originales.
+
+Si ya tienes una base local de `supabase start` creada con las 140 antiguas, **no hace falta recrearla**: alinea el historial con `supabase migration repair` (marca las versiones antiguas como `reverted` y las nuevas como `applied`) o recréala con `supabase db reset`. En una base nueva, `supabase start` aplica los 16 archivos solos.
 
 ## Rendimiento
 

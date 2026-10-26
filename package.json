@@ -1,11 +1,17 @@
 {
   "name": "parlaval",
   "private": true,
-  "workspaces": ["shared", "frontend", "backend", "speech-lab"],
+  "workspaces": [
+    "shared",
+    "frontend",
+    "backend",
+    "mcp",
+    "speech-lab"
+  ],
   "scripts": {
-    "dev": "npm run build -w shared && concurrently \"npm run dev -w frontend\" \"npm run dev -w backend\" \"npm run dev:rag\"",
-    "build": "npm run build -w shared && npm run build -w frontend && npm run build -w backend",
-    "test": "npm run build -w shared && npm run test -w backend",
+    "dev": "npm run build -w shared && concurrently \"npm run dev -w frontend\" \"npm run dev -w backend\" \"npm run dev -w mcp\" \"npm run dev:rag\"",
+    "build": "npm run build -w shared && npm run build -w frontend && npm run build -w backend && npm run build -w mcp",
+    "test": "npm run build -w shared && npm run test -w backend && npm run test -w mcp",
     "setup:speech": "bash speech-lab/scripts/setup-vosk.sh",
     "setup:aina": "bash speech-lab/scripts/setup-aina.sh",
     "models:speech": "cd speech-lab && .venv/bin/python scripts/models-hf.py descarrega",
@@ -13,7 +19,8 @@
     "smoke:speech": "npm run smoke -w speech-lab",
     "wer:speech": "npm run wer -w speech-lab",
     "test:speech": "npm run test -w speech-lab",
-    "dev:rag": "node rag_gnv/dev.mjs"
+    "dev:rag": "node rag_gnv/dev.mjs",
+    "dev:mcp": "npm run dev -w mcp"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1",

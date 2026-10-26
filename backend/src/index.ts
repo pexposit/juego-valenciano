@@ -1,3 +1,5 @@
+// Claves compartides del .env de l'arrel (vegeu env.ts); han d'anar abans de carregar backend/.env.
+import './env.js';
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';

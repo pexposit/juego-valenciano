@@ -1,0 +1,24 @@
+{
+  "name": "parlaval-mcp",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Servidor MCP lingüístic de ParlaVal (DNV, conjugació, Apertium i SoftValència) per HTTP",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "cheerio": "^1.2.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0"
+  }
+}

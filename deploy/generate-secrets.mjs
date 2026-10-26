@@ -22,3 +22,5 @@ console.log(`POSTGRES_PASSWORD=${postgresPassword}`);
 console.log(`JWT_SECRET=${jwtSecret}`);
 console.log(`ANON_KEY=${sign({ role: 'anon', iss: 'supabase', iat, exp }, jwtSecret)}`);
 console.log(`SERVICE_ROLE_KEY=${sign({ role: 'service_role', iss: 'supabase', iat, exp }, jwtSecret)}`);
+// Token compartit entre l'API i el servidor MCP (servici `mcp`).
+console.log(`MCP_AUTH_TOKEN=${randomBytes(24).toString('hex')}`);

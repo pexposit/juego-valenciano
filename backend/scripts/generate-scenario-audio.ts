@@ -12,6 +12,7 @@
  *
  * Cal tindre accés al DeepLab de la UJI (https://krono.act.uji.es/deeplab/speech) i la BDD local en marxa.
  */
+import '../src/env.js';
 import 'dotenv/config';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

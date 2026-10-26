@@ -189,6 +189,8 @@ En lugar de Supabase Cloud + Render + Vercel, todo puede ir en un único servido
 |---|---|
 | `web` | Caddy: sirve el build de Vite, hace de proxy de `/api`, `/auth/v1` y `/rest/v1` y **obtiene el certificado HTTPS de Let's Encrypt** |
 | `api` | El backend (`backend/Dockerfile`) |
+| `mcp` | Servidor MCP lingüístico (`mcp/Dockerfile`): DNV, conjugación, Apertium y SoftValència por HTTP. Sin puertos publicados: solo lo llama `api` por la red interna (`MCP_URL`) |
+| `rag` | RAG de la Gramática Normativa Valenciana (`rag_gnv/Dockerfile`): solo CPU, sin puertos publicados; el backend lo llama por `RAG_GNV_URL`. El índice se genera solo en el primer arranque y se guarda en el volumen `rag_index` |
 | `db` | Postgres con las extensiones y roles de Supabase (`supabase/postgres`) |
 | `auth` | GoTrue, el servicio de Auth de Supabase (altas e inicios de sesión) |
 | `rest` | PostgREST, lo que responde a `supabase.from(...)` |
@@ -211,6 +213,8 @@ docker compose logs migrate                  # "Base de dades al dia"
 curl https://$DOMAIN/health                  # {"ok":true}
 ```
 
+- Las variables del servidor MCP son **propias** (`mcp/.env`, opcional; ver `mcp/.env.example`) y no se mezclan con las del backend. El token compartido `MCP_AUTH_TOKEN` lo genera `generate-secrets.mjs` y el compose lo pasa a `api` y a `mcp`.
+- **RAG de la GNV:** sus variables están en `rag_gnv/.env` (`cp rag_gnv/.env.example rag_gnv/.env`): `OPENAI_API_KEY` (los embeddings; el primer arranque indexa la GNV, unos céntimos) y `TYPESAFE_API_KEY` (reranker Jev). **Pon la de TypeSafe**: sin ella el RAG carga el reranker local (~2 GB de descarga y muy lento en CPU). Sin el RAG el tutor responde igual, pero sin la regla de la GNV; con `RAG_GNV_ENABLED=false` en `backend/.env` el backend ni lo intenta. Comprobación: `docker compose exec api node -e "fetch(process.env.RAG_GNV_URL+'/salut').then(r=>r.text()).then(console.log)"`.
 - El registro DNS debe apuntar a la IP del servidor **antes** del primer arranque, o Caddy no podrá emitir el certificado.
 - Para probarlo en tu máquina: `DOMAIN=localhost` (certificado local, el navegador avisa una vez).
 - **Guarda una copia del `.env`.** Si pierdes `JWT_SECRET`, todas las sesiones dejan de valer; si pierdes `POSTGRES_PASSWORD`, los servicios no conectan a la base de datos.
@@ -224,5 +228,7 @@ curl https://$DOMAIN/health                  # {"ok":true}
   docker compose exec -T db pg_dump -U supabase_admin -d postgres -n public -n auth -Fc > parlaval-$(date +%F).dump
   ```
 - **Consultar la base de datos:** `docker compose exec db psql -U supabase_admin -d postgres`.
-- **No borres los volúmenes** (`docker compose down -v`): `db_data` son los datos y `caddy_data` los certificados.
+- **No borres los volúmenes** (`docker compose down -v`): `db_data` son los datos y `caddy_data` los certificados (`rag_index`, el índice del RAG, se regenera solo si se borra).
+- **Contenedores de despliegue vs. desarrollo:** el compose se llama `parlaval-deploy` y sus contenedores `parlaval-deploy-*` (con la etiqueta `com.parlaval.stack=deploy`). `supabase start` crea `supabase_*_juego-valenciano` (base de datos local de desarrollo) y `npm run dev` no usa contenedores: en Docker Desktop se ven como grupos distintos. Los puertos 80/443/8000 son del despliegue; los de desarrollo (5173, 3001, 3002, 54321…) no chocan con ellos.
+- **Migraciones agrupadas:** `supabase/migrations/` tiene 16 archivos temáticos (las 140 originales, en el mismo orden). Una base de datos antigua de compose registra sola los grupos cuyas originales ya tenía (`deploy/db/squash-map.txt`); para el Supabase local de desarrollo, ver «Migraciones» en el README.
 - Postgres no se publica a Internet: solo se accede desde la red interna del compose.

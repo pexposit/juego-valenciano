@@ -17,6 +17,7 @@
  * De tant en tant el servidor respon 500 a una frase que després genera bé: cada
  * frase es reintenta i, si continua fallant, es deixa per a la pròxima execució.
  */
+import '../src/env.js';
 import 'dotenv/config';
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

@@ -9,6 +9,7 @@
  *
  * El TTS no suporta bé peticions simultànies: els torns es demanen d'un en un.
  */
+import '../src/env.js';
 import 'dotenv/config';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

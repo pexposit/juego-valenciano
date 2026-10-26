@@ -20,14 +20,22 @@ import urllib.request
 from collections import Counter
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 BASE_DIR = Path(__file__).parent
-# La OPENAI_API_KEY i la TYPESAFE_API_KEY són les del backend (backend/.env); les variables ja definides en l'entorn manen.
+# Les claus compartides (OPENAI_API_KEY, TYPESAFE_API_KEY) viuen en el .env de l'arrel del repositori, com per al backend;
+# només es copien estes. Les que ja estan en l'entorn manen i van abans que backend/.env.
+_ROOT_ENV = BASE_DIR.parent / ".env"
+if _ROOT_ENV.exists():
+    for _key in ("OPENAI_API_KEY", "TYPESAFE_API_KEY"):
+        _value = dotenv_values(_ROOT_ENV).get(_key)
+        if _value and _key not in os.environ:
+            os.environ[_key] = _value
+# Reserva: les claus de backend/.env, si no estan en l'arrel.
 load_dotenv(BASE_DIR.parent / "backend" / ".env")
 # La GNV és la mateixa que fa servir la resta de l'app (assets-src/avl/gnv.txt).
 SOURCE_FILE = Path(os.environ.get("RAG_GNV_SOURCE", BASE_DIR.parent / "assets-src" / "avl" / "gnv.txt"))

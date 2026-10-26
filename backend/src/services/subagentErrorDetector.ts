@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { guardedFetch } from './openaiGuard.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type {
   ChatCompletionMessageParam,
   ChatCompletionTool,
@@ -15,7 +15,9 @@ import { createLoopGuard } from './loopGuard.js';
 // Variables de entorno
 const UJI_HOST = process.env.UJI_HOST;
 const UJI_MODEL = process.env.UJI_LLM_MODEL || 'qwen2.5:32b';
-const MCP_SERVER_SCRIPT = process.env.MCPDETECTOR_SERVER_PATH || './mcp/ErrorDetector/index.js';
+// El servidor MCP lingüístic (workspace mcp/) és un servici a banda: el backend el crida per HTTP.
+const MCP_URL = process.env.MCP_URL || 'http://localhost:3002/mcp';
+const MCP_AUTH_TOKEN = process.env.MCP_AUTH_TOKEN?.trim();
 const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-6-luna';
 // Màxim de crides a ferramentes (MCP) per cada anàlisi: el prompt demana repetir el bucle fins a la perfecció i, sense límit, podria no acabar mai.
 // Passat este límit «suau» el model ja no rep ferramentes i ha de donar l'eixida final. A més, el LoopGuard talla
@@ -48,9 +50,8 @@ export async function getMcpTools(): Promise<{ client: Client; tools: ChatComple
     return { client: mcpClient, tools: cachedTools };
   }
 
-  const transport = new StdioClientTransport({
-    command: 'npx',
-    args: ['tsx', MCP_SERVER_SCRIPT],
+  const transport = new StreamableHTTPClientTransport(new URL(MCP_URL), {
+    requestInit: MCP_AUTH_TOKEN ? { headers: { Authorization: `Bearer ${MCP_AUTH_TOKEN}` } } : undefined,
   });
 
   mcpClient = new Client(
@@ -58,7 +59,13 @@ export async function getMcpTools(): Promise<{ client: Client; tools: ChatComple
     { capabilities: {} }
   );
 
-  await mcpClient.connect(transport);
+  try {
+    await mcpClient.connect(transport);
+  } catch (error) {
+    // Sense connexió no es guarda el client: la propera crida ho torna a intentar.
+    mcpClient = null;
+    throw error;
+  }
 
   const { tools } = await mcpClient.listTools();
   cachedTools = tools.map((tool) => {

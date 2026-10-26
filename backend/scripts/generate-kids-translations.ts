@@ -11,6 +11,7 @@
  *   npx tsx scripts/generate-kids-translations.ts --force     # totes
  *   npx tsx scripts/generate-kids-translations.ts es uk       # només eixes llengües
  */
+import '../src/env.js';
 import 'dotenv/config';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

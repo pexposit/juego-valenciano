@@ -90,9 +90,9 @@ Scripts raíz: `dev` (compila shared y lanza front+back con `concurrently`), `bu
         │ PostgREST (RLS)           │        │ requireAuth · rateLimit · zod          │
         │ Postgres (20 tablas, RPC) │        │ OpenAI (agente, detector, evaluadores, │
         └───────────────────────────┘        │   rutas IA, objetivos, títulos)        │
-                                             │ MCP stdio → DNV-AVL, Softcatalà, Apertium│
+                                             │ MCP HTTP → DNV-AVL, Softcatalà, Apertium│
                                              │ DeepLab UJI: whisper-1 (STT), matxa-tts │
-                                             │ classificador_llm :8000 (sin uso)       │
+                                             │ classificador_llm (sin uso, fuera de compose)│
                                              └────────────────────────────────────────┘
 ```
 
@@ -569,7 +569,7 @@ Todos usan OpenAI con el modelo de `OPENAI_MODEL` (los que tienen valor por defe
 - Prompt `SYSTEM_PROMPT_AVL`: «auditor lingüístic d'elit» de la normativa AVL, «subratllat roig» (ortografía, grafías, léxico no admitido) y «subratllat blau» (calcos sintácticos, redoblamiento de pronombres, régimen preposicional, concordancia, falsos amigos…). Protocolo en 4 fases: análisis léxico con `consultar_dnv`, combinaciones de 2-3 palabras (calcos como «tindre que», «donar-se conte», «a mida que»), construcción y prueba en Softcatalà, bucle de revisión. Criterios innegociables (morfología verbal valenciana, sin pleonasmos pronominales, accentuación…).
 - Más `levelInstructions`: la lista de contenidos del nivel; clasificar cada error en un código; los errores básicos de niveles inferiores **sí** se comunican; los propios de niveles superiores que no encajan **no**.
 - Esquema de salida (zod): `{errors:[{error_text, correction, area ∈ LANGUAGE_AREAS, contingut (código), explanation}]}`.
-- Herramientas MCP (ver §14.1) conectadas por `getMcpTools()`: lanza `npx tsx ./mcp/ErrorDetector/index.js` por stdio, lista las herramientas y las convierte en tools de OpenAI `strict` (todas las propiedades `required`, `additionalProperties:false`). Conexión y lista cacheadas.
+- Herramientas MCP (ver §14.1) conectadas por `getMcpTools()`: se conecta por HTTP (Streamable HTTP, `MCP_URL`, con token opcional `MCP_AUTH_TOKEN`) al servidor del workspace `mcp/`, lista las herramientas y las convierte en tools de OpenAI `strict` (todas las propiedades `required`, `additionalProperties:false`). Conexión y lista cacheadas.
 - Bucle: `chat.completions.parse` con tools + response_format a la vez; mientras el modelo pida tools, las ejecuta vía MCP y vuelve a llamar (sin límite de rondas aquí). No registra los argumentos (contienen texto del usuario).
 - Filtra errores cuya corrección es idéntica al original. Cualquier fallo → `[]`.
 - Hay un cliente comentado para un LLM local de la UJI (`UJI_HOST`, `qwen2.5:32b`).
@@ -1180,8 +1180,8 @@ Un paso está hecho cuando hay algún resultado de ese recurso.
 
 ## 14. Servicios auxiliares
 
-### 14.1 Servidor MCP lingüístico (`backend/mcp/ErrorDetector/`)
-`McpServer` (`avl-valencia-mcp`) por stdio, lanzado por el backend con `npx tsx`. Lo usan el detector de errores y los evaluadores de redacciones. Ninguna API externa necesita clave.
+### 14.1 Servidor MCP lingüístico (workspace `mcp/`)
+`McpServer` (`avl-valencia-mcp`) por HTTP (`POST /mcp`, sin estado; `GET /health`), servicio propio con `mcp/Dockerfile` y `mcp/.env` (`PORT`, `MCP_AUTH_TOKEN`, `AVL_BASE_URL`, `APERTIUM_URL`, `SOFTCATALA_URL`). En `npm run dev` arranca en el puerto 3002; en `docker compose` es el servicio `mcp`, sin puertos publicados. Lo usan el detector de errores y los evaluadores de redacciones. Ninguna API externa necesita clave.
 
 | Herramienta | Entrada | Qué hace |
 |---|---|---|
@@ -1236,8 +1236,9 @@ Supabase Cloud (`supabase db push`), API en Render/Railway/Fly.io con `backend/D
 | Servicio | Imagen | Exposición | Notas |
 |---|---|---|---|
 | `web` | Caddy (build del frontend) | 80/443 públicos | HTTPS automático (Let's Encrypt); `/api/*` y `/health` → api; `/auth/v1/*` → auth; `/rest/v1/*` → rest; SPA con fallback a `index.html`; assets con caché inmutable; bloque interno `:8000` que hace de pasarela Supabase para el backend |
-| `api` | `backend/Dockerfile` | interna | `SUPABASE_URL=http://web:8000`, `CLASSIFICADOR_URL=http://classificador:8000` |
-| `classificador` | `classificador_llm` | interna | healthcheck `/salut` |
+| `api` | `backend/Dockerfile` | interna | `SUPABASE_URL=http://web:8000`, `MCP_URL=http://mcp:3002/mcp` |
+| `rag` | `rag_gnv/Dockerfile` | interna | RAG de la GNV (8010), solo CPU, índice en el volumen `rag_index`, variables en `rag_gnv/.env`; la `api` recibe `RAG_GNV_URL=http://rag:8010` |
+| `mcp` | `mcp/Dockerfile` | interna | servidor MCP lingüístico por HTTP, healthcheck `/health`, variables en `mcp/.env` |
 | `db` | `supabase/postgres:17.6.1.136` | interna | `roles.sql` al crear el volumen |
 | `auth` | `supabase/gotrue:v2.196.0` | interna | JWT HS256, email sí, teléfono y anónimos no, autoconfirmación configurable, SMTP opcional |
 | `migrate` | `supabase/postgres` | — | ejecuta `migrate.sh` y termina |
@@ -1263,8 +1264,7 @@ Dockerfiles: backend en 3 etapas `node:22-alpine` (build, dependencias de produc
 | `MATXA_TTS_URL`, `MATXA_TTS_MODEL`, `MATXA_TTS_VOICE` | TTS (matxa-tts, gina) |
 | `RATE_LIMIT_AUTHED_PER_MIN`, `RATE_LIMIT_ANON_PER_MIN` | 30 / 6 |
 | `RATE_LIMIT_EVALUATE_PER_MIN`, `RATE_LIMIT_EVALUATE_ANON_PER_MIN` | 5 / 2 |
-| `MCPDETECTOR_SERVER_PATH` | Ruta del servidor MCP |
-| `CLASSIFICADOR_URL` | Clasificador |
+| `MCP_URL` / `MCP_AUTH_TOKEN` | URL y token del servidor MCP (`mcp/`) |
 | `RAG_GNV_URL` / `RAG_GNV_ENABLED` / `RAG_GNV_TIMEOUT_MS` | RAG de la GNV del tutor (§6.9 bis) |
 | `UJI_HOST`, `UJI_LLM_MODEL` | LLM local (no usado) |
 | `EXAM_EVAL_DEBUG` | Log de la entrada de los evaluadores |
@@ -1380,7 +1380,7 @@ Efecto lateral: A1, C1 y C2 siguen viendo `LearningPath` en `/ruta`, pero el bac
 6. `fetchExam` y `fetchLesson` no envían token (son públicos; el examen incluye las soluciones).
 
 ### 19.2 Despliegue
-7. **El MCP probablemente no funciona en Docker**: el `Dockerfile` del backend no copia `backend/mcp/` y `tsx` es dependencia de desarrollo, pero el backend lanza `npx tsx ./mcp/ErrorDetector/index.js` (además el fichero es `index.ts`). Afectaría al detector de errores y a los evaluadores de redacciones en producción.
+7. ~~El MCP no funcionaba en Docker~~ (resuelto): ahora es el servicio `mcp`, que el backend llama por HTTP.
 8. DEPLOY.md menciona migraciones «001→004» y la tabla `scenario_progress`, ya inexistente.
 9. Variables usadas pero no documentadas en `.env.example` (ver §15.4).
 10. «Softvalencià» es en realidad el LanguageTool de Softcatalà.

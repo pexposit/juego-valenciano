@@ -3,8 +3,21 @@
 #   cp .env.deploy.example .env && node deploy/generate-secrets.mjs >> .env
 #   docker compose up -d --build
 # Secrets del backend que no són de Supabase (OpenAI...) a backend/.env.
+# Claus compartides (OPENAI_API_KEY, TYPESAFE_API_KEY): UNA sola còpia, en el .env de l'arrel; el compose les passa només
+# als servicis que les usen (api i rag). Variables pròpies de cada servici: backend/.env, rag_gnv/.env i mcp/.env (opcionals).
+#
+# Este compose és el DESPLEGAMENT complet. El projecte es diu `parlaval-deploy` i els contenidors
+# `parlaval-deploy-*`, perquè en Docker Desktop no es mesclen amb els de desenvolupament: `supabase start`
+# crea `supabase_*_juego-valenciano` i `npm run dev` no usa contenidors (només la base de dades local).
+name: parlaval-deploy
+
+x-deploy-labels: &deploy-labels
+  com.parlaval.stack: deploy
+
 services:
   web:
+    container_name: parlaval-deploy-web
+    labels: *deploy-labels
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -33,6 +46,8 @@ services:
     restart: unless-stopped
 
   api:
+    container_name: parlaval-deploy-api
+    labels: *deploy-labels
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -44,35 +59,67 @@ services:
       # Per la xarxa interna, a través de l'entrada :8000 de Caddy.
       SUPABASE_URL: http://web:8000
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:?cal definir SERVICE_ROLE_KEY}
-       # Per la xarxa interna de compose (nom del servici = host).
-      CLASSIFICADOR_URL: http://classificador:8000
+      # Servidor MCP lingüístic (servici `mcp`): analitzador d'errors, avaluadors d'escriptura i conjugació.
+      MCP_URL: http://mcp:3002/mcp
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
+      # RAG de la GNV (servici `rag`). Sense dependència: si no respon, el tutor contesta igual, sense la regla.
+      RAG_GNV_URL: http://rag:8010
+      # Claves compartides: una sola còpia, en el .env de l'arrel (la mateixa que el RAG). Manen sobre backend/.env.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?cal definir OPENAI_API_KEY en el .env de l'arrel}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
-      classificador:
-        condition: service_started
+      mcp:
+        condition: service_healthy
     # Sense `ports`: només és accessible des de Caddy, dins de la xarxa de compose.
     restart: unless-stopped
 
-  # Classificador de nivell de valencià (A1–C2), Mòdul 3. Només l'usa l'API:
-  # sense `ports` ni ruta a Caddy, perquè no té autenticació i gasta crèdit d'OpenAI.
-  classificador:
-    build: ./classificador_llm
-    env_file: classificador_llm/.env    # OPENAI_API_KEY (i OPENAI_MODEL, opcional)
+  # Servidor MCP lingüístic (DNV, conjugació, Apertium i SoftValència) per HTTP: el backend el crida per la xarxa
+  # interna. Sense `ports` ni ruta a Caddy. Les seues variables, a mcp/.env (opcional: tot té valor per defecte).
+  mcp:
+    container_name: parlaval-deploy-mcp
+    labels: *deploy-labels
+    build:
+      context: .
+      dockerfile: mcp/Dockerfile
+    env_file:
+      - path: mcp/.env
+        required: false
     environment:
-      PORT: 8000
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:8000/salut').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      PORT: 3002
+      # El mateix token ací i en l'API (buit = sense token; el servici només és accessible dins de la xarxa de compose).
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
     restart: unless-stopped
+
+  # RAG de la Gramàtica Normativa Valenciana (rag_gnv/): el tutor el consulta per als dubtes de normativa i per a triar
+  # exercicis. Només CPU. Sense `ports`. Les claus (OPENAI_API_KEY per als embeddings i
+  # TYPESAFE_API_KEY per al reranker Jev) vénen del .env de l'arrel; les altres variables, a rag_gnv/.env. L'índex es genera sol en el primer arranc i es guarda en el volum `rag_index`.
+  rag:
+    container_name: parlaval-deploy-rag
+    labels: *deploy-labels
+    build:
+      context: .
+      dockerfile: rag_gnv/Dockerfile
+    env_file:
+      - path: rag_gnv/.env
+        required: false
+    environment:
+      # Claus compartides amb l'API: una sola còpia, en el .env de l'arrel.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?cal definir OPENAI_API_KEY en el .env de l'arrel}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
+    volumes:
+      - rag_index:/app/rag_gnv/index_gnv
+      - rag_models:/home/app/.cache/huggingface
+    # Sense claus (rag_gnv/.env) el RAG no arranca: es reintenta unes voltes i para, en lloc de fer bucle indefinidament.
+    restart: on-failure:5
 
   # --- Supabase autoallotjat: només els serveis que usa l'app ---------------
   # Versions fixades segons el docker-compose oficial de supabase/supabase.
 
   db:
+    container_name: parlaval-deploy-db
+    labels: *deploy-labels
     image: supabase/postgres:17.6.1.136
     environment:
       POSTGRES_HOST: /var/run/postgresql
@@ -96,6 +143,8 @@ services:
     restart: unless-stopped
 
   auth:
+    container_name: parlaval-deploy-auth
+    labels: *deploy-labels
     image: supabase/gotrue:v2.196.0
     depends_on:
       db:
@@ -140,6 +189,8 @@ services:
 
   # Aplica supabase/migrations quan GoTrue ja ha creat l'esquema auth, i acaba.
   migrate:
+    container_name: parlaval-deploy-migrate
+    labels: *deploy-labels
     image: supabase/postgres:17.6.1.136
     depends_on:
       auth:
@@ -149,10 +200,13 @@ services:
     volumes:
       - ./supabase/migrations:/migrations:ro
       - ./deploy/db/migrate.sh:/migrate.sh:ro
+      - ./deploy/db/squash-map.txt:/squash-map.txt:ro
     entrypoint: ["sh", "/migrate.sh"]
     restart: "no"
 
   rest:
+    container_name: parlaval-deploy-rest
+    labels: *deploy-labels
     image: postgrest/postgrest:v14.17
     depends_on:
       migrate:
@@ -173,3 +227,5 @@ volumes:
   caddy_config:
   db_data:
   db_config:
+  rag_index:
+  rag_models:

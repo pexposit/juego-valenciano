@@ -15,6 +15,20 @@
 frontend/vite.config.js
 frontend/vite.config.d.ts
 
+# Entorn virtual i índex local del RAG (~3,8 GB): la imatge del RAG en genera l'índex pel seu compte.
+rag_gnv/.venv
+rag_gnv/index_gnv
+rag_gnv/__pycache__
+
+# Fonts dels recursos (HTML, PDF, models Blender...): només la GNV, de la qual el RAG genera l'índex.
+assets-src/**
+!assets-src/avl/
+assets-src/avl/*
+!assets-src/avl/gnv.txt
+
+# Servici sense ús (no està en el compose).
+classificador_llm/
+
 # Eines de desenvolupament que cap imatge necessita: el laboratori de veu no es
 # desplega i en local té entorns, models i àudios de desenes de GB.
 speech-lab/
