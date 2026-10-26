@@ -64,13 +64,17 @@ services:
       MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
       # RAG de la GNV (servici `rag`). Sense dependència: si no respon, el tutor contesta igual, sense la regla.
       RAG_GNV_URL: http://rag:8010
-      # Claves compartides: una sola còpia, en el .env de l'arrel (la mateixa que el RAG). Manen sobre backend/.env.
+      # Classificador de toxicitat del xat (servici `toxicity-classificator`), per la xarxa interna de compose.
+      TOXICITY_CLASSIFICATOR_URL: http://toxicity-classificator:8001
+      # Claus compartides: una sola còpia, en el .env de l'arrel (la mateixa que el RAG). Manen sobre backend/.env.
       OPENAI_API_KEY: ${OPENAI_API_KEY:?cal definir OPENAI_API_KEY en el .env de l'arrel}
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
       mcp:
+        condition: service_healthy
+      toxicity-classificator:
         condition: service_healthy
     # Sense `ports`: només és accessible des de Caddy, dins de la xarxa de compose.
     restart: unless-stopped
@@ -113,6 +117,30 @@ services:
       - rag_models:/home/app/.cache/huggingface
     # Sense claus (rag_gnv/.env) el RAG no arranca: es reintenta unes voltes i para, en lloc de fer bucle indefinidament.
     restart: on-failure:5
+
+  # Classificador informatiu de toxicitat del xat: només escriu deteccions al log de l'API.
+  toxicity-classificator:
+    container_name: parlaval-deploy-toxicity
+    labels: *deploy-labels
+    build: ./toxicity-classificator
+    environment:
+      PORT: 8001
+      TOXICITY_MODEL_ID: parlaval/laya-toxicity
+      TOXICITY_MODEL_REVISION: bc35c319e78e40454c8f34bacc986882841e4488
+      TOXICITY_DEVICE: cpu
+      HF_HOME: /home/app/.cache/huggingface
+    volumes:
+      - toxicity_model_cache:/home/app/.cache/huggingface
+    # Només exposat a localhost per a poder-lo executar també amb `npm run dev`.
+    ports:
+      - "127.0.0.1:8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10m
+    restart: unless-stopped
 
   # --- Supabase autoallotjat: només els serveis que usa l'app ---------------
   # Versions fixades segons el docker-compose oficial de supabase/supabase.
@@ -229,3 +257,4 @@ volumes:
   db_config:
   rag_index:
   rag_models:
+  toxicity_model_cache:

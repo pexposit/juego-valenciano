@@ -1043,7 +1043,7 @@ const CONTRARIS_ILLA = islandFor(CONTRARIS, { emoji: '🎭', name: 'Les dues car
 
 const abc = (letter: string) => ALPHABET.find(l => l.letter === letter)!;
 const vowel = (letter: string): KidsItem => ({ id: `v-${letter}`, word: letter, emoji: '', glyph: letter.toUpperCase(), ink: '#7C3AED', audio: `abc-de-${letter}` });
-const letterGlyph = (letter: string): KidsItem => ({ id: `g-${letter}`, word: abc(letter).name, emoji: '', glyph: letter.toUpperCase(), ink: '#0F766E', audio: word(`${capital(abc(letter).name)}!`) });
+const letterGlyph = (letter: string): KidsItem => ({ id: `g-${letter}`, word: abc(letter).name, emoji: '', glyph: letter.toUpperCase(), ink: '#0F766E', audio: `w-abc-${letter}` });
 const VOWEL_ITEMS = ['a', 'e', 'i', 'o', 'u'].map(vowel);
 const SOUNDS = LETTERS.map((l): KidsItem => ({ id: `so-${l.id}`, word: l.glyph, emoji: '', glyph: l.glyph, ink: '#DB2777', audio: `lletra-${l.id}` }));
 const pinya = it('🍍', 'la pinya');
