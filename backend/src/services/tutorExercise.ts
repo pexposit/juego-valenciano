@@ -1,5 +1,5 @@
 import { getAdmin } from '../middleware/auth.js';
-import { gnvRagEnabled, puntuarTextos } from './gnvRag.js';
+import { gnvRagEnabled, puntuarTextos, type Reranker } from './gnvRag.js';
 
 // Exercici del catàleg que el tutor mostra dins del xat. Només preguntes tancades (choice) de les
 // activitats de pràctica del catàleg (no les de docents) i sense text o àudio al davant.
@@ -134,8 +134,12 @@ const closestLevel = (rows: Row[], level: string | null | undefined) => {
 };
 
 // Puntuació mínima (0 a 1) del reranker perquè un exercici es considere del tema. Per davall, és preferible no mostrar
-// cap exercici que un d'irrellevant. Ajustable amb TUTOR_EXERCISE_MIN_SCORE segons el que mostren els logs de rànquing.
-const MIN_RELEVANCE = Number(process.env.TUTOR_EXERCISE_MIN_SCORE ?? 0.1);
+// cap exercici que un d'irrellevant. Cada reranker té la seua escala; ajustables amb TUTOR_EXERCISE_MIN_SCORE (local) i
+// TUTOR_EXERCISE_MIN_SCORE_JEV segons el que mostren els logs de rànquing.
+const MIN_RELEVANCE: Record<Reranker, number> = {
+  local: Number(process.env.TUTOR_EXERCISE_MIN_SCORE ?? 0.1),
+  jev: Number(process.env.TUTOR_EXERCISE_MIN_SCORE_JEV ?? 0.5),
+};
 
 // Entre els exercicis donats, el que millor respon a la pregunta segons el reranker del RAG (llig enunciat, opcions i
 // explicació: p. ex. distingix els de b/v dels d'altres consonants de la mateixa activitat). Sense RAG o si el reranker
@@ -146,16 +150,17 @@ async function mostRelevant(rows: Row[], query: string): Promise<Row | null | un
     // Enunciat, resposta correcta i explicació: les opcions falses només fan soroll.
     const candidates = rows.slice(0, 120);
     const texts = candidates.map(r => `${r.prompt} Resposta: ${r.answers[0]}. ${r.explanation ?? ''}`);
-    const scores = await puntuarTextos(query, texts);
+    const { scores, reranker } = await puntuarTextos(query, texts);
+    const min = MIN_RELEVANCE[reranker];
     const ranked = scores.map((score, i) => ({ score, i })).sort((a, b) => b.score - a.score);
-    const top = ranked.slice(0, 3).filter(x => x.score >= MIN_RELEVANCE);
+    const top = ranked.slice(0, 3).filter(x => x.score >= min);
     if (top.length === 0) {
-      console.log(`[tutor-exercise] rànquing: ${texts.length} exercicis, el millor (${ranked[0].score.toExponential(2)}) no arriba al mínim ${MIN_RELEVANCE} → cap`);
+      console.log(`[tutor-exercise] rànquing (${reranker}): ${texts.length} exercicis, el millor (${ranked[0].score.toExponential(2)}) no arriba al mínim ${min} → cap`);
       return null;
     }
     // Un dels 3 millors a l'atzar: tots tracten del tema i així no ix sempre el mateix.
     const chosen = top[Math.floor(Math.random() * top.length)];
-    console.log(`[tutor-exercise] rànquing: ${texts.length} exercicis, triat=${chosen.score.toExponential(2)} «${texts[chosen.i].slice(0, 70)}»`);
+    console.log(`[tutor-exercise] rànquing (${reranker}): ${texts.length} exercicis, triat=${chosen.score.toExponential(2)} «${texts[chosen.i].slice(0, 70)}»`);
     return candidates[chosen.i];
   } catch (error) {
     console.warn("[tutor-exercise] no s'ha pogut ordenar amb el RAG:", error instanceof Error ? error.message : error);

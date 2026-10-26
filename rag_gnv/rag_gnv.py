@@ -12,7 +12,11 @@ import json
 import math
 import os
 import re
+import threading
+import time
 import unicodedata
+import urllib.error
+import urllib.request
 from collections import Counter
 from pathlib import Path
 
@@ -23,7 +27,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 BASE_DIR = Path(__file__).parent
-# La OPENAI_API_KEY és la del backend (backend/.env); les variables ja definides en l'entorn manen.
+# La OPENAI_API_KEY i la TYPESAFE_API_KEY són les del backend (backend/.env); les variables ja definides en l'entorn manen.
 load_dotenv(BASE_DIR.parent / "backend" / ".env")
 # La GNV és la mateixa que fa servir la resta de l'app (assets-src/avl/gnv.txt).
 SOURCE_FILE = Path(os.environ.get("RAG_GNV_SOURCE", BASE_DIR.parent / "assets-src" / "avl" / "gnv.txt"))
@@ -42,10 +46,24 @@ def _default_device() -> str:
 
 # en fp16 ocupa ~1,1 GB de GPU (los embeddings van por la API de OpenAI); con "cpu" va muy lento
 RERANKER_DEVICE = os.environ.get("RAG_GNV_DEVICE") or _default_device()
+# Reranker: "jev" (API de TypeSafe, per defecte si hi ha clau) o "local" (el cross-encoder). Si Jev falla, es fa
+# servir el local, que només es carrega llavors.
+RERANKER = os.environ.get("RAG_GNV_RERANKER") or ("jev" if os.environ.get("TYPESAFE_API_KEY") else "local")
+JEV_URL = "https://api.typesafe.ai/v1/systemone"
+JEV_MODEL = os.environ.get("RAG_GNV_JEV_MODEL", "jev-latest")
+JEV_TIMEOUT_S = 10
 RERANK_POOL = 50        # hijos candidatos (tras la fusión vectores + BM25) que pasan por el reranker
 CANDIDATES_PER_SEARCH = 30  # hijos que aporta cada búsqueda (vectores y BM25) antes de fusionar
 RRF_K = 60
-UMBRAL_RESPALDO = 0.05  # calibrar.py: no pierde ninguna respuesta buena y rechaza 21/28 preguntas ajenas
+# Cada reranker puntúa en su propia escala, así que cada uno tiene su umbral.
+UMBRALES = {
+    "local": 0.05,  # calibrar.py: no pierde ninguna respuesta buena y rechaza 21/28 preguntas ajenas
+    # Con Jev, las preguntas ajenas las rechaza ES_GRAMATICA_MIN; este umbral solo descarta las de gramática que la GNV
+    # no trata. Con 20 preguntas de la GNV y 15 ajenas: la buena más baja da 0,15 y la pregunta de control separa las
+    # dos clases sin errores (gramática >= 0,97, ajenas <= 0,27).
+    "jev": 0.1,
+}
+ES_GRAMATICA_MIN = 0.5
 MENSAJE_SIN_RESPALDO = "No ho trobe a la Gramàtica Normativa Valenciana."
 
 PARENT_MAX = 3000       # una sección más larga se parte en varios padres
@@ -169,7 +187,67 @@ class BM25:
 
 
 # ---------------------------------------------------------------------------
-# 4. Retriever híbrido con recuperación del padre
+# 4. Reranker con Jev (TypeSafe): una pregunta «noul» (probabilidad de sí, 0 a 1) por candidato, todas en una llamada,
+#    que las evalúa en paralelo. Las instrucciones van en inglés, que es donde Jev acierta más; los textos, tal cual.
+# ---------------------------------------------------------------------------
+# Pregunta de control que va en la misma llamada que el reranking de la GNV: ¿la consulta es de normativa?
+_JEV_ES_GRAMATICA = {
+    "type": "noul",
+    "instructions": "Is `query` asking about Valencian/Catalan grammar, spelling, pronunciation or language norms?",
+    "criteria": {
+        "true": "It asks how something is written, pronounced, inflected or used correctly in the language.",
+        "false": "It asks about facts, culture, history, places or anything else, even if written in Valencian.",
+    },
+}
+
+_JEV_QUESTIONS = {
+    "gnv": {
+        "question": "Does `passage` (from the official Valencian grammar) state the rule that answers `query`?",
+        "true": "The passage explains the specific rule or case asked about in `query`.",
+        "false": "The passage is only about a related or different topic.",
+    },
+    "exercici": {
+        "question": "Does `passage` (a Valencian language exercise) practise what `query` asks about?",
+        "true": "The exercise practises the specific rule or case asked about in `query`.",
+        "false": "The exercise is only about a related or different topic.",
+    },
+}
+
+
+def _jev_scores(query: str, texts: list[str], kind: str = "gnv") -> tuple[list[float], float | None]:
+    """Puntuación de cada texto y, para la GNV, la probabilidad de que la consulta sea de normativa (si no, None)."""
+    q = _JEV_QUESTIONS[kind]
+    body = {
+        "model": JEV_MODEL,
+        "state": {"query": query},
+        "questions": {
+            f"c{i}": {"type": "noul", "instructions": {"question": q["question"], "passage": text},
+                      "criteria": {"true": q["true"], "false": q["false"]}}
+            for i, text in enumerate(texts)
+        },
+    }
+    if kind == "gnv":
+        body["questions"]["es_gramatica"] = _JEV_ES_GRAMATICA
+    request = urllib.request.Request(JEV_URL, data=json.dumps(body, ensure_ascii=False).encode("utf-8"), headers={
+        "Authorization": f"Bearer {os.environ['TYPESAFE_API_KEY']}",
+        "Content-Type": "application/json",
+    })
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(request, timeout=JEV_TIMEOUT_S) as response:
+                answers = json.load(response)["answers"]
+            es_gramatica = float(answers["es_gramatica"]["noul"]) if "es_gramatica" in answers else None
+            return [float(answers[f"c{i}"]["noul"]) for i in range(len(texts))], es_gramatica
+        except urllib.error.HTTPError as error:
+            # 429 (límite) y 529 (sobrecarga) se reintentan una vez; el resto son errores de la petición
+            if error.code not in (429, 529) or attempt == 1:
+                raise
+            time.sleep(0.5)
+    raise RuntimeError("Jev no ha respost")
+
+
+# ---------------------------------------------------------------------------
+# 5. Retriever híbrido con recuperación del padre
 # ---------------------------------------------------------------------------
 class GNVRetriever:
     def __init__(self, vectorstore: Chroma, parents: dict[str, dict], children: list[Document]):
@@ -177,7 +255,8 @@ class GNVRetriever:
         self.parents = parents
         self.children = children
         self.bm25 = BM25([c.page_content for c in children])
-        self._cross_encoder = None  # se carga la primera vez que se usa el reranker
+        self._cross_encoder = None  # se carga la primera vez que se usa el reranker local
+        self._lock = threading.Lock()  # el reranker local ocupa la GPU: de uno en uno
 
     def search_children(self, query: str, k: int = CANDIDATES_PER_SEARCH) -> list[Document]:
         """Fusión RRF de la búsqueda vectorial y la léxica (BM25) sobre los hijos."""
@@ -205,17 +284,39 @@ class GNVRetriever:
             )
         return self._cross_encoder
 
-    def rerank(self, query: str, children: list[Document]) -> list[tuple[Document, float]]:
-        """Reordena los hijos con un cross-encoder, que lee pregunta y fragmento a la vez.
-        Devuelve (hijo, puntuación) de mayor a menor; la puntuación va de 0 a 1."""
-        scores = self._reranker().predict(
-            [(query, c.page_content) for c in children], batch_size=8)
-        order = sorted(range(len(children)), key=lambda i: scores[i], reverse=True)
-        return [(children[i], float(scores[i])) for i in order]
+    @property
+    def device(self) -> str:
+        """Dónde corre el reranker: "api" mientras no se haya cargado el local (no ocupa la GPU)."""
+        return RERANKER_DEVICE if self._cross_encoder is not None else "api"
 
-    def invoke(self, query: str, k: int = 4) -> list[Document]:
-        """Devuelve hasta k PADRES distintos, ordenados por su mejor hijo tras el reranker."""
-        candidates = self.rerank(query, self.search_children(query)[:RERANK_POOL])
+    def _local_scores(self, query: str, texts: list[str]) -> list[float]:
+        with self._lock:
+            scores = self._reranker().predict([(query, t) for t in texts], batch_size=8)
+        return [float(x) for x in scores]
+
+    def puntuar(self, query: str, texts: list[str], kind: str = "gnv") -> tuple[list[float], str, float | None]:
+        """Puntúa (0 a 1) lo bien que responde cada texto a la consulta. `kind`: "gnv" (fragmentos de la gramática) o
+        "exercici" (ejercicios de práctica). Devuelve también el reranker usado, porque cada uno tiene su escala, y con
+        Jev y la GNV, la probabilidad de que la consulta sea de normativa (None con el local)."""
+        if RERANKER == "jev":
+            try:
+                scores, es_gramatica = _jev_scores(query, texts, kind)
+                return scores, "jev", es_gramatica
+            except Exception as error:
+                print(f"⚠️ Jev no disponible ({error}); es fa servir el reranker local", flush=True)
+        return self._local_scores(query, texts), "local", None
+
+    def rerank(self, query: str, children: list[Document]) -> tuple[list[tuple[Document, float]], str, float | None]:
+        """Reordena los hijos con el reranker, que lee pregunta y fragmento a la vez. Devuelve (hijo, puntuación) de
+        mayor a menor (la puntuación va de 0 a 1), el reranker usado y si la consulta es de normativa (ver puntuar)."""
+        scores, used, es_gramatica = self.puntuar(query, [c.page_content for c in children])
+        order = sorted(range(len(children)), key=lambda i: scores[i], reverse=True)
+        return [(children[i], scores[i]) for i in order], used, es_gramatica
+
+    def invoke(self, query: str, k: int = 4) -> tuple[list[Document], str, float | None]:
+        """Devuelve hasta k PADRES distintos, ordenados por su mejor hijo tras el reranker, el reranker usado y si la
+        consulta es de normativa (ver puntuar)."""
+        candidates, used, es_gramatica = self.rerank(query, self.search_children(query)[:RERANK_POOL])
         best_child: dict[str, tuple[Document, float]] = {}  # padre -> (su mejor hijo, puntuación)
         for child, score in candidates:
             pid = child.metadata["parent_id"]
@@ -231,22 +332,24 @@ class GNVRetriever:
                 metadata={"parent_id": pid, "num": p["num"], "ruta": p["ruta"],
                           "hijo": child.page_content, "score": score},
             ))
-        return out
+        return out, used, es_gramatica
 
     def consultar(self, query: str, k: int = 4, umbral: float | None = None) -> dict:
         """Búsqueda con negativa y citas.
 
         Si la mejor puntuación del reranker no llega al umbral, no devuelve contexto: es mejor
         decir que no se ha encontrado que dar al LLM (o al usuario) un fragmento dudoso.
+        Con Jev, tampoco si la pregunta de control dice que la consulta no es de normativa.
         Cada fuente lleva su sección, su ruta y el texto original, para poder comprobarla."""
-        umbral = UMBRAL_RESPALDO if umbral is None else umbral
-        docs = self.invoke(query, k=k)
+        docs, used, es_gramatica = self.invoke(query, k=k)
+        umbral = UMBRALES[used] if umbral is None else umbral
         mejor = docs[0].metadata["score"] if docs else 0.0
-        if mejor < umbral:
+        if mejor < umbral or (es_gramatica is not None and es_gramatica < ES_GRAMATICA_MIN):
             return {"hay_respaldo": False, "mejor_puntuacion": mejor, "mensaje": MENSAJE_SIN_RESPALDO,
-                    "fuentes": []}
+                    "fuentes": [], "reranker": used}
         return {
             "hay_respaldo": True,
+            "reranker": used,
             "mejor_puntuacion": mejor,
             "mensaje": "",
             "fuentes": [{"seccion": d.metadata["num"], "ruta": d.metadata["ruta"],
@@ -280,7 +383,7 @@ def contexto_para_llm(resultado: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 5. Construcción / carga del índice persistente
+# 6. Construcción / carga del índice persistente
 # ---------------------------------------------------------------------------
 def load_retriever(force_rebuild: bool = False, verbose: bool = True) -> GNVRetriever:
     log = print if verbose else (lambda *a, **k: None)

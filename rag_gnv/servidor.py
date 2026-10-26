@@ -1,24 +1,25 @@
 """Servici HTTP del RAG de la Gramàtica Normativa Valenciana (GNV).
 
 Només l'usa el backend (el tutor), igual que el classificador: no té autenticació.
-  GET  /salut      -> {"ok": true, "device": "cuda"|"cpu"} quan els models ja estan carregats (el backend
-                      no fa servir les veus de GPU del laboratori mentre el RAG ocupa la GPU)
+  GET  /salut      -> {"ok": true, "device": "cuda"|"cpu"|"api", "reranker": "jev"|"local"} quan ja està a punt
+                      ("api": el reranker és Jev i el local no s'ha carregat; el backend no fa servir les veus de GPU
+                      del laboratori mentre el RAG ocupa la GPU)
   POST /ordenar    {"consulta": "...", "textos": ["...", ...]}
-                   -> {"puntuaciones": [0..1, ...]}: lo bien que responde cada texto a la consulta (reranker);
+                   -> {"puntuaciones": [0..1, ...], "reranker": "jev"|"local"}: lo bien que responde cada texto a la
+                      consulta (reranker; cada uno tiene su escala);
                       el backend lo usa para elegir, entre los ejercicios de una actividad, el que trata de la pregunta
   POST /consultar  {"consulta": "...", "k": 4}
                    -> el resultat de GNVRetriever.consultar(): hay_respaldo, mejor_puntuacion,
                       mensaje i fuentes [{seccion, ruta, etiqueta, puntuacion, texto}]
 
 Ús:  python servidor.py            (port RAG_GNV_PORT, per defecte 8010)
-El reranker es carrega en arrancar (els embeddings són de l'API d'OpenAI), perquè la primera pregunta no tarde.
+El reranker local només es carrega en arrancar si és el triat (RAG_GNV_RERANKER); Jev i els embeddings són APIs, perquè la primera pregunta no tarde.
 """
 import json
 import os
-import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from rag_gnv import RERANKER_DEVICE, etiqueta_fuente, load_retriever
+from rag_gnv import RERANKER, etiqueta_fuente, load_retriever
 
 PORT = int(os.environ.get("RAG_GNV_PORT", "8010"))
 HOST = os.environ.get("RAG_GNV_HOST", "127.0.0.1")
@@ -28,9 +29,8 @@ MAX_TEXTOS = 120      # textos por petición de /ordenar
 MAX_TEXTO = 700       # caracteres de cada uno
 
 retriever = load_retriever()
-retriever._reranker()  # es carrega ara i no en la primera consulta
-# Els models comparteixen GPU: les consultes es fan d'una en una.
-lock = threading.Lock()
+if RERANKER == "local":
+    retriever._reranker()  # es carrega ara i no en la primera consulta
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -44,7 +44,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/salut":
-            return self._json(200, {"ok": True, "device": RERANKER_DEVICE})
+            return self._json(200, {"ok": True, "device": retriever.device, "reranker": RERANKER})
         self._json(404, {"error": "No existix"})
 
     def _ordenar(self):
@@ -57,9 +57,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "Petició invàlida"})
         if not consulta or not textos:
             return self._json(400, {"error": "Falta la consulta o els textos"})
-        with lock:
-            scores = retriever._reranker().predict([(consulta, t) for t in textos], batch_size=16)
-        self._json(200, {"puntuaciones": [float(x) for x in scores]})
+        scores, used, _ = retriever.puntuar(consulta, textos, kind="exercici")
+        self._json(200, {"puntuaciones": scores, "reranker": used})
 
     def do_POST(self):
         if self.path == "/ordenar":
@@ -75,8 +74,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "Petició invàlida"})
         if not consulta:
             return self._json(400, {"error": "Falta la consulta"})
-        with lock:
-            resultado = retriever.consultar(consulta, k=k)
+        resultado = retriever.consultar(consulta, k=k)
         for fuente in resultado["fuentes"]:
             fuente["etiqueta"] = etiqueta_fuente(fuente)
         self._json(200, resultado)
@@ -86,5 +84,5 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"✅ RAG de la GNV escoltant en http://{HOST}:{PORT}", flush=True)
+    print(f"✅ RAG de la GNV escoltant en http://{HOST}:{PORT} (reranker: {RERANKER})", flush=True)
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
