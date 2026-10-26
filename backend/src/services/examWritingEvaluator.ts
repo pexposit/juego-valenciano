@@ -12,7 +12,7 @@ import { reasoningEffortFor } from './reasoningEffort.js';
 // de l'A2. Fan servir les mateixes eines MCP (DNV, softvalencia, apertium) que
 // el detector d'errors.
 
-const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-4o';
+const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-6-luna';
 // Límit de rondes d'eines: si el model no para de consultar, es talla.
 const MAX_TOOL_ROUNDS = 8;
 

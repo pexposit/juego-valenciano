@@ -14,7 +14,7 @@ Guía para publicar el juego en producción: base de datos en **Supabase Cloud**
           Supabase Cloud          matxa (DeepLab, UJI)
           Postgres + Auth         STT + TTS en catalán
                     ▲
-                    └── OpenAI (gpt-4o-mini)
+                    └── OpenAI (gpt-6-luna)
 ```
 
 **Qué NO se despliega:** `speech-lab/` (laboratorio de voz local: 91 MB de modelos Vosk + sidecar Python) y el stack de Supabase en Docker que usas en desarrollo.
@@ -76,7 +76,7 @@ curl -s localhost:3001/health
 | `SUPABASE_URL` | `https://xxxx.supabase.co` | ✅ |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` (Secret) | ✅ |
 | `OPENAI_API_KEY` | `sk-...` | ✅ |
-| `OPENAI_MODEL` | `gpt-4o-mini` | 🔶 recomendada |
+| `OPENAI_MODEL` | `gpt-6-luna` | 🔶 recomendada |
 | `ALLOW_DEMO` | `false` en producción | 🔶 recomendada |
 | `RATE_LIMIT_AUTHED_PER_MIN` | `30` | ❌ |
 | `RATE_LIMIT_ANON_PER_MIN` | `6` | ❌ |
@@ -160,7 +160,7 @@ VITE_API_BASE_URL      = https://api.tu-dominio.com
 | Render Free | 0 €, pero el servicio se duerme a los 15 min sin tráfico (arranque en frío de 30-60 s) |
 | Railway | ~5 €/mes, siempre despierto |
 | Fly.io | Franja gratuita con máquinas pequeñas siempre encendidas |
-| OpenAI `gpt-4o-mini` | ≈ 0,0006 $ por turno → 1.000 turnos ≈ 0,6 $ |
+| OpenAI `gpt-6-luna` | (pendiente de recalcular con el precio de gpt-6-luna) |
 | matxa (DeepLab, UJI) | 0 € |
 
 ## 8. Pendientes conocidos

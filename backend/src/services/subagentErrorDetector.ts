@@ -14,7 +14,7 @@ import { reasoningEffortFor } from './reasoningEffort.js';
 const UJI_HOST = process.env.UJI_HOST;
 const UJI_MODEL = process.env.UJI_LLM_MODEL || 'qwen2.5:32b';
 const MCP_SERVER_SCRIPT = process.env.MCPDETECTOR_SERVER_PATH || './mcp/ErrorDetector/index.js';
-const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-4o';
+const MODEL_NAME = process.env.OPENAI_MODEL || 'gpt-6-luna';
 // 1. Cliente OpenAI persistente
 const ujiClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

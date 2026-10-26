@@ -532,7 +532,7 @@ Todas con `requireAuth` + `requireTeacher` (perfil `role='teacher'`, si no 403).
 
 ## 6. Servicios del backend con IA
 
-Todos usan OpenAI con el modelo de `OPENAI_MODEL` (algunos ficheros caen a `gpt-4o` por defecto). No hay modelos de respaldo reales en el código: `OPENAI_MODELS` contiene solo `OPENAI_MODEL`.
+Todos usan OpenAI con el modelo de `OPENAI_MODEL` (los que tienen valor por defecto caen a `gpt-6-luna`). No hay modelos de respaldo reales en el código: `OPENAI_MODELS` contiene solo `OPENAI_MODEL`.
 
 ### 6.1 Agente conversacional (`services/agent.ts` → `replyFromAgent`)
 
@@ -1375,7 +1375,7 @@ Efecto lateral: A1, C1 y C2 siguen viendo `LearningPath` en `/ruta`, pero el bac
 
 ### 19.2 Despliegue
 7. **El MCP probablemente no funciona en Docker**: el `Dockerfile` del backend no copia `backend/mcp/` y `tsx` es dependencia de desarrollo, pero el backend lanza `npx tsx ./mcp/ErrorDetector/index.js` (además el fichero es `index.ts`). Afectaría al detector de errores y a los evaluadores de redacciones en producción.
-8. El README y DEPLOY.md hablan de `gpt-4o-mini` con `gpt-4o` de respaldo, pero el agente solo usa `OPENAI_MODEL` (sin respaldo) y otros servicios caen a `gpt-4o`. DEPLOY.md menciona migraciones «001→004» y la tabla `scenario_progress`, ya inexistente.
+8. DEPLOY.md menciona migraciones «001→004» y la tabla `scenario_progress`, ya inexistente.
 9. Variables usadas pero no documentadas en `.env.example` (ver §15.4).
 10. «Softvalencià» es en realidad el LanguageTool de Softcatalà.
 
