@@ -8,6 +8,7 @@
     "test": "npm run build -w shared && npm run test -w backend",
     "setup:speech": "bash speech-lab/scripts/setup-vosk.sh",
     "setup:aina": "bash speech-lab/scripts/setup-aina.sh",
+    "setup:toxicity": "powershell -NoProfile -ExecutionPolicy Bypass -File toxicity-classificator/setup.ps1",
     "models:speech": "cd speech-lab && .venv/bin/python scripts/models-hf.py descarrega",
     "dev:speech": "npm run dev -w speech-lab",
     "smoke:speech": "npm run smoke -w speech-lab",

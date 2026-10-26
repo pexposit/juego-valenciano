@@ -46,11 +46,14 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:?cal definir SERVICE_ROLE_KEY}
        # Per la xarxa interna de compose (nom del servici = host).
       CLASSIFICADOR_URL: http://classificador:8000
+      TOXICITY_CLASSIFICATOR_URL: http://toxicity-classificator:8001
     depends_on:
       migrate:
         condition: service_completed_successfully
       classificador:
         condition: service_started
+      toxicity-classificator:
+        condition: service_healthy
     # Sense `ports`: només és accessible des de Caddy, dins de la xarxa de compose.
     restart: unless-stopped
 
@@ -67,6 +70,28 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    restart: unless-stopped
+
+  # Classificador informatiu de toxicitat del xat: només escriu deteccions al log de l'API.
+  toxicity-classificator:
+    build: ./toxicity-classificator
+    environment:
+      PORT: 8001
+      TOXICITY_MODEL_ID: parlaval/laya-toxicity
+      TOXICITY_MODEL_REVISION: bc35c319e78e40454c8f34bacc986882841e4488
+      TOXICITY_DEVICE: cpu
+      HF_HOME: /home/app/.cache/huggingface
+    volumes:
+      - toxicity_model_cache:/home/app/.cache/huggingface
+    # Només exposat a localhost per a poder-lo executar també amb `npm run dev`.
+    ports:
+      - "127.0.0.1:8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10m
     restart: unless-stopped
 
   # --- Supabase autoallotjat: només els serveis que usa l'app ---------------
@@ -173,3 +198,4 @@ volumes:
   caddy_config:
   db_data:
   db_config:
+  toxicity_model_cache:
