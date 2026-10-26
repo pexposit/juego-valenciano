@@ -16,6 +16,8 @@ const outputSchema = z.object({
   consulta_gnv: z.string().optional(),
   // Tutor: el tema de l'exercici del catàleg que vol oferir ('' si no n'ofereix cap).
   exercici_tema: z.string().optional(),
+  // Tutor: tipus de la pregunta de l'aprenent; decidix si es pot mostrar un exercici i amb quin rigor.
+  tipus_dubte: z.enum(['cap', 'simple', 'complex', 'demana_exercici']).optional(),
   // Tutor: la destresa que l'aprenent vol millorar i que no es pot practicar dins del xat ('' si no n'hi ha cap).
   area_practica: z.string().optional(),
   // Tutor del Nivell 0: la lliçó de l'app relacionada amb la pregunta ('' si no n'hi ha cap).
@@ -60,9 +62,15 @@ const GNV_INSTRUCTIONS = `CONSULTA DE LA GRAMÀTICA NORMATIVA VALENCIANA (GNV):
 
 const EXERCISE_INSTRUCTIONS = `EXERCICIS DEL CATÀLEG:
 - Mai no t'inventes exercicis: l'aplicació en mostra un de real del catàleg dins del xat, si n'hi ha, quan omples exercici_tema.
-- Cada vegada que expliques o resols un dubte sobre la llengua (normativa, ortografia, accents, gramàtica, verbs, lèxic...), omple exercici_tema amb el tema (1 a 3 paraules en valencià, com el nom d'una lliçó: "accentuació", "pronoms febles", "verbs", "plurals"). Si hi ha un exercici d'eixe tema, l'aprenent el veurà davall de la teua resposta. NO el mencions en reply_text: pot ser que no n'hi haja cap.
-- Si l'aprenent demana practicar o fer un exercici, omple exercici_tema amb el tema que vol i en reply_text digues només una frase curta que presente l'exercici (p. ex. «Prova este exercici!»).
-- Si la conversa no tracta de la llengua (salutació, xarrada, cultura...), deixa exercici_tema buit.
+- Classifica l'últim missatge de l'aprenent en tipus_dubte:
+  * 'complex': dubte de llengua que demana una regla o una explicació amb matisos (normativa, accentuació, ortografia, gramàtica, verbs, pronoms, preposicions, diferències entre formes...).
+  * 'simple': dubte de llengua puntual i ràpid d'una sola resposta (significat o traducció d'una paraula, com es diu una cosa, confirmar una forma).
+  * 'demana_exercici': l'aprenent demana expressament practicar o fer un exercici.
+  * 'cap': salutació, xarrada, cultura, consells d'estudi o res de llengua.
+- Només en 'complex' i 'demana_exercici' l'aprenent pot veure un exercici; en 'simple' només si n'hi ha un molt estretament relacionat amb el que pregunta (el sentit de la pregunta, no les paraules amb què l'escriu). Per tant, no t'esforces a buscar un exercici per a dubtes simples.
+- Si tipus_dubte és 'complex', 'simple' o 'demana_exercici', omple exercici_tema amb el concepte de llengua que s'ha de practicar, ja normalitzat (1 a 3 paraules en valencià, com el nom d'una lliçó: "accentuació", "pronoms febles", "verbs", "plurals"), no amb les paraules literals de l'aprenent. Si és 'cap', deixa'l buit. NO mencions l'exercici en reply_text (excepte en 'demana_exercici'): pot ser que no n'hi haja cap.
+- Si l'aprenent demana practicar o fer un exercici (tipus_dubte 'demana_exercici'), en reply_text digues només una frase curta que presente l'exercici (p. ex. «Prova este exercici!»).
+- Mai no t'inventes escenaris (ni noms, ni situacions, ni activitats de conversa): només l'aplicació n'enllaça un de real del catàleg quan omples area_practica amb 'escenari'. No en descrigues ni en proposes cap pel teu compte en reply_text. Si el que vol practicar és la conversa o l'expressió oral (area_practica 'escenari' o 'expressio_oral'), reply_text no pot quedar buit: escriu només una frase curta («Et deixe una activitat per a practicar la conversa.»), sense consells, situacions, diàlegs ni exemples de rol (l'aplicació la substituïx per la seua).
 - Si l'aprenent demana com millorar o practicar una DESTRESA que no es pot fer dins del xat (redactar o escriure textos → expressio_escrita; entendre àudios → comprensio_oral; entendre textos escrits → comprensio_escrita; practicar la conversa, xarrar o fer un escenari → escenari; parlar en veu alta o millorar la pronunciació → expressio_oral), omple area_practica amb eixa àrea, dóna-li 2 o 3 consells breus i diu-li que li deixes una activitat per a practicar-ho (l'aplicació l'enllaçarà). En eixe cas deixa exercici_tema buit. Si no, deixa area_practica buit.`;
 
 type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
@@ -111,6 +119,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
           ...(askGnvQuery ? { consulta_gnv: { type: 'string', description: GNV_QUERY_DESCRIPTION } } : {}),
           ...(lessons.length ? { leccio_id: { type: 'string', enum: ['', ...lessons.map(l => l.id)], description: "L'id de la lliçó de l'app relacionada amb la pregunta del xiquet; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { area_practica: { type: 'string', enum: ['', ...PRACTICE_SKILLS], description: "La destresa que l'aprenent vol practicar si no es pot fer dins del xat; cadena buida si no n'hi ha cap." } } : {}),
+          ...(askExercise ? { tipus_dubte: { type: 'string', enum: ['cap', 'simple', 'complex', 'demana_exercici'], description: "Tipus de l'últim missatge de l'aprenent: dubte de llengua complex, dubte simple, petició d'exercici o res de llengua ('cap')." } } : {}),
           ...(askExercise ? { exercici_tema: { type: 'string', description: "Tema de l'exercici del catàleg que ofereixes a l'aprenent; cadena buida si no n'ofereixes cap." } } : {}),
           ...(withGnv ? {
             gnv: {
@@ -136,7 +145,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             },
           } : {}),
         },
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askExercise ? ['exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
         additionalProperties: false,
       },
     },
@@ -280,7 +289,7 @@ export async function replyFromAgent(args: {
 
         ${args.lessons?.length ? lessonInstructions(args.lessons) : ''}
 
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.exerciseTool ? ', exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
     },
     {
       role: 'user',
