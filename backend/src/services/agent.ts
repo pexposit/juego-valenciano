@@ -4,6 +4,7 @@ import { consultarGnv, gnvContext, type GnvResultat, type GnvRule } from './gnvR
 import { conjugationContext, consultarConjugacioVerb, type VerbConjugation } from './conjugacio.js';
 import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
 import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
+import { reasoningEffortFor, type ReasoningEffort } from './reasoningEffort.js';
 import { createLoopGuard, type LoopGuard } from './loopGuard.js';
 import { reasoningEffortFor, type ReasoningEffort } from './reasoningEffort.js';
 
@@ -18,8 +19,12 @@ const outputSchema = z.object({
   consulta_gnv: z.string().optional(),
   // Tutor: el verb (en infinitiu) del qual l'aprenent demana la conjugació ('' si no en demana cap).
   verb_conjugar: z.string().optional(),
+  // Tutor: l'aprenent ha enviat un text perquè el corregisca; la llista d'errors la dóna l'anàlisi, no esta resposta.
+  corregir_text: z.boolean().optional(),
   // Tutor: el tema de l'exercici del catàleg que vol oferir ('' si no n'ofereix cap).
   exercici_tema: z.string().optional(),
+  // Tutor: tipus de la pregunta de l'aprenent; decidix si es pot mostrar un exercici i amb quin rigor.
+  tipus_dubte: z.enum(['cap', 'simple', 'complex', 'demana_exercici']).optional(),
   // Tutor: la destresa que l'aprenent vol millorar i que no es pot practicar dins del xat ('' si no n'hi ha cap).
   area_practica: z.string().optional(),
   // Tutor del Nivell 0: la lliçó de l'app relacionada amb la pregunta ('' si no n'hi ha cap).
@@ -37,6 +42,9 @@ export type AgentReply = Omit<z.infer<typeof outputSchema>, 'gnv' | 'help_text' 
 // Cadena de models: el principal (OPENAI_MODEL) i dos de reserva per si falla.
 // El nom ha d'existir a OpenAI: un valor inventat gasta dos intents (404) en
 // cada torn abans de passar al model de reserva.
+// El tutor del tauler va fix amb este model i este esforç de raonament: mai un altre (gpt-4o, models de reserva...).
+export const DASHBOARD_AGENT = { model: 'gpt-6-luna', reasoningEffort: 'low' } as const satisfies { model: string; reasoningEffort: ReasoningEffort };
+
 const OPENAI_MODELS = [
   process.env.OPENAI_MODEL
 ].filter((model, index, models) => models.indexOf(model) === index);
@@ -58,8 +66,12 @@ const GNV_QUERY_DESCRIPTION =
   'en el sintagma nominal, la casa seua i la seua casa". Cadena buida si NO és un dubte de normativa (salutació, ' +
   "conversa, significat o traducció d'una paraula, cultura, consells d'estudi...).";
 
+const CORRECT_TEXT_DESCRIPTION =
+  "true només si l'últim missatge de l'aprenent és un text seu (diverses frases) que et demana corregir o revisar; false en un dubte puntual, una pregunta o una conversa.";
+
 const GNV_INSTRUCTIONS = `CONSULTA DE LA GRAMÀTICA NORMATIVA VALENCIANA (GNV):
 - Si l'aprenent pregunta un dubte de normativa (com es pronuncia, com s'escriu, quan porta accent, com es forma el plural o el femení, com es conjuga, quina preposició o pronom va...), omple consulta_gnv: després rebràs la regla oficial de la GNV per a respondre-la.
+- Si l'aprenent t'envia un text (diverses frases seues) perquè el corregisques o el revises, posa corregir_text a true i deixa consulta_gnv buida: l'aplicació li mostrarà després la llista completa d'errors. En eixe cas, en reply_text escriu només una frase curta dient que revises el text i que ara li mostres els errors, sense corregir res ni citar cap regla.
 - Si no és un dubte de normativa, deixa consulta_gnv buida i respon directament.`;
 
 // Tutor: si l'aprenent demana la conjugació d'un verb concret, el model n'escriu l'infinitiu i l'aplicació la consulta
@@ -76,9 +88,15 @@ const CONJUGATION_INSTRUCTIONS = `CONJUGACIÓ DE VERBS (DICCIONARI NORMATIU VALE
 
 const EXERCISE_INSTRUCTIONS = `EXERCICIS DEL CATÀLEG:
 - Mai no t'inventes exercicis: l'aplicació en mostra un de real del catàleg dins del xat, si n'hi ha, quan omples exercici_tema.
-- Cada vegada que expliques o resols un dubte sobre la llengua (normativa, ortografia, accents, gramàtica, verbs, lèxic...), omple exercici_tema amb el tema (1 a 3 paraules en valencià, com el nom d'una lliçó: "accentuació", "pronoms febles", "verbs", "plurals"). Si hi ha un exercici d'eixe tema, l'aprenent el veurà davall de la teua resposta. NO el mencions en reply_text: pot ser que no n'hi haja cap.
-- Si l'aprenent demana practicar o fer un exercici, omple exercici_tema amb el tema que vol i en reply_text digues només una frase curta que presente l'exercici (p. ex. «Prova este exercici!»).
-- Si la conversa no tracta de la llengua (salutació, xarrada, cultura...), deixa exercici_tema buit.
+- Classifica l'últim missatge de l'aprenent en tipus_dubte:
+  * 'complex': dubte de llengua que demana una regla o una explicació amb matisos (normativa, accentuació, ortografia, gramàtica, verbs, pronoms, preposicions, diferències entre formes...).
+  * 'simple': dubte de llengua puntual i ràpid d'una sola resposta (significat o traducció d'una paraula, com es diu una cosa, confirmar una forma).
+  * 'demana_exercici': l'aprenent demana expressament practicar o fer un exercici.
+  * 'cap': salutació, xarrada, cultura, consells d'estudi o res de llengua.
+- Només en 'complex' i 'demana_exercici' l'aprenent pot veure un exercici; en 'simple' només si n'hi ha un molt estretament relacionat amb el que pregunta (el sentit de la pregunta, no les paraules amb què l'escriu). Per tant, no t'esforces a buscar un exercici per a dubtes simples.
+- Si tipus_dubte és 'complex', 'simple' o 'demana_exercici', omple exercici_tema amb el concepte de llengua que s'ha de practicar, ja normalitzat (1 a 3 paraules en valencià, com el nom d'una lliçó: "accentuació", "pronoms febles", "verbs", "plurals"), no amb les paraules literals de l'aprenent. Si és 'cap', deixa'l buit. NO mencions l'exercici en reply_text (excepte en 'demana_exercici'): pot ser que no n'hi haja cap.
+- Si l'aprenent demana practicar o fer un exercici (tipus_dubte 'demana_exercici'), en reply_text digues només una frase curta que presente l'exercici (p. ex. «Prova este exercici!»).
+- Mai no t'inventes escenaris (ni noms, ni situacions, ni activitats de conversa): només l'aplicació n'enllaça un de real del catàleg quan omples area_practica amb 'escenari'. No en descrigues ni en proposes cap pel teu compte en reply_text. Si el que vol practicar és la conversa o l'expressió oral (area_practica 'escenari' o 'expressio_oral'), reply_text no pot quedar buit: escriu només una frase curta («Et deixe una activitat per a practicar la conversa.»), sense consells, situacions, diàlegs ni exemples de rol (l'aplicació la substituïx per la seua).
 - Si l'aprenent demana com millorar o practicar una DESTRESA que no es pot fer dins del xat (redactar o escriure textos → expressio_escrita; entendre àudios → comprensio_oral; entendre textos escrits → comprensio_escrita; practicar la conversa, xarrar o fer un escenari → escenari; parlar en veu alta o millorar la pronunciació → expressio_oral), omple area_practica amb eixa àrea, dóna-li 2 o 3 consells breus i diu-li que li deixes una activitat per a practicar-ho (l'aplicació l'enllaçarà). En eixe cas deixa exercici_tema buit. Si no, deixa area_practica buit.`;
 
 type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
@@ -126,8 +144,10 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
           },
           ...(askGnvQuery ? { consulta_gnv: { type: 'string', description: GNV_QUERY_DESCRIPTION } } : {}),
           ...(askVerb ? { verb_conjugar: { type: 'string', description: VERB_QUERY_DESCRIPTION } } : {}),
+          ...(askGnvQuery ? { corregir_text: { type: 'boolean', description: CORRECT_TEXT_DESCRIPTION } } : {}),
           ...(lessons.length ? { leccio_id: { type: 'string', enum: ['', ...lessons.map(l => l.id)], description: "L'id de la lliçó de l'app relacionada amb la pregunta del xiquet; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { area_practica: { type: 'string', enum: ['', ...PRACTICE_SKILLS], description: "La destresa que l'aprenent vol practicar si no es pot fer dins del xat; cadena buida si no n'hi ha cap." } } : {}),
+          ...(askExercise ? { tipus_dubte: { type: 'string', enum: ['cap', 'simple', 'complex', 'demana_exercici'], description: "Tipus de l'últim missatge de l'aprenent: dubte de llengua complex, dubte simple, petició d'exercici o res de llengua ('cap')." } } : {}),
           ...(askExercise ? { exercici_tema: { type: 'string', description: "Tema de l'exercici del catàleg que ofereixes a l'aprenent; cadena buida si no n'ofereixes cap." } } : {}),
           ...(withGnv ? {
             gnv: {
@@ -154,6 +174,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
           } : {}),
         },
         required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv'] : []), ...(askVerb ? ['verb_conjugar'] : []), ...(askExercise ? ['exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv', 'corregir_text'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
         additionalProperties: false,
       },
     },
@@ -232,6 +253,17 @@ L'aplicació mostrarà la taula completa davall de la teua resposta. Respon ara 
 
 // Un camp de text de la primera resposta del tutor ('' si no n'hi ha o no es pot llegir).
 function queryFieldOf(content: string, field: 'consulta_gnv' | 'verb_conjugar', max: number): string {
+// El model ha detectat un text per a corregir (la llista d'errors la mostra el client amb l'anàlisi).
+function correctTextOf(content: string): boolean {
+  try {
+    return (parseJsonResponse(content) as { corregir_text?: unknown }).corregir_text === true;
+  } catch {
+    return false;
+  }
+}
+
+// La consulta per a la GNV de la primera resposta del tutor ('' si no n'hi ha o no es pot llegir).
+function gnvQueryOf(content: string): string {
   try {
     const value = (parseJsonResponse(content) as Record<string, unknown>)[field];
     return typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -283,6 +315,8 @@ export async function replyFromAgent(args: {
   exerciseTool?: boolean;
   // Tutor del Nivell 0: les lliçons que pot enllaçar (leccio_id); les resol qui crida.
   lessons?: LessonRef[];
+  // Tutor del tauler: SEMPRE el model i l'esforç de DASHBOARD_AGENT, independentment d'OPENAI_MODEL i sense models de reserva.
+  dashboardAgent?: boolean;
   // Cancel·lació externa (el client tanca la connexió): talla el bucle i les crides en vol.
   signal?: AbortSignal;
 }): Promise<AgentReply> {
@@ -324,6 +358,7 @@ export async function replyFromAgent(args: {
         ${args.lessons?.length ? lessonInstructions(args.lessons) : ''}
 
         Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv' : ''}${args.conjugationTool ? ', verb_conjugar' : ''}${args.exerciseTool ? ', exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv, corregir_text' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
     },
     {
       role: 'user',
@@ -369,14 +404,17 @@ export async function replyFromAgent(args: {
 
   // Detecció de bucles: massa crides o el mateix missatge una vegada i una altra talla la petició (LoopDetectedError).
   const guard = createLoopGuard({ label: 'agent', signal: args.signal, maxIterations: 8 });
+  const effort = (model: string) => (args.dashboardAgent ? reasoningEffortFor(model, DASHBOARD_AGENT.reasoningEffort) : {});
   let lastError = 'OpenAI no ha retornat una resposta vàlida';
-  for (const model of OPENAI_MODELS) {
+  for (const model of args.dashboardAgent ? [DASHBOARD_AGENT.model] : OPENAI_MODELS) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         // La primera crida decidix què fer (respondre, consultar la GNV, proposar exercici): un poc de raonament (low).
         // La segunda només redacta amb les fonts que ja té: sense raonament (none).
         let content = await complete(guard, key, model!, {
           response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons, args.conjugationTool),
+          ...effort(model!),
+          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons),
           messages,
         }, attempt > 0, 'low');
 
@@ -394,8 +432,11 @@ export async function replyFromAgent(args: {
             messages: [...messages, { role: 'system', content: conjugationMessage(verb, conjugation) }],
           }, attempt > 0);
         } else if (consulta) {
+        const consulta = args.gnvTool && content && !correctTextOf(content) ? gnvQueryOf(content) : '';
+        if (consulta) {
           gnvResult = await lookupGnv(consulta);
           content = await complete(guard, key, model!, {
+            ...effort(model!),
             response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool, args.lessons),
             messages: [...messages, { role: 'system', content: gnvSourcesMessage(consulta, gnvResult) }],
           }, attempt > 0);

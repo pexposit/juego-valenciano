@@ -1,0 +1,940 @@
+{
+ "said": "(veu real, micròfon de l'ordinador, frase sencera)",
+ "phones": [
+  {
+   "ipa": "ɛ",
+   "confidence": 0.626631,
+   "alternatives": [
+    {
+     "ipa": "e",
+     "prob": 0.154239
+    },
+    {
+     "ipa": "i",
+     "prob": 0.049725
+    },
+    {
+     "ipa": "a",
+     "prob": 0.032421
+    }
+   ]
+  },
+  {
+   "ipa": "n",
+   "confidence": 0.646356,
+   "alternatives": [
+    {
+     "ipa": "m",
+     "prob": 0.149613
+    },
+    {
+     "ipa": "ŋ",
+     "prob": 0.049249
+    },
+    {
+     "ipa": "l",
+     "prob": 0.012499
+    }
+   ]
+  },
+  {
+   "ipa": "ɛ",
+   "confidence": 0.581052,
+   "alternatives": [
+    {
+     "ipa": "e",
+     "prob": 0.339148
+    },
+    {
+     "ipa": "a",
+     "prob": 0.01793
+    },
+    {
+     "ipa": "i",
+     "prob": 0.009826
+    }
+   ]
+  },
+  {
+   "ipa": "l",
+   "confidence": 0.940213,
+   "alternatives": [
+    {
+     "ipa": "n",
+     "prob": 0.030802
+    },
+    {
+     "ipa": "m",
+     "prob": 0.002836
+    },
+    {
+     "ipa": "w",
+     "prob": 0.001523
+    }
+   ]
+  },
+  {
+   "ipa": "n",
+   "confidence": 0.984414,
+   "alternatives": [
+    {
+     "ipa": "m",
+     "prob": 0.004896
+    },
+    {
+     "ipa": "l",
+     "prob": 0.003669
+    },
+    {
+     "ipa": "ɲ",
+     "prob": 0.002628
+    }
+   ]
+  },
+  {
+   "ipa": "o",
+   "confidence": 0.579063,
+   "alternatives": [
+    {
+     "ipa": "u",
+     "prob": 0.367678
+    },
+    {
+     "ipa": "w",
+     "prob": 0.016481
+    },
+    {
+     "ipa": "a",
+     "prob": 0.012643
+    }
+   ]
+  },
+  {
+   "ipa": "x",
+   "confidence": 0.565156,
+   "alternatives": [
+    {
+     "ipa": "j",
+     "prob": 0.159756
+    },
+    {
+     "ipa": "t",
+     "prob": 0.073204
+    },
+    {
+     "ipa": "t͡ʃ",
+     "prob": 0.054607
+    }
+   ]
+  },
+  {
+   "ipa": "ɛ",
+   "confidence": 0.5822,
+   "alternatives": [
+    {
+     "ipa": "e",
+     "prob": 0.215766
+    },
+    {
+     "ipa": "a",
+     "prob": 0.063089
+    },
+    {
+     "ipa": "o",
+     "prob": 0.060304
+    }
+   ]
+  },
+  {
+   "ipa": "r",
+   "confidence": 0.974702,
+   "alternatives": [
+    {
+     "ipa": "ɾ",
+     "prob": 0.013547
+    },
+    {
+     "ipa": "l",
+     "prob": 0.001005
+    },
+    {
+     "ipa": "s",
+     "prob": 0.00088
+    }
+   ]
+  },
+  {
+   "ipa": "m",
+   "confidence": 0.994262,
+   "alternatives": [
+    {
+     "ipa": "n",
+     "prob": 0.000858
+    },
+    {
+     "ipa": "b",
+     "prob": 0.00022
+    },
+    {
+     "ipa": "s",
+     "prob": 0.00015
+    }
+   ]
+  },
+  {
+   "ipa": "a",
+   "confidence": 0.987039,
+   "alternatives": [
+    {
+     "ipa": "ə",
+     "prob": 0.001447
+    },
+    {
+     "ipa": "u",
+     "prob": 0.000829
+    },
+    {
+     "ipa": "o",
+     "prob": 0.000565
+    }
+   ]
+  },
+  {
+   "ipa": "x",
+   "confidence": 0.382932,
+   "alternatives": [
+    {
+     "ipa": "j",
+     "prob": 0.222778
+    },
+    {
+     "ipa": "ʎ",
+     "prob": 0.071551
+    },
+    {
+     "ipa": "d͡ʒ",
+     "prob": 0.065072
+    }
+   ]
+  },
+  {
+   "ipa": "o",
+   "confidence": 0.985405,
+   "alternatives": [
+    {
+     "ipa": "u",
+     "prob": 0.005534
+    },
+    {
+     "ipa": "a",
+     "prob": 0.003335
+    },
+    {
+     "ipa": "ɔ",
+     "prob": 0.002514
+    }
+   ]
+  },
+  {
+   "ipa": "b",
+   "confidence": 0.880338,
+   "alternatives": [
+    {
+     "ipa": "β",
+     "prob": 0.036125
+    },
+    {
+     "ipa": "v",
+     "prob": 0.030229
+    },
+    {
+     "ipa": "ɡ",
+     "prob": 0.019481
+    }
+   ]
+  },
+  {
+   "ipa": "ɛ",
+   "confidence": 0.702237,
+   "alternatives": [
+    {
+     "ipa": "e",
+     "prob": 0.255975
+    },
+    {
+     "ipa": "i",
+     "prob": 0.012844
+    },
+    {
+     "ipa": "a",
+     "prob": 0.008992
+    }
+   ]
+  },
+  {
+   "ipa": "b",
+   "confidence": 0.965213,
+   "alternatives": [
+    {
+     "ipa": "v",
+     "prob": 0.011019
+    },
+    {
+     "ipa": "β",
+     "prob": 0.009917
+    },
+    {
+     "ipa": "d",
+     "prob": 0.004294
+    }
+   ]
+  },
+  {
+   "ipa": "i",
+   "confidence": 0.605869,
+   "alternatives": [
+    {
+     "ipa": "j",
+     "prob": 0.336777
+    },
+    {
+     "ipa": "ɛ",
+     "prob": 0.026132
+    },
+    {
+     "ipa": "e",
+     "prob": 0.018017
+    }
+   ]
+  },
+  {
+   "ipa": "a",
+   "confidence": 0.995322,
+   "alternatives": [
+    {
+     "ipa": "ɛ",
+     "prob": 0.00159
+    },
+    {
+     "ipa": "ə",
+     "prob": 0.000582
+    },
+    {
+     "ipa": "i",
+     "prob": 0.000379
+    }
+   ]
+  },
+  {
+   "ipa": "r",
+   "confidence": 0.723126,
+   "alternatives": [
+    {
+     "ipa": "ɾ",
+     "prob": 0.014091
+    },
+    {
+     "ipa": "d",
+     "prob": 0.012572
+    },
+    {
+     "ipa": "l",
+     "prob": 0.011941
+    }
+   ]
+  },
+  {
+   "ipa": "t͡ʃ",
+   "confidence": 0.965585,
+   "alternatives": [
+    {
+     "ipa": "d͡ʒ",
+     "prob": 0.016829
+    },
+    {
+     "ipa": "s",
+     "prob": 0.007938
+    },
+    {
+     "ipa": "ʃ",
+     "prob": 0.003205
+    }
+   ]
+  },
+  {
+   "ipa": "a",
+   "confidence": 0.995985,
+   "alternatives": [
+    {
+     "ipa": "ə",
+     "prob": 0.00103
+    },
+    {
+     "ipa": "o",
+     "prob": 0.000733
+    },
+    {
+     "ipa": "ɛ",
+     "prob": 0.000731
+    }
+   ]
+  },
+  {
+   "ipa": "s",
+   "confidence": 0.789507,
+   "alternatives": [
+    {
+     "ipa": "i",
+     "prob": 0.037046
+    },
+    {
+     "ipa": "n",
+     "prob": 0.000159
+    },
+    {
+     "ipa": "x",
+     "prob": 0.000132
+    }
+   ]
+  },
+  {
+   "ipa": "i",
+   "confidence": 0.656879,
+   "alternatives": [
+    {
+     "ipa": "ɡ",
+     "prob": 0.207516
+    },
+    {
+     "ipa": "s",
+     "prob": 0.01317
+    },
+    {
+     "ipa": "a",
+     "prob": 0.000265
+    }
+   ]
+  },
+  {
+   "ipa": "ɡ",
+   "confidence": 0.940602,
+   "alternatives": [
+    {
+     "ipa": "a",
+     "prob": 0.053472
+    },
+    {
+     "ipa": "i",
+     "prob": 0.002406
+    },
+    {
+     "ipa": "ə",
+     "prob": 0.000446
+    }
+   ]
+  },
+  {
+   "ipa": "a",
+   "confidence": 0.905963,
+   "alternatives": [
+    {
+     "ipa": "ɡ",
+     "prob": 0.0331
+    },
+    {
+     "ipa": "l",
+     "prob": 0.00131
+    },
+    {
+     "ipa": "ə",
+     "prob": 0.000265
+    }
+   ]
+  },
+  {
+   "ipa": "l",
+   "confidence": 0.999083,
+   "alternatives": [
+    {
+     "ipa": "r",
+     "prob": 0.000194
+    },
+    {
+     "ipa": "a",
+     "prob": 5.8e-05
+    },
+    {
+     "ipa": "d",
+     "prob": 4.5e-05
+    }
+   ]
+  },
+  {
+   "ipa": "a",
+   "confidence": 0.997014,
+   "alternatives": [
+    {
+     "ipa": "ə",
+     "prob": 0.000449
+    },
+    {
+     "ipa": "o",
+     "prob": 0.000108
+    },
+    {
+     "ipa": "ɛ",
+     "prob": 0.000103
+    }
+   ]
+  },
+  {
+   "ipa": "p",
+   "confidence": 0.997484,
+   "alternatives": [
+    {
+     "ipa": "b",
+     "prob": 0.001796
+    },
+    {
+     "ipa": "f",
+     "prob": 0.000328
+    },
+    {
+     "ipa": "pʰ",
+     "prob": 8.4e-05
+    }
+   ]
+  },
+  {
+   "ipa": "l",
+   "confidence": 0.999624,
+   "alternatives": [
+    {
+     "ipa": "r",
+     "prob": 8.4e-05
+    },
+    {
+     "ipa": "n",
+     "prob": 3.5e-05
+    },
+    {
+     "ipa": "ɭ",
+     "prob": 3.2e-05
+    }
+   ]
+  },
+  {
+   "ipa": "a",
+   "confidence": 0.999465,
+   "alternatives": [
+    {
+     "ipa": "u",
+     "prob": 9.4e-05
+    },
+    {
+     "ipa": "ɛ",
+     "prob": 8.3e-05
+    },
+    {
+     "ipa": "o",
+     "prob": 7.2e-05
+    }
+   ]
+  },
+  {
+   "ipa": "t͡ʃ",
+   "confidence": 0.943291,
+   "alternatives": [
+    {
+     "ipa": "d͡ʒ",
+     "prob": 0.04256
+    },
+    {
+     "ipa": "s",
+     "prob": 0.009361
+    },
+    {
+     "ipa": "ʃ",
+     "prob": 0.001781
+    }
+   ]
+  },
+  {
+   "ipa": "a",
+   "confidence": 0.993858,
+   "alternatives": [
+    {
+     "ipa": "ə",
+     "prob": 0.004582
+    },
+    {
+     "ipa": "ɛ",
+     "prob": 0.000355
+    },
+    {
+     "ipa": "a̝",
+     "prob": 0.000264
+    }
+   ]
+  }
+ ],
+ "alignment": {
+  "reference": [
+   {
+    "word": "El",
+    "phones": [
+     "e",
+     "l"
+    ]
+   },
+   {
+    "word": "meu",
+    "phones": [
+     "m",
+     "e",
+     "w"
+    ]
+   },
+   {
+    "word": "germà",
+    "phones": [
+     "d",
+     "ʒ",
+     "e",
+     "ɾ",
+     "m",
+     "a"
+    ]
+   },
+   {
+    "word": "jove",
+    "phones": [
+     "d",
+     "ʒ",
+     "o",
+     "v",
+     "e"
+    ]
+   },
+   {
+    "word": "viatja",
+    "phones": [
+     "v",
+     "j",
+     "a",
+     "d",
+     "ʒ",
+     "a"
+    ]
+   },
+   {
+    "word": "a",
+    "phones": [
+     "a"
+    ]
+   },
+   {
+    "word": "la",
+    "phones": [
+     "l",
+     "a"
+    ]
+   },
+   {
+    "word": "platja.",
+    "phones": [
+     "p",
+     "l",
+     "a",
+     "d",
+     "ʒ",
+     "a"
+    ]
+   }
+  ],
+  "ops": [
+   {
+    "ref": "e",
+    "hyp": "ɛ",
+    "hyp_j": 0,
+    "word": 0,
+    "kind": "substitution"
+   },
+   {
+    "ref": "l",
+    "hyp": null,
+    "hyp_j": null,
+    "word": 0,
+    "kind": "deletion"
+   },
+   {
+    "ref": "m",
+    "hyp": "n",
+    "hyp_j": 1,
+    "word": 1,
+    "kind": "substitution"
+   },
+   {
+    "ref": "e",
+    "hyp": "ɛ",
+    "hyp_j": 2,
+    "word": 1,
+    "kind": "substitution"
+   },
+   {
+    "ref": "w",
+    "hyp": "l",
+    "hyp_j": 3,
+    "word": 1,
+    "kind": "substitution"
+   },
+   {
+    "ref": "d",
+    "hyp": "n",
+    "hyp_j": 4,
+    "word": 2,
+    "kind": "substitution"
+   },
+   {
+    "ref": null,
+    "hyp": "o",
+    "hyp_j": 5,
+    "word": 2,
+    "kind": "insertion"
+   },
+   {
+    "ref": "ʒ",
+    "hyp": "x",
+    "hyp_j": 6,
+    "word": 2,
+    "kind": "substitution"
+   },
+   {
+    "ref": "e",
+    "hyp": "ɛ",
+    "hyp_j": 7,
+    "word": 2,
+    "kind": "substitution"
+   },
+   {
+    "ref": "ɾ",
+    "hyp": "r",
+    "hyp_j": 8,
+    "word": 2,
+    "kind": "substitution"
+   },
+   {
+    "ref": "m",
+    "hyp": "m",
+    "hyp_j": 9,
+    "word": 2,
+    "kind": "match"
+   },
+   {
+    "ref": "a",
+    "hyp": "a",
+    "hyp_j": 10,
+    "word": 2,
+    "kind": "match"
+   },
+   {
+    "ref": "d",
+    "hyp": null,
+    "hyp_j": null,
+    "word": 3,
+    "kind": "deletion"
+   },
+   {
+    "ref": "ʒ",
+    "hyp": "x",
+    "hyp_j": 11,
+    "word": 3,
+    "kind": "substitution"
+   },
+   {
+    "ref": "o",
+    "hyp": "o",
+    "hyp_j": 12,
+    "word": 3,
+    "kind": "match"
+   },
+   {
+    "ref": "v",
+    "hyp": "b",
+    "hyp_j": 13,
+    "word": 3,
+    "kind": "substitution"
+   },
+   {
+    "ref": "e",
+    "hyp": "ɛ",
+    "hyp_j": 14,
+    "word": 3,
+    "kind": "substitution"
+   },
+   {
+    "ref": "v",
+    "hyp": "b",
+    "hyp_j": 15,
+    "word": 4,
+    "kind": "substitution"
+   },
+   {
+    "ref": "j",
+    "hyp": "i",
+    "hyp_j": 16,
+    "word": 4,
+    "kind": "substitution"
+   },
+   {
+    "ref": "a",
+    "hyp": "a",
+    "hyp_j": 17,
+    "word": 4,
+    "kind": "match"
+   },
+   {
+    "ref": "d",
+    "hyp": "r",
+    "hyp_j": 18,
+    "word": 4,
+    "kind": "substitution"
+   },
+   {
+    "ref": "ʒ",
+    "hyp": "t͡ʃ",
+    "hyp_j": 19,
+    "word": 4,
+    "kind": "substitution"
+   },
+   {
+    "ref": "a",
+    "hyp": "a",
+    "hyp_j": 20,
+    "word": 4,
+    "kind": "match"
+   },
+   {
+    "ref": null,
+    "hyp": "s",
+    "hyp_j": 21,
+    "word": 4,
+    "kind": "insertion"
+   },
+   {
+    "ref": null,
+    "hyp": "i",
+    "hyp_j": 22,
+    "word": 4,
+    "kind": "insertion"
+   },
+   {
+    "ref": null,
+    "hyp": "ɡ",
+    "hyp_j": 23,
+    "word": 4,
+    "kind": "insertion"
+   },
+   {
+    "ref": "a",
+    "hyp": "a",
+    "hyp_j": 24,
+    "word": 5,
+    "kind": "match"
+   },
+   {
+    "ref": "l",
+    "hyp": "l",
+    "hyp_j": 25,
+    "word": 6,
+    "kind": "match"
+   },
+   {
+    "ref": "a",
+    "hyp": "a",
+    "hyp_j": 26,
+    "word": 6,
+    "kind": "match"
+   },
+   {
+    "ref": "p",
+    "hyp": "p",
+    "hyp_j": 27,
+    "word": 7,
+    "kind": "match"
+   },
+   {
+    "ref": "l",
+    "hyp": "l",
+    "hyp_j": 28,
+    "word": 7,
+    "kind": "match"
+   },
+   {
+    "ref": "a",
+    "hyp": "a",
+    "hyp_j": 29,
+    "word": 7,
+    "kind": "match"
+   },
+   {
+    "ref": "d",
+    "hyp": null,
+    "hyp_j": null,
+    "word": 7,
+    "kind": "deletion"
+   },
+   {
+    "ref": "ʒ",
+    "hyp": "t͡ʃ",
+    "hyp_j": 30,
+    "word": 7,
+    "kind": "substitution"
+   },
+   {
+    "ref": "a",
+    "hyp": "a",
+    "hyp_j": 31,
+    "word": 7,
+    "kind": "match"
+   }
+  ],
+  "words": [
+   {
+    "word": "El",
+    "cost": 0.323809
+   },
+   {
+    "word": "meu",
+    "cost": 0.149806
+   },
+   {
+    "word": "germà",
+    "cost": 0.207435
+   },
+   {
+    "word": "jove",
+    "cost": 0.232321
+   },
+   {
+    "word": "viatja",
+    "cost": 0.397332
+   },
+   {
+    "word": "a",
+    "cost": 0
+   },
+   {
+    "word": "la",
+    "cost": 0
+   },
+   {
+    "word": "platja.",
+    "cost": 0.141667
+   }
+  ],
+  "summary": {
+   "per": 0.741935
+  }
+ }
+}

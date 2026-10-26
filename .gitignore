@@ -3,9 +3,15 @@ dist
 .env
 .env.local
 coverage
+AGENTS.md
+CLAUDE.md
 
 # TypeScript incremental build cache
 *.tsbuildinfo
 
 # Instaladores y paquetes binarios (GitHub rechaza archivos de más de 100 MB)
 *.deb
+
+# Guardaraíles locales para agentes
+AGENTS.md
+CLAUDE.md

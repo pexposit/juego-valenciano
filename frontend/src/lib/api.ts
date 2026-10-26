@@ -1,4 +1,5 @@
 import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, VerbConjugation, WritingEvaluation } from './types';
+import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, PronunciationResult, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, WritingEvaluation } from './types';
 import { sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
@@ -53,6 +54,22 @@ export async function fetchLesson(id: string): Promise<Lesson | null> {
   return res.json();
 }
 // Avalua amb el LLM una redacció o un formulari de l'àrea d'Expressió escrita.
+// Corregix la lectura en veu alta d'un exercici de pronúncia: s'envia la gravació i el backend torna, paraula per
+// paraula, si els sons de l'exercici s'han dit bé.
+export async function checkPronunciation(exerciseId: string, audioBase64: string, mimeType: string): Promise<PronunciationResult> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/practice/exercises/${encodeURIComponent(exerciseId)}/pronunciation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ audio_base64: audioBase64, mime_type: mimeType }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(body?.error ?? 'No hem pogut escoltar la gravació');
+  }
+  return res.json();
+}
+
 export async function evaluatePracticeExercise(
   exerciseId: string,
   body: { answers: Record<string, string> } | { text: string },
@@ -96,12 +113,12 @@ export async function evaluateExamWriting(
   }
   return res.json();
 }
-export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];shown_exercises?:string[];lessons?:{id:string;title:string;summary:string}[];include_audio?:boolean}):Promise<TurnResponse>{
+export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];shown_exercises?:string[];lessons?:{id:string;title:string;summary:string}[];include_audio?:boolean},signal?:AbortSignal):Promise<TurnResponse>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;
   // L'historial es retalla amb el pressupost compartit abans d'enviar-lo:
   // el servidor, a més, ho tornarà a aplicar (defensa en profunditat).
   const body={...payload, history: payload.history ? sanitizeHistory(payload.history) : undefined};
-  const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/turn`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});
+  const res=await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/turn`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body),signal});
   if(!res.ok) throw new Error('No hem pogut connectar'); return res.json();
 }
 // Àudio TTS d'un text (veu del personatge de l'escenari). El token fa que la
@@ -130,12 +147,13 @@ export async function fetchVoiceOptions(): Promise<VoiceOption[]> {
 
 // Veu de la Taronjeta (Nivell 0) per a una frase que no té el seu fitxer pregenerat:
 // la mateixa veu del TTS que fa servir scripts/generate-kids-audio.ts.
-export async function fetchKidsVoice(text: string): Promise<string> {
+// `voice`: p. ex. `remot:gina`, que va sempre al DeepLab encara que el laboratori de veu no estiga en marxa.
+export async function fetchKidsVoice(text: string, voice = 'gina'): Promise<string> {
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/tts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: JSON.stringify({ text, voice: 'gina' }),
+    body: JSON.stringify({ text, voice }),
   });
   if (!res.ok) throw new Error(`tts ${res.status}`);
   const payload = await res.json() as { audio_base64: string; mime_type: string };
@@ -419,8 +437,8 @@ const pendingAnalyses = new Map<string, Set<Promise<void>>>();
 export function analyzeMessage(
   payload: { session_id: string; session_resource_id: string; text: string },
   options: { scenario: string | null; practicable: boolean },
-) {
-  const run = (async () => {
+): Promise<TextError[]> {
+  const analysis = (async () => {
     const token = (await supabase?.auth.getSession())?.data.session?.access_token;
     const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/errors/analyze`, {
       method: 'POST',
@@ -428,11 +446,35 @@ export function analyzeMessage(
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`El backend ha respost amb codi ${res.status}`);
-    await storeErrors(await res.json(), { ...options, sessionResourceId: payload.session_resource_id });
-  })().catch(error => console.error('Error analitzant el missatge:', error));
+    const errors = await res.json() as ServerError[];
+    await storeErrors(errors, { ...options, sessionResourceId: payload.session_resource_id });
+    return errors;
+  })();
+  const run = analysis.then(() => undefined, error => console.error('Error analitzant el missatge:', error));
   const set = pendingAnalyses.get(payload.session_resource_id) ?? new Set();
   pendingAnalyses.set(payload.session_resource_id, set.add(run));
   void run.finally(() => set.delete(run));
+  // Els errors trobats (buit si l'anàlisi falla): el xat del tauler els mostra quan l'aprenent ha enviat un text per a corregir.
+  return analysis.catch(() => []);
+}
+
+export type TextError = Pick<ServerError, 'id' | 'error_text' | 'correction' | 'category' | 'subcategory' | 'explanation'>;
+
+// Seccions de la GNV que cobrixen els errors d'un text (una per error, o null); sense cites si el servidor no pot consultar-la.
+export async function fetchErrorCitations(errors: TextError[]): Promise<({ seccio: string; etiqueta: string } | null)[]> {
+  try {
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/errors/citations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ errors: errors.map(e => ({ error_text: e.error_text, correction: e.correction, category: e.category, subcategory: e.subcategory })) }),
+    });
+    if (!res.ok) return errors.map(() => null);
+    const { citations } = await res.json() as { citations?: ({ seccio: string; etiqueta: string } | null)[] };
+    return errors.map((_, i) => citations?.[i] ?? null);
+  } catch {
+    return errors.map(() => null);
+  }
 }
 
 // Errors sense resoldre de l'usuari, per a la pestanya de pràctica d'errors. El text és en este

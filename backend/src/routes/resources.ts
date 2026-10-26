@@ -7,8 +7,9 @@ import { evaluateA1Writing, evaluateA2Writing, evaluateB1Writing, evaluateC1Writ
 import { loadLevelContents } from '../services/levelContents.js';
 import { isLoopError, LOOP_STOPPED_MESSAGE } from '../services/loopGuard.js';
 import { characterOf, isScenarioPlayable } from '../services/scenarios.js';
-import { ASSISTANT_CATEGORY, CHAT_CATEGORIES, FORM_FIELD_MAX_CHARS, isPracticeArea, WRITING_MAX_CHARS_C1, writingMaxChars } from '@parlaval/shared';
+import { ASSISTANT_CATEGORY, CHAT_CATEGORIES, FORM_FIELD_MAX_CHARS, isPracticeArea, isVoiceOnlyCategory, WRITING_MAX_CHARS_C1, writingMaxChars } from '@parlaval/shared';
 import { saveWritingErrors } from './errors.js';
+import { scorePronunciation, transcribePhonetic } from '../services/pronunciation.js';
 import { canSeeResource, optionalUserId, teacherResourcesFor } from '../services/teacherActivities.js';
 import { EXAM_CATEGORY, hasExam, isPlayable, type Metadata, type ResourceRow } from '../services/catalog.js';
 
@@ -62,7 +63,9 @@ resourcesRouter.get('/api/resources', async (req, res) => {
   const { own, assigned } = await teacherResourcesFor(client, await optionalUserId(req));
   const { data, error } = await client
     .from('resources')
-    .select('id, name, type, category, difficulty, xp_earned, content, url, metadata, teacher_id, practice_exercises(count)')
+    .select('id, name, type, category, difficulty, xp_earned, content, url, metadata, teacher_id, practice_exercises(count), spoken:practice_exercises(count)')
+    // `spoken`: quants exercicis de pronúncia («Llig en veu alta») té, que demanen el micròfon.
+    .eq('spoken.kind', 'pronunciation')
     // El tutor infantil es xateja des del tauler: no és una activitat del catàleg.
     .neq('category', ASSISTANT_CATEGORY)
     .order('category')
@@ -77,7 +80,7 @@ resourcesRouter.get('/api/resources', async (req, res) => {
 
   // De metadata només s'exposa el que necessiten les pantalles, no el prompt del personatge.
   const rows = (data ?? []).filter((r: { id: string; teacher_id: string | null }) => !r.teacher_id || own.has(r.id) || assigned.has(r.id));
-  res.json(rows.map(({ metadata, practice_exercises, teacher_id, ...resource }: ResourceRow & Record<string, unknown>) => ({
+  res.json(rows.map(({ metadata, practice_exercises, spoken, teacher_id, ...resource }: ResourceRow & Record<string, unknown>) => ({
     ...resource,
     class_activity: !!teacher_id,
     // Nivell del MECR de les activitats del professorat.
@@ -101,6 +104,8 @@ resourcesRouter.get('/api/resources', async (req, res) => {
     translations: translationsOf(metadata?.translations),
     playable: isPlayable({ ...resource, metadata, practice_exercises }),
     has_lesson: lessonOf(metadata) !== null,
+    // Cal el micròfon: l'Expressió oral només es fa parlant, i els continguts amb exercicis de pronúncia.
+    uses_microphone: isVoiceOnlyCategory(resource.category as string) || ((spoken as { count: number }[] | undefined)?.[0]?.count ?? 0) > 0,
   })));
 });
 
@@ -366,5 +371,68 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
     // Bucle tallat (el model repetia les mateixes consultes): s'avisa l'alumne.
     if (isLoopError(err)) return res.status(508).json({ error: LOOP_STOPPED_MESSAGE, loop_stopped: true });
     res.status(503).json({ error: 'No hem pogut avaluar l’exercici. Torna-ho a provar.' });
+  }
+});
+
+// Correcció de pronúncia (`pronunciation`): l'aprenent llig en veu alta la frase de l'exercici i l'API fonètica del
+// DeepLab compara els sons de l'exercici (task.sounds) amb els de la frase en valencià (vegeu services/pronunciation).
+const PRONUNCIATION_RATE_LIMIT = {
+  windowMs: 60_000,
+  max: Number(process.env.RATE_LIMIT_PRONUNCIATION_PER_MIN) || 20,
+  maxAnonymous: Number(process.env.RATE_LIMIT_PRONUNCIATION_ANON_PER_MIN) || 5,
+};
+// Una lectura de 30 s en webm/opus són uns 200 KB; el base64 en fa 4/3.
+const pronunciationSchema = z.object({
+  audio_base64: z.string().min(1).max(4_000_000),
+  mime_type: z.string().max(64).optional(),
+});
+// Només per a calibrar en local: amb PRONUNCIATION_DEBUG_DIR es guarden la gravació i la resposta de l'API.
+const PRONUNCIATION_DEBUG_DIR = process.env.PRONUNCIATION_DEBUG_DIR;
+async function savePronunciationDebug(dir: string, audioBase64: string, mime: string, response: unknown) {
+  const { mkdir, writeFile } = await import('node:fs/promises');
+  const name = `${dir}/${new Date().toISOString().replace(/[:.]/g, '-')}`;
+  await mkdir(dir, { recursive: true });
+  await writeFile(`${name}.${AUDIO_EXTENSIONS[mime] ?? 'webm'}`, Buffer.from(audioBase64, 'base64'));
+  await writeFile(`${name}.json`, JSON.stringify(response));
+}
+const AUDIO_EXTENSIONS: Record<string, string> = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/wav': 'wav', 'audio/mpeg': 'mp3' };
+
+resourcesRouter.post('/api/practice/exercises/:id/pronunciation', requireAuth, rateLimit(PRONUNCIATION_RATE_LIMIT), async (req: AuthRequest, res) => {
+  const parsedBody = pronunciationSchema.safeParse(req.body);
+  if (!parsedBody.success) return validationError(res, parsedBody.error);
+  if (!z.string().uuid().safeParse(req.params.id).success) return res.status(404).json({ error: "L'exercici no existix" });
+
+  const client = getAdmin() as any;
+  if (!client) return res.status(503).json({ error: "El catàleg no està disponible" });
+  const { data: exercise, error } = await client
+    .from('practice_exercises')
+    .select('kind, task, resource_id, resources(teacher_id)')
+    .eq('id', req.params.id)
+    .maybeSingle();
+  if (error) {
+    console.error("[practice] Error carregant l'exercici:", error);
+    return res.status(500).json({ error: "No hem pogut carregar l'exercici" });
+  }
+  if (exercise?.kind !== 'pronunciation'
+      || !(await canSeeResource(client, req.userId ?? null, { id: exercise.resource_id, teacher_id: exercise.resources?.teacher_id ?? null }))) {
+    return res.status(404).json({ error: "Este exercici no es pot corregir" });
+  }
+
+  const mime = parsedBody.data.mime_type?.split(';')[0]?.toLowerCase() ?? 'audio/webm';
+  try {
+    const response = await transcribePhonetic(
+      Buffer.from(parsedBody.data.audio_base64, 'base64'),
+      `lectura.${AUDIO_EXTENSIONS[mime] ?? 'webm'}`,
+      exercise.task.text,
+    );
+    const result = scorePronunciation(response, exercise.task.sounds);
+    const summary = response.alignment?.summary;
+    console.log(`[pronunciation] per=${summary?.per.toFixed(2)} encerts=${result.score}/${result.total} entesa=${result.understood}`
+      + ` fonemes=${response.phones?.length ?? 0} paraules=${response.alignment?.words.map(w => w.cost.toFixed(2)).join(',')}`);
+    if (PRONUNCIATION_DEBUG_DIR) await savePronunciationDebug(PRONUNCIATION_DEBUG_DIR, parsedBody.data.audio_base64, mime, response);
+    res.json(result);
+  } catch (err) {
+    console.error('[practice] Error corregint la pronúncia:', err instanceof Error ? err.message : err);
+    res.status(503).json({ error: 'No hem pogut escoltar la gravació. Torna-ho a provar.' });
   }
 });

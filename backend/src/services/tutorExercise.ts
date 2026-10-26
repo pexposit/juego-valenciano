@@ -36,9 +36,10 @@ type CatalogResource = {
   id: string; name: string; type: string; category: string; section_name: string | null;
   sources: { gram?: string; section?: string }[] | null; practice_exercises?: { count: number }[];
 };
-// El tema té exercicis, però tots d'un nivell superior al de l'aprenent.
-export const TOO_HIGH = 'too_high' as const;
-export const TOO_HIGH_MESSAGE = "És massa prompte per a este tema. Practica primer amb les activitats del teu nivell i de les rutes d'aprenentatge";
+// El tema té exercicis, però cap del nivell de l'aprenent.
+export const NO_AT_LEVEL = 'no_at_level' as const;
+export const NO_AT_LEVEL_MESSAGE = "Encara no hi ha cap exercici d'això per al teu nivell";
+export const NO_EXERCISE_MESSAGE = "Encara no hi ha cap exercici sobre això. De moment pots practicar amb les activitats del teu nivell.";
 const label = (r: { section_name: string | null; name: string }) => r.section_name || r.name;
 
 // Activitats de pràctica del catàleg (no les de docents), amb les seccions de la GNV que citen les seues lliçons.
@@ -121,17 +122,10 @@ const usable = (rows: Row[] | null, exclude: string[]) =>
 
 const CEFR = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
-// Dels exercicis donats, els del nivell de l'aprenent si n'hi ha; si no, els del nivell més pròxim per davall (mai
-// d'un nivell superior al seu). Sense nivell conegut, tots valen.
-const closestLevel = (rows: Row[], level: string | null | undefined) => {
-  const learner = CEFR.indexOf(level ?? '');
-  if (learner === -1) return rows;
-  const allowed = rows.filter(r => CEFR.indexOf(r.level) <= learner);
-  if (allowed.length === 0) return [];
-  const distance = (r: Row) => learner - CEFR.indexOf(r.level);
-  const best = Math.min(...allowed.map(distance));
-  return allowed.filter(r => distance(r) === best);
-};
+// Dels exercicis donats, només els del nivell exacte de l'aprenent (ni d'un altre més baix ni més alt). Sense nivell
+// conegut, tots valen.
+const closestLevel = (rows: Row[], level: string | null | undefined) =>
+  CEFR.includes(level ?? '') ? rows.filter(r => r.level === level) : rows;
 
 // Puntuació mínima (0 a 1) del reranker perquè un exercici es considere del tema. Per davall, és preferible no mostrar
 // cap exercici que un d'irrellevant. Cada reranker té la seua escala; ajustables amb TUTOR_EXERCISE_MIN_SCORE (local) i
@@ -140,12 +134,22 @@ const MIN_RELEVANCE: Record<Reranker, number> = {
   local: Number(process.env.TUTOR_EXERCISE_MIN_SCORE ?? 0.1),
   jev: Number(process.env.TUTOR_EXERCISE_MIN_SCORE_JEV ?? 0.5),
 };
+// cap exercici que un d'irrellevant. Ajustable amb TUTOR_EXERCISE_MIN_SCORE segons el que mostren els logs de rànquing.
+// Segons el tipus de pregunta: en un dubte complex o quan demana practicar, el mínim de sempre; en un dubte simple, molt
+// més exigent (només si l'exercici tracta de debò del que pregunta). Ajustables amb TUTOR_EXERCISE_MIN_SCORE_SIMPLE.
+export type ExerciseMode = 'complex' | 'simple' | 'request';
+const MIN_RELEVANCE = Number(process.env.TUTOR_EXERCISE_MIN_SCORE ?? 0.1);
+const MIN_RELEVANCE_SIMPLE = Number(process.env.TUTOR_EXERCISE_MIN_SCORE_SIMPLE ?? 0.5);
+const minRelevance = (mode: ExerciseMode) => (mode === 'simple' ? MIN_RELEVANCE_SIMPLE : MIN_RELEVANCE);
 
 // Entre els exercicis donats, el que millor respon a la pregunta segons el reranker del RAG (llig enunciat, opcions i
 // explicació: p. ex. distingix els de b/v dels d'altres consonants de la mateixa activitat). Sense RAG o si el reranker
 // falla, `undefined` (es tria sense rànquing); si cap no arriba a la puntuació mínima, `null` (no es mostra cap).
-async function mostRelevant(rows: Row[], query: string): Promise<Row | null | undefined> {
-  if (rows.length < 2 || !query.trim() || !gnvRagEnabled()) return undefined;
+async function mostRelevant(rows: Row[], query: string, mode: ExerciseMode): Promise<Row | null | undefined> {
+  if (!query.trim() || !gnvRagEnabled()) return undefined;
+  // Un dubte simple només admet un exercici que el reranker avale, encara que n'hi haja un de sol.
+  if (rows.length < 2 && mode !== 'simple') return undefined;
+  const min = minRelevance(mode);
   try {
     // Enunciat, resposta correcta i explicació: les opcions falses només fan soroll.
     const candidates = rows.slice(0, 120);
@@ -156,6 +160,7 @@ async function mostRelevant(rows: Row[], query: string): Promise<Row | null | un
     const top = ranked.slice(0, 3).filter(x => x.score >= min);
     if (top.length === 0) {
       console.log(`[tutor-exercise] rànquing (${reranker}): ${texts.length} exercicis, el millor (${ranked[0].score.toExponential(2)}) no arriba al mínim ${min} → cap`);
+      console.log(`[tutor-exercise] rànquing: ${texts.length} exercicis, el millor (${ranked[0].score.toExponential(2)}) no arriba al mínim ${min} (${mode}) → cap`);
       return null;
     }
     // Un dels 3 millors a l'atzar: tots tracten del tema i així no ix sempre el mateix.
@@ -169,7 +174,7 @@ async function mostRelevant(rows: Row[], query: string): Promise<Row | null | un
 }
 
 /**
- * Tria un exercici del catàleg per a què ha explicat el tutor, del nivell de l'aprenent. Criteris, per ordre:
+ * Tria un exercici del catàleg per a què ha explicat el tutor, només del nivell de l'aprenent. Criteris, per ordre:
  *   1. activitats que citen la mateixa secció de la GNV que la regla donada (`gnvSections`);
  *   2. activitats el nom de les quals parla del tema;
  *   3. exercicis l'enunciat o l'explicació dels quals parlen del tema;
@@ -183,7 +188,8 @@ export async function pickTutorExercise(
   gnvSections: string[] = [],
   // El que ha escrit l'aprenent: amb ell es tria, entre els exercicis del tema, el que en parla de debò.
   question = '',
-): Promise<TutorExercise | typeof TOO_HIGH | null> {
+  mode: ExerciseMode = 'complex',
+): Promise<TutorExercise | typeof NO_AT_LEVEL | null> {
   const client = getAdmin() as any;
   if (!client) return null;
   const catalog = await loadCatalog();
@@ -222,7 +228,8 @@ export async function pickTutorExercise(
     ["nom d'activitat", () => viaResources(resourcesNamedLike(catalog, topic))],
     ['text dels exercicis', async () => {
       const wanted = words(topic);
-      if (wanted.length === 0) return { found: false, rows: [] };
+      // Les coincidències de paraules no diuen si l'exercici és de la pregunta: en un dubte simple no valen.
+      if (mode === 'simple' || wanted.length === 0) return { found: false, rows: [] };
       const filters = wanted.flatMap(w => [`prompt.ilike.%${w}%`, `explanation.ilike.%${w}%`]).join(',');
       const { data } = await client.from('practice_exercises').select(EXERCISE_COLUMNS)
         .eq('kind', 'choice').is('passage_id', null).in('resource_id', allIds).or(filters).limit(600);
@@ -258,18 +265,20 @@ export async function pickTutorExercise(
     const tokens = words(`${r.prompt} ${r.explanation ?? ''}`);
     return wantedWords.some(w => tokens.some(t => same(t, w)));
   });
-  // Primer el nivell (el de l'aprenent o el més pròxim) i, dins d'ell, el que tracta de la pregunta (reranker del RAG);
+  // Només el nivell de l'aprenent i, dins d'ell, el que tracta de la pregunta (reranker del RAG);
   // sense RAG, de preferència els que nomenen el tema.
   const levelPool = closestLevel(pool, level);
-  // Si tot el que hi ha del tema és d'un nivell superior al de l'aprenent, no se li'n mostra cap.
+  // Si el tema no té exercicis del nivell de l'aprenent, no se li'n mostra cap d'un altre.
   if (levelPool.length === 0) {
-    console.log(`[tutor-exercise] criteri=${criterion} tema="${topic}" → només hi ha exercicis de nivell superior a ${level}`);
-    return TOO_HIGH;
+    console.log(`[tutor-exercise] criteri=${criterion} tema="${topic}" → cap exercici del nivell ${level}`);
+    return NO_AT_LEVEL;
   }
   const fallback = closestLevel(onTopicRows.length ? onTopicRows : pool, level);
   if (fallback.length === 0) return null;
-  const ranked = await mostRelevant(levelPool, question || topic);
+  const ranked = await mostRelevant(levelPool, question || topic, mode);
   if (ranked === null) return null;
+  // Dubte simple sense reranker (RAG apagat o amb error): no es pot garantir que siga estret, no es mostra res.
+  if (ranked === undefined && mode === 'simple') return null;
   const pick = ranked ?? fallback[Math.floor(Math.random() * fallback.length)];
   const resource = byId.get(pick.resource_id);
   console.log(`[tutor-exercise] criteri=${criterion} tema="${topic}" secció=${gnvSections[0] ?? '-'} → ${resource ? label(resource) : pick.resource_id}`);
@@ -299,7 +308,10 @@ export async function findTutorActivity(topic: string, gnvSections: string[] = [
 // Destreses que no es poden practicar dins del xat (redaccions, àudios, textos, conversa): s'enllaça una activitat
 // de l'àrea, de preferència del nivell de l'aprenent (i que parle del que ha dit, si hi ha alguna).
 // Destreses que es practiquen conversant amb un personatge: les activitats són escenaris, sense exercicis.
-const CHAT_SKILLS = ['expressio_oral', 'escenari'];
+export const CHAT_SKILLS = ['expressio_oral', 'escenari'];
+// Frases fixes de l'app per a estes destreses: el model no escriu res que puga descriure o proposar un escenari.
+export const CHAT_ACTIVITY_MESSAGE = 'Et deixe una activitat per a practicar la conversa.';
+export const NO_CHAT_ACTIVITY_MESSAGE = 'Encara no hi ha cap activitat de conversa per al teu nivell.';
 export const PRACTICE_SKILLS = ['expressio_escrita', 'comprensio_oral', 'comprensio_escrita', 'expressio_oral', 'escenari'];
 
 export async function findSkillActivity(skill: string, level: string | null | undefined, hint = ''): Promise<TutorActivity | null> {

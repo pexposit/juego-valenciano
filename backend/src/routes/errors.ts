@@ -9,6 +9,8 @@ import { analyzeSchema } from '../schemas.js';
 import { analyzeErrorsWithLocalLLM } from '../services/subagentErrorDetector.js';
 import { detectPromptInjection } from '../services/promptInjection.js';
 import { createRepeatTracker, isLoopError, LOOP_STOPPED_MESSAGE, requestAbortSignal } from '../services/loopGuard.js';
+import { citeErrors } from '../services/gnvCitations.js';
+import { gnvRagEnabled } from '../services/gnvRag.js';
 import { classify, loadLevelContents, type LevelContent } from '../services/levelContents.js';
 
 export const errorsRouter = Router();
@@ -191,6 +193,26 @@ errorsRouter.post('/api/errors/analyze', requireAuth, rateLimit(ANALYZE_RATE_LIM
     console.error('[analyze] Error analitzant el missatge:', error.message ?? error);
     res.status(500).json({ error: "No hem pogut analitzar el missatge" });
   }
+});
+
+// Cites de la GNV per als errors d'un text corregit en el xat (els que acaba de tornar /api/errors/analyze). El client
+// ja té el text dels errors; ací només s'ajunten per contingut i se'n busca la secció de la GNV (com a molt 8 consultes).
+const citationsSchema = z.object({
+  errors: z.array(z.object({
+    error_text: z.string().max(300),
+    correction: z.string().max(300),
+    category: z.string().max(60),
+    subcategory: z.string().max(200).nullable(),
+  })).min(1).max(60),
+});
+
+errorsRouter.post('/api/errors/citations', requireAuth, rateLimit(ANALYZE_RATE_LIMIT), async (req: AuthRequest, res) => {
+  const parsed = citationsSchema.safeParse(req.body);
+  if (!parsed.success) return validationError(res, parsed.error);
+  // Sense RAG no hi ha cites: el client mostra els errors tal qual.
+  if (!gnvRagEnabled()) return res.json({ citations: parsed.data.errors.map(() => null) });
+  const citations = await citeErrors(parsed.data.errors, undefined, requestAbortSignal(req, res));
+  res.json({ citations });
 });
 
 // Respostes d'una tanda d'exercicis de pràctica (preguntes tancades i d'escriure la resposta). La

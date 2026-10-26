@@ -20,14 +20,16 @@ export type TutorExercise={id:string;resource_id:string;resource_name:string;lev
 // Activitat del catàleg que el tutor enllaça quan hi ha pràctica del tema però cap exercici que càpiga en el xat.
 export type TutorActivity={resource_id:string;resource_name:string;type:string;category:string};
 export type TurnResponse={reply_text:string;gnv?:GnvRule;conjugacio?:VerbConjugation;exercise?:TutorExercise;activity?:TutorActivity;lesson_id?:string;transcription?:string|null;reply_audio_base64?:string|null;reply_audio_mime_type?:string|null;mood:Mood;detected_level_signal:'below'|'on'|'above';error_flags:string[];xp_delta:number;analyze_errors?:boolean};
+export type TurnResponse={reply_text:string;gnv?:GnvRule;exercise?:TutorExercise;activity?:TutorActivity;lesson_id?:string;transcription?:string|null;reply_audio_base64?:string|null;reply_audio_mime_type?:string|null;mood:Mood;detected_level_signal:'below'|'on'|'above';error_flags:string[];xp_delta:number;analyze_errors?:boolean;correct_text?:boolean};
 
 // Fila de la taula resources: `category` agrupa les activitats (p. ex. 'escenari')
 // i `type` n'és la secció dins de la categoria (p. ex. 'mercat').
 // `icon`, `color`, `section_name`, `background`, `voice`, `initial_prompt`, `character` i `objectius` venen de resources.metadata; `playable` indica si la seua categoria té pantalla
-// de joc i la fila en té les dades (el decidix el backend); `has_lesson`, si té lliçó fixa (metadata.lesson).
+// de joc i la fila en té les dades (el decidix el backend); `has_lesson`, si té lliçó fixa (metadata.lesson); `uses_microphone`,
+// si cal parlar (Expressió oral o exercicis de pronúncia).
 // Traducció d'un escenari a una llengua materna (resources.metadata.translations).
 export type ScenarioTranslation = { content: string | null; initial_prompt: string | null; objectius: string[] };
-export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; greeting_audio:string|null; audience:string|null; character:string|null; objectius:string[]; translations:Record<string,ScenarioTranslation>; playable:boolean; has_lesson:boolean; class_activity?:boolean; assigned?:boolean; cefr_level?:string|null };
+export type Resource={ id:string; name:string; type:string; category:string; difficulty:string|null; xp_earned:number; content:string|null; url:string|null; icon:string|null; color:string|null; section_name:string|null; background:string|null; voice:string|null; initial_prompt:string|null; greeting_audio:string|null; audience:string|null; character:string|null; objectius:string[]; translations:Record<string,ScenarioTranslation>; playable:boolean; has_lesson:boolean; uses_microphone?:boolean; class_activity?:boolean; assigned?:boolean; cefr_level?:string|null };
 
 // Exercici de pràctica del temari (taula practice_exercises). `choice`: la correcta
 // és answers[0], una de les `options`; `fill`: val qualsevol de les `answers`;
@@ -39,7 +41,13 @@ export type PracticeExercise = PracticeBase & (
   | { kind: 'fill'; answers: string[] }
   | { kind: 'writing'; task: PracticeWritingTask }
   | { kind: 'form'; task: { fields: string[] } }
+  // «Llig en veu alta»: la frase i la família de sons (IPA) que es corregix.
+  | { kind: 'pronunciation'; task: { text: string; sounds: string[] } }
 );
+// Correcció d'una lectura en veu alta (backend/src/services/pronunciation.ts). `words` són les paraules de la frase,
+// separades per espais; les que tenen algun so de l'exercici porten `target`.
+export type PronunciationWord = { word: string; target: boolean; ok: boolean; missing?: boolean; expected?: string; heard?: string };
+export type PronunciationResult = { understood: boolean; words: PronunciationWord[]; score: number; total: number };
 // Text o àudio (transcripció per torns) que acompanya unes preguntes de comprensió.
 export type PracticePassage = { id: string; level: string; media: 'text' | 'audio'; title: string | null; audio_url: string | null; lines: { text: string; speaker?: string; voice?: string }[] };
 // Lliçó fixa d'un contingut (metadata.lesson): teoria adaptada al nivell a partir

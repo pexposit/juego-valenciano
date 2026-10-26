@@ -3,9 +3,27 @@ import type { Element } from 'domhandler';
 
 export interface DnvResult {
   existeix: boolean;
+  // L'entrada del DNV és exactament la paraula consultada (o una variant que l'entrada admet). El portal també torna
+  // l'entrada més pròxima per a paraules mal escrites («mayúscula» → «majúscula»): en eixe cas `existeix` és cert però
+  // `exacta`, no.
+  exacta?: boolean;
+  lema?: string;
+  variants?: string[];
   categoria?: string;
   definicions?: string[];
   url: string;
+}
+
+// Formes d'un encapçalament de l'entrada («reconéixer (o reconèixer) [rekonéjʃeɾ]», «perquè1 [peɾké]»): el lema i les
+// variants que admet. Sense la fonètica, el número d'homògraf ni les terminacions de flexió («bonic, -a»).
+export function formesDelLema(encapcalament: string): { lema: string; variants: string[] } {
+  const net = encapcalament.replace(/\s*\[[^\]]*\].*$/, '').replace(/\s*ui-button.*$/, '').trim();
+  const lema = net.replace(/\s*\(.*$/, '').replace(/,.*$/, '').replace(/\d+$/, '').trim();
+  const variants = [...net.matchAll(/\(o ([^)]+)\)/g)]
+    .flatMap(m => m[1].split(/,| o /))
+    .map(v => v.replace(/\d+$/, '').trim())
+    .filter(v => v && !v.startsWith('-'));
+  return { lema, variants };
 }
 
 /**
@@ -79,6 +97,12 @@ export async function consultarDnv(paraula: string): Promise<DnvResult> {
     const teLema = $('.lema, span.lema, strong.lema, .trfonetica').length > 0;
     const existeix = !noTrobat && (teLema || definicions.length > 0);
 
+    // El portal torna l'entrada més pròxima encara que la paraula no hi siga: es compara el lema i les variants
+    // que admet amb la paraula consultada.
+    const encapcalament = $('.lema, span.lema, strong.lema').first().text().trim();
+    const { lema, variants } = encapcalament ? formesDelLema(encapcalament) : { lema: undefined, variants: [] };
+    const exacta = lema ? [lema, ...variants].some(forma => forma.toLowerCase() === termeClean) : undefined;
+
     if (!existeix) {
       return {
         existeix: false,
@@ -88,6 +112,9 @@ export async function consultarDnv(paraula: string): Promise<DnvResult> {
 
     return {
       existeix: true,
+      exacta,
+      lema,
+      variants,
       categoria,
       definicions: definicions.slice(0, 5),
       url: searchUrl,
