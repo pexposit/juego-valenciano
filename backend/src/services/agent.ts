@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ScenarioDefinition } from './scenarios.js';
 import { consultarGnv, gnvContext, type GnvResultat, type GnvRule } from './gnvRag.js';
 import { conjugationContext, consultarConjugacioVerb, type VerbConjugation } from './conjugacio.js';
+import { OWN_PATH_TOPIC_MAX, type StudyPathRef } from '@parlaval/shared';
 import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
 import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
 import { createLoopGuard, type LoopGuard } from './loopGuard.js';
@@ -28,6 +29,11 @@ const outputSchema = z.object({
   area_practica: z.string().optional(),
   // Tutor del Nivell 0: la lliçó de l'app relacionada amb la pregunta ('' si no n'hi ha cap).
   leccio_id: z.string().optional(),
+  // Tutor: rutes d'aprenentatge. La ruta que vol obrir (codi de la llista, '' si cap), el que diu que li costa ('' si
+  // res) i, si hi havia una oferta de ruta pendent, si l'accepta.
+  ruta_id: z.string().optional(),
+  ruta_dificultat: z.string().optional(),
+  ruta_acceptada: z.boolean().optional(),
   // Només quan el tutor ha consultat la GNV i hi ha trobat respaldo.
   gnv: z.object({
     fonts: z.array(z.number().int()),
@@ -36,7 +42,11 @@ const outputSchema = z.object({
   }).optional(),
 });
 
-export type AgentReply = Omit<z.infer<typeof outputSchema>, 'gnv' | 'help_text' | 'consulta_gnv' | 'verb_conjugar'> & { gnv?: GnvRule; conjugacio?: VerbConjugation };
+// Què vol fer l'aprenent amb les rutes: obrir-ne una (`path`), rebre l'oferta d'una de nova sobre el que li costa
+// (`offer`, el tema) o acceptar l'oferta pendent (`accepted`).
+export type TutorRouteIntent = { path?: StudyPathRef; offer?: string; accepted?: boolean };
+
+export type AgentReply = Omit<z.infer<typeof outputSchema>, 'gnv' | 'help_text' | 'consulta_gnv' | 'verb_conjugar' | 'ruta_id' | 'ruta_dificultat' | 'ruta_acceptada'> & { gnv?: GnvRule; conjugacio?: VerbConjugation; ruta?: TutorRouteIntent };
 
 // Cadena de models: el principal (OPENAI_MODEL) i dos de reserva per si falla.
 // El nom ha d'existir a OpenAI: un valor inventat gasta dos intents (404) en
@@ -85,6 +95,17 @@ const CONJUGATION_INSTRUCTIONS = `CONJUGACIÓ DE VERBS (DICCIONARI NORMATIU VALE
 - Si l'aprenent demana com es conjuga un verb concret (o un temps o les formes d'un verb concret), omple verb_conjugar amb el verb en infinitiu i sense pronoms: després rebràs la conjugació oficial del DNV i l'aplicació li mostrarà la taula completa. En eixe cas deixa consulta_gnv buida.
 - Per a dubtes generals sobre els verbs (com es formen els temps, quan s'usa un temps...) deixa verb_conjugar buit.`;
 
+// Tutor: les rutes d'aprenentatge que pot obrir l'aprenent (codis curts r1, r2...: el model copia malament els UUID) i,
+// si en el torn anterior se li va oferir preparar-ne una, el tema de l'oferta.
+const routeCode = (i: number) => `r${i + 1}`;
+
+const routeInstructions = (paths: StudyPathRef[], pendingOffer?: string) => `RUTES D'APRENENTATGE:
+${paths.length ? `- Rutes que l'aprenent pot obrir (codi: títol — descripció):
+${paths.map((p, i) => `  ${routeCode(i)}: ${p.title}${p.description ? ` — ${p.description.slice(0, 160)}` : ''}`).join('\n')}
+- Si l'aprenent demana practicar o obrir una ruta concreta (pel nom) o una ruta que treballe un tema, omple ruta_id amb el codi de la que millor hi encaixe i en reply_text digues només una frase curta que la presente (p. ex. «Ací tens la ruta «Títol».»): l'aplicació li mostrarà l'enllaç. Si cap no hi encaixa, deixa ruta_id buit, digues-li que no en tens cap d'eixe tema i omple ruta_dificultat amb el tema (l'aplicació li oferirà preparar-ne una).` : `- L'aprenent encara no té cap ruta per a obrir. Si en demana una d'un tema, digues-li que no en té cap i omple ruta_dificultat amb el tema (l'aplicació li oferirà preparar-ne una).`}
+- Si l'aprenent diu que li costa molt alguna cosa de la llengua, que no l'entén o que sempre s'hi equivoca (p. ex. «em costen molt els pronoms febles», «no entenc mai quan va accent»), omple ruta_dificultat amb eixe tema, en valencià i normalitzat (1 a 5 paraules, com el nom d'una lliçó: "pronoms febles", "accentuació"). En reply_text anima'l breument i, si cal, respon-li el dubte; NO li preguntes si vol una ruta: l'aplicació li ho pregunta davall de la teua resposta. Per a un dubte puntual sense dificultat expressa, deixa ruta_dificultat buit.${pendingOffer ? `
+- En el torn anterior li vas oferir preparar-li una ruta sobre «${pendingOffer}». Si l'últim missatge accepta l'oferta (sí, d'acord, vale, prepara-la...), posa ruta_acceptada a true i en reply_text digues només una frase curta (p. ex. «Perfecte! Te la prepare ara mateix.»): l'aplicació la prepararà. Si la rebutja o parla d'una altra cosa, posa ruta_acceptada a false i respon normalment.` : ''}`;
+
 const EXERCISE_INSTRUCTIONS = `EXERCICIS DEL CATÀLEG:
 - Mai no t'inventes exercicis: l'aplicació en mostra un de real del catàleg dins del xat, si n'hi ha, quan omples exercici_tema.
 - Classifica l'últim missatge de l'aprenent en tipus_dubte:
@@ -117,7 +138,7 @@ const lessonInstructions = (lessons: LessonRef[]) => `LLIÇONS DE L'APP:
 - Si el que pregunta o diu el xiquet té relació amb alguna d'estes lliçons, omple leccio_id amb el seu id i digues-li, en una frase molt curta i amb paraules senzilles, que li deixes la lliçó. Només una, la més adequada. Si cap no té relació, deixa leccio_id buit. Mai no t'inventes lliçons ni ids.
 ${lessons.map(l => `- ${l.id}: ${l.title}${l.summary ? ` (${l.summary})` : ''}`).join('\n')}`;
 
-function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false, lessons: LessonRef[] = [], askVerb = false) {
+function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false, lessons: LessonRef[] = [], askVerb = false, routes?: { count: number; pending: boolean }) {
   return {
     type: 'json_schema',
     json_schema: {
@@ -144,6 +165,9 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
           ...(askGnvQuery ? { consulta_gnv: { type: 'string', description: GNV_QUERY_DESCRIPTION } } : {}),
           ...(askVerb ? { verb_conjugar: { type: 'string', description: VERB_QUERY_DESCRIPTION } } : {}),
           ...(askGnvQuery ? { corregir_text: { type: 'boolean', description: CORRECT_TEXT_DESCRIPTION } } : {}),
+          ...(routes?.count ? { ruta_id: { type: 'string', enum: ['', ...Array.from({ length: routes.count }, (_, i) => routeCode(i))], description: "El codi de la ruta d'aprenentatge que l'aprenent vol obrir; cadena buida si no en demana cap." } } : {}),
+          ...(routes ? { ruta_dificultat: { type: 'string', description: "El tema de la llengua que l'aprenent diu que li costa molt (1 a 5 paraules, normalitzat); cadena buida si no en diu cap." } } : {}),
+          ...(routes?.pending ? { ruta_acceptada: { type: 'boolean', description: "true si l'últim missatge accepta l'oferta de preparar-li una ruta; false si no." } } : {}),
           ...(lessons.length ? { leccio_id: { type: 'string', enum: ['', ...lessons.map(l => l.id)], description: "L'id de la lliçó de l'app relacionada amb la pregunta del xiquet; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { area_practica: { type: 'string', enum: ['', ...PRACTICE_SKILLS], description: "La destresa que l'aprenent vol practicar si no es pot fer dins del xat; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { tipus_dubte: { type: 'string', enum: ['cap', 'simple', 'complex', 'demana_exercici'], description: "Tipus de l'últim missatge de l'aprenent: dubte de llengua complex, dubte simple, petició d'exercici o res de llengua ('cap')." } } : {}),
@@ -172,7 +196,7 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
             },
           } : {}),
         },
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv', 'corregir_text'] : []), ...(askVerb ? ['verb_conjugar'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv', 'corregir_text'] : []), ...(askVerb ? ['verb_conjugar'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(routes?.count ? ['ruta_id'] : []), ...(routes ? ['ruta_dificultat'] : []), ...(routes?.pending ? ['ruta_acceptada'] : []), ...(withGnv ? ['gnv'] : [])],
         additionalProperties: false,
       },
     },
@@ -258,6 +282,22 @@ L'aplicació mostrarà la taula completa davall de la teua resposta. Respon ara 
 - reply_text: 1-3 frases breus. Presenta la conjugació (p. ex. «Ací tens la conjugació del verb «anar».») i, si ha preguntat per un temps o una forma concreta, respon-ho directament. Si el verb és irregular, destaca una o dues formes que solen costar. No copies la taula sencera i usa NOMÉS formes que apareguen en la conjugació de dalt.`;
 }
 
+// Què vol fer l'aprenent amb les rutes, segons la primera resposta del tutor (la segona, amb la GNV o la conjugació, ja
+// no ho torna a preguntar). Acceptar l'oferta pendent té preferència; després, obrir una ruta; si no, oferir-ne una.
+function routeIntentOf(content: string, paths: StudyPathRef[], pendingOffer?: string): TutorRouteIntent | undefined {
+  try {
+    const value = parseJsonResponse(content) as { ruta_id?: unknown; ruta_dificultat?: unknown; ruta_acceptada?: unknown };
+    if (pendingOffer && value.ruta_acceptada === true) return { accepted: true };
+    const code = typeof value.ruta_id === 'string' ? value.ruta_id : '';
+    const path = paths.find((_, i) => routeCode(i) === code);
+    if (path) return { path };
+    const offer = typeof value.ruta_dificultat === 'string' ? value.ruta_dificultat.trim().slice(0, OWN_PATH_TOPIC_MAX) : '';
+    return offer ? { offer } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // Un camp de text de la primera resposta del tutor ('' si no n'hi ha o no es pot llegir).
 function queryFieldOf(content: string, field: 'consulta_gnv' | 'verb_conjugar', max: number): string {
   try {
@@ -311,6 +351,11 @@ export async function replyFromAgent(args: {
   exerciseTool?: boolean;
   // Tutor del Nivell 0: les lliçons que pot enllaçar (leccio_id); les resol qui crida.
   lessons?: LessonRef[];
+  // Tutor: pot portar l'aprenent a una de les seues rutes (`paths`) i oferir-li preparar-ne una de nova sobre el que li
+  // costa. `pendingRouteOffer`: el tema de l'oferta del torn anterior, si encara no l'ha contestada.
+  routeTool?: boolean;
+  paths?: StudyPathRef[];
+  pendingRouteOffer?: string;
   // Tutor del tauler: SEMPRE el model i l'esforç de DASHBOARD_AGENT, independentment d'OPENAI_MODEL i sense models de reserva.
   dashboardAgent?: boolean;
   // Cancel·lació externa (el client tanca la connexió): talla el bucle i les crides en vol.
@@ -321,6 +366,8 @@ export async function replyFromAgent(args: {
 
   const def = args.scenario;
   const withHelp = Boolean(args.extraInstructions);
+  const paths = args.routeTool ? args.paths ?? [] : [];
+  const routes = args.routeTool ? { count: paths.length, pending: Boolean(args.pendingRouteOffer) } : undefined;
   const context = args.history
     .map((m) => `${m.role === 'character' ? def.character : 'Aprenent'}: ${m.content_text}`)
     .join('\n');
@@ -353,7 +400,9 @@ export async function replyFromAgent(args: {
 
         ${args.lessons?.length ? lessonInstructions(args.lessons) : ''}
 
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv, corregir_text' : ''}${args.conjugationTool ? ', verb_conjugar' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
+        ${args.routeTool ? routeInstructions(paths, args.pendingRouteOffer) : ''}
+
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv, corregir_text' : ''}${args.conjugationTool ? ', verb_conjugar' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}${args.routeTool ? `${paths.length ? ', ruta_id' : ''}, ruta_dificultat${args.pendingRouteOffer ? ', ruta_acceptada' : ''}` : ''}.`.trim(),
     },
     {
       role: 'user',
@@ -408,12 +457,14 @@ export async function replyFromAgent(args: {
         // La segunda només redacta amb les fonts que ja té: sense raonament (none).
         let content = await complete(guard, key, model!, {
           ...effort(model!),
-          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons, args.conjugationTool),
+          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons, args.conjugationTool, routes),
           messages,
         }, attempt > 0, 'low');
 
         // L'aprenent demana la conjugació d'un verb: es consulta el DNV i es torna a demanar la resposta (té preferència
         // sobre la GNV: la taula ja respon la pregunta).
+        // Rutes: es decidix amb la primera resposta, encara que després se'n demane una altra amb la GNV o la conjugació.
+        const ruta = args.routeTool && content ? routeIntentOf(content, paths, args.pendingRouteOffer) : undefined;
         let conjugation: VerbConjugation | null | undefined;
         // Un text per a corregir no consulta res: la llista d'errors la mostra el client amb l'anàlisi.
         const correcting = content ? correctTextOf(content) : false;
@@ -443,7 +494,8 @@ export async function replyFromAgent(args: {
         }
         console.log(`[agent] resposta vàlida de ${model}`);
 
-        const { help_text, gnv, consulta_gnv: _, verb_conjugar: __, ...parsed } = outputSchema.parse(parseJsonResponse(content));
+        const { help_text, gnv, consulta_gnv: _, verb_conjugar: __, ruta_id: _r1, ruta_dificultat: _r2, ruta_acceptada: _r3, ...fields } = outputSchema.parse(parseJsonResponse(content));
+        const parsed = ruta ? { ...fields, ruta } : fields;
         // Filtre d'eixida: si la resposta reproduïx el prompt del sistema, no arriba a l'aprenent (ni res del que du
         // associat: exercici, activitat, lliçó o regla de la GNV).
         const leak = detectPromptLeak([parsed.reply_text, help_text, gnv?.contingut, gnv?.explicacio], [messages[0].content]);

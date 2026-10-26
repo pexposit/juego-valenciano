@@ -6,13 +6,13 @@ import { ChatBubble } from './ChatBubble';
 import { VoiceInput } from './VoiceInput';
 import { RobotVoiceMenu, savedRobotVoice } from './RobotVoiceMenu';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
-import { analyzeMessage, ensureSession, fetchErrorCitations, fetchTts, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem, type TextError } from '../lib/api';
-import { addMessages, saveExerciseAnswer } from '../lib/localStore';
+import { analyzeMessage, ensureSession, fetchErrorCitations, fetchTts, generateOwnPath, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem, type TextError } from '../lib/api';
+import { addMessages, saveExerciseAnswer, saveRouteOfferAnswer } from '../lib/localStore';
 import { correctionsText } from '../lib/corrections';
 import { useThinkingSound } from '../lib/useThinkingSound';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { ALL_LESSONS } from '../features/kids/lessons';
-import type { Mood, TutorExercise } from '../lib/types';
+import type { Mood, RouteOffer, TutorExercise } from '../lib/types';
 
 // `transcription`: en un missatge de veu, el que ha entés el model; es mostra davall l'etiqueta del missatge.
 type Message = AssistantConversation['messages'][number] & { transcription?: string };
@@ -21,6 +21,9 @@ type Message = AssistantConversation['messages'][number] & { transcription?: str
 const CHILD_LEVEL = 'A1';
 const VOICE_MESSAGE_LABEL = '🎙️ Missatge de veu';
 const ERROR_REPLY = "No t'he sentit bé, pots repetir-ho?";
+// Rutes d'aprenentatge: si no s'ha pogut preparar la ruta i si l'aprenent diu que no la vol.
+const ROUTE_ERROR_REPLY = "No he pogut preparar la ruta ara mateix. Torna-ho a provar d'ací a un moment.";
+const ROUTE_DECLINED_REPLY = "D'acord! Si més endavant la vols, només m'ho has de dir.";
 const TTS_ATTEMPTS = 2;
 // El professor ho diu en triar una veu nova en el menú del robot, perquè se senta com sona.
 const VOICE_SAMPLE = 'Hola! Ara parle amb esta veu.';
@@ -216,8 +219,52 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
     }
   };
 
+  // Rutes d'aprenentatge: l'aprenent ha contestat l'oferta del tutor (amb els botons o escrivint). Es marca en el xat i
+  // en este navegador perquè no se li tornen a mostrar els botons.
+  const markRouteOffer = (topic: string, answer: 'yes' | 'no') => {
+    setMessages(m => m.map(x => (x.routeOffer?.topic === topic && !x.routeOffer.answer ? { ...x, routeOffer: { ...x.routeOffer, answer } } : x)));
+    void conversation.current
+      ?.then(opened => saveRouteOfferAnswer(opened.session_resource_id, topic, answer))
+      .catch(error => console.error("Error guardant la resposta a l'oferta de ruta:", error));
+  };
+
+  // Afig un missatge del professor que no ve del model (ruta preparada, resposta a «No, gràcies»...) i el guarda.
+  const addTutorMessage = (message: Message) => {
+    setMessages(m => [...m, message]);
+    void conversation.current
+      ?.then(opened => addMessages(opened.session_resource_id, 'tutor', [message]))
+      .catch(error => console.error('Error guardant la conversa:', error));
+  };
+
+  // Prepara la ruta pròpia (l'ha acceptada) i l'enllaça en el xat; tarda com una crida al model.
+  const [buildingRoute, setBuildingRoute] = useState(false);
+  const buildRoute = async (topic: string) => {
+    setBuildingRoute(true);
+    try {
+      const result = await generateOwnPath(topic);
+      if (!mounted.current) return;
+      addTutorMessage(result.status === 'ok' ? { role: 'character', text: result.message, studyPath: result.path } : { role: 'character', text: result.message });
+      void speak(result.message);
+    } catch (error) {
+      console.error('Error preparant la ruta:', error);
+      if (mounted.current) addTutorMessage({ role: 'character', text: ROUTE_ERROR_REPLY });
+    } finally {
+      setBuildingRoute(false);
+    }
+  };
+
+  const answerRouteOffer = (offer: RouteOffer, answer: 'yes' | 'no') => {
+    if (offer.answer || buildingRoute) return;
+    markRouteOffer(offer.topic, answer);
+    if (answer === 'yes') void buildRoute(offer.topic);
+    else addTutorMessage({ role: 'character', text: ROUTE_DECLINED_REPLY });
+  };
+
   const send = async (text: string, voice?: string) => {
-    if ((!text && !voice) || loading || !conversation.current) return;
+    if ((!text && !voice) || loading || buildingRoute || !conversation.current) return;
+    // L'última oferta de ruta encara sense contestar: el tutor sabrà si este missatge l'accepta.
+    const pendingOffer = [...messages].reverse().find(m => m.role === 'character')?.routeOffer;
+    const pendingRouteOffer = pendingOffer && !pendingOffer.answer ? pendingOffer.topic : undefined;
     stopAudio();
     const abort = new AbortController();
     turnAbort.current = abort;
@@ -241,17 +288,21 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         // El tutor del Nivell 0 pot enllaçar una lliçó: el catàleg és ací, així que s'envia (el servidor només el fa servir amb el Nivell 0).
         lessons: ALL_LESSONS.map(l => ({ id: l.id, title: l.title, summary: l.summary })),
         include_audio: false,
+        pending_route_offer: pendingRouteOffer,
       }, abort.signal);
+      // Amb este missatge, l'oferta pendent queda contestada: l'ha acceptada escrivint o ha parlat d'una altra cosa.
+      if (pendingRouteOffer) markRouteOffer(pendingRouteOffer, reply.generate_route ? 'yes' : 'no');
+      const routeOffer = reply.route_offer ? { topic: reply.route_offer } : undefined;
       setMood(reply.mood);
       const said = reply.transcription || text;
       setMessages(m => {
         const next = [...m];
         if (reply.transcription) next[next.length - 1] = { role: 'user', text: VOICE_MESSAGE_LABEL, transcription: reply.transcription };
-        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id }];
+        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, studyPath: reply.study_path, routeOffer, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id }];
       });
       void addMessages(opened.session_resource_id, 'tutor', [
         { role: 'user', text: said || VOICE_MESSAGE_LABEL },
-        { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id },
+        { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, studyPath: reply.study_path, routeOffer, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id },
       ]).catch(error => console.error('Error guardant la conversa:', error));
       // Els errors del xat amb el professor compten per a la ruta, però no es practiquen.
       if (reply.analyze_errors && said) {
@@ -259,6 +310,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         if (reply.correct_text) void showCorrections(opened.session_resource_id, analysis);
       }
       void speak(reply.reply_text);
+      if (reply.generate_route) void buildRoute(reply.generate_route);
     } catch {
       // Aturada per l'usuari: no és un error, simplement no hi ha resposta.
       if (!abort.signal.aborted) setMessages(m => [...m, { role: 'character', text: ERROR_REPLY }]);
@@ -304,13 +356,13 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         >
           {openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold opacity-60">Un moment...</p>}
-          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} conjugacio={m.conjugacio} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} showHelp={showHelp} />)}
-          {(loading || correcting) && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
+          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} conjugacio={m.conjugacio} studyPath={m.studyPath} routeOffer={m.routeOffer} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} onRouteAnswer={answerRouteOffer} showHelp={showHelp} />)}
+          {(loading || correcting || buildingRoute) && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
         </div>
 
         <div className="mt-3 flex items-center gap-3">
           <div className="min-w-0 flex-1">
-            <VoiceInput onSend={send} disabled={!ready || loading || correcting} />
+            <VoiceInput onSend={send} disabled={!ready || loading || correcting || buildingRoute} />
           </div>
           {(sending || correcting) && (
             <button

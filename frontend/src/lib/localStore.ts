@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { GnvRule, TutorActivity, TutorExercise, VerbConjugation } from './types';
+import type { GnvRule, RouteOffer, StudyPathRef, TutorActivity, TutorExercise, VerbConjugation } from './types';
 
 /**
  * Dades de l'usuari que poden ser sensibles (el que escriu o diu): es guarden només en este
@@ -35,6 +35,9 @@ export type LocalMessage = {
   gnv?: GnvRule;
   // Tutor: la conjugació del DNV que ha mostrat (si l'aprenent l'ha demanada).
   conjugacio?: VerbConjugation;
+  // Tutor: la ruta d'aprenentatge que ha enllaçat i l'oferta de preparar-ne una de nova (amb la resposta).
+  studyPath?: StudyPathRef;
+  routeOffer?: RouteOffer;
   // Tutor: l'exercici del catàleg que ha mostrat (amb la resposta de l'aprenent, si ja l'ha feta).
   exercise?: TutorExercise;
   // Tutor: l'activitat que ha enllaçat (si n'hi ha pràctica del tema però no s'ha pogut mostrar l'exercici).
@@ -185,7 +188,7 @@ const byDate = <T extends { createdAt: string }>(a: T, b: T) => a.createdAt.loca
 export async function addMessages(
   conversationId: string,
   kind: ConversationKind,
-  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; createdAt?: string }[],
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; createdAt?: string }[],
 ) {
   const userId = await currentUserId();
   if (!userId || messages.length === 0) return;
@@ -199,6 +202,8 @@ export async function addMessages(
     text: m.text,
     ...(m.gnv ? { gnv: m.gnv } : {}),
     ...(m.conjugacio ? { conjugacio: m.conjugacio } : {}),
+    ...(m.studyPath ? { studyPath: m.studyPath } : {}),
+    ...(m.routeOffer ? { routeOffer: m.routeOffer } : {}),
     ...(m.exercise ? { exercise: m.exercise } : {}),
     ...(m.activity ? { activity: m.activity } : {}),
     ...(m.lessonId ? { lessonId: m.lessonId } : {}),
@@ -251,6 +256,16 @@ export async function saveExerciseAnswer(conversationId: string, exerciseId: str
   const rows = (await getMessages(conversationId))
     .filter(m => m.exercise?.id === exerciseId && !m.exercise.chosen)
     .map(m => ({ ...m, exercise: { ...m.exercise!, chosen } }));
+  await putAll('messages', rows);
+}
+
+/** Guarda com ha contestat l'aprenent l'oferta del tutor de preparar-li una ruta (ja no se li tornen a mostrar els botons). */
+export async function saveRouteOfferAnswer(conversationId: string, topic: string, answer: 'yes' | 'no') {
+  const userId = await currentUserId();
+  if (!userId) return;
+  const rows = (await getMessages(conversationId))
+    .filter(m => m.routeOffer?.topic === topic && !m.routeOffer.answer)
+    .map(m => ({ ...m, routeOffer: { ...m.routeOffer!, answer } }));
   await putAll('messages', rows);
 }
 

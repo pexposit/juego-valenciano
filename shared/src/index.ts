@@ -37,6 +37,19 @@ export const hasPredefinedPaths = (level: string | null | undefined) => !!level 
 /** Nivells amb ruta personalitzada generada per la IA (learning_paths), a més de les predefinides. */
 export const AI_PATH_LEVELS: readonly string[] = ['B1', 'B2', 'C1'];
 export const hasAiPath = (level: string | null | undefined) => !!level && AI_PATH_LEVELS.includes(level);
+/** Una ruta que el tutor del xat enllaça (la que l'aprenent ha demanat o la que li acaba de preparar). */
+export type StudyPathRef = { id: string; title: string; description: string };
+/** Ruta pròpia que el tutor prepara quan l'aprenent ho accepta (POST /api/study-paths/generate). */
+export type OwnPathResult =
+  | { status: 'ok'; path: StudyPathRef; message: string }
+  | { status: 'insufficient' | 'error'; message: string };
+/** Màxim de caràcters del tema d'una ruta pròpia (el que li costa a l'aprenent, segons el tutor). */
+export const OWN_PATH_TOPIC_MAX = 120;
+/** Nivells en què el tutor del xat pot preparar rutes pròpies de l'alumne (study_paths.student_id). */
+export const OWN_PATH_LEVELS: readonly string[] = ['A1', 'A2', 'B1', 'B2', 'C1'];
+export const hasOwnPaths = (level: string | null | undefined) => !!level && OWN_PATH_LEVELS.includes(level);
+/** La pantalla de rutes (/ruta) mostra les rutes de study_paths: predefinides, de classe i pròpies. */
+export const hasStudyPaths = (level: string | null | undefined) => hasPredefinedPaths(level) || hasOwnPaths(level);
 
 /* ── Límits de l'historial de conversa ────────────────────────────────── */
 /* ── Límits del text que avalua un LLM ────────────────────────────────── */

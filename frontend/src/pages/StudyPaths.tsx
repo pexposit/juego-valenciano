@@ -1,23 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, Sparkles } from 'lucide-react';
-import { levelLabel } from '@parlaval/shared';
+import { ChevronRight, Sparkles, Trash2 } from 'lucide-react';
+import { hasPredefinedPaths, levelLabel } from '@parlaval/shared';
 import { ROUTES } from '../data/content';
 import { Logo } from '../components/ui';
 import { LessonModal } from '../components/LessonModal';
-import { fetchMyClasses, fetchResources, fetchStudyPaths } from '../lib/api';
+import { deleteOwnPath, fetchMyClasses, fetchResources, fetchStudyPaths } from '../lib/api';
 import { PathCard, PathDetail } from '../features/paths/PathViews';
 import { studyPathRoute } from '../data/content';
 import type { MyClass, Resource, StudyPath } from '../lib/types';
 
 /**
- * Les rutes de l'alumne, en dos grups: les recomanades (predefinides del nivell: A2, B1 i B2) i les del seu
- * professorat (les que crea la docent per a les classes on és). Un pas està fet quan l'usuari ha acabat
+ * Les rutes de l'alumne, en tres grups: les seues (les que li ha preparat el tutor del xat), les recomanades
+ * (predefinides del nivell: A2, B1 i B2) i les del seu professorat (les que crea la docent per a les classes on és). Un pas està fet quan l'usuari ha acabat
  * l'activitat alguna vegada. En el B1 i el B2, a més, s'hi enllaça la ruta personalitzada de la IA (`onAiPath`).
  */
 export function StudyPaths({ onOpen, onBack, onAiPath }: { onOpen: (resource: Resource) => void; onBack: () => void; onAiPath?: () => void }) {
   // undefined = carregant; null = error.
-  const [data, setData] = useState<{ level: string; paths: StudyPath[] } | null>();
+  const [data, setData] = useState<{ level: string; paths: StudyPath[]; own_paths: StudyPath[] } | null>();
   const [error, setError] = useState<string>();
   // Les classes de l'alumne, amb les rutes que hi ha posat el professorat.
   const [classes, setClasses] = useState<MyClass[]>([]);
@@ -45,9 +45,27 @@ export function StudyPaths({ onOpen, onBack, onAiPath }: { onOpen: (resource: Re
 
   // Les rutes del professorat, per classe; les recomanades són les predefinides.
   const teacherGroups = classes.filter(c => c.paths.length > 0);
-  const allPaths = [...(data?.paths ?? []), ...teacherGroups.flatMap(c => c.paths)];
+  const ownPaths = data?.own_paths ?? [];
+  const allPaths = [...ownPaths, ...(data?.paths ?? []), ...teacherGroups.flatMap(c => c.paths)];
   const selected = allPaths.find(p => p.id === selectedId);
   const selectedClass = selected && teacherGroups.find(c => c.paths.some(p => p.id === selected.id));
+  const selectedOwn = selected && ownPaths.some(p => p.id === selected.id);
+
+  // Esborra una ruta pròpia i torna a la llista.
+  const [deleting, setDeleting] = useState(false);
+  const removeOwn = async (path: StudyPath) => {
+    if (!window.confirm(`Vols esborrar la ruta «${path.title}»? Les activitats que ja has fet continuen comptant.`)) return;
+    setDeleting(true);
+    try {
+      await deleteOwnPath(path.id);
+      setData(d => d && { ...d, own_paths: d.own_paths.filter(p => p.id !== path.id) });
+      navigate(ROUTES.learningpath);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'No hem pogut esborrar la ruta');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <main className="fade-up relative min-h-screen bg-cream text-ink">
@@ -106,18 +124,38 @@ export function StudyPaths({ onOpen, onBack, onAiPath }: { onOpen: (resource: Re
               </button>
             )}
 
-            {/* Grup 1: rutes recomanades (predefinides). */}
-            <section aria-labelledby="paths-recommended" className="flex flex-col gap-3">
-              <h2 id="paths-recommended" className="text-xl font-black">Rutes recomanades</h2>
-              <p className="-mt-2 text-sm opacity-60">Preparades per a tots els qui estan en el teu nivell.</p>
-              {data.paths.length ? (
+            {/* Les rutes pròpies: les que li ha preparat el tutor del xat. */}
+            {ownPaths.length > 0 && (
+              <section aria-labelledby="paths-own" className="flex flex-col gap-3">
+                <h2 id="paths-own" className="text-xl font-black">Les teues rutes</h2>
+                <p className="-mt-2 text-sm opacity-60">Te les ha preparat el professor del xat a partir del que t'ha costat.</p>
                 <ul className="flex flex-col gap-3">
-                  {data.paths.map(path => <PathCard key={path.id} path={path} onSelect={() => navigate(studyPathRoute(path.id))} />)}
+                  {ownPaths.map(path => <PathCard key={path.id} path={path} onSelect={() => navigate(studyPathRoute(path.id))} />)}
                 </ul>
-              ) : (
-                <p className="rounded-[1.5rem] bg-white p-5 text-base opacity-70">Encara no hi ha rutes recomanades per al teu nivell.</p>
-              )}
-            </section>
+              </section>
+            )}
+
+            {/* Grup 1: rutes recomanades (predefinides), en els nivells que en tenen. */}
+            {hasPredefinedPaths(data.level) && (
+              <section aria-labelledby="paths-recommended" className="flex flex-col gap-3">
+                <h2 id="paths-recommended" className="text-xl font-black">Rutes recomanades</h2>
+                <p className="-mt-2 text-sm opacity-60">Preparades per a tots els qui estan en el teu nivell.</p>
+                {data.paths.length ? (
+                  <ul className="flex flex-col gap-3">
+                    {data.paths.map(path => <PathCard key={path.id} path={path} onSelect={() => navigate(studyPathRoute(path.id))} />)}
+                  </ul>
+                ) : (
+                  <p className="rounded-[1.5rem] bg-white p-5 text-base opacity-70">Encara no hi ha rutes recomanades per al teu nivell.</p>
+                )}
+              </section>
+            )}
+
+            {/* Sense cap ruta: com aconseguir-ne. */}
+            {!hasPredefinedPaths(data.level) && ownPaths.length === 0 && teacherGroups.length === 0 && (
+              <p className="rounded-[1.5rem] bg-white p-5 text-base opacity-70">
+                Encara no tens cap ruta. Digues-li al professor del xat què et costa i te'n prepararà una.
+              </p>
+            )}
 
             {/* Grup 2: rutes creades pel professorat, per classe. */}
             {teacherGroups.length > 0 && (
@@ -137,7 +175,16 @@ export function StudyPaths({ onOpen, onBack, onAiPath }: { onOpen: (resource: Re
           </>
         )}
 
-        {selected && <PathDetail path={selected} eyebrow={selectedClass ? `Ruta de la classe ${selectedClass.name}` : 'Ruta recomanada'} catalog={catalog} onOpen={onOpen} onLesson={setLesson} />}
+        {selected && <PathDetail path={selected} eyebrow={selectedClass ? `Ruta de la classe ${selectedClass.name}` : selectedOwn ? 'La teua ruta' : 'Ruta recomanada'} catalog={catalog} onOpen={onOpen} onLesson={setLesson} />}
+        {selected && selectedOwn && (
+          <button
+            onClick={() => removeOwn(selected)}
+            disabled={deleting}
+            className="btn-press flex items-center gap-2 self-center rounded-full bg-white px-5 py-2 text-sm font-extrabold text-red-600 shadow-sm ring-2 ring-red-200 hover:ring-red-400 disabled:opacity-50"
+          >
+            <Trash2 size={16} aria-hidden /> Esborrar esta ruta
+          </button>
+        )}
       </div>
 
       {lesson && (

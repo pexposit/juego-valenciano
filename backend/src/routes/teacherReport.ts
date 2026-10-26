@@ -132,7 +132,7 @@ teacherReportRouter.get('/api/teacher/classes/:classId/routes', requireAuth, asy
     // Les de la docent per a esta classe i les predefinides dels nivells de la classe.
     const [classPaths, predefinedPaths] = await Promise.all([
       client.from('study_paths').select(columns).eq('class_id', req.params.classId).order('created_at'),
-      client.from('study_paths').select(columns).is('teacher_id', null).is('class_id', null).in('level', klass.levels as string[]).order('sort_order'),
+      client.from('study_paths').select(columns).is('teacher_id', null).is('class_id', null).is('student_id', null).in('level', klass.levels as string[]).order('sort_order'),
     ]);
     if (classPaths.error) throw classPaths.error;
     if (predefinedPaths.error) throw predefinedPaths.error;

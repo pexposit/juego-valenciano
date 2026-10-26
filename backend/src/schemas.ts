@@ -3,6 +3,7 @@ import {
   HISTORY_MAX_MESSAGES,
   LEVELS,
   MESSAGE_MAX_CHARS,
+  OWN_PATH_TOPIC_MAX,
 } from '@parlaval/shared';
 
 // Els escenaris viuen a la BDD (resources.type): ací només es valida la forma
@@ -32,6 +33,8 @@ export const turnSchema = z.object({
     title: z.string().max(120),
     summary: z.string().max(200).optional().default(''),
   })).max(80).optional().default([]),
+  // Tutor: el tema de la ruta que va oferir en el torn anterior, si l'aprenent encara no l'ha contestada.
+  pending_route_offer: z.string().trim().max(OWN_PATH_TOPIC_MAX).optional(),
 });
 
 export const ttsSchema = z.object({

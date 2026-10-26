@@ -1,15 +1,16 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Check, Dumbbell, ExternalLink, Puzzle, SpellCheck, Table, Tag, X } from 'lucide-react';
+import { BookOpen, Check, ChevronRight, Dumbbell, ExternalLink, Puzzle, Route, Sparkles, SpellCheck, Table, Tag, X } from 'lucide-react';
 import { isGroupLine, isItemLine, parseCorrections, type CorrectionGroup } from '../lib/corrections';
-import { activityRoute, KIDS_ROUTES, practiceRoute } from '../data/content';
+import { activityRoute, KIDS_ROUTES, practiceRoute, studyPathRoute } from '../data/content';
 import { lessonById } from '../features/kids/lessons';
-import type { GnvRule, TutorActivity, TutorExercise, VerbConjugation } from '../lib/types';
+import type { GnvRule, RouteOffer, StudyPathRef, TutorActivity, TutorExercise, VerbConjugation } from '../lib/types';
 
 // Bombolla d'un missatge del xat amb el tutor. En els missatges del professor, la primera línia és en
 // valencià i la resta, en gris clar, l'ajuda en la llengua materna del xiquet (amagada si `showHelp` és fals).
 // Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial; si li han demanat la
-// conjugació d'un verb, la taula del DNV.
-export function ChatBubble({ role, text, transcription, gnv, conjugacio, exercise, activity, lessonId, onAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; conjugacio?: VerbConjugation; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; showHelp?: boolean }) {
+// conjugació d'un verb, la taula del DNV. Si li ha enllaçat una ruta d'aprenentatge, la targeta per a obrir-la; si li
+// ha oferit preparar-ne una, la pregunta amb els botons (`onRouteAnswer`; sense, com en l'historial, només el text).
+export function ChatBubble({ role, text, transcription, gnv, conjugacio, studyPath, routeOffer, exercise, activity, lessonId, onAnswer, onRouteAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; onRouteAnswer?: (offer: RouteOffer, answer: 'yes' | 'no') => void; showHelp?: boolean }) {
   const [valencian, ...rest] = role === 'character' ? text.split('\n') : [text];
   // Correcció d'un text: després de la primera línia, una línia per error numerada («1) ...»), que es mostra com a llista.
   // La resta de línies són l'ajuda en la llengua materna.
@@ -28,6 +29,8 @@ export function ChatBubble({ role, text, transcription, gnv, conjugacio, exercis
       {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-[0.85em] font-semibold text-slate-400">{help.join('\n')}</p>}
       {gnv && <GnvRuleCard rule={gnv} />}
       {conjugacio && <ConjugationCard conjugation={conjugacio} />}
+      {studyPath && <StudyPathLink path={studyPath} />}
+      {routeOffer && <RouteOfferCard offer={routeOffer} onAnswer={onRouteAnswer} />}
       {lessonId && <LessonLink lessonId={lessonId} />}
       {exercise && <ExerciseCard exercise={exercise} onAnswer={onAnswer} />}
       {!exercise && activity && (
@@ -115,6 +118,41 @@ function GnvRuleCard({ rule }: { rule: GnvRule }) {
           ))}
         </div>
       </details>
+    </section>
+  );
+}
+
+// Ruta d'aprenentatge que el tutor enllaça: s'obri en /ruta/<id>, amb el progrés.
+function StudyPathLink({ path }: { path: StudyPathRef }) {
+  return (
+    <Link to={studyPathRoute(path.id)} className="btn-press mt-3 flex items-center gap-3 rounded-xl bg-white/80 px-3 py-2 text-[0.9em] ring-2 ring-teal/30 hover:ring-teal">
+      <Route size={22} className="shrink-0 text-teal" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[0.8em] font-extrabold uppercase tracking-wide text-teal">Ruta d'aprenentatge</span>
+        <span className="block font-extrabold text-slate-800">{path.title}</span>
+        {path.description && <span className="block text-[0.8em] font-medium text-slate-500">{path.description}</span>}
+      </span>
+      <span className="flex shrink-0 items-center text-[0.8em] font-extrabold text-teal">Anar a la ruta <ChevronRight size={18} aria-hidden /></span>
+    </Link>
+  );
+}
+
+// El tutor li ofereix preparar una ruta sobre el que li costa: es contesta amb els botons o escrivint (sí / no).
+function RouteOfferCard({ offer, onAnswer }: { offer: RouteOffer; onAnswer?: (offer: RouteOffer, answer: 'yes' | 'no') => void }) {
+  return (
+    <section aria-label="Oferta de ruta d'aprenentatge" className="mt-3 rounded-xl bg-white/80 p-3 text-[0.9em] ring-2 ring-teal/30">
+      <p className="flex items-start gap-2 font-extrabold text-slate-800">
+        <Sparkles size={18} className="mt-0.5 shrink-0 text-teal" aria-hidden />
+        <span>Vols que et prepare una ruta d'aprenentatge per a treballar «{offer.topic}»?</span>
+      </p>
+      {offer.answer ? (
+        <p className="mt-2 text-[0.8em] font-semibold text-slate-500">{offer.answer === 'yes' ? 'Has dit que sí.' : 'Has dit que no.'}</p>
+      ) : onAnswer && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button onClick={() => onAnswer(offer, 'yes')} className="btn-press rounded-full bg-teal px-4 py-1.5 font-extrabold text-white hover:bg-teal/90">Sí, prepara-la</button>
+          <button onClick={() => onAnswer(offer, 'no')} className="btn-press rounded-full bg-white px-4 py-1.5 font-extrabold text-slate-600 ring-2 ring-slate-200 hover:ring-slate-300">No, gràcies</button>
+        </div>
+      )}
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CHAT_CATEGORIES, hasAiPath, hasPredefinedPaths, isKidsLevel0, isTranslatedTongue } from '@parlaval/shared';
+import { CHAT_CATEGORIES, hasAiPath, hasStudyPaths, isKidsLevel0, isTranslatedTongue } from '@parlaval/shared';
 import type { User } from '@supabase/supabase-js';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ScenarioSelect } from './components/ScenarioSelect';
@@ -416,8 +416,8 @@ export function App() {
           path={ROUTES.learningpath}
           element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
             <PageTransition>
-              {/* A2, B1 i B2: rutes predefinides (en el B1 i el B2, amb un enllaç a la de la IA); la resta de nivells, la ruta de la IA. */}
-              {hasPredefinedPaths(level) ? (
+              {/* De l'A1 al C1: rutes de study_paths (predefinides en l'A2, el B1 i el B2, de classe i pròpies), amb un enllaç a la de la IA on n'hi ha; la resta de nivells, la ruta de la IA. */}
+              {hasStudyPaths(level) ? (
                 <StudyPaths
                   onOpen={resource => {
                     const route = activityRoute(resource);
@@ -442,8 +442,8 @@ export function App() {
           path={`${ROUTES.learningpath}/:pathId`}
           element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
             <PageTransition>
-              {/* A2, B1 i B2: rutes predefinides (en el B1 i el B2, amb un enllaç a la de la IA); la resta de nivells, la ruta de la IA. */}
-              {hasPredefinedPaths(level) ? (
+              {/* De l'A1 al C1: rutes de study_paths (predefinides en l'A2, el B1 i el B2, de classe i pròpies), amb un enllaç a la de la IA on n'hi ha; la resta de nivells, la ruta de la IA. */}
+              {hasStudyPaths(level) ? (
                 <StudyPaths
                   onOpen={resource => {
                     const route = activityRoute(resource);
