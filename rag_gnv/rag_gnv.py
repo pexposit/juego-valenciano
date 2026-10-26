@@ -16,16 +16,19 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
+from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 BASE_DIR = Path(__file__).parent
+# La OPENAI_API_KEY és la del backend (backend/.env); les variables ja definides en l'entorn manen.
+load_dotenv(BASE_DIR.parent / "backend" / ".env")
 # La GNV és la mateixa que fa servir la resta de l'app (assets-src/avl/gnv.txt).
 SOURCE_FILE = Path(os.environ.get("RAG_GNV_SOURCE", BASE_DIR.parent / "assets-src" / "avl" / "gnv.txt"))
 INDEX_DIR = Path(os.environ.get("RAG_GNV_INDEX_DIR", BASE_DIR / "index_gnv"))
-EMBEDDING_MODEL = "BAAI/bge-m3"
+EMBEDDING_MODEL = os.environ.get("RAG_GNV_EMBEDDING_MODEL", "text-embedding-3-small")
 RERANKER_MODEL = "BAAI/bge-reranker-v2-m3"
 
 
@@ -37,7 +40,7 @@ def _default_device() -> str:
         return "cpu"
 
 
-# en fp16 (~1,1 GB) cabe junto a bge-m3 en una GPU de 4 GB; con "cpu" va muy lento
+# en fp16 ocupa ~1,1 GB de GPU (los embeddings van por la API de OpenAI); con "cpu" va muy lento
 RERANKER_DEVICE = os.environ.get("RAG_GNV_DEVICE") or _default_device()
 RERANK_POOL = 50        # hijos candidatos (tras la fusión vectores + BM25) que pasan por el reranker
 CANDIDATES_PER_SEARCH = 30  # hijos que aporta cada búsqueda (vectores y BM25) antes de fusionar
@@ -178,7 +181,11 @@ class GNVRetriever:
 
     def search_children(self, query: str, k: int = CANDIDATES_PER_SEARCH) -> list[Document]:
         """Fusión RRF de la búsqueda vectorial y la léxica (BM25) sobre los hijos."""
-        vec = self.vectorstore.similarity_search(query, k=k)
+        try:
+            vec = self.vectorstore.similarity_search(query, k=k)
+        except Exception as error:  # la API de embeddings no respon: es continua només amb BM25
+            print(f"⚠️ Embeddings no disponibles ({error}); recerca només amb BM25", flush=True)
+            vec = []
         lex = [self.children[i] for i in self.bm25.top(query, k)]
         score: dict[str, float] = {}
         by_id: dict[str, Document] = {}
@@ -287,10 +294,7 @@ def load_retriever(force_rebuild: bool = False, verbose: bool = True) -> GNVRetr
     sig_file = INDEX_DIR / "signature.txt"
     up_to_date = sig_file.exists() and sig_file.read_text() == signature
 
-    log("⌛ Cargando modelo de embeddings...")
-    embeddings = HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL, encode_kwargs={"normalize_embeddings": True}
-    )
+    embeddings = OpenAIEmbeddings(model=EMBEDDING_MODEL, timeout=10, max_retries=2)
     vectorstore = Chroma(
         collection_name="gnv_children",
         embedding_function=embeddings,

@@ -72,18 +72,19 @@ async function loadCatalog(): Promise<CatalogResource[]> {
  * una de pare o de fill (5.1 per a 5.1.3).
  */
 export function resourcesCitingGnv(catalog: CatalogResource[], sections: string[]): CatalogResource[] {
+  return gnvCitationGroups(catalog, sections)[0] ?? [];
+}
+
+// Tots els grups de resourcesCitingGnv, en el mateix ordre: si el primer només té exercicis d'un nivell superior al de
+// l'aprenent, el següent pot tindre'n del seu (p. ex. «s/ss» cita la 4.2.2 en C1 i la 4.3 en B2).
+function gnvCitationGroups(catalog: CatalogResource[], sections: string[]): CatalogResource[][] {
   const cites = (r: CatalogResource, test: (section: string) => boolean) =>
     (r.sources ?? []).some(src => src.gram === 'GNV' && typeof src.section === 'string' && test(src.section));
   const related = (a: string, b: string) => a.startsWith(`${b}.`) || b.startsWith(`${a}.`);
-  for (const section of sections.filter(Boolean)) {
-    const exact = catalog.filter(r => cites(r, x => x === section));
-    if (exact.length) return exact;
-  }
-  for (const section of sections.filter(Boolean)) {
-    const near = catalog.filter(r => cites(r, x => related(x, section)));
-    if (near.length) return near;
-  }
-  return [];
+  const groups: CatalogResource[][] = [];
+  for (const section of sections.filter(Boolean)) groups.push(catalog.filter(r => cites(r, x => x === section)));
+  for (const section of sections.filter(Boolean)) groups.push(catalog.filter(r => cites(r, x => related(x, section))));
+  return groups.filter(group => group.length > 0);
 }
 
 // Activitats el nom de les quals parla del tema (paraules senceres).
@@ -201,8 +202,18 @@ export async function pickTutorExercise(
   // aconseguix decidix: si no hi ha exercicis del nivell de l'aprenent, no se'n mostra cap en lloc de
   // baixar a un criteri més fluix (que hi posaria un exercici de qualsevol cosa).
   const viaResources = async (resources: CatalogResource[]) => ({ found: resources.length > 0, rows: await fromResources(resources) });
+  // Per seccions de la GNV, el primer grup amb exercicis que l'aprenent ja pot fer; si cap en té, el primer (massa prompte).
+  const viaGnv = async () => {
+    let first: { found: boolean; rows: Row[] } | undefined;
+    for (const group of gnvCitationGroups(catalog, gnvSections)) {
+      const result = await viaResources(group);
+      first ??= result;
+      if (closestLevel(result.rows, level).length > 0) return result;
+    }
+    return first ?? { found: false, rows: [] };
+  };
   const attempts: [string, () => Promise<{ found: boolean; rows: Row[] }>][] = [
-    ['secció GNV', () => viaResources(resourcesCitingGnv(catalog, gnvSections))],
+    ['secció GNV', viaGnv],
     ["nom d'activitat", () => viaResources(resourcesNamedLike(catalog, topic))],
     ['text dels exercicis', async () => {
       const wanted = words(topic);

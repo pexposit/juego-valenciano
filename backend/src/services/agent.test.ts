@@ -17,7 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 /**
  * Devuelve el módulo agent reimportado con estado determinista:
  * resetea la caché de módulos y garantiza que OPENAI_MODELS sea
- * ['gpt-5.6-luna', 'gpt-4o-mini', 'gpt-4o'] (sin OPENAI_MODEL definido), sea cual
+ * ['gpt-5.6-luna'] (sin OPENAI_MODEL definido), sea cual
  * sea el entorno donde se ejecuten los tests.
  */
 async function loadAgent(options: { model?: string } = {}) {

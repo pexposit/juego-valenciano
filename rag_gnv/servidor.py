@@ -11,7 +11,7 @@ Només l'usa el backend (el tutor), igual que el classificador: no té autentica
                       mensaje i fuentes [{seccion, ruta, etiqueta, puntuacion, texto}]
 
 Ús:  python servidor.py            (port RAG_GNV_PORT, per defecte 8010)
-Els models (bge-m3 i el reranker) es carreguen en arrancar, perquè la primera pregunta no tarde.
+El reranker es carrega en arrancar (els embeddings són de l'API d'OpenAI), perquè la primera pregunta no tarde.
 """
 import json
 import os
