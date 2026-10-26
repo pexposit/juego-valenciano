@@ -2,7 +2,7 @@ import { ArrowUp, Mic, Square } from 'lucide-react'; import { useRef,useState } 
 // En lloc de l'àudio s'envia este valor quan la gravació és silenci: el backend (routes/turn.ts) no el transcriu,
 // perquè whisper amb silenci s'inventa frases («Gràcies per veure'ns», «Bona nit»...). Un micròfon sense so dóna ~0,0002 i
 // el soroll d'una sala, uns centèsims; la veu normal, molt per damunt de 0,05.
-const SILENT_AUDIO='silence'; const SILENCE_PEAK=0.05;
+const SILENT_AUDIO='silence'; export const SILENCE_PEAK=0.05;
 // Volum màxim (0-1) de la gravació ja feta, o null si no es pot descodificar (llavors s'envia igualment).
 async function peakVolume(blob:Blob):Promise<number|null>{const ctx=new AudioContext();try{const audio=await ctx.decodeAudioData(await blob.arrayBuffer());let peak=0;for(let c=0;c<audio.numberOfChannels;c++)for(const v of audio.getChannelData(c))peak=Math.max(peak,Math.abs(v));return peak}catch{return null}finally{void ctx.close()}}
 // `voiceOnly`: només es pot parlar (Expressió oral), sense el camp de text.

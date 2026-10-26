@@ -8,7 +8,8 @@ import { LEVEL_CEFR, normalizeAnswer, PRACTICE_AREAS, type LevelKey, type Practi
 import { Logo } from '../components/ui';
 import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, WritingExercise } from '../components/ExamExercises';
 import { evaluatePracticeExercise, fixedKey, fetchUserErrors, recordPracticeAnswers, restartActivity, saveActivityResult } from '../lib/api';
-import type { ExamQuestion, Practice as PracticeResource, PracticeExercise, PracticePassage, WritingEvaluation } from '../lib/types';
+import { PronunciationExercise } from '../components/PronunciationExercise';
+import type { ExamQuestion, Practice as PracticeResource, PracticeExercise, PracticePassage, PronunciationResult, WritingEvaluation } from '../lib/types';
 
 type Progress = {
   answers: Record<string, string>; // preguntes tancades: id de l'exercici -> resposta
@@ -17,8 +18,9 @@ type Progress = {
   writings: Record<string, string>; // redaccions: id -> text
   forms: Record<string, Record<string, string>>; // formularis: id -> camp -> valor
   evaluations: Record<string, WritingEvaluation>; // avaluació amb IA per exercici
+  pronunciations: Record<string, PronunciationResult>; // última lectura en veu alta corregida, per exercici
 };
-const EMPTY: Progress = { answers: {}, checked: false, retry: {}, writings: {}, forms: {}, evaluations: {} };
+const EMPTY: Progress = { answers: {}, checked: false, retry: {}, writings: {}, forms: {}, evaluations: {}, pronunciations: {} };
 
 // El progrés es guarda al navegador per nivell, com el dels exàmens.
 const storageKey = (id: string, level: string) => userKey(`practice:${id}:${level}`);
@@ -311,6 +313,18 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
             checked={isDone(e.id)}
             correct={isCorrect(e, undefined, answers[e.id])}
             solution={e.answers[0]}
+          />
+        );
+      case 'pronunciation':
+        return (
+          <PronunciationExercise
+            n={n}
+            exerciseId={e.id}
+            prompt={e.prompt}
+            text={e.task.text}
+            explanation={e.explanation}
+            result={progress.pronunciations[e.id]}
+            onResult={result => setProgress(p => ({ ...p, pronunciations: { ...p.pronunciations, [e.id]: result } }))}
           />
         );
       case 'writing':
