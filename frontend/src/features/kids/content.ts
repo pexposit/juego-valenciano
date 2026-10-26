@@ -181,18 +181,21 @@ export const COLOR_THINGS: { thing: KidsItem; color: string }[] = [
   { thing: { id: 'nuvol', word: 'el núvol', emoji: '☁️' }, color: 'blanc' },
 ];
 
-export type TraceLetter = { id: string; glyph: string; word: string; emoji: string; say: string };
+// `rec`: la grafia té el so gravat (/audio/lletres/so-<rec>.mp3, el que diu `say`) i la paraula d'exemple
+// (/audio/lletres/paraula-<rec>.mp3, sense l'article).
+export type TraceLetter = { id: string; glyph: string; word: string; emoji: string; say: string; rec?: string };
 
-// Traçat de grafies especials: la lletra, el so exagerat i una paraula d'exemple.
+// Traçat de grafies especials: la lletra, el so en tres paraules (gravades del Diccionari normatiu valencià de l'AVL:
+// el TTS no les pronunciava bé) i una paraula d'exemple.
 export const LETTERS: TraceLetter[] = [
-  { id: 'ç', glyph: 'ç', word: 'el braç', emoji: '💪', say: 'La ce trencada! Sss! Com en el braç!' },
-  { id: 'ny', glyph: 'ny', word: 'la pinya', emoji: '🍍', say: 'Nya, nye, nyi! Com en la pinya!' },
-  { id: 'tx', glyph: 'tx', word: 'el cotxe', emoji: '🚗', say: 'Txe, txe, txe! Com en el cotxe!' },
-  { id: 'tg', glyph: 'tg', word: 'el metge', emoji: '🧑‍⚕️', say: 'La te i la ge, juntes! Com en el metge!' },
-  { id: 'll', glyph: 'll', word: 'la lluna', emoji: '🌙', say: 'Lla, lle, lli! Com en la lluna!' },
-  { id: 'lgeminada', glyph: 'l·l', word: 'el col·legi', emoji: '🏫', say: 'La ela geminada! Com en el col·legi!' },
-  { id: 'ix', glyph: 'ix', word: 'el peix', emoji: '🐟', say: 'Ix, ix, ix! Com en el peix!' },
-  { id: 'gu', glyph: 'gu', word: 'la guitarra', emoji: '🎸', say: 'Gui, gue! Com en la guitarra!' },
+  { id: 'ç', glyph: 'ç', word: 'el braç', emoji: '💪', say: 'Ce trencada! Braç, plaça, cançó.', rec: 'c-trencada' },
+  { id: 'ny', glyph: 'ny', word: 'la pinya', emoji: '🍍', say: 'Pinya, muntanya, any.', rec: 'ny' },
+  { id: 'tx', glyph: 'tx', word: 'el cotxe', emoji: '🚗', say: 'Cotxe, fletxa, despatx.', rec: 'tx' },
+  { id: 'tg', glyph: 'tg', word: 'el metge', emoji: '🧑‍⚕️', say: 'Metge, viatge, jutge.', rec: 'tg' },
+  { id: 'll', glyph: 'll', word: 'la lluna', emoji: '🌙', say: 'Lluna, cavall, ull.', rec: 'll' },
+  { id: 'lgeminada', glyph: 'l·l', word: 'el col·legi', emoji: '🏫', say: 'Col·legi, il·lusió, pel·lícula.', rec: 'l-geminada' },
+  { id: 'ix', glyph: 'ix', word: 'el peix', emoji: '🐟', say: 'Peix, caixa, baix.', rec: 'ix' },
+  { id: 'gu', glyph: 'gu', word: 'la guitarra', emoji: '🎸', say: 'Guitarra, guerra, guineu.', rec: 'gu' },
 ];
 
 // L'abecedari: cada lletra (en majúscula, com a l'escola infantil), el seu nom i una paraula.
@@ -391,6 +394,16 @@ for (const l of ALPHABET) {
   KIDS_AUDIO[`comenca-${l.letter}`] = `${capital(l.word)}! Amb quina lletra comença?`;
   KIDS_AUDIO[`w-abc-${l.letter}`] = `${capital(l.name)}!`;
 }
+
+// Frases que sonen amb una gravació (/audio/lletres/<fitxer>.mp3) en compte de la veu sintètica: els noms de les
+// lletres i els sons de les grafies especials, del Diccionari normatiu valencià de l'AVL.
+export const KIDS_RECORDED: Record<string, string> = {};
+for (const l of LETTERS) {
+  if (!l.rec) continue;
+  KIDS_RECORDED[`lletra-${l.id}`] = `so-${l.rec}`;
+  KIDS_RECORDED[`w-lletra-${l.id}`] = `paraula-${l.rec}`;
+}
+for (const l of ALPHABET) KIDS_RECORDED[`w-abc-${l.letter}`] = KIDS_RECORDED[`lletra-abc-${l.letter}`] = l.letter;
 
 // Jocs nous: parelles, ordre, classificar, més i menys.
 Object.assign(KIDS_AUDIO, {

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { fetchKidsVoice } from '../../lib/api';
-import { KIDS_AUDIO } from './content';
+import { KIDS_AUDIO, KIDS_RECORDED } from './content';
 import { LESSON_AUDIO } from './lessons';
 
 /**
@@ -60,9 +60,13 @@ function play(src: string): Promise<boolean> {
   });
 }
 
+// «La be, de la balena!» (abc-de-b): el nom de la lletra gravat i després la paraula («La balena!», w-lletra-abc-b).
+const LETTER_THEN_WORD = /^abc-de-([a-z])$/;
+
 /**
  * Diu una frase. Para la que sonava. Es resol quan acaba (o si falla) amb true
- * si ningú l'ha interrompuda. Els xiquets no llegixen: primer prova la veu catalana del
+ * si ningú l'ha interrompuda. Els xiquets no llegixen: els noms de les lletres i els sons de
+ * les grafies sonen gravats (KIDS_RECORDED); la resta, primer amb la veu catalana del
  * navegador; si no n'hi ha, el fitxer; si falta el fitxer, el TTS del servidor i, si tampoc
  * respon, qualsevol veu del navegador.
  */
@@ -73,6 +77,12 @@ export function say(key: string): Promise<boolean> {
   const live = () => mine === token;
   setVoiceState('loading');
   return (async () => {
+    const letter = LETTER_THEN_WORD.exec(key)?.[1];
+    const recorded = letter ?? KIDS_RECORDED[key];
+    if (recorded && (await play(`/audio/lletres/${recorded}.mp3`))) {
+      return letter ? live() && say(`w-lletra-abc-${letter}`) : live();
+    }
+    if (!live()) return false;
     const text = phraseText(key);
     const voice = text ? await catalanVoice() : null;
     if (!live()) return false;
