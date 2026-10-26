@@ -3,7 +3,7 @@ import { getMcpTools } from './subagentErrorDetector.js';
 
 /**
  * Conjugació d'un verb segons el DNV de l'AVL, per al tutor del xat. Es demana a la ferramenta `consultar_conjugacio`
- * del servidor MCP (mcp/ErrorDetector), que torna la taula estructurada (structuredContent) a més del text.
+ * del servidor MCP (workspace mcp/, per HTTP), que torna la taula estructurada (structuredContent) a més del text.
  */
 
 // mode -> temps -> formes (6 persones en els temps personals; en l'imperatiu la 1a és buida).
