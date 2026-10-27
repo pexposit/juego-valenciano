@@ -19,11 +19,17 @@
 	}
 }
 
-# {$DOMAIN} amb un domini real (p. ex. parlaval.example.com) → HTTPS automàtic
-# amb Let's Encrypt. Amb `localhost` usa un certificat local (avís al navegador),
-# útil per a provar-ho a la teua màquina.
-{$DOMAIN} {
+# {$SITE_ADDRESS} (per defecte, DOMAIN) amb un domini real (p. ex. parlaval.example.com)
+# → HTTPS automàtic amb Let's Encrypt. Amb `localhost` usa un certificat local (avís al
+# navegador), útil per a provar-ho a la teua màquina. Darrere d'un proxy que ja fa HTTPS,
+# SITE_ADDRESS=http:// (HTTP pla, sense certificat).
+{$SITE_ADDRESS} {
 	encode zstd gzip
+
+	# Darrere d'un proxy amb subruta (BASE_PATH, p. ex. /parlaval) el proxy reenvia
+	# /parlaval/...: es lleva ací el prefix i la resta de rutes queden igual. Si el
+	# proxy ja l'ha llevat, o no hi ha BASE_PATH (val `/`), no canvia res.
+	uri strip_prefix {$BASE_PATH}
 
 	import supabase
 

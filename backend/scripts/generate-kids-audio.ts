@@ -9,9 +9,9 @@
  *                                       (per a reprendre una regeneració --force que s'ha interromput)
  *   npx tsx scripts/generate-kids-audio.ts --check   # només comprova que no en falte cap (ix amb error si en falten)
  *
- * Veu: la de Doraemon (`rvc:doraemon`, del laboratori de veu: cal SPEECH_LAB_URL i el laboratori en marxa). Es pot canviar
- * amb KIDS_AUDIO_VOICE (p. ex. KIDS_AUDIO_VOICE=gina per a la del DeepLab). Si la veu no està disponible, el script falla:
- * mai no guarda una veu en compte d'una altra.
+ * Veu: gina del DeepLab de la UJI (`remot:gina`: hi va sempre, encara que hi haja SPEECH_LAB_URL). Es pot canviar amb
+ * KIDS_AUDIO_VOICE (p. ex. KIDS_AUDIO_VOICE=rvc:doraemon, del laboratori de veu: cal SPEECH_LAB_URL i el laboratori en
+ * marxa). Si la veu no està disponible, el script falla: mai no guarda una veu en compte d'una altra.
  *
  * El TTS no suporta bé peticions simultànies: les frases es demanen d'una en una.
  * De tant en tant el servidor respon 500 a una frase que després genera bé: cada
@@ -27,7 +27,16 @@ import { KIDS_AUDIO } from '../../frontend/src/features/kids/content.js';
 import { LESSON_AUDIO } from '../../frontend/src/features/kids/lessons.js';
 
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../frontend/public/audio/kids');
-const VOICE = process.env.KIDS_AUDIO_VOICE || 'rvc:doraemon';
+const VOICE = process.env.KIDS_AUDIO_VOICE || 'remot:gina';
+// Un número tot sol («Sis!») el Matxa el diu massa ràpid (≈0,1-0,2 s) i fluix: amb l'article («El sis!», «L'onze!») ix
+// sencer i clar. El text de la frase (i el subtítol) no canvia; només el que es demana al TTS.
+const NUMBERS = new Set(['u', 'dos', 'tres', 'quatre', 'cinc', 'sis', 'set', 'huit', 'nou', 'deu', 'onze', 'dotze', 'tretze',
+  'catorze', 'quinze', 'setze', 'dèsset', 'díhuit', 'dènou', 'vint', 'zero']);
+function spokenText(text: string) {
+  const word = text.replace(/[!.\s]/g, '').toLowerCase();
+  if (!NUMBERS.has(word)) return text;
+  return /^[aeiouàèéíòóú]/.test(word) && word !== 'u' ? `L'${word}!` : `El ${word}!`;
+}
 const force = process.argv.includes('--force');
 const check = process.argv.includes('--check');
 // --since=<data>: amb --force, es salten els fitxers ja modificats des d'eixa data (una regeneració interrompuda es reprén).
@@ -70,7 +79,7 @@ async function main() {
 
 async function synthesizeWithRetry(text: string, attempts = 4) {
   for (let i = 0; i < attempts; i++) {
-    const audio = await tts.synthesize(text, VOICE, { fallback: false });
+    const audio = await tts.synthesize(spokenText(text), VOICE, { fallback: false });
     if (audio) return audio;
     await new Promise(r => setTimeout(r, 2000 * (i + 1)));
   }

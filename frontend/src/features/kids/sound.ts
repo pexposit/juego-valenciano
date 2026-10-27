@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { fetchKidsVoice } from '../../lib/api';
 import { KIDS_AUDIO, KIDS_RECORDED } from './content';
 import { LESSON_AUDIO } from './lessons';
+import { asset } from '../../lib/basePath';
 
 /**
  * So del Nivell 0: les frases pregenerades amb la veu del personatge (/audio/kids/<clau>.wav);
@@ -79,12 +80,12 @@ export function say(key: string): Promise<boolean> {
   return (async () => {
     const letter = LETTER_THEN_WORD.exec(key)?.[1];
     const recorded = letter ?? KIDS_RECORDED[key];
-    if (recorded && (await play(`/audio/lletres/${recorded}.mp3`))) {
+    if (recorded && (await play(asset(`/audio/lletres/${recorded}.mp3`)))) {
       return letter ? live() && say(`w-lletra-abc-${letter}`) : live();
     }
     if (!live()) return false;
     const text = phraseText(key);
-    if (await play(`/audio/kids/${encodeURIComponent(key)}.wav`)) return live();
+    if (await play(asset(`/audio/kids/${encodeURIComponent(key)}.wav`))) return live();
     if (!live()) return false;
     const voice = text ? await catalanVoice() : null;
     if (!live()) return false;

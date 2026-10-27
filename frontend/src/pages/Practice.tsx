@@ -10,6 +10,7 @@ import { ChoiceExercise, FormExercise, QuestionNumber, WritingEvaluationPanel, W
 import { evaluatePracticeExercise, fixedKey, fetchUserErrors, recordPracticeAnswers, restartActivity, saveActivityResult } from '../lib/api';
 import { PronunciationExercise } from '../components/PronunciationExercise';
 import type { ExamQuestion, Practice as PracticeResource, PracticeExercise, PracticePassage, PronunciationResult, WritingEvaluation } from '../lib/types';
+import { asset } from '../lib/basePath';
 
 type Progress = {
   answers: Record<string, string>; // preguntes tancades: id de l'exercici -> resposta
@@ -581,7 +582,7 @@ function Passage({ passage, showTranscript }: { passage: PracticePassage; showTr
           <p className="text-sm opacity-60">Escolta'l dues vegades abans de respondre.</p>
         </div>
         {passage.audio_url ? (
-          <audio controls preload="metadata" src={passage.audio_url} className="w-full sm:w-72" aria-label={`Àudio: ${passage.title ?? ''}`} />
+          <audio controls preload="metadata" src={asset(passage.audio_url)} className="w-full sm:w-72" aria-label={`Àudio: ${passage.title ?? ''}`} />
         ) : (
           <p className="text-sm font-bold opacity-50">Àudio pròximament disponible</p>
         )}

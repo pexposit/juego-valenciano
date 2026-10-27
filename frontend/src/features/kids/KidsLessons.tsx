@@ -10,6 +10,7 @@ import { phraseText, say, sfxCorrect, sfxFanfare, sfxTick, stopVoice, useVoiceSt
 import { AudioLoading, useDelayedFlag } from '../../components/AudioLoading';
 import { Translation, useKidsTranslation } from './translations';
 import './kids.css';
+import { asset } from '../../lib/basePath';
 
 /* ── Peces comunes ────────────────────────────────────────────────────── */
 
@@ -303,7 +304,7 @@ function SentencesPage({ page, onReady }: PageProps<'sentences'>) {
             <span className="kid-sentence-chips" aria-hidden="true">
               {sentence.chips.map(chip => (
                 <span key={chip.word} className="kid-sentence-chip">
-                  <img src={chip.image} alt="" draggable={false} />
+                  <img src={asset(chip.image)} alt="" draggable={false} />
                   <span>{chip.word}</span>
                 </span>
               ))}

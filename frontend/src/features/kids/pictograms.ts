@@ -1,3 +1,4 @@
+import { asset } from '../../lib/basePath';
 /**
  * Pictogrames d'ARASAAC (https://arasaac.org) de les lliçons de frases.
  * Autor: Sergio Palao. Origen: ARASAAC (https://arasaac.org). Propietat del Govern d'Aragó,
@@ -44,6 +45,6 @@ export const PICTOGRAMS = {
 export type PictogramName = keyof typeof PICTOGRAMS;
 
 /** La ruta de la imatge d'un pictograma (servida des de public/). */
-export const pictogramUrl = (name: PictogramName) => `/pictograms/${PICTOGRAMS[name]}.png`;
+export const pictogramUrl = (name: PictogramName) => asset(`/pictograms/${PICTOGRAMS[name]}.png`);
 
 export const PICTOGRAM_CREDIT = "Pictogrames d'ARASAAC (arasaac.org), autor Sergio Palao, Govern d'Aragó, llicència CC BY-NC-SA.";

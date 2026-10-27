@@ -1,5 +1,6 @@
 import { fetchResources } from '../../lib/api';
 import type { Resource } from '../../lib/types';
+import { appPath } from '../../lib/basePath';
 
 /**
  * La ruta des de la qual s'ha obert l'activitat actual (la ruta personalitzada, una de les recomanades o
@@ -37,7 +38,7 @@ function write(context: RouteContext | null) {
 
 /** S'obri una activitat des d'una ruta: es recorda l'ordre i l'adreça actual (el detall de la ruta). */
 export function setRouteContext(resourceIds: string[]) {
-  write({ ids: resourceIds, backTo: window.location.pathname });
+  write({ ids: resourceIds, backTo: appPath() });
 }
 
 export function clearRouteContext() {

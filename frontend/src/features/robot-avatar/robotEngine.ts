@@ -12,6 +12,7 @@ import {
   type RobotLayer, type RobotState,
 } from './states';
 import { attachRobotBook } from './robotBook';
+import { asset } from '../../lib/basePath';
 
 export type RobotEngineOptions = {
   modelUrl: string;
@@ -37,7 +38,7 @@ const modelBuffers = new Map<string, Promise<ArrayBuffer>>();
 // es servix des de /draco/ i es comparteix entre tots els robots.
 let draco: DRACOLoader | undefined;
 function dracoLoader() {
-  draco ??= new DRACOLoader().setDecoderPath('/draco/').setDecoderConfig({ type: 'wasm' });
+  draco ??= new DRACOLoader().setDecoderPath(asset('/draco/')).setDecoderConfig({ type: 'wasm' });
   return draco;
 }
 /** Baixa i prepara el descodificador Draco (per a fer-ho abans d'entrar a l'escena). */

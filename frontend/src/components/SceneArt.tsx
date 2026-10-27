@@ -1,5 +1,6 @@
 import type { Mood, Scenario } from '../lib/types';
 import { isRobotAvatarEnabled, RobotSceneArt } from '../features/robot-avatar'; // [robot-avatar]
+import { asset } from '../lib/basePath';
 
 const moodFace = (mood: Mood, part: 'eyes' | 'eyebrows' | 'mouth') => {
   if (part === 'eyebrows') {
@@ -42,7 +43,7 @@ export function SceneArt({ scenario, background, mood, thinking, talking }: { sc
       {/* Foto real de l'escenari darrere del personatge i el taulell il·lustrats. */}
       {background && (
         <img
-          src={background}
+          src={asset(background)}
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover opacity-40"

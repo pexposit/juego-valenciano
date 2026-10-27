@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Resource } from '../lib/types';
 import { isRobotAvatarEnabled, loadRobotAvatar } from '../features/robot-avatar'; // [robot-avatar]
+import { asset } from '../lib/basePath';
 
 // L'indicador només apareix si la càrrega tarda més de SHOW_DELAY_MS (si tot ja està
 // en memòria cau, s'entra directament sense parpelleig). Si una baixada va lenta o
@@ -12,7 +13,7 @@ const loadImage = (src: string) =>
   new Promise<void>(resolve => {
     const img = new Image();
     img.onload = img.onerror = () => resolve();
-    img.src = src;
+    img.src = asset(src);
   });
 
 /**

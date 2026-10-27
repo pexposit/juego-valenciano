@@ -1,4 +1,5 @@
 import type { KidsItem, Pos } from '../content';
+import { asset } from '../../../lib/basePath';
 
 // On es posa el gat respecte de la caixa (posició en %, mida relativa a l'amplària de l'escena).
 const CAT: Record<Pos, { left: string; top: string; size: number; behind?: boolean }> = {
@@ -48,7 +49,7 @@ export function ItemFace({ item, letter }: { item: KidsItem; letter?: boolean })
     const long = item.glyph.length > 3 ? { fontSize: `clamp(20px, ${item.glyph.length > 5 ? 4 : 5}vw, ${item.glyph.length > 5 ? 34 : 42}px)` } : undefined;
     return <span className="kid-face-glyph" aria-hidden="true" style={{ color: item.ink, ...long }}>{item.glyph}</span>;
   }
-  if (item.image) return <img className="kid-card-img" src={item.image} alt="" aria-hidden="true" draggable={false} />;
+  if (item.image) return <img className="kid-card-img" src={asset(item.image)} alt="" aria-hidden="true" draggable={false} />;
   if (letter) return <span className="kid-card-letter" aria-hidden="true">{item.emoji}</span>;
   return (
     <span

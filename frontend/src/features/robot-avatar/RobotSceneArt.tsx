@@ -3,6 +3,7 @@ import type { Mood } from '../../lib/types';
 import { robotAssets } from './config';
 import { RobotAvatar } from './RobotAvatar';
 import { robotStateFromMood } from './states';
+import { asset } from '../../lib/basePath';
 
 const GREETING_MS = 2600;
 
@@ -33,7 +34,7 @@ export function RobotSceneArt({
     <div className="absolute inset-0 overflow-hidden bg-[#FFF9ED]">
       {background && (
         <img
-          src={background}
+          src={asset(background)}
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover opacity-40"

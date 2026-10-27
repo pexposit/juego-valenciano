@@ -10,6 +10,7 @@ import { analyzeMessage, ensureSession, fetchTts, finishSessionResource, sendTur
 import { addMessages } from '../lib/localStore';
 import type { Mood, Scenario, ScenarioTranslation } from '../lib/types';
 import { GREETING_BY_VOICE } from '../data/content';
+import { asset } from '../lib/basePath';
 import { isVoiceOnlyCategory } from '@parlaval/shared';
 
 const INITIAL_GREETING = 'Bon dia! Com et puc ajudar hui?';
@@ -176,12 +177,12 @@ ${translation.initial_prompt}` : text;
     if (greetingAudio) {
       // Només si el fitxer existix de veritat (Vite torna la pàgina d'inici per als que falten).
       let cancelled = false;
-      void fetch(greetingAudio, { method: 'HEAD' })
+      void fetch(asset(greetingAudio), { method: 'HEAD' })
         .then(res => res.ok && (res.headers.get('content-type') ?? '').startsWith('audio'))
         .catch(() => false)
         .then(found => {
           if (cancelled || hasSubmitted.current) return;
-          if (found) setReplyAudio(greetingAudio, true);
+          if (found) setReplyAudio(asset(greetingAudio), true);
           else void loadTextAudio(initialPrompt || INITIAL_GREETING, true);
         });
       return () => { cancelled = true; };

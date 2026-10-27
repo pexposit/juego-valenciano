@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
+import { asset } from './basePath';
 
-const THINKING_SOUND = '/audio/robot_thinking.mp3';
+const THINKING_SOUND = asset('/audio/robot_thinking.mp3');
 
 /** Fa sonar en bucle, de fons i baixet, el so del robot mentre `active` és true (pensant). */
 export function useThinkingSound(active: boolean) {

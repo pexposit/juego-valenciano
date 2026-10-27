@@ -3,6 +3,7 @@ import { Target, X } from 'lucide-react';
 import type { TeacherActivityInput } from '@parlaval/shared';
 import { Practice } from '../../pages/Practice';
 import { toPracticePreview } from './drafts';
+import { asset } from '../../lib/basePath';
 
 /** Vista prèvia d'una activitat a pantalla completa: així ho veurà l'alumnat. No es guarda res. */
 export function ActivityPreview({ activity, onClose }: { activity: TeacherActivityInput; onClose: () => void }) {
@@ -29,7 +30,7 @@ function ScenarioPreview({ activity }: { activity: TeacherActivityInput }) {
   const c = activity.content;
   if (c.kind !== 'scenario') return null;
   return (
-    <div className="relative min-h-[calc(100dvh-2.5rem)] bg-cover bg-center" style={{ backgroundImage: `url('${c.background}')` }}>
+    <div className="relative min-h-[calc(100dvh-2.5rem)] bg-cover bg-center" style={{ backgroundImage: `url('${asset(c.background)}')` }}>
       <div className="absolute left-[8%] top-[12%] max-w-[min(72%,440px)] rounded-3xl bg-white p-5 text-lg font-bold shadow-xl">{c.greeting}</div>
       <aside className="absolute right-5 top-24 w-[min(calc(100%-2.5rem),320px)] rounded-3xl bg-white/95 p-5 shadow-xl">
         <h2 className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-wider text-[#0F47AF]"><Target size={16} /> Objectius</h2>

@@ -3,6 +3,7 @@ import { Check, ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-r
 import { countWords, FORM_FIELD_MAX_CHARS, usedRequiredWords, writingMaxChars } from '@parlaval/shared';
 import { CharLimit } from './ui';
 import type { ExamCriterion, ExamOption, ExamProposal, ExamQuestion, ExamReading, ExamWritingChoice, A1WritingEvaluation, A2CriterionKey, A2WritingEvaluation, B1WritingEvaluation, C1CriterionKey, C1WritingEvaluation, WritingCriterionKey, WritingEvaluation } from '../lib/types';
+import { asset } from '../lib/basePath';
 
 // Respostes de l'aspirant (número de pregunta -> clau de l'opció) i si l'àrea ja
 // s'ha corregit: en eixe cas es marquen les encertades i les errades.
@@ -141,7 +142,7 @@ export function ChoiceExercise({ questions, ...props }: AnswerProps & { question
                   aria-label={`Opció ${o.key}`}
                   className={`btn-press group relative overflow-hidden rounded-2xl border-4 bg-white transition-all disabled:cursor-default ${RING[status]}`}
                 >
-                  <img src={o.image} alt="" className="aspect-[4/3] w-full object-contain p-1 transition-transform group-hover:scale-[1.03]" />
+                  <img src={asset(o.image)} alt="" className="aspect-[4/3] w-full object-contain p-1 transition-transform group-hover:scale-[1.03]" />
                   <span className={`absolute left-2 top-2 grid h-7 w-7 place-items-center rounded-full text-sm font-black uppercase shadow ${
                     status === 'idle' ? 'bg-white text-ink' : status === 'wrong' ? 'bg-coral text-white' : 'bg-teal text-white'
                   }`}>
@@ -170,7 +171,7 @@ export function BinaryExercise({ questions, options, ...props }: AnswerProps & {
               <QuestionNumber n={q.n} result={resultOf(q, props.answers, props.checked)} />
               <span className="text-sm font-bold opacity-70">{q.prompt}</span>
             </div>
-            <img src={q.image} alt={q.prompt} className="h-24 w-full object-contain" />
+            <img src={asset(q.image)} alt={q.prompt} className="h-24 w-full object-contain" />
             <OptionChips q={q} options={options} {...props} />
           </div>
         ))}
@@ -209,7 +210,7 @@ function MatchOption({ option, index }: { option: ExamOption; index: number }) {
   if (option.image) {
     return (
       <figure className="relative overflow-hidden rounded-2xl bg-white shadow-sm">
-        <img src={option.image} alt="" className="aspect-[4/3] w-full object-cover" />
+        <img src={asset(option.image)} alt="" className="aspect-[4/3] w-full object-cover" />
         <span className="absolute left-2 top-2">{letter}</span>
       </figure>
     );
@@ -427,7 +428,7 @@ export function WritingExercise({
         <p className="rounded-2xl bg-cream p-4 text-center text-sm font-bold opacity-70">Tria una opció per a començar a escriure.</p>
       ) : supportImage ? (
         <div className="grid gap-4 md:grid-cols-[minmax(0,16rem)_1fr]">
-          <img src={supportImage} alt="Imatge de suport de l'exercici" className="w-full rounded-2xl shadow-sm" />
+          <img src={asset(supportImage)} alt="Imatge de suport de l'exercici" className="w-full rounded-2xl shadow-sm" />
           {editor}
         </div>
       ) : (
@@ -539,7 +540,7 @@ export function OralExercise({ proposals }: { proposals: ExamProposal[] }) {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {proposal.images.map(item => (
               <figure key={item.prompt} className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                <img src={item.image} alt="" className="aspect-[4/3] w-full object-cover" />
+                <img src={asset(item.image)} alt="" className="aspect-[4/3] w-full object-cover" />
                 <figcaption className="px-3 py-2 text-sm font-black">{item.prompt}</figcaption>
               </figure>
             ))}

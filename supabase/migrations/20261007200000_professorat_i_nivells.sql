@@ -1050,3 +1050,43 @@ BEGIN
 END;
 $function$;
 
+
+-- ============================================================
+-- Docent per defecte: user_profe / @parlaval12@
+-- ============================================================
+-- Compte inicial amb rol de professorat per a poder crear classes des del primer arranc.
+-- Com fa l'app, el nom d'usuari es lliga a una adreça fictícia (@usuaris.parlaval.invalid).
+-- El trigger on_auth_user_created en crea el perfil; després se li dona el rol de docent.
+-- Canvieu-ne la contrasenya en un desplegament real.
+DO $seed$
+DECLARE
+  teacher_email constant text := 'user_profe@usuaris.parlaval.invalid';
+  uid uuid;
+BEGIN
+  IF EXISTS (SELECT 1 FROM auth.users WHERE email = teacher_email) THEN
+    RETURN;
+  END IF;
+
+  uid := gen_random_uuid();
+  INSERT INTO auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) VALUES (
+    '00000000-0000-0000-0000-000000000000', uid, 'authenticated', 'authenticated', teacher_email,
+    extensions.crypt('@parlaval12@', extensions.gen_salt('bf', 10)), now(),
+    '{"provider": "email", "providers": ["email"]}',
+    '{"age_group": "adult", "display_name": "user_profe", "email_verified": true}',
+    now(), now(), '', '', '', ''
+  );
+
+  INSERT INTO auth.identities (provider_id, user_id, identity_data, provider, created_at, updated_at)
+  VALUES (
+    uid::text, uid,
+    jsonb_build_object('sub', uid::text, 'email', teacher_email, 'email_verified', false, 'phone_verified', false),
+    'email', now(), now()
+  );
+
+  UPDATE public.profiles SET role = 'teacher' WHERE id = uid;
+END
+$seed$;

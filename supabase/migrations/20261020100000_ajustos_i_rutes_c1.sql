@@ -26,17 +26,13 @@ ALTER TABLE public.activity_restarts ENABLE ROW LEVEL SECURITY;
 -- ============================================================
 -- Origen: 20261021100000_veu_doraemon_xiquets.sql
 -- ============================================================
--- Veu de Doraemon (`rvc:doraemon`, del laboratori de veu: Matxa + RVC) per al tutor infantil del tauler i per als
--- escenaris infantils del Nivell 0 (el mag, el zoo, el pati, la biblioteca...). Els escenaris del Nivell 0 per a adults
--- (metadata.audience = 'adult') no la porten: conserven la seua veu.
---
--- El backend envia les veus `rvc:*` al laboratori (SPEECH_LAB_URL) i, si no hi és o no respon, cau a la veu per defecte
--- (gina): sense el laboratori tot continua funcionant, només que amb l'altra veu. Les saludes estàtiques dels
--- escenaris es generen amb `npx tsx scripts/generate-scenario-audio.ts --force` a backend/ (cal el laboratori en marxa).
--- Tornar a aplicar el fitxer no canvia res.
+-- Veu gina (Matxa, DeepLab de la UJI) per al tutor infantil del tauler i per als escenaris infantils del Nivell 0 (el mag,
+-- el zoo, el pati, la biblioteca...). Abans era la de Doraemon (`rvc:doraemon`), que només funcionava amb el laboratori
+-- de veu (SPEECH_LAB_URL), que no es desplega. Els escenaris del Nivell 0 per a adults (metadata.audience = 'adult') no
+-- es toquen: conserven la seua veu. Tornar a aplicar el fitxer no canvia res.
 
 UPDATE public.resources
-SET metadata = jsonb_set(metadata, '{voice}', '"rvc:doraemon"'::jsonb)
+SET metadata = jsonb_set(metadata, '{voice}', '"gina"'::jsonb)
 WHERE (category = 'assistent' AND type = 'ajuda_infantil')
    OR (category = 'escenari'
        AND difficulty = 'nivell0'

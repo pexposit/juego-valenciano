@@ -37,6 +37,7 @@ import { installAudioTracking, stopAllAudio } from './lib/audioControl';
 import { stopVoice } from './features/kids/sound';
 import { KidsTranslationProvider, useKidsTranslationLang } from './features/kids/translations';
 import { KidsLessons } from './pages/KidsLessons';
+import { appPath } from './lib/basePath';
 
 type ProfileFields = { display_name?: string; level?: string; show_mother_tongue?: boolean; mother_tongue?: string };
 
@@ -297,7 +298,7 @@ export function App() {
       if (!session?.user) return setProfileReady(true);
       setUser(session.user);
       void loadProfile(session.user.id).then(r => {
-        const path = window.location.pathname;
+        const path = appPath();
         if (path === ROUTES.home || path === ROUTES.auth) navigate(homeFor(r), { replace: true });
       });
     });
@@ -315,7 +316,7 @@ export function App() {
       const r = await loadProfile(session.user.id);
       // Sols redirigix si encara estava a l'inici o a l'autenticació; si ja
       // navegava per l'app (p. ex. refresc del token), es queda on estava.
-      const path = window.location.pathname;
+      const path = appPath();
       if (path === ROUTES.home || path === ROUTES.auth) {
         navigate(homeFor(r), { replace: true });
       }

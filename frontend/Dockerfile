@@ -14,10 +14,13 @@ COPY frontend ./frontend
 # VITE_API_BASE_URL buida = mateix origen (`/api/...`), Caddy ho reenvia a l'API.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
+# BASE_PATH: subruta on es publica la web darrere d'un proxy (p. ex. /parlaval); buida = arrel.
 ARG VITE_API_BASE_URL=
+ARG BASE_PATH=
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
     VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY \
-    VITE_API_BASE_URL=$VITE_API_BASE_URL
+    VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    BASE_PATH=$BASE_PATH
 # `shared` primer: el frontend n'importa els tipus.
 RUN npm run build -w @parlaval/shared && npm run build -w parlaval-web
 

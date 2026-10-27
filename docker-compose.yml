@@ -22,10 +22,18 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        VITE_SUPABASE_URL: https://${DOMAIN:?cal definir DOMAIN}
+        # BASE_PATH (p. ex. /parlaval): la web es publica en https://DOMAIN/parlaval darrere d'un proxy que lleva
+        # el prefix abans de reenviar. Buida = arrel del domini.
+        BASE_PATH: ${BASE_PATH:-}
+        VITE_API_BASE_URL: ${BASE_PATH:-}
+        VITE_SUPABASE_URL: https://${DOMAIN:?cal definir DOMAIN}${BASE_PATH:-}
         VITE_SUPABASE_ANON_KEY: ${ANON_KEY:?cal definir ANON_KEY (deploy/generate-secrets.mjs)}
     environment:
       DOMAIN: ${DOMAIN}
+      # Adreça on escolta Caddy. Per defecte DOMAIN (HTTPS automàtic); darrere d'un proxy que ja fa HTTPS, `http://`.
+      SITE_ADDRESS: ${SITE_ADDRESS:-${DOMAIN}}
+      # Prefix que Caddy lleva de les peticions (`/` = cap).
+      BASE_PATH: ${BASE_PATH:-/}
     ports:
       - "80:80"
       - "443:443"
@@ -66,6 +74,10 @@ services:
       RAG_GNV_URL: http://rag:8010
       # Classificador de toxicitat del xat (servici `toxicity-classificator`), per la xarxa interna de compose.
       TOXICITY_CLASSIFICATOR_URL: http://toxicity-classificator:8001
+      # El laboratori de veu (speech-lab, GPU) no es desplega: buida, totes les veus van al DeepLab de la UJI. Mana sobre
+      # backend/.env, on en dev apunta a localhost:3100 (dins del contenidor, localhost és el mateix contenidor i sense
+      # esta línia els escenaris es quedaven sense àudio). Si el teniu en una altra màquina, poseu-ne la URL en el .env de l'arrel.
+      SPEECH_LAB_URL: ${SPEECH_LAB_URL:-}
       # Claus compartides: una sola còpia, en el .env de l'arrel (la mateixa que el RAG). Manen sobre backend/.env.
       OPENAI_API_KEY: ${OPENAI_API_KEY:?cal definir OPENAI_API_KEY en el .env de l'arrel}
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
@@ -180,11 +192,11 @@ services:
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
-      API_EXTERNAL_URL: https://${DOMAIN}/auth/v1
+      API_EXTERNAL_URL: https://${DOMAIN}${BASE_PATH:-}/auth/v1
       GOTRUE_DB_DRIVER: postgres
       GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
-      GOTRUE_SITE_URL: https://${DOMAIN}
-      GOTRUE_URI_ALLOW_LIST: https://${DOMAIN}/**
+      GOTRUE_SITE_URL: https://${DOMAIN}${BASE_PATH:-}
+      GOTRUE_URI_ALLOW_LIST: https://${DOMAIN}${BASE_PATH:-}/**
       GOTRUE_DISABLE_SIGNUP: "false"
       GOTRUE_JWT_ADMIN_ROLES: service_role
       GOTRUE_JWT_AUD: authenticated

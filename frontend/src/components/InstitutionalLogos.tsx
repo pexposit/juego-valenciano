@@ -1,3 +1,4 @@
+import { asset } from '../lib/basePath';
 /* ══════════════════ LOGOS INSTITUCIONALS ════════════════════════════
    Atribució de les entitats que donen suport al projecte. Els fitxers
    són estàtics a frontend/public/logos/ i Vite els copia al build.
@@ -5,9 +6,9 @@
    banda té fons blanc i una vora superior per separar-se del #FAFAF9. */
 
 const INSTITUCIONS = [
-  { name: 'Generalitat Valenciana', src: '/logos/generalitat-valenciana.png', href: 'https://www.gva.es', height: 'h-10', bar: 'h-9 sm:h-12' },
-  { name: 'ValgrAI', src: '/logos/valgrai.png', href: 'https://valgrai.eu', height: 'h-9', bar: 'h-8 sm:h-10' },
-  { name: 'Universitat Jaume I', src: '/logos/universitat-jaume-i.png', href: 'https://www.uji.es', height: 'h-7', bar: 'h-6 sm:h-8' },
+  { name: 'Generalitat Valenciana', src: asset('/logos/generalitat-valenciana.png'), href: 'https://www.gva.es', height: 'h-10', bar: 'h-9 sm:h-12' },
+  { name: 'ValgrAI', src: asset('/logos/valgrai.png'), href: 'https://valgrai.eu', height: 'h-9', bar: 'h-8 sm:h-10' },
+  { name: 'Universitat Jaume I', src: asset('/logos/universitat-jaume-i.png'), href: 'https://www.uji.es', height: 'h-7', bar: 'h-6 sm:h-8' },
 ];
 
 /* ── Barra institucional compacta ────────────────────────────────── */

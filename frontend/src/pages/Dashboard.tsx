@@ -2,6 +2,7 @@ import { BookOpen, LayoutGrid, MessageCircle, Route, School, Target } from 'luci
 import { ChildAssistant } from '../components/ChildAssistant';
 import { Logo, ProfileButton } from '../components/ui';
 import type { Page } from '../data/content';
+import { asset } from '../lib/basePath';
 
 export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name: string; ageGroup: string; showMotherTongue: boolean; setPage: (p: Page) => void }) {
   const isChild = ageGroup === 'child';
@@ -10,7 +11,7 @@ export function Dashboard({ name, ageGroup, showMotherTongue, setPage }: { name:
       {/* Fons amb transparència perquè el text i els botons per damunt es lligen bé. */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-30"
-        style={{ backgroundImage: "url('/images/classroom.jpg')" }}
+        style={{ backgroundImage: `url('${asset('/images/classroom.jpg')}')` }}
       />
 
       {/* Classroom header: top-right scenario selector + profile */}

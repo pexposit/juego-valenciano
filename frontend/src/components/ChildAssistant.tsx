@@ -13,6 +13,7 @@ import { useThinkingSound } from '../lib/useThinkingSound';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { ALL_LESSONS } from '../features/kids/lessons';
 import type { Mood, TutorExercise } from '../lib/types';
+import { asset } from '../lib/basePath';
 
 // `transcription`: en un missatge de veu, el que ha entés el model; es mostra davall l'etiqueta del missatge.
 type Message = AssistantConversation['messages'][number] & { transcription?: string };
@@ -284,7 +285,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       <div ref={robotRef} className="relative shrink-0" title="Toca'm per a canviar-me la veu">
         {isRobotAvatarEnabled('dashboard')
           ? <DashboardRobot className="drop-shadow-lg" size={avatarSize} talking={talking} thinking={thinking} mood={mood} onClick={() => setVoiceMenuOpen(open => !open)} />
-          : <img src="/images/avatar_professor.svg" alt="El professor" className="float cursor-pointer drop-shadow-lg" width={avatarSize} height={avatarSize} onClick={() => setVoiceMenuOpen(open => !open)} />}
+          : <img src={asset('/images/avatar_professor.svg')} alt="El professor" className="float cursor-pointer drop-shadow-lg" width={avatarSize} height={avatarSize} onClick={() => setVoiceMenuOpen(open => !open)} />}
         {!voiceMenuOpen && (
           <button
             onClick={() => setVoiceMenuOpen(true)}

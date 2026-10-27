@@ -6,6 +6,7 @@ import { NextInRouteButton } from '../features/paths/NextInRoute';
 import { BinaryExercise, isB1OrB2Writing, ChoiceExercise, FormExercise, MatchExercise, OralExercise, Reading, WritingEvaluationPanel, WritingExercise, writingPassMark } from '../components/ExamExercises';
 import { evaluateExamWriting, restartActivity, saveActivityResult } from '../lib/api';
 import type { Exam as ExamResource, ExamArea, ExamExercise, ExamQuestion, ExamScoring, WritingEvaluation } from '../lib/types';
+import { asset } from '../lib/basePath';
 
 // Icona de cada àrea segons el títol: el B2 té una àrea més (Estructures lingüístiques).
 const areaIcon = (title: string) =>
@@ -297,7 +298,7 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
                 )}
               </p>
             </div>
-            <audio controls preload="metadata" src={resource.url} className="w-full sm:w-80" aria-label="Àudio de la comprensió oral" />
+            <audio controls preload="metadata" src={asset(resource.url)} className="w-full sm:w-80" aria-label="Àudio de la comprensió oral" />
           </section>
         )}
 
