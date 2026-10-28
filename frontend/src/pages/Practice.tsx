@@ -387,7 +387,8 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
         {/* Portada */}
         <section className="relative overflow-hidden rounded-[2rem] bg-navy p-8 text-white shadow-xl">
           <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-mustard/20" aria-hidden="true" />
-          <div className="relative flex flex-wrap items-center gap-6">
+          {/* En vertical (móvil y tablet) el icono va encima del texto */}
+          <div className="relative flex flex-wrap items-center gap-6 [@media(max-width:1023px)_and_(orientation:portrait)]:flex-col [@media(max-width:1023px)_and_(orientation:portrait)]:items-start">
             <div
               className="grid h-24 w-24 shrink-0 place-items-center rounded-3xl text-5xl shadow-lg"
               style={{ background: practice.color ?? '#FDE94D' }}
