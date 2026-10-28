@@ -10,7 +10,10 @@ html { -webkit-text-size-adjust: 100%; }
 @media (max-width: 1023px) { html { font-size: 15px; } }
 @media (max-width: 639px) { html { font-size: 13.5px; } }
 
-/* Barra institucional fixa al peu (InstitutionalBar): App.tsx posa --app-footer a 68px quan es mostra. */
+/* Barra institucional fixa al peu (InstitutionalBar): App.tsx posa --app-footer a --footer-h quan es mostra.
+   En mòbil i tauleta (vertical i horitzontal) la barra és molt més baixa per a guanyar alçada. */
+:root { --footer-h: 68px; }
+@media (max-width: 1023px), (orientation: landscape) and (max-height: 500px), (orientation: landscape) and (pointer: coarse) { :root { --footer-h: 30px; } }
 body {
   padding-bottom: var(--app-footer, 0px);
   margin: 0;
