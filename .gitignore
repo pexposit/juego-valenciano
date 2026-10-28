@@ -5,6 +5,9 @@ dist
 coverage
 AGENTS.md
 CLAUDE.md
+toxicity-classificator/.venv/
+toxicity-classificator/.cache/
+__pycache__/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
@@ -16,3 +19,4 @@ CLAUDE.md
 AGENTS.md
 CLAUDE.md
 .claude/
+.agents/

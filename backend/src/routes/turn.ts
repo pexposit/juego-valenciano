@@ -47,6 +47,65 @@ const TURN_RATE_LIMIT = {
   maxAnonymous: Number(process.env.RATE_LIMIT_ANON_PER_MIN) || 6,
 };
 
+const TOXICITY_CLASSIFICATOR_URL = (process.env.TOXICITY_CLASSIFICATOR_URL || 'http://localhost:8001').replace(/\/$/, '');
+let lastToxicityErrorWarningAt = 0;
+
+// La detecció és només informativa: no bloqueja ni altera la resposta del xat.
+// No escrivim el text del missatge al log per a no guardar contingut personal.
+function logToxicityInBackground(text: string, userId?: string | null) {
+  void (async () => {
+    try {
+      let mode: 'adult' | 'infantil' = 'adult';
+      const client = db(userId ?? undefined);
+      if (client && userId) {
+        const { data: profile, error } = await client
+          .from('profiles')
+          .select('age_group')
+          .eq('id', userId)
+          .maybeSingle();
+        if (error) {
+          if (Date.now() - lastToxicityErrorWarningAt > 60_000) {
+            lastToxicityErrorWarningAt = Date.now();
+            console.warn('[toxicity] no s’ha pogut llegir age_group; s’aplica el mode adult', error.message);
+          }
+        } else if (profile?.age_group === 'child') mode = 'infantil';
+      }
+
+      const response = await fetch(`${TOXICITY_CLASSIFICATOR_URL}/classify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, mode }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const result = await response.json() as {
+        toxic: boolean;
+        mode: 'adult' | 'infantil';
+        reasons: string[];
+        p_model: number;
+        probabilities: { Nucli: number; Vulgar: number };
+        message_threshold: number;
+        phrase_threshold: number;
+      };
+      if (result.toxic) {
+        console.warn(
+          `[toxicity] missatge_toxic=True mode=${result.mode} ` +
+          `llindar_missatge=${result.message_threshold.toFixed(2)} llindar_frase=${result.phrase_threshold.toFixed(2)} ` +
+          `p_model=${result.p_model.toFixed(3)} Nucli=${result.probabilities.Nucli.toFixed(3)} ` +
+          `Vulgar=${result.probabilities.Vulgar.toFixed(3)} motius=${result.reasons.join(',')}`,
+        );
+      }
+    } catch (error) {
+      // Si el classificador cau, el xat continua funcionant. Limitem l'avís per a no omplir el log.
+      if (Date.now() - lastToxicityErrorWarningAt > 60_000) {
+        lastToxicityErrorWarningAt = Date.now();
+        console.warn('[toxicity] classificador no disponible; el torn continua sense classificar', error);
+      }
+    }
+  })();
+}
+
 // Un torn del xat. Els missatges no es guarden al servidor: el client envia l'historial de la
 // conversa (que guarda en el seu navegador) i rep la resposta. Els errors del missatge es busquen
 // a banda, amb /api/errors/analyze, perquè la resposta no haja d'esperar-los.
@@ -74,9 +133,12 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       const silent = data.audio_base64 === 'silence';
       const heard = silent ? '' : await stt.transcribe(Buffer.from(data.audio_base64, 'base64'), 'audio/webm');
       text = heard || UNINTELLIGIBLE;
-      console.log(`[turn] stt=${Date.now() - sttStart}ms ${silent ? '(silenci detectat pel client)' : `audio=${data.audio_base64.length}B text="${heard}"`}`);
+      console.log(`[turn] stt=${Date.now() - sttStart}ms ${silent ? '(silenci detectat pel client)' : `audio=${data.audio_base64.length}B transcriptionChars=${heard.length}`}`);
     }
     if (!text) return res.status(400).json({ error: 'No hi ha cap missatge' });
+
+    // Analitza cada missatge nou (incloses les transcripcions de veu) sense canviar la conversa.
+    if (text !== UNINTELLIGIBLE) logToxicityInBackground(text, req.userId);
 
     // Mateix missatge repetit massa voltes en poc de temps: es talla abans de gastar cap crida.
     if (repeatedTurns.hit(req.userId, text).exceeded) {
