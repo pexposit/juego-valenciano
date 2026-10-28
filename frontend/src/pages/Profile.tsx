@@ -5,6 +5,7 @@ import { motherTongueLabel } from '@parlaval/shared';
 import { LEVEL_OPTIONS, MOTHER_TONGUE_OPTIONS } from '../data/content';
 import { StudentClasses } from '../features/paths/StudentClasses';
 
+import { useConfirm } from '../components/ConfirmDialog';
 const FIELD_CLASS = 'mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 text-2xl font-normal outline-none focus:border-[#0F47AF] transition-colors';
 
 const levelLabel = (value: string) => LEVEL_OPTIONS.find(o => o.value === value)?.label ?? value;
@@ -35,6 +36,7 @@ export function Profile({
   uid?: string;
   onClasses: () => void;
 }) {
+  const { confirm } = useConfirm();
   const isChild = ageGroup === 'child';
   // La llengua materna i l'ajuda amb la traducció són per als xiquets i per a qui està en el Nivell 0.
   const hasHelp = isChild || level === 'nivell0';
@@ -60,7 +62,7 @@ export function Profile({
 
   const confirmEditing = async () => {
     const changesLevel = canChangeLevel && draftLevel !== level;
-    if (changesLevel && !confirm(`Vols passar al nivell ${levelLabel(draftLevel)}? Les activitats i les rutes seran les d'eixe nivell, i s'esborraran la teua ruta personalitzada i els errors que tens pendents. Ho pots tornar a canviar quan vulgues.`)) return;
+    if (changesLevel && !(await confirm({ title: 'Canviar de nivell?', message: `Vols passar al nivell ${levelLabel(draftLevel)}? Les activitats i les rutes seran les d'eixe nivell, i s'esborraran la teua ruta personalitzada i els errors que tens pendents. Ho pots tornar a canviar quan vulgues.`, confirmLabel: 'Canvia' }))) return;
     const trimmed = draftName.trim();
     if (trimmed && trimmed !== name) setName(trimmed);
     if (hasHelp && draftTongue && draftTongue !== motherTongue) setMotherTongue(draftTongue);
@@ -248,7 +250,7 @@ export function Profile({
           )}
 
           <button
-            onClick={() => confirm('Vols reiniciar el teu progrés?') && location.reload()}
+            onClick={async () => { if (await confirm({ title: 'Reiniciar el progrés?', message: 'Vols reiniciar el teu progrés?', confirmLabel: 'Reinicia', tone: 'danger', icon: RotateCcw })) location.reload(); }}
             id="profile-reset-btn"
             className="btn-press flex items-center justify-center gap-2 rounded-2xl border-2 border-coral/20 bg-coral/5 py-3 text-xl font-extrabold text-coral hover:bg-coral/10 transition-colors"
           >
@@ -257,9 +259,7 @@ export function Profile({
 
           {!isDemo && (
             <button
-              onClick={() => confirm(isGuest
-                ? "Si tanques la sessió perdràs el teu progrés i hauràs d'entrar de nou amb el codi de la classe (amb un altre apodo). Vols tancar-la?"
-                : 'Segur que vols tancar la sessió?') && onLogOut()}
+              onClick={async () => { if (await confirm({ title: 'Vols tancar la sessió?', message: isGuest ? "Si tanques la sessió perdràs el teu progrés i hauràs d'entrar de nou amb el codi de la classe (amb un altre apodo)." : "Tornaràs a la pantalla d'entrada. El teu progrés queda guardat.", confirmLabel: 'Tanca-la', tone: isGuest ? 'danger' : 'default', icon: LogOut })) onLogOut(); }}
               id="profile-logout-btn"
               className="btn-press flex items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white py-3 text-xl font-extrabold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
             >

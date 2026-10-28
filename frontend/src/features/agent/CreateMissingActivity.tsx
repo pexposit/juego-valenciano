@@ -8,6 +8,7 @@ import { ActivityPreview } from '../activities/ActivityPreview';
 import type { KidsClass } from '../kids/tracking';
 import { isAbort } from './PromptBox';
 
+import { useConfirm } from '../../components/ConfirmDialog';
 /**
  * Crea, sense eixir de la ruta, una activitat que l'agent ha proposat: la genera amb el prompt de la proposta, la docent
  * la revisa (editor i vista prèvia) i la guarda. En guardar-la torna l'activitat perquè s'afija a la ruta.
@@ -24,6 +25,7 @@ export function CreateMissingActivity({ title, prompt, level, kind, klass, docum
   onSaved: (activity: TeacherActivity) => void;
   onClose: () => void;
 }) {
+  const { confirm } = useConfirm();
   const [draft, setDraft] = useState<{ activity: TeacherActivityInput; notes: string }>();
   const [message, setMessage] = useState<string>();
   const [preview, setPreview] = useState<TeacherActivityInput>();
@@ -40,8 +42,8 @@ export function CreateMissingActivity({ title, prompt, level, kind, klass, docum
   }, [prompt, level, kind, klass.id, documentId]);
 
   // Tancar amb un esborrany a mig revisar es confirma: es perdria el que la docent ha canviat.
-  const requestClose = () => {
-    if (draft && !confirm("Vols tancar? L'esborrany de l'activitat es perdrà.")) return;
+  const requestClose = async () => {
+    if (draft && !(await confirm({ title: 'Tancar sense guardar?', message: "L'esborrany de l'activitat es perdrà.", confirmLabel: 'Tanca', tone: 'danger' }))) return;
     onClose();
   };
 

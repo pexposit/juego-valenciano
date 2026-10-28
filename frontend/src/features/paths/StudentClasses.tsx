@@ -3,6 +3,7 @@ import { School, X } from 'lucide-react';
 import { invalidateResources } from '../../lib/api';
 import { joinClass, leaveClass, loadJoinedClasses } from '../kids/tracking';
 
+import { useConfirm } from '../../components/ConfirmDialog';
 /**
  * Les classes de l'alumne adult (qualsevol nivell): s'hi unix amb el codi que li dona la docent,
  * sense PIN (el PIN de la família és només per als comptes infantils, des del seguiment). La BDD
@@ -10,6 +11,7 @@ import { joinClass, leaveClass, loadJoinedClasses } from '../kids/tracking';
  * `locked`: qui ha entrat amb el codi d'una classe (sense compte) no en pot eixir ni unir-se a una altra.
  */
 export function StudentClasses({ uid, locked = false }: { uid: string; locked?: boolean }) {
+  const { confirm } = useConfirm();
   const [classes, setClasses] = useState<{ id: string; name: string }[]>();
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<{ ok: boolean; text: string }>();
@@ -33,7 +35,7 @@ export function StudentClasses({ uid, locked = false }: { uid: string; locked?: 
   };
 
   const leave = async (id: string, name: string) => {
-    if (!confirm(`Segur que vols eixir de la classe «${name}»?`)) return;
+    if (!(await confirm({ title: 'Eixir de la classe?', message: `Segur que vols eixir de la classe «${name}»?`, confirmLabel: 'Ix', tone: 'danger' }))) return;
     try {
       await leaveClass(id, uid);
       setClasses(list => list?.filter(c => c.id !== id));
