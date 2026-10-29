@@ -106,7 +106,8 @@ button { cursor: pointer; }
 /* ════════════════════════════════════════════════════════════════════════
    CHAT BUBBLES
    ════════════════════════════════════════════════════════════════════════ */
-.bubble { position: relative; }
+/* El personatge ja és `absolute` (utilitat de Tailwind): la cua (:after) s'ancora a ell. NO fixar `position: relative` ací: com que va
+   després de les utilitats, anul·la `absolute` i `top`/`bottom` passen a ser desplaçaments relatius (la bombolla s'eixia de la pantalla). */
 .bubble:after {
   content: '';
   position: absolute;
@@ -124,8 +125,8 @@ button { cursor: pointer; }
   bottom: -38px;
   border-width: 38px 0 0 64px;
 }
-/* Mòbil en horitzontal: la bombolla va a l'esquerra i el robot a la dreta, amb la cua apuntant cap a ell. */
-@media (max-height: 500px) and (orientation: landscape) {
+/* Mòbil i tauleta en horitzontal: la bombolla va a l'esquerra i el robot a la dreta, amb la cua apuntant cap a ell. */
+@media (max-height: 500px) and (orientation: landscape), (orientation: landscape) and (pointer: coarse) and (min-height: 501px) {
   .bubble-to-avatar:after {
     left: auto;
     right: -15px;
