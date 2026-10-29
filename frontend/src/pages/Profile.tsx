@@ -1,14 +1,48 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BarChart3, Check, LogOut, Pencil, RotateCcw, School } from 'lucide-react';
 import { OrangeHeader, Stat } from '../components/ui';
 import { motherTongueLabel } from '@parlaval/shared';
 import { LEVEL_OPTIONS, MOTHER_TONGUE_OPTIONS } from '../data/content';
 import { StudentClasses } from '../features/paths/StudentClasses';
+import { ProgressReport } from '../features/kids/ProgressReport';
+import { loadOwnProgress, type ChildData } from '../features/kids/tracking';
 
 import { useConfirm } from '../components/ConfirmDialog';
 const FIELD_CLASS = 'mt-1 w-full rounded-2xl border-2 border-gray-100 p-3 text-2xl font-normal outline-none focus:border-[#0F47AF] transition-colors';
 
 const levelLabel = (value: string) => LEVEL_OPTIONS.find(o => o.value === value)?.label ?? value;
+
+/** El progrés de l'alumne adult: el mateix informe que veu la docent en la fitxa de l'alumne. */
+function MyProgress({ uid }: { uid: string }) {
+  const [data, setData] = useState<ChildData>();
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setData(undefined);
+    setFailed(false);
+    loadOwnProgress(uid)
+      .then(d => { if (!cancelled) setData(d); })
+      .catch(e => {
+        console.error(e);
+        if (!cancelled) setFailed(true);
+      });
+    return () => { cancelled = true; };
+  }, [uid]);
+
+  return (
+    <section className="mt-8" aria-labelledby="profile-progress-title">
+      <h2 id="profile-progress-title" className="mb-4 flex items-center gap-2 text-3xl font-black"><BarChart3 size={26} /> El teu progrés</h2>
+      {failed ? (
+        <p className="rounded-2xl bg-coral/10 p-3 text-lg text-coral">No hem pogut carregar el teu progrés.</p>
+      ) : !data ? (
+        <p className="text-lg opacity-60">Carregant el teu progrés...</p>
+      ) : (
+        <ProgressReport data={data} name={data.name} self />
+      )}
+    </section>
+  );
+}
 
 export function Profile({
   name, setName, level, setLevel, xp, back, onLogOut, isGuest = false, isDemo, ageGroup, motherTongue, setMotherTongue, showMotherTongue, setShowMotherTongue,
@@ -38,6 +72,8 @@ export function Profile({
 }) {
   const { confirm } = useConfirm();
   const isChild = ageGroup === 'child';
+  // Alumnat adult amb sessió: les dades i les classes van en horitzontal i, davall, el seu progrés.
+  const adultStudent = !isChild && !isTeacher && !!uid;
   // La llengua materna i l'ajuda amb la traducció són per als xiquets i per a qui està en el Nivell 0.
   const hasHelp = isChild || level === 'nivell0';
   // El nom (i, en els comptes infantils, la llengua materna) són editables, però no directament:
@@ -87,6 +123,30 @@ export function Profile({
     ? motherTongueLabel(motherTongue)
     : undefined;
 
+  // Xiquets amb ajuda en la llengua materna: les dades i l'ajuda, una al costat de l'altra (com l'adult amb les classes).
+  const childRow = isChild && !!helpLanguage;
+  const sideBySide = adultStudent || childRow;
+  const helpCard = helpLanguage && (
+    <div className={`${childRow ? 'min-w-0 flex-1' : 'mt-5'} flex items-center justify-between gap-4 rounded-3xl bg-white p-6 shadow-sm`}>
+            <div>
+              <span id="profile-mother-tongue-label" className="block font-extrabold text-xl">Ajuda en la meua llengua</span>
+              <span className="mt-1 block text-lg font-normal opacity-70">
+                Mostra, en gris, la traducció en {helpLanguage.toLowerCase()} dels missatges del professor.
+              </span>
+            </div>
+            <button
+              role="switch"
+              aria-checked={showMotherTongue}
+              aria-labelledby="profile-mother-tongue-label"
+              id="profile-mother-tongue-toggle"
+              onClick={() => setShowMotherTongue(!showMotherTongue)}
+              className={`btn-press relative h-8 w-14 shrink-0 rounded-full transition-colors ${showMotherTongue ? 'bg-[#0F47AF]' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${showMotherTongue ? 'left-7' : 'left-1'}`} />
+            </button>
+          </div>
+  );
+
   return (
     <main className="fade-up" style={{ background: '#FAFAF9', minHeight: '100vh' }}>
       <OrangeHeader showOranges={false}>
@@ -100,10 +160,12 @@ export function Profile({
         </div>
       </OrangeHeader>
 
-      <div className="mx-auto max-w-lg px-5 pt-6 pb-10">
+      <div className={`mx-auto px-5 pt-6 pb-10 ${sideBySide ? 'max-w-4xl' : 'max-w-lg'}`}>
         <h1 className="text-5xl font-black">El teu perfil</h1>
 
-        <div className="mt-5 rounded-3xl bg-white p-6 shadow-sm space-y-4">
+        {/* Alumnat adult: les dades i les classes, una al costat de l'altra (en pantalles menudes, una damunt de l'altra). */}
+        <div className={sideBySide ? 'mt-5 flex flex-col gap-5 md:flex-row md:items-start' : undefined}>
+        <div className={`${sideBySide ? 'min-w-0 flex-1' : 'mt-5'} rounded-3xl bg-white p-6 shadow-sm space-y-4`}>
           <div className="flex items-center justify-between">
             <span className="font-extrabold text-xl opacity-60">Les teues dades</span>
             {!editing && (
@@ -205,31 +267,16 @@ export function Profile({
           )}
         </div>
 
-        {helpLanguage && (
-          <div className="mt-5 flex items-center justify-between gap-4 rounded-3xl bg-white p-6 shadow-sm">
-            <div>
-              <span id="profile-mother-tongue-label" className="block font-extrabold text-xl">Ajuda en la meua llengua</span>
-              <span className="mt-1 block text-lg font-normal opacity-70">
-                Mostra, en gris, la traducció en {helpLanguage.toLowerCase()} dels missatges del professor.
-              </span>
-            </div>
-            <button
-              role="switch"
-              aria-checked={showMotherTongue}
-              aria-labelledby="profile-mother-tongue-label"
-              id="profile-mother-tongue-toggle"
-              onClick={() => setShowMotherTongue(!showMotherTongue)}
-              className={`btn-press relative h-8 w-14 shrink-0 rounded-full transition-colors ${showMotherTongue ? 'bg-[#0F47AF]' : 'bg-gray-300'}`}
-            >
-              <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${showMotherTongue ? 'left-7' : 'left-1'}`} />
-            </button>
-          </div>
-        )}
-
         {/* Alumnat adult de qualsevol nivell: s'unix a classes amb el codi, sense PIN (el dels xiquets és en el seguiment). */}
-        {!isChild && !isTeacher && uid && <StudentClasses uid={uid} locked={isGuest} />}
+        {adultStudent && <StudentClasses uid={uid} locked={isGuest} className="min-w-0 flex-1" />}
+        {childRow && helpCard}
+        </div>
+        {!childRow && helpCard}
 
-        <div className="mt-8 flex flex-col gap-3">
+        {/* Les illes i les partides són del Nivell 0: el seu informe és el dels xiquets, no este. */}
+        {adultStudent && level !== 'nivell0' && <MyProgress uid={uid} />}
+
+        <div className={`mt-8 flex flex-col gap-3 ${adultStudent ? 'mx-auto max-w-lg' : ''}`}>
           {/* El seguiment del xiquet (compte infantil) o les classes (només el professorat). */}
           {isChild ? (
             <button

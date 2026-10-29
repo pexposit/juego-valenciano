@@ -179,6 +179,21 @@ export async function loadStudents(classId: string, adult = false): Promise<Stud
   }));
 }
 
+/**
+ * El progrés de l'alumne adult en el seu propi perfil: el seguiment (escenaris) més les pràctiques, els exàmens i les
+ * rutes, que només llig el servidor. Mateixa forma que la fitxa que veu la docent.
+ */
+export async function loadOwnProgress(uid: string): Promise<ChildData> {
+  const child = await loadChildData(uid);
+  const token = (await need().auth.getSession()).data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/me/progress`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error("No hem pogut carregar el teu progrés");
+  const { activities, routes } = await res.json() as { activities: AdultActivity[]; routes: ClassRoutes };
+  return { ...child, activities, routes: routesOf(routes, uid, child.level) };
+}
+
 async function loadClassActivity(classId: string): Promise<Record<string, AdultActivity[]>> {
   const token = (await need().auth.getSession()).data.session?.access_token;
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/teacher/classes/${encodeURIComponent(classId)}/activity`, {
