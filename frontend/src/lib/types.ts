@@ -152,10 +152,10 @@ export type B1WritingEvaluation = {
   errors_detectats: { segment_original: string; proposta_correccio: string; categoria: string; sistematic: boolean }[];
   retorn_pedagogic: string;
 };
-// C1: rúbrica oficial de la JQCV (2026) amb quatre aspectes en bandes A-E; total sobre 50.
+// C1 i C2: rúbriques oficials de la JQCV (2026) amb quatre aspectes en bandes A-E; total sobre 50.
 export type C1CriterionKey = 'execucio_tasca' | 'construccio_discurs' | 'contingut_linguistic' | 'control_norma';
 export type C1WritingEvaluation = {
-  rubrica: 'c1_redaccio';
+  rubrica: 'c1_redaccio' | 'c2_redaccio';
   opcio?: string;
   comprovacio_extensio: { paraules_reals: number; objectiu_tasca: string; dins_marge_10_percent: boolean };
   criteris: Record<C1CriterionKey, { banda: 'A' | 'B' | 'C' | 'D' | 'E'; puntuacio: number; justificacio: string }>;

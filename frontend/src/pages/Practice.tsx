@@ -55,7 +55,8 @@ const writingMark = (evaluation: WritingEvaluation) => {
     case 'a2_redaccio': return { score: evaluation.mitjana_ponderada_base_10, total: 10 };
     case 'b1_redaccio':
     case 'b2_redaccio':
-    case 'c1_redaccio': return { score: evaluation.mitjana_base_10, total: 10 };
+    case 'c1_redaccio':
+    case 'c2_redaccio': return { score: evaluation.mitjana_base_10, total: 10 };
     default: return { score: evaluation.puntuacio_global, total: 15 };
   }
 };
