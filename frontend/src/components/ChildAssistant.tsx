@@ -14,6 +14,7 @@ import { ThinkingIndicator } from './ThinkingIndicator';
 import { ALL_LESSONS } from '../features/kids/lessons';
 import type { Mood, TutorExercise } from '../lib/types';
 
+import { useConfirm } from './ConfirmDialog';
 // `transcription`: en un missatge de veu, el que ha entés el model; es mostra davall l'etiqueta del missatge.
 type Message = AssistantConversation['messages'][number] & { transcription?: string };
 
@@ -76,6 +77,7 @@ function useAvatarSize() {
 // Reutilitza el xat de les activitats (/api/turn): els missatges es guarden en este navegador (no
 // al servidor) i la conversa continua entre visites. El professor també respon en veu alta.
 export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
+  const { confirm } = useConfirm();
   const [messages, setMessages] = useState<Message[]>([]);
   const [ready, setReady] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
@@ -177,7 +179,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   // Tanca la conversa i en comença una de nova: el professor torna a saludar.
   const restart = async () => {
     if (loading || !ready) return;
-    if (!window.confirm('Vols començar una conversa nova amb el professor?')) return;
+    if (!(await confirm({ title: 'Començar una conversa nova?', message: 'Vols començar una conversa nova amb el professor?', confirmLabel: 'Sí, començar', icon: RotateCcw }))) return;
     stopAudio();
     setLoading(true);
     try {

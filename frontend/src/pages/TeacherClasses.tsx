@@ -10,6 +10,7 @@ import { TeacherActivities } from '../features/activities/TeacherActivities';
 import { TeacherPathsTab } from '../features/paths/TeacherPathsTab';
 import { StudentsByClass } from '../features/kids/StudentsByClass';
 import { ago, groupAdultStruggles, groupStruggles, percent, summarize, summarizeAdult } from '../features/kids/report';
+import { useConfirm } from '../components/ConfirmDialog';
 import {
   createClass, deleteClass, loadMyClasses, loadStudents, removeStudent, type KidsClass, type Student,
 } from '../features/kids/tracking';
@@ -23,6 +24,7 @@ const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-xl fon
  * les seues converses amb personatges, que també pot llegir).
  */
 export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onLogOut: () => void }) {
+  const { confirm } = useConfirm();
   const [classes, setClasses] = useState<KidsClass[]>();
   const [selected, setSelected] = useState<KidsClass>();
   const [students, setStudents] = useState<Student[]>();
@@ -77,14 +79,15 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
   };
 
   const remove = async (c: KidsClass) => {
-    if (!confirm(`Segur que vols esborrar la classe «${c.name}»? L'alumnat no perd el seu progrés.`)) return;
+    if (!(await confirm({ title: 'Esborrar la classe?', message: `Segur que vols esborrar la classe «${c.name}»? L'alumnat no perd el seu progrés.`, confirmLabel: 'Esborra', tone: 'danger' }))) return;
     await deleteClass(c.id).catch(console.error);
     setClasses(list => list?.filter(x => x.id !== c.id));
     setSelected(undefined);
   };
 
   const kick = async (s: Student) => {
-    if (!selected || !confirm(`Vols traure ${s.data.name || 'este alumne'} de la classe?`)) return;
+    if (!selected) return;
+    if (!(await confirm({ title: "Traure l'alumne?", message: `Vols traure ${s.data.name || 'este alumne'} de la classe?`, confirmLabel: 'Trau', tone: 'danger' }))) return;
     await removeStudent(selected.id, s.id).catch(console.error);
     setStudents(list => list?.filter(x => x.id !== s.id));
   };
@@ -115,7 +118,7 @@ export function TeacherClasses({ uid, onLogOut }: { uid: string | undefined; onL
             </button>
           ) : <span />}
           <Logo size="lg" />
-          <button onClick={onLogOut} id="classes-logout-btn" className="btn-press flex items-center gap-2 justify-self-end rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-coral shadow hover:bg-white transition-colors">
+          <button onClick={async () => { if (await confirm({ title: 'Vols tancar la sessió?', message: "Tornaràs a la pantalla d'entrada.", confirmLabel: 'Tanca-la', icon: LogOut })) onLogOut(); }} id="classes-logout-btn" className="btn-press flex items-center gap-2 justify-self-end rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-coral shadow hover:bg-white transition-colors">
             <LogOut size={16} /> <span className="hidden sm:inline">Tanca la sessió</span>
           </button>
         </div>

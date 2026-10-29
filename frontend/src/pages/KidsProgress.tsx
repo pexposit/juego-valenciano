@@ -6,6 +6,7 @@ import { ProgressReport } from '../features/kids/ProgressReport';
 import { checkPin, hasPin, isPin, resetPin, setPin } from '../features/kids/parentPin';
 import { joinClass, leaveClass, loadChildData, loadJoinedClasses, type ChildData } from '../features/kids/tracking';
 
+import { useConfirm } from '../components/ConfirmDialog';
 const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-2xl font-normal outline-none focus:border-[#0F47AF] transition-colors';
 
 /**
@@ -14,6 +15,7 @@ const FIELD_CLASS = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-2xl fo
  * del xiquet i les classes del professorat on està (amb el codi que dona la docent).
  */
 export function KidsProgress({ uid, name, isGuest = false, onBack, onLesson }: { uid: string | undefined; name: string; isGuest?: boolean; onBack: () => void; onLesson: (lesson: string) => void }) {
+  const { confirm } = useConfirm();
   const [adult, setAdult] = useState(false);
   const [data, setData] = useState<ChildData | null>();
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
@@ -49,7 +51,7 @@ export function KidsProgress({ uid, name, isGuest = false, onBack, onLesson }: {
   };
 
   const leave = async (id: string, className: string) => {
-    if (!confirm(`Segur que voleu eixir de la classe «${className}»? La docent deixarà de vore el seguiment.`)) return;
+    if (!(await confirm({ title: 'Eixir de la classe?', message: `Segur que voleu eixir de la classe «${className}»? La docent deixarà de vore el seguiment.`, confirmLabel: 'Ix', tone: 'danger' }))) return;
     try {
       await leaveClass(id, uid!);
       setClasses(c => c.filter(x => x.id !== id));

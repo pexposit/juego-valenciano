@@ -388,7 +388,8 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
         {/* Portada */}
         <section className="relative overflow-hidden rounded-[2rem] bg-navy p-8 text-white shadow-xl">
           <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-mustard/20" aria-hidden="true" />
-          <div className="relative flex flex-wrap items-center gap-6">
+          {/* En vertical (móvil y tablet) el icono va encima del texto */}
+          <div className="relative flex flex-wrap items-center gap-6 [@media(max-width:1023px)_and_(orientation:portrait)]:flex-col [@media(max-width:1023px)_and_(orientation:portrait)]:items-start">
             <div
               className="grid h-24 w-24 shrink-0 place-items-center rounded-3xl text-5xl shadow-lg"
               style={{ background: practice.color ?? '#FDE94D' }}
@@ -421,9 +422,10 @@ export function Practice({ practice, userLevel, onBack, preview = false }: { pra
         {currentPage.map(group => (
           <section
             key={group.passage?.id ?? group.exercises[0].exercise.id}
-            className={`flex flex-col gap-4 ${group.passage?.media === 'text' ? 'lg:grid lg:grid-cols-2 lg:items-start lg:gap-8' : ''}`}
+            className={`flex flex-col gap-4 ${group.passage?.media === 'text' ? 'lg:ml-[calc(50%-46vw)] lg:w-[92vw] lg:max-w-none lg:grid lg:grid-cols-2 lg:items-start lg:gap-8' : ''}`}
           >
-            {/* Text de lectura: text a l'esquerra i preguntes a la dreta (en pantalles grans). */}
+            {/* Text de lectura: text a l'esquerra i preguntes a la dreta (en pantalles grans). Esta secció s'eixampla fins a deixar només un 4 % de vora
+                a cada costat de la pantalla (la capçalera conserva l'amplada normal). */}
             {group.passage && (
               <div className={group.passage.media === 'text' ? 'lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:rounded-2xl' : ''}>
                 <Passage passage={group.passage} showTranscript={checked} />

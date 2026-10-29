@@ -7,6 +7,7 @@ import { categoryLabel } from '../components/ScenarioSelect';
 import { practiceRoute } from '../data/content';
 import { fetchUserErrors, resolveUserError, type UserError } from '../lib/api';
 
+import { useConfirm } from '../components/ConfirmDialog';
 type Result = 'right' | 'wrong';
 
 const hash = (s: string) => [...s].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) | 0, 7);
@@ -22,6 +23,7 @@ function Highlighted({ text, part }: { text: string; part: string }) {
 // Una targeta per error: es mostra el text erroni i cal escriure'n la correcció.
 // Si l'encerta, l'error queda resolt a la BDD.
 function ErrorCard({ error, n, total, onFixed, onDiscard }: { error: UserError; n: number; total: number; onFixed: () => void; onDiscard: () => void }) {
+  const { confirm } = useConfirm();
   const [answer, setAnswer] = useState('');
   const [result, setResult] = useState<Result | null>(null);
   // Ordre estable però barrejat: en la BDD la correcta és sempre la primera.
@@ -38,8 +40,8 @@ function ErrorCard({ error, n, total, onFixed, onDiscard }: { error: UserError; 
   };
 
   // Descartar un error el dona per resolt: ix de la llista i deixa de comptar com a pendent.
-  const discard = () => {
-    if (!window.confirm("Vols descartar este error? No el tornaràs a practicar.")) return;
+  const discard = async () => {
+    if (!(await confirm({ title: "Descartar l'error?", message: 'Vols descartar este error? No el tornaràs a practicar.', confirmLabel: 'Descarta', tone: 'danger' }))) return;
     onDiscard();
     resolveUserError(error.id).catch(err => console.error(err));
   };

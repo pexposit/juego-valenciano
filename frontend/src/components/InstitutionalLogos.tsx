@@ -24,7 +24,7 @@ export function InstitutionalBar() {
       <ul className="flex items-center gap-x-4 sm:gap-x-7">
         {INSTITUCIONS.map(({ name, src, bar }) => (
           <li key={name}>
-            <img src={src} alt={name} loading="lazy" decoding="async" className={`${bar} w-auto`} />
+            <img src={src} alt={name} loading="lazy" decoding="async" className={`${bar} w-auto max-lg:!h-5 [@media(orientation:landscape)_and_(max-height:500px)]:!h-5 [@media(orientation:landscape)_and_(pointer:coarse)]:!h-5`} />
           </li>
         ))}
       </ul>
