@@ -3,13 +3,15 @@ import { School, X } from 'lucide-react';
 import { invalidateResources } from '../../lib/api';
 import { joinClass, leaveClass, loadJoinedClasses } from '../kids/tracking';
 
+import { useConfirm } from '../../components/ConfirmDialog';
 /**
  * Les classes de l'alumne adult (qualsevol nivell): s'hi unix amb el codi que li dona la docent,
  * sense PIN (el PIN de la família és només per als comptes infantils, des del seguiment). La BDD
  * comprova que el nivell de l'alumne és d'algun dels de la classe.
  * `locked`: qui ha entrat amb el codi d'una classe (sense compte) no en pot eixir ni unir-se a una altra.
  */
-export function StudentClasses({ uid, locked = false }: { uid: string; locked?: boolean }) {
+export function StudentClasses({ uid, locked = false, className = 'mt-8' }: { uid: string; locked?: boolean; className?: string }) {
+  const { confirm } = useConfirm();
   const [classes, setClasses] = useState<{ id: string; name: string }[]>();
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<{ ok: boolean; text: string }>();
@@ -33,7 +35,7 @@ export function StudentClasses({ uid, locked = false }: { uid: string; locked?: 
   };
 
   const leave = async (id: string, name: string) => {
-    if (!confirm(`Segur que vols eixir de la classe «${name}»?`)) return;
+    if (!(await confirm({ title: 'Eixir de la classe?', message: `Segur que vols eixir de la classe «${name}»?`, confirmLabel: 'Ix', tone: 'danger' }))) return;
     try {
       await leaveClass(id, uid);
       setClasses(list => list?.filter(c => c.id !== id));
@@ -44,7 +46,7 @@ export function StudentClasses({ uid, locked = false }: { uid: string; locked?: 
   };
 
   return (
-    <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm">
+    <section className={`${className} rounded-3xl bg-white p-5 shadow-sm`}>
       <h2 className="flex items-center gap-2 text-2xl font-black"><School size={22} /> Les meues classes</h2>
       {classes?.length ? (
         <ul className="mt-3 flex flex-col gap-2">

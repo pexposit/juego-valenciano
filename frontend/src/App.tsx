@@ -219,7 +219,7 @@ export function App() {
   // Barra institucional fixa al peu de totes les pantalles, menys la d'inici (que té el peu complet).
   const showFooterBar = pathname !== ROUTES.home;
   useEffect(() => {
-    document.documentElement.style.setProperty('--app-footer', showFooterBar ? '68px' : '0px');
+    document.documentElement.style.setProperty('--app-footer', showFooterBar ? 'var(--footer-h, 68px)' : '0px');
   }, [showFooterBar]);
   const [xp, setXp] = useState(DEFAULT_PROFILE.xp);
   const [level, setLevel] = useState(DEFAULT_PROFILE.level);

@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { BookOpen, ChevronDown } from 'lucide-react';
 import { ago, percent, stageNote, summarize, summarizeAdult, type AdultItem, type IslandSummary, type Report } from './report';
 import type { ChildData, RouteProgress } from './tracking';
+import { AdultCharts } from './AdultCharts';
 
 /**
  * Informe del seguiment d'un xiquet del Nivell 0, per a persones adultes (la família en
@@ -9,16 +10,18 @@ import type { ChildData, RouteProgress } from './tracking';
  * illes agrupades per encerts a la primera: li costa, a practicar i ho domina. A banda,
  * les converses amb personatges, amb els objectius que ha complit (sense errors).
  */
-export function ProgressReport({ data, name, onLesson }: {
+export function ProgressReport({ data, name, onLesson, self = false }: {
   data: ChildData;
   name: string;
   onLesson?: (lesson: string) => void;
+  // L'alumne adult veu el seu propi progrés (perfil): els textos li parlen a ell, no a la docent.
+  self?: boolean;
 }) {
   const report = summarize(data);
   const who = name || 'el xiquet o la xiqueta';
   // Les illes, les partides i les lliçons són del Nivell 0 (xiquets): de qui té un altre nivell només es veuen els escenaris.
   const adult = Boolean(data.level) && data.level !== 'nivell0';
-  if (adult) return <AdultReport data={data} report={report} />;
+  if (adult) return <AdultReport data={data} report={report} self={self} />;
 
   return (
     <div className="space-y-5">
@@ -96,11 +99,31 @@ function Tile({ label, value, detail }: { label: string; value: string; detail: 
   );
 }
 
-/** Les converses amb personatges: no es corregixen errors, es mira quins objectius ha complit. */
+/**
+ * Les converses amb personatges: no es corregixen errors, es mira quins objectius ha complit. En l'informe de les
+ * persones adultes es pleguen per defecte (hi ha molt de text); el resum del títol diu quantes n'hi ha.
+ */
 function Conversations({ report, adult = false }: { report: Report; adult?: boolean }) {
+  const [open, setOpen] = useState(!adult);
+  const bodyId = 'report-conversations';
   return (
     <Card>
-      <h3 className="text-2xl font-black">Converses</h3>
+      {adult ? (
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
+          aria-controls={bodyId}
+          className="flex w-full items-center gap-3 rounded-xl text-left hover:bg-gray-50"
+        >
+          <ChevronDown size={22} className={`shrink-0 opacity-50 transition-transform ${open ? '' : '-rotate-90'}`} aria-hidden="true" />
+          <span className="text-2xl font-black">Converses</span>
+          <span className="ml-auto rounded-full bg-black/5 px-3 py-0.5 text-base font-bold opacity-70">{report.conversations.length}</span>
+        </button>
+      ) : (
+        <h3 className="text-2xl font-black">Converses</h3>
+      )}
+      <div id={bodyId} hidden={!open}>
       <p className="mt-1 text-base opacity-60">
         {adult
           ? "Escenaris de conversa amb personatges. Ací no es corregixen errors: es mira quins objectius de l'escenari ha complit en valencià."
@@ -145,6 +168,7 @@ function Conversations({ report, adult = false }: { report: Report; adult?: bool
       ) : (
         <p className="mt-3 text-lg">{adult ? 'Encara no ha acabat cap escenari de conversa.' : 'Encara no ha parlat amb cap personatge.'}</p>
       )}
+      </div>
     </Card>
   );
 }
@@ -209,23 +233,10 @@ function Group({ title, hint, empty, tone, islands, onLesson }: {
  * L'informe d'una persona adulta: com el dels xiquets (li costa, a practicar, ho domina), però amb les seues
  * activitats (pràctiques, exàmens i escenaris) en compte d'illes. Els escenaris porten els objectius complits.
  */
-function AdultReport({ data, report }: { data: ChildData; report: Report }) {
+function AdultReport({ data, report, self }: { data: ChildData; report: Report; self: boolean }) {
   const adult = summarizeAdult(data);
-  return (
-    <div className="space-y-5">
-      {!adult.items.length && (
-        <Card>
-          <p className="text-xl font-extrabold">Encara no hi ha activitats</p>
-          <p className="mt-1 text-lg opacity-70">Quan acabe pràctiques, exàmens o escenaris, ací veureu què domina, què li costa i què ha de practicar.</p>
-        </Card>
-      )}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Tile label="Activitats" value={`${adult.items.length}`} detail="amb nota o objectius" />
-        <Tile label="Ho domina" value={`${adult.domina.length}`} detail="80 % o més" />
-        <Tile label="Li costa" value={`${adult.costa.length}`} detail="50 % o menys" />
-        <Tile label="Última activitat" value={ago(adult.lastActivity)} detail="pràctica, examen o escenari" />
-      </div>
-
+  const groups = (
+    <>
       <AdultGroup
         title="Li costa"
         hint="Activitats on té el 50 % o menys d'encerts (o d'objectius complits)."
@@ -247,16 +258,45 @@ function AdultReport({ data, report }: { data: ChildData; report: Report }) {
         tone="teal"
         items={adult.domina}
       />
+    </>
+  );
+  return (
+    <div className="space-y-5">
+      {!adult.items.length && (
+        <Card>
+          <p className="text-xl font-extrabold">Encara no hi ha activitats</p>
+          <p className="mt-1 text-lg opacity-70">
+            {self
+              ? 'Quan acabes pràctiques, exàmens o escenaris, ací veuràs què domines, què et costa i què has de practicar.'
+              : 'Quan acabe pràctiques, exàmens o escenaris, ací veureu què domina, què li costa i què ha de practicar.'}
+          </p>
+        </Card>
+      )}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Tile label="Activitats" value={`${adult.items.length}`} detail="amb nota o objectius" />
+        <Tile label="Ho domina" value={`${adult.domina.length}`} detail="80 % o més" />
+        <Tile label="Li costa" value={`${adult.costa.length}`} detail="50 % o menys" />
+        <Tile label="Última activitat" value={ago(adult.lastActivity)} detail="pràctica, examen o escenari" />
+      </div>
+
+      {/* L'alumne veu el resum en gràfics; el detall per grups queda plegat (és la mateixa informació, en llista). */}
+      {self && <AdultCharts items={adult.items} />}
+      {self ? (
+        <details className="rounded-3xl bg-white p-5 shadow-sm">
+          <summary className="cursor-pointer text-xl font-black">Detall per activitat</summary>
+          <div className="mt-4 space-y-5">{groups}</div>
+        </details>
+      ) : groups}
 
       {/* Les rutes de la classe i les predefinides, per separat. */}
       <RoutesCard
         title="Rutes de la classe"
-        hint="El progrés de l'alumne en les rutes que has creat per a esta classe."
+        hint={self ? "El teu progrés en les rutes que la docent ha creat per a les teues classes." : "El progrés de l'alumne en les rutes que has creat per a esta classe."}
         routes={(data.routes ?? []).filter(r => r.kind === 'class')}
       />
       <RoutesCard
         title="Rutes recomanades"
-        hint="El progrés de l'alumne en les rutes predefinides del seu nivell."
+        hint={self ? 'El teu progrés en les rutes predefinides del teu nivell.' : "El progrés de l'alumne en les rutes predefinides del seu nivell."}
         routes={(data.routes ?? []).filter(r => r.kind === 'predefined')}
       />
 

@@ -266,7 +266,7 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
       words: exercise.words ?? [],
       minWordsUsed: exercise.min_words_used ?? 0,
     });
-  } else if ((exam?.level === 'B1' || exam?.level === 'B2' || exam?.level === 'C1') && exercise?.kind === 'writing' && exercise.min_words && exercise.max_words) {
+  } else if ((exam?.level === 'B1' || exam?.level === 'B2' || exam?.level === 'C1' || exam?.level === 'C2') && exercise?.kind === 'writing' && exercise.min_words && exercise.max_words) {
     const text = parsedBody.data.text?.trim();
     if (!text) return res.status(400).json({ error: 'Escriu el text abans d’avaluar-lo' });
     if (text.length > writingMaxChars(exam.level)) return res.status(400).json({ error: 'El text és massa llarg' });
@@ -282,7 +282,9 @@ resourcesRouter.post('/api/exams/:id/exercises/:n/evaluate', requireAuth, rateLi
       minWords: exercise.min_words!,
       maxWords: exercise.max_words!,
     };
-    evaluate = () => exam.level === 'C1' ? evaluateC1Writing(input) : evaluateB1Writing({ ...input, level: exam.level as 'B1' | 'B2' });
+    evaluate = () => exam.level === 'C1' || exam.level === 'C2'
+      ? evaluateC1Writing(input, exam.level)
+      : evaluateB1Writing({ ...input, level: exam.level as 'B1' | 'B2' });
   } else {
     return res.status(404).json({ error: "Este exercici no es pot avaluar" });
   }
@@ -318,7 +320,7 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
   if (exercise && !(await canSeeResource(client, req.userId ?? null, { id: exercise.resource_id, teacher_id: exercise.resources?.teacher_id ?? null }))) {
     return res.status(404).json({ error: "Este exercici no es pot avaluar" });
   }
-  // Del B1 amunt s'avalua amb la rúbrica del nivell (B1, B2 o C1; el C2, amb la del C1) i, si la tasca
+  // Del B1 amunt s'avalua amb la rúbrica del nivell (B1, B2, C1 o C2) i, si la tasca
   // parteix d'un text o d'un àudio (paràfrasi, apunts...), l'avaluador en rep la transcripció.
   const intermediate = exercise && !['A1', 'A2'].includes(exercise.level);
   const passage = exercise?.practice_passages as { title: string | null; lines: { text: string; speaker?: string }[] } | null;
@@ -345,7 +347,7 @@ resourcesRouter.post('/api/practice/exercises/:id/evaluate', requireAuth, rateLi
     evaluate = () => intermediate
       ? (exercise.level === 'B1' || exercise.level === 'B2'
         ? evaluateB1Writing({ ...intermediateInput, level: exercise.level })
-        : evaluateC1Writing(intermediateInput))
+        : evaluateC1Writing(intermediateInput, exercise.level === 'C2' ? 'C2' : 'C1'))
       : evaluateA2Writing({
           instructions: exercise.prompt,
           text,

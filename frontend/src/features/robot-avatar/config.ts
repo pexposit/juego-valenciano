@@ -253,6 +253,63 @@ export const ROBOT_AVATAR = {
       modelUrl: asset('/avatar-robot/robot-b2_gent.glb'),
       fallbackUrl: asset('/avatar-robot/robot-b2_gent.webp'),
     },
+    // --- C2 ---
+    c2_relacions: { // Ernest, amic de tota la vida i professor de música: americana de llana, coll alt i un tallat
+      modelUrl: '/avatar-robot/robot-c2_relacions.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_relacions.webp',
+    },
+    c2_casa: { // Remei, propietària d'un mas: rebeca, monyo, pestanyes i la clau antiga del mas
+      modelUrl: '/avatar-robot/robot-c2_casa.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_casa.webp',
+    },
+    c2_treball: { // Andreu, director de recursos humans: vestit antracita, corbata i carpeta de pell
+      modelUrl: '/avatar-robot/robot-c2_treball.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_treball.webp',
+    },
+    c2_alimentacio: { // Mar, cap de cuina d'un càtering: jaqueta de xef negra, mocador al cap, pestanyes i cullerot
+      modelUrl: '/avatar-robot/robot-c2_alimentacio.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_alimentacio.webp',
+    },
+    c2_temps_lliure: { // Toni, president dels hostalers: barret panamà, americana de lli i ulleres de sol
+      modelUrl: '/avatar-robot/robot-c2_temps_lliure.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_temps_lliure.webp',
+    },
+    c2_mitjans: { // Noelia, periodista de verificació: jaqueta de pell, auriculars al coll, pestanyes i lupa
+      modelUrl: '/avatar-robot/robot-c2_mitjans.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_mitjans.webp',
+    },
+    c2_salut: { // Amparo, treballadora social sanitària: la roba d'Amparo (ajuntament) amb la targeta de l'hospital
+      modelUrl: '/avatar-robot/robot-c2_salut.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_salut.webp',
+    },
+    c2_cultura: { // Octavi, comissari d'exposicions: americana de vellut, coll alt, ulleres de carei i catàleg
+      modelUrl: '/avatar-robot/robot-c2_cultura.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_cultura.webp',
+    },
+    c2_comerc: { // Rebeca, cap d'atenció al client: americana negra, fular maragda, pestanyes i el tiquet de compra
+      modelUrl: '/avatar-robot/robot-c2_comerc.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_comerc.webp',
+    },
+    c2_ensenyanca: { // Joaquim, director de l'institut: jersei de coll de pic, corbata, ulleres i matràs
+      modelUrl: '/avatar-robot/robot-c2_ensenyanca.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_ensenyanca.webp',
+    },
+    c2_economia: { // Isabel, assessora de banca: americana carmesí, collaret d'or, pestanyes i tauleta amb un gràfic
+      modelUrl: '/avatar-robot/robot-c2_economia.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_economia.webp',
+    },
+    c2_medi_clima: { // Ferran, enginyer de renovables: forro polar amb el logo d'un sol i maqueta de placa solar
+      modelUrl: '/avatar-robot/robot-c2_medi_clima.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_medi_clima.webp',
+    },
+    c2_politica: { // Carme, exdiputada: americana gris, brusa lila, fermall, perles, pestanyes i llibre de memòries
+      modelUrl: '/avatar-robot/robot-c2_politica.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_politica.webp',
+    },
+    c2_llengua: { // Xavier, professor i intèrpret de llengua de signes: roba llisa negra, rellotge i manual
+      modelUrl: '/avatar-robot/robot-c2_llengua.glb',
+      fallbackUrl: '/avatar-robot/robot-c2_llengua.webp',
+    },
   } as Record<string, { modelUrl: string; fallbackUrl: string }>,
 } as const;
 

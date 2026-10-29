@@ -14,6 +14,7 @@ import { studyPathsRouter } from './routes/studyPaths.js';
 import { teacherActivitiesRouter } from './routes/teacherActivities.js';
 import { teacherAgentRouter } from './routes/teacherAgent.js';
 import { teacherReportRouter } from './routes/teacherReport.js';
+import { myProgressRouter } from './routes/myProgress.js';
 import { profileRouter } from './routes/profile.js';
 
 const app = express();
@@ -42,6 +43,6 @@ const json = express.json({ limit: '12mb' });
 app.use((req, res, next) => (req.path === DOCUMENT_UPLOAD_PATH ? next() : json(req, res, next)));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
-app.use(resourcesRouter, learningPathRouter, ttsRouter, sessionsRouter, turnRouter, errorsRouter, assistantRouter, studyPathsRouter, teacherActivitiesRouter, teacherAgentRouter, teacherReportRouter, profileRouter);
+app.use(resourcesRouter, learningPathRouter, ttsRouter, sessionsRouter, turnRouter, errorsRouter, assistantRouter, studyPathsRouter, teacherActivitiesRouter, teacherAgentRouter, teacherReportRouter, myProgressRouter, profileRouter);
 
 app.listen(Number(process.env.PORT) || 3001, () => console.log('ParlaVal agent listening'));
