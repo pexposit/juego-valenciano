@@ -250,6 +250,25 @@ El compose separa los servicios en redes para limitar hasta dónde llega un serv
 
 `db` solo es alcanzable desde `auth`, `rest` y `migrate`; `api` no ve la base de datos, solo habla con Supabase a través de `web:8000`; `web` no llega a `mcp`, `rag` ni `toxicity`. Si añades un servicio, ponlo en la red mínima que necesite. `docker compose up -d` recrea las redes al cambiarlas (puede ser necesario `docker compose down` antes, sin `-v`).
 
+### Endurecimiento de contenedores
+
+El compose aplica a los servicios (bloques `x-hardened` y `x-hardened-ro` al inicio) estas restricciones, que no cambian el funcionamiento:
+
+- `no-new-privileges`: un proceso no puede ganar privilegios (setuid) aunque explote una vulnerabilidad.
+- `cap_drop: ALL`: sin capabilities de Linux. `web` recupera solo `NET_BIND_SERVICE` para escuchar en 80/443.
+- `read_only` + `tmpfs: /tmp`: sistema de ficheros de solo lectura; solo se escribe en `/tmp` (memoria) y en los volúmenes.
+
+| Servicio | Restricciones |
+|---|---|
+| `web`, `api`, `mcp`, `rag`, `toxicity-classificator` | las tres |
+| `auth`, `rest` | `no-new-privileges` y `cap_drop` (imágenes de terceros: no se sabe si escriben fuera de `/tmp`) |
+| `migrate` | solo `no-new-privileges` |
+| `db` | ninguna: el entrypoint de Postgres necesita capabilities para ajustar permisos al arrancar |
+
+- Con `SITE_ADDRESS=localhost`, Caddy registra `failed to install root certificate` (no puede escribir en el almacén de certificados del contenedor). Es inocuo: el certificado se emite igual. Con un dominio real no aparece.
+- Si un servicio no arranca tras un cambio, busca `Read-only file system` u `Operation not permitted` en `docker compose logs <servicio>`. Se arregla quitándole `<<: *hardened-ro` (o cambiándolo por `<<: *hardened`), o añadiendo un `tmpfs` para la ruta que pide.
+- Los límites de memoria/CPU no se fijan: el RAG y toxicity cargan modelos y pueden necesitar picos.
+
 ### Mantenimiento
 
 - **Actualizar:** `git pull && docker compose up -d --build`. Las migraciones nuevas de `supabase/migrations/` se aplican solas, cada una una sola vez (registro en `deploy.applied_migrations`).

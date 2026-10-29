@@ -14,6 +14,18 @@ name: parlaval-deploy
 x-deploy-labels: &deploy-labels
   com.parlaval.stack: deploy
 
+# Enduriment dels contenidors (no canvia el funcionament; si un servici falla en arrancar, llevar-li el bloc i mirar els logs):
+#   no-new-privileges  un procés no pot guanyar privilegis (setuid/capabilities) encara que explote una vulnerabilitat.
+#   cap_drop ALL       sense capabilities de Linux (cada servici només torna a afegir les que necessita).
+#   read_only + /tmp   el sistema de fitxers de la imatge és de només lectura; només s'escriu en /tmp (memòria) i en els volums.
+x-hardened: &hardened
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+x-hardened-ro: &hardened-ro
+  <<: *hardened
+  read_only: true
+  tmpfs: [/tmp]
+
 # Xarxes separades (cada servici només veu els que ha de veure):
 #   edge     web <-> api. L'API cridava Supabase per `web:8000`, així que és l'únic enllaç api-Supabase.
 #   supabase web <-> auth, rest. INTERNA: sense eixida a Internet.
@@ -57,6 +69,9 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     networks: [edge, supabase]
+    <<: *hardened-ro
+    # Caddy corre com a root dins de la imatge i necessita escoltar als ports 80/443.
+    cap_add: [NET_BIND_SERVICE]
     depends_on:
       - api
       - auth
@@ -66,6 +81,7 @@ services:
   api:
     container_name: parlaval-deploy-api
     labels: *deploy-labels
+    <<: *hardened-ro
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -107,6 +123,7 @@ services:
   mcp:
     container_name: parlaval-deploy-mcp
     labels: *deploy-labels
+    <<: *hardened-ro
     build:
       context: .
       dockerfile: mcp/Dockerfile
@@ -126,6 +143,7 @@ services:
   rag:
     container_name: parlaval-deploy-rag
     labels: *deploy-labels
+    <<: *hardened-ro
     build:
       context: .
       dockerfile: rag_gnv/Dockerfile
@@ -147,6 +165,7 @@ services:
   toxicity-classificator:
     container_name: parlaval-deploy-toxicity
     labels: *deploy-labels
+    <<: *hardened-ro
     build: ./toxicity-classificator
     environment:
       PORT: 8001
@@ -200,6 +219,7 @@ services:
   auth:
     container_name: parlaval-deploy-auth
     labels: *deploy-labels
+    <<: *hardened
     image: supabase/gotrue:v2.196.0
     depends_on:
       db:
@@ -248,6 +268,7 @@ services:
   migrate:
     container_name: parlaval-deploy-migrate
     labels: *deploy-labels
+    security_opt: [no-new-privileges:true]
     image: supabase/postgres:17.6.1.136
     depends_on:
       auth:
@@ -265,6 +286,7 @@ services:
   rest:
     container_name: parlaval-deploy-rest
     labels: *deploy-labels
+    <<: *hardened
     image: postgrest/postgrest:v14.17
     depends_on:
       migrate:

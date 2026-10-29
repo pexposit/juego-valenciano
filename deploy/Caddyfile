@@ -62,7 +62,6 @@
 		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	}
 
-
 	# Darrere d'un proxy amb subruta (BASE_PATH, p. ex. /parlaval) el proxy reenvia
 	# /parlaval/...: es lleva ací el prefix i la resta de rutes queden igual. Si el
 	# proxy ja l'ha llevat, o no hi ha BASE_PATH (val `/`), no canvia res.
