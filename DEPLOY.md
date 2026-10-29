@@ -220,6 +220,22 @@ curl https://$DOMAIN/health                  # {"ok":true}
 - **Guarda una copia del `.env`.** Si pierdes `JWT_SECRET`, todas las sesiones dejan de valer; si pierdes `POSTGRES_PASSWORD`, los servicios no conectan a la base de datos.
 - Las altas no piden confirmación por correo (`ENABLE_EMAIL_AUTOCONFIRM=true`). Para activarla, rellena las `SMTP_*` del `.env`.
 
+### Cabeceras de seguridad y límite de tamaño (Caddy y proxy)
+
+`deploy/Caddyfile` reparte las cabeceras en dos grupos:
+
+- **Siempre (propias de la app):** `Content-Security-Policy`, `Permissions-Policy` (micrófono permitido) y los límites de cuerpo de petición (`request_body`, respuesta 413): `/api/*` 13 MB, `/api/teacher/agent/document` 140 MB (documentos de hasta 100 MB en base64), `/auth/v1/*` 1 MB y `/rest/v1/*` 5 MB.
+- **De transporte, con `SECURITY_HEADERS` (`on` por defecto):** `Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` y quitar `Server`. Si hay un proxy delante que ya las añade, pon `SECURITY_HEADERS=off` en el `.env` para no duplicarlas (un `X-Frame-Options` repetido se considera inválido). El Caddyfile va dentro de la imagen de `web` (`frontend/Dockerfile`): cualquier cambio en él, o en `SECURITY_HEADERS`, se aplica con `docker compose up -d --build web` (el cambio de la variable sola también vale con `docker compose up -d web`, que recrea el contenedor).
+
+**Qué debe configurarse en el proxy de delante** (Caddy no puede hacerlo por él):
+
+- **Tamaño de cuerpo:** como mínimo el de la ruta más grande, **140 MB** para `/api/teacher/agent/document` (nginx: `client_max_body_size 140m;`, por defecto es 1 MB y cortaría la subida antes de llegar a Caddy). Si se prefiere, un límite más bajo en el resto de rutas.
+- **Timeouts** suficientes para esa subida (nginx: `proxy_read_timeout` / `proxy_send_timeout` / `client_body_timeout`, p. ej. 300 s) y, a ser posible, `proxy_request_buffering off;`.
+- **HSTS**, ya que el proxy es quien termina el HTTPS (con `SITE_ADDRESS=http://` Caddy habla HTTP plano y esa cabecera no tiene efecto en ese salto). Junto con `X-Frame-Options`, `X-Content-Type-Options` y `Referrer-Policy` si se usa `SECURITY_HEADERS=off`.
+- **No eliminar ni reescribir** `Content-Security-Policy` ni `Permissions-Policy`, y no añadir una CSP propia más restrictiva que bloquee Google Fonts, `blob:` o `data:`.
+- **Embebido:** la CSP lleva `frame-ancestors 'none'`; si la web se incrusta en un iframe de otro sitio, hay que cambiarlo en el Caddyfile.
+- Reenviar `X-Forwarded-For` / `X-Forwarded-Proto` (el backend usa `trust proxy 1`).
+
 ### Mantenimiento
 
 - **Actualizar:** `git pull && docker compose up -d --build`. Las migraciones nuevas de `supabase/migrations/` se aplican solas, cada una una sola vez (registro en `deploy.applied_migrations`).

@@ -34,6 +34,8 @@ services:
       SITE_ADDRESS: ${SITE_ADDRESS:-${DOMAIN}}
       # Prefix que Caddy lleva de les peticions (`/` = cap).
       BASE_PATH: ${BASE_PATH:-/}
+      # on (per defecte): Caddy afig HSTS, X-Frame-Options, nosniff i Referrer-Policy. off si el proxy de davant ja les posa.
+      SECURITY_HEADERS: ${SECURITY_HEADERS:-on}
     ports:
       - "80:80"
       - "443:443"

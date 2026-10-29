@@ -6,17 +6,38 @@
 	# n'afegim les nostres (a baix); sense llevar estes abans, el navegador veu
 	# dos valors d'Access-Control-Allow-Origin i rebutja la resposta sencera.
 	handle_path /auth/v1/* {
+		request_body {
+			max_size 1MB
+		}
 		reverse_proxy auth:9999 {
 			header_down -Access-Control-Allow-Origin
 			header_down -Access-Control-Allow-Credentials
 		}
 	}
 	handle_path /rest/v1/* {
+		request_body {
+			max_size 5MB
+		}
 		reverse_proxy rest:3000 {
 			header_down -Access-Control-Allow-Origin
 			header_down -Access-Control-Allow-Credentials
 		}
 	}
+}
+
+# Capçaleres de transport. S'activen amb SECURITY_HEADERS=on (per defecte) i es
+# desactiven amb off si un proxy davant de Caddy ja les afig.
+(transport_on) {
+	header {
+		# HSTS: només té efecte sobre HTTPS (els navegadors l'ignoren en HTTP pla).
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+(transport_off) {
 }
 
 # {$SITE_ADDRESS} (per defecte, DOMAIN) amb un domini real (p. ex. parlaval.example.com)
@@ -26,6 +47,22 @@
 {$SITE_ADDRESS} {
 	encode zstd gzip
 
+	# Capçaleres de transport (HSTS, X-Frame-Options...): SECURITY_HEADERS=on (per
+	# defecte) les afig ací; =off quan el proxy de davant ja les posa (evita duplicats).
+	import transport_{$SECURITY_HEADERS:on}
+
+	# Capçaleres pròpies de l'aplicació (sempre actives).
+	header {
+		# Micròfon permés (exercicis de parla); la resta de sensors, bloquejats.
+		Permissions-Policy "microphone=(self), camera=(), geolocation=(), payment=()"
+		# 'wasm-unsafe-eval': el descodificador Draco (wasm) dels GLB del robot, a /draco/.
+		# Vite no injecta scripts en línia en el build; els estils en línia els usa React.
+		# Les fonts vénen de Google Fonts (index.css) i l'àudio pot ser blob:/data:.
+		# Supabase i l'API van pel mateix origen ('self').
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+	}
+
+
 	# Darrere d'un proxy amb subruta (BASE_PATH, p. ex. /parlaval) el proxy reenvia
 	# /parlaval/...: es lleva ací el prefix i la resta de rutes queden igual. Si el
 	# proxy ja l'ha llevat, o no hi ha BASE_PATH (val `/`), no canvia res.
@@ -34,7 +71,22 @@
 	import supabase
 
 	# API: mateix origen, així no cal CORS ni VITE_API_BASE_URL.
+	# Límit de grandària del cos (Caddy talla amb 413 abans d'arribar a l'API). Va dins
+	# de cada handle perquè s'avalue després de `uri strip_prefix` (si no, amb BASE_PATH
+	# el path no coincidiria). Els handle són excloents: el de la pujada va primer.
+	# Pujada de documents de l'agent del professorat: TEACHER_DOCUMENT_MAX_BYTES (100 MB,
+	# shared) en base64 ocupa ~134 MB; es deixa un petit marge.
+	handle /api/teacher/agent/document {
+		request_body {
+			max_size 140MB
+		}
+		reverse_proxy api:3001
+	}
+	# La resta, coherent amb express.json de backend/src/index.ts (12 MB) + marge.
 	handle /api/* {
+		request_body {
+			max_size 13MB
+		}
 		reverse_proxy api:3001
 	}
 	handle /health {
