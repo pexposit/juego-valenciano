@@ -1,5 +1,5 @@
 import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, PronunciationResult, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, VerbConjugation, WritingEvaluation, RouteOffer, StudyPathRef, PracticeOffer, PracticeResult } from './types';
-import { sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type OwnPathResult, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
+import { isTranslatedTongue, sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type OwnPathResult, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
 import { markRestartedAt } from '../features/paths/progress';
@@ -578,8 +578,6 @@ export type AssistantConversation = {
   session_resource_id: string;
   messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; practiceOffer?: PracticeOffer; lessonId?: string }[];
 };
-// Llengües maternes amb traducció (les mateixes que els subtítols del Nivell 0).
-const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'];
 // Canvi de llengua materna en curs: obrir el xat del tauler l'espera, perquè no mostre les traduccions velles.
 let retranslating: Promise<void> | undefined;
 
@@ -596,7 +594,7 @@ export function retranslateTutorConversation(tongue: string): Promise<void> {
     if (messages.length === 0) return;
     const valencian = (text: string) => text.split('\n')[0];
 
-    if (!TRANSLATED_TONGUES.includes(tongue)) {
+    if (!isTranslatedTongue(tongue)) {
       await updateMessageTexts(messages.map(m => ({ id: m.id, text: valencian(m.text) })));
       return;
     }

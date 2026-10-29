@@ -9,6 +9,7 @@ const HELP_GREETING: Record<string, string> = {
   ro: 'Cu ce te pot ajuta?',
   uk: 'Чим я можу тобі допомогти?',
   it: 'In cosa posso aiutarti?',
+  ar: 'كيف يمكنني مساعدتك؟',
 };
 
 // Salutació del tutor: en valencià i, en una línia nova, en la llengua materna del xiquet.

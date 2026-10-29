@@ -175,6 +175,7 @@ export const MOTHER_TONGUES = [
   { value: 'it', label: 'Italià' },
   { value: 'ro', label: 'Romanés' },
   { value: 'uk', label: 'Ucraïnés' },
+  { value: 'ar', label: 'Àrab' },
   { value: 'other', label: 'Una altra llengua' },
 ] as const;
 
@@ -185,10 +186,14 @@ export const MOTHER_TONGUES = [
 
 
 /** Llengües amb traducció (ajuda del tutor i subtítols del Nivell 0): totes menys 'ca' i 'other'. */
-export const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'] as const;
+export const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk', 'ar'] as const;
 export type TranslatedTongue = (typeof TRANSLATED_TONGUES)[number];
 export const isTranslatedTongue = (code: string | null | undefined): code is TranslatedTongue =>
   !!code && (TRANSLATED_TONGUES as readonly string[]).includes(code);
+
+/** Llengües maternes que s'escriuen de dreta a esquerra: les seues traduccions van amb dir="rtl". */
+export const RTL_TONGUES: readonly string[] = ['ar'];
+export const tongueDir = (code: string | null | undefined): 'rtl' | 'ltr' => (code && RTL_TONGUES.includes(code) ? 'rtl' : 'ltr');
 
 /** Nom (en valencià) d'una llengua materna, o undefined si no és una de les triables. */
 export const motherTongueLabel = (code: string | null | undefined) =>

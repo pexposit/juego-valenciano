@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { tongueDir } from '@parlaval/shared';
 import { phraseText } from './sound';
 
 /**
@@ -43,9 +44,10 @@ export const useKidsTranslationLang = () => useContext(TranslationContext).lang;
 /** Torna la traducció d'una frase (per clau d'àudio), o undefined. */
 export const useKidsTranslation = () => useContext(TranslationContext).translate;
 
-/** El text en la llengua materna, en lletra més xicoteta i d'un altre color, davall del valencià. */
+/** El text en la llengua materna, en lletra més xicoteta i d'un altre color, davall del valencià
+ * (de dreta a esquerra si la llengua ho és, com l'àrab). */
 export function Translation({ text, className = '' }: { text?: string; className?: string }) {
   const { lang } = useContext(TranslationContext);
   if (!text) return null;
-  return <span className={`kid-translation ${className}`} lang={lang ?? undefined}>{text}</span>;
+  return <span className={`kid-translation ${className}`} lang={lang ?? undefined} dir={tongueDir(lang)}>{text}</span>;
 }

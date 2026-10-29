@@ -6,7 +6,8 @@ import { lessonById } from '../features/kids/lessons';
 import type { GnvRule, PracticeOffer, RouteOffer, StudyPathRef, TutorActivity, TutorExercise, VerbConjugation } from '../lib/types';
 
 // Bombolla d'un missatge del xat amb el tutor. En els missatges del professor, la primera línia és en
-// valencià i la resta, en gris clar, l'ajuda en la llengua materna del xiquet (amagada si `showHelp` és fals).
+// valencià i la resta, en gris clar, l'ajuda en la llengua materna del xiquet (amagada si `showHelp` és fals; amb
+// dir="auto" perquè l'àrab vaja de dreta a esquerra).
 // Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial; si li han demanat la
 // conjugació d'un verb, la taula del DNV. Si li ha enllaçat una ruta d'aprenentatge, la targeta per a obrir-la; si li
 // ha oferit preparar-ne una, la pregunta amb els botons (`onRouteAnswer`; sense, com en l'historial, només el text).
@@ -26,7 +27,7 @@ export function ChatBubble({ role, text, transcription, gnv, conjugacio, studyPa
       <p>{valencian}</p>
       {corrections.length > 0 && <CorrectionGroups groups={corrections} />}
       {transcription && <p className="mt-2 border-t border-white/30 pt-2 text-[0.85em] font-normal">Transcripció: {transcription}</p>}
-      {showHelp && help.length > 0 && <p className="mt-1 whitespace-pre-line text-[0.85em] font-semibold text-slate-400">{help.join('\n')}</p>}
+      {showHelp && help.length > 0 && <p dir="auto" className="mt-1 whitespace-pre-line text-[0.85em] font-semibold text-slate-400">{help.join('\n')}</p>}
       {gnv && <GnvRuleCard rule={gnv} />}
       {conjugacio && <ConjugationCard conjugation={conjugacio} />}
       {studyPath && <StudyPathLink path={studyPath} />}

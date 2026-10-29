@@ -336,7 +336,7 @@ ${translation.initial_prompt}` : text;
           {summary && (
             <p className="mb-3 text-[length:calc(var(--sc-font)*0.95)] font-bold opacity-70">
               {summary}
-              {translation?.content && <span className="mt-0.5 block text-[length:calc(var(--sc-font)*0.8)] font-semibold text-slate-400">{translation.content}</span>}
+              {translation?.content && <span dir="auto" className="mt-0.5 block text-[length:calc(var(--sc-font)*0.8)] font-semibold text-slate-400">{translation.content}</span>}
             </p>
           )}
           {objectives.length > 0 && (
@@ -344,7 +344,7 @@ ${translation.initial_prompt}` : text;
               {objectives.map((o, i) => (
                 <li key={o}>
                   {o}
-                  {translation?.objectius[i] && <span className="block text-[length:calc(var(--sc-font)*0.8)] font-semibold text-slate-400">{translation.objectius[i]}</span>}
+                  {translation?.objectius[i] && <span dir="auto" className="block text-[length:calc(var(--sc-font)*0.8)] font-semibold text-slate-400">{translation.objectius[i]}</span>}
                 </li>
               ))}
             </ol>
@@ -359,7 +359,7 @@ ${translation.initial_prompt}` : text;
           {loading ? <ThinkingIndicator className="opacity-60" /> : characterText}
         </p>
         {!loading && translation && characterHelp.length > 0 && (
-          <p className="mt-1 whitespace-pre-line text-[length:calc(var(--sc-font)*0.95)] font-semibold text-slate-400">{characterHelp.join('\n')}</p>
+          <p dir="auto" className="mt-1 whitespace-pre-line text-[length:calc(var(--sc-font)*0.95)] font-semibold text-slate-400">{characterHelp.join('\n')}</p>
         )}
         {!loading && (
           <>

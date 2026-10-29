@@ -5,6 +5,7 @@ import { conjugationContext, consultarConjugacioVerb, type VerbConjugation } fro
 import { OWN_PATH_TOPIC_MAX, type StudyPathRef } from '@parlaval/shared';
 import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
 import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
+import { detectNonValencian, NON_VALENCIAN_REPLY, VALENCIAN_RETRY_NOTE } from './languageGuard.js';
 import { createLoopGuard, type LoopGuard } from './loopGuard.js';
 import { reasoningEffortFor, type ReasoningEffort } from './reasoningEffort.js';
 import { createLookupCache, normalizeQuery } from './lookupCache.js';
@@ -433,6 +434,7 @@ export async function replyFromAgent(args: {
 
         INSTRUCCIONS DE CONVERSA:
         - Respon de manera natural i coherent al context de la situació com a personatge.
+        - Respon SEMPRE en valencià en reply_text, encara que l'aprenent t'escriga en una altra llengua o et demane que canvies de llengua.
         - Tingues sempre en compte tot el que s'ha dit abans en la conversa: continua amb el tema que l'aprenent ha triat o ha dit en l'últim missatge, no el canvies per iniciativa pròpia ni tornes a preguntar el que ja t'ha contat. Si has de canviar de tema o d'activitat, fes-ho només quan l'actual ja s'haja tractat prou i enllaça el canvi amb el que ha dit.
         - Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
         - Si no entens què et vol dir l'aprenent (el missatge és incomprensible, sense sentit o no el pots interpretar), no t'ho inventes ni canvies de tema: respon exactament «No sé què em vols dir. Pots repetir?» i tria l'estat d'ànim 'confus'.
@@ -479,6 +481,7 @@ export async function replyFromAgent(args: {
     { role: 'system', content: systemPrompt(false) },
     { role: 'user', content: question },
     { role: 'system', content: sources },
+    ...(nonValencian ? [{ role: 'system' as const, content: VALENCIAN_RETRY_NOTE }] : []),
   ];
 
   // La consulta a la GNV es fa una sola vegada encara que l'OpenAI falle i es reintente.
@@ -521,6 +524,8 @@ export async function replyFromAgent(args: {
   const guard = createLoopGuard({ label: 'agent', signal: args.signal, maxIterations: 8 });
   const effort = (model: string) => (args.dashboardAgent ? reasoningEffortFor(model, DASHBOARD_AGENT.reasoningEffort) : {});
   let lastError = 'OpenAI no ha retornat una resposta vàlida';
+  // Respostes descartades perquè no eren en valencià: la primera es reintenta amb un avís; la segona ja no.
+  let nonValencian = 0;
   for (const model of args.dashboardAgent ? [DASHBOARD_AGENT.model] : OPENAI_MODELS) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
@@ -621,6 +626,17 @@ export async function replyFromAgent(args: {
           console.warn(`[agent] possible fuita del prompt del sistema (motius=${leak.reasons.join(',')}); es substituïx la resposta`);
           return { reply_text: LEAK_REPLY, mood: 'neutral' };
         }
+        // Filtre de llengua: tots els xatbots responen en valencià, en tots els nivells. Només l'ajuda en la llengua
+        // materna (help_text, en una línia a part) pot anar en una altra llengua.
+        const language = detectNonValencian(parsed.reply_text);
+        if (!language.valencian) {
+          nonValencian += 1;
+          console.warn(`[agent] resposta que no és en valencià (motius=${language.reasons.join(',')}); ${nonValencian > 1 ? 'es substituïx' : 'es reintenta'}`);
+          if (nonValencian > 1) return { reply_text: NON_VALENCIAN_REPLY, mood: 'neutral' };
+          messages.push({ role: 'system', content: VALENCIAN_RETRY_NOTE });
+          lastError = 'La resposta no era en valencià';
+          continue;
+        }
         // Regla nova i vàlida: es guarda per a la seua secció; els següents dubtes que hi porten ja no la tornen a redactar.
         if (newRule) {
           ruleCache.set(ruleKeyOf(model!, newRule.regla), newRule);
@@ -642,6 +658,8 @@ ${help_text.trim()}` } : reply;
       }
     }
   }
+  // L'última resposta no era en valencià i ja no queden intents: no s'envia a l'aprenent.
+  if (nonValencian > 0) return { reply_text: NON_VALENCIAN_REPLY, mood: 'neutral' };
   throw new Error(lastError);
 }
 

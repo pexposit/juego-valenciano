@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { ASSISTANT_CATEGORY, KID_ASSISTANT_TYPE } from '@parlaval/shared';
+import { ASSISTANT_CATEGORY, KID_ASSISTANT_TYPE, TRANSLATED_TONGUES } from '@parlaval/shared';
 import { getAdmin, requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { db } from '../db.js';
@@ -200,7 +200,7 @@ assistantRouter.post(
 );
 
 const translateSchema = z.object({
-  tongue: z.enum(['es', 'en', 'fr', 'it', 'ro', 'uk']),
+  tongue: z.enum(TRANSLATED_TONGUES),
   lines: z.array(z.string().min(1).max(MESSAGE_MAX_CHARS * 2)).min(1).max(60),
 });
 

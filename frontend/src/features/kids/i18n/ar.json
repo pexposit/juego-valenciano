@@ -1,0 +1,4830 @@
+{
+ "hola": {
+  "ca": "Hola! Soc la Taronjeta. Tria una illa per a jugar!",
+  "t": "مرحبًا! أنا Taronjeta. اختر جزيرة لنلعب!"
+ },
+ "album": {
+  "ca": "El teu àlbum de cromos! Toca un cromo per a posar-lo on vulgues.",
+  "t": "ألبوم ملصقاتك! اضغط على ملصق لتضعه حيثما تريد."
+ },
+ "cromo-nou": {
+  "ca": "Molt bé! Has guanyat un cromo nou!",
+  "t": "أحسنت! ربحت ملصقًا جديدًا!"
+ },
+ "be-1": {
+  "ca": "Molt bé!",
+  "t": "أحسنت!"
+ },
+ "be-2": {
+  "ca": "Fantàstic!",
+  "t": "رائع!"
+ },
+ "be-3": {
+  "ca": "Què bé!",
+  "t": "ما أجمل ذلك!"
+ },
+ "be-4": {
+  "ca": "Ho has aconseguit!",
+  "t": "لقد نجحت!"
+ },
+ "torna-1": {
+  "ca": "Ups! Torna-ho a provar!",
+  "t": "أوه! حاول مرة أخرى!"
+ },
+ "torna-2": {
+  "ca": "Prova una altra vegada!",
+  "t": "جرّب مرة أخرى!"
+ },
+ "illa-animals": {
+  "ca": "L'illa dels animals!",
+  "t": "جزيرة animals (الحيوانات)!"
+ },
+ "illa-colors": {
+  "ca": "L'illa dels colors!",
+  "t": "جزيرة colors (الألوان)!"
+ },
+ "illa-numeros": {
+  "ca": "L'illa dels números!",
+  "t": "جزيرة números (الأرقام)!"
+ },
+ "illa-menjar": {
+  "ca": "L'illa del menjar!",
+  "t": "جزيرة menjar (الطعام)!"
+ },
+ "illa-cos": {
+  "ca": "L'illa del cos!",
+  "t": "جزيرة cos (الجسم)!"
+ },
+ "illa-familia": {
+  "ca": "L'illa de la família!",
+  "t": "جزيرة família (العائلة)!"
+ },
+ "illa-lletres": {
+  "ca": "L'illa de les lletres!",
+  "t": "جزيرة lletres (الحروف)!"
+ },
+ "illa-salutacions": {
+  "ca": "L'illa d'hola i adéu!",
+  "t": "جزيرة hola (مرحبًا) وadéu (وداعًا)!"
+ },
+ "illa-presentar": {
+  "ca": "L'illa dels amics nous!",
+  "t": "جزيرة الأصدقاء الجدد!"
+ },
+ "illa-articles": {
+  "ca": "L'illa de les paraules xicotetes!",
+  "t": "جزيرة الكلمات الصغيرة!"
+ },
+ "illa-emocions": {
+  "ca": "L'illa de com estàs!",
+  "t": "جزيرة com estàs (كيف حالك)!"
+ },
+ "illa-temps": {
+  "ca": "L'illa dels dies i el temps!",
+  "t": "جزيرة dies (الأيام) وtemps (الطقس)!"
+ },
+ "illa-llocs": {
+  "ca": "L'illa del gat Pelut!",
+  "t": "جزيرة gat (قط) Pelut!"
+ },
+ "etapa-feta": {
+  "ca": "Molt bé! Has acabat un tros de l'illa. Continuem?",
+  "t": "أحسنت! أنهيت جزءًا من الجزيرة. هل نتابع؟"
+ },
+ "etapa-repetir": {
+  "ca": "Quasi ho tens! Tornem a jugar este tros i, quan et sàpies quasi tot, passem al següent!",
+  "t": "أنت على وشك إتقانها! هيا نلعب هذا الجزء مرة أخرى، وعندما تتقنه تقريبًا ننتقل إلى الجزء التالي!"
+ },
+ "repas": {
+  "ca": "Repassem una cosa que abans ha costat una miqueta!",
+  "t": "لنراجع شيئًا كان صعبًا قليلًا من قبل!"
+ },
+ "illa-abecedari": {
+  "ca": "L'illa de l'abecedari!",
+  "t": "جزيرة abecedari (الأبجدية)!"
+ },
+ "intrus-animals": {
+  "ca": "Els animals! Quin no és un animal?",
+  "t": "animals (الحيوانات)! أيّها ليس animal (حيوانًا)؟"
+ },
+ "intrus-fruita": {
+  "ca": "La fruita! Quina no és una fruita?",
+  "t": "fruita (الفاكهة)! أيّها ليس fruita (فاكهة)؟"
+ },
+ "intrus-menjar": {
+  "ca": "El menjar! Quin no es pot menjar?",
+  "t": "menjar (الطعام)! أيّها لا يمكن menjar (أكله)؟"
+ },
+ "on-gos": {
+  "ca": "On és el gos?",
+  "t": "أين gos (الكلب)؟"
+ },
+ "on-gat": {
+  "ca": "On és el gat?",
+  "t": "أين gat (القط)؟"
+ },
+ "on-ocell": {
+  "ca": "On és l'ocell?",
+  "t": "أين ocell (العصفور)؟"
+ },
+ "on-peix": {
+  "ca": "On és el peix?",
+  "t": "أين peix (السمكة)؟"
+ },
+ "on-vaca": {
+  "ca": "On és la vaca?",
+  "t": "أين vaca (البقرة)؟"
+ },
+ "on-cavall": {
+  "ca": "On és el cavall?",
+  "t": "أين cavall (الحصان)؟"
+ },
+ "on-porc": {
+  "ca": "On és el porc?",
+  "t": "أين porc (الخنزير)؟"
+ },
+ "on-ovella": {
+  "ca": "On és l'ovella?",
+  "t": "أين ovella (الخروف)؟"
+ },
+ "on-gallina": {
+  "ca": "On és la gallina?",
+  "t": "أين gallina (الدجاجة)؟"
+ },
+ "on-anec": {
+  "ca": "On és l'ànec?",
+  "t": "أين ànec (البطّة)؟"
+ },
+ "on-granota": {
+  "ca": "On és la granota?",
+  "t": "أين granota (الضفدعة)؟"
+ },
+ "on-lleo": {
+  "ca": "On és el lleó?",
+  "t": "أين el lleó (الأسد)؟"
+ },
+ "on-elefant": {
+  "ca": "On és l'elefant?",
+  "t": "أين l'elefant (الفيل)؟"
+ },
+ "on-mona": {
+  "ca": "On és la mona?",
+  "t": "أين la mona (القردة)؟"
+ },
+ "on-ratoli": {
+  "ca": "On és el ratolí?",
+  "t": "أين el ratolí (الفأر)؟"
+ },
+ "on-conill": {
+  "ca": "On és el conill?",
+  "t": "أين el conill (الأرنب)؟"
+ },
+ "on-poma": {
+  "ca": "On és la poma?",
+  "t": "أين la poma (التفاحة)؟"
+ },
+ "on-pa": {
+  "ca": "On és el pa?",
+  "t": "أين el pa (الخبز)؟"
+ },
+ "on-aigua": {
+  "ca": "On és l'aigua?",
+  "t": "أين l'aigua (الماء)؟"
+ },
+ "on-llet": {
+  "ca": "On és la llet?",
+  "t": "أين la llet (الحليب)؟"
+ },
+ "on-formatge": {
+  "ca": "On és el formatge?",
+  "t": "أين el formatge (الجبن)؟"
+ },
+ "on-platan": {
+  "ca": "On és el plàtan?",
+  "t": "أين el plàtan (الموز)؟"
+ },
+ "on-taronja": {
+  "ca": "On és la taronja?",
+  "t": "أين la taronja (البرتقالة)؟"
+ },
+ "on-maduixa": {
+  "ca": "On és la maduixa?",
+  "t": "أين la maduixa (الفراولة)؟"
+ },
+ "on-raim": {
+  "ca": "On és el raïm?",
+  "t": "أين el raïm (العنب)؟"
+ },
+ "on-pera": {
+  "ca": "On és la pera?",
+  "t": "أين la pera (الإجاصة)؟"
+ },
+ "on-sindria": {
+  "ca": "On és la síndria?",
+  "t": "أين la síndria (البطيخ)؟"
+ },
+ "on-ou": {
+  "ca": "On és l'ou?",
+  "t": "أين l'ou (البيضة)؟"
+ },
+ "on-galeta": {
+  "ca": "On és la galeta?",
+  "t": "أين la galeta (البسكويتة)؟"
+ },
+ "on-pastanaga": {
+  "ca": "On és la pastanaga?",
+  "t": "أين la pastanaga (الجزرة)؟"
+ },
+ "on-tomaca": {
+  "ca": "On és la tomaca?",
+  "t": "أين la tomaca (الطماطم)؟"
+ },
+ "on-gelat": {
+  "ca": "On és el gelat?",
+  "t": "أين el gelat (المثلجات)؟"
+ },
+ "on-cap": {
+  "ca": "On és el cap?",
+  "t": "أين el cap (الرأس)؟"
+ },
+ "on-ulls": {
+  "ca": "On són els ulls?",
+  "t": "أين els ulls (العينان)؟"
+ },
+ "on-nas": {
+  "ca": "On és el nas?",
+  "t": "أين el nas (الأنف)؟"
+ },
+ "on-boca": {
+  "ca": "On és la boca?",
+  "t": "أين la boca (الفم)؟"
+ },
+ "on-braç": {
+  "ca": "On és el braç?",
+  "t": "أين el braç (الذراع)؟"
+ },
+ "on-mà": {
+  "ca": "On és la mà?",
+  "t": "أين la mà (اليد)؟"
+ },
+ "on-cama": {
+  "ca": "On és la cama?",
+  "t": "أين la cama (الساق)؟"
+ },
+ "on-peu": {
+  "ca": "On és el peu?",
+  "t": "أين el peu (القدم)؟"
+ },
+ "on-orelles": {
+  "ca": "On són les orelles?",
+  "t": "أين les orelles (الأذنان)؟"
+ },
+ "on-dents": {
+  "ca": "On són les dents?",
+  "t": "أين les dents (الأسنان)؟"
+ },
+ "on-llengua": {
+  "ca": "On és la llengua?",
+  "t": "أين la llengua (اللسان)؟"
+ },
+ "on-dit": {
+  "ca": "On és el dit?",
+  "t": "أين el dit (الإصبع)؟"
+ },
+ "on-sabates": {
+  "ca": "On són les sabates?",
+  "t": "أين les sabates (الحذاء)؟"
+ },
+ "on-barret": {
+  "ca": "On és el barret?",
+  "t": "أين el barret (القبعة)؟"
+ },
+ "on-samarreta": {
+  "ca": "On és la samarreta?",
+  "t": "أين la samarreta (القميص)؟"
+ },
+ "on-pantalons": {
+  "ca": "On són els pantalons?",
+  "t": "أين els pantalons (السروال)؟"
+ },
+ "on-jaqueta": {
+  "ca": "On és la jaqueta?",
+  "t": "أين la jaqueta (السترة)؟"
+ },
+ "on-calcetins": {
+  "ca": "On són els calcetins?",
+  "t": "أين els calcetins (الجوارب)؟"
+ },
+ "on-ulleres": {
+  "ca": "On són les ulleres?",
+  "t": "أين les ulleres (النظارات)؟"
+ },
+ "on-guants": {
+  "ca": "On són els guants?",
+  "t": "أين guants (القفازات)؟"
+ },
+ "on-bufanda": {
+  "ca": "On és la bufanda?",
+  "t": "أين bufanda (الوشاح)؟"
+ },
+ "on-pare": {
+  "ca": "On és el pare?",
+  "t": "أين pare (الأب)؟"
+ },
+ "on-mare": {
+  "ca": "On és la mare?",
+  "t": "أين mare (الأم)؟"
+ },
+ "on-germà": {
+  "ca": "On és el germà?",
+  "t": "أين germà (الأخ)؟"
+ },
+ "on-germana": {
+  "ca": "On és la germana?",
+  "t": "أين germana (الأخت)؟"
+ },
+ "on-bebe": {
+  "ca": "On és el bebé?",
+  "t": "أين bebé (الرضيع)؟"
+ },
+ "on-iaio": {
+  "ca": "On és el iaio?",
+  "t": "أين iaio (الجد)؟"
+ },
+ "on-iaia": {
+  "ca": "On és la iaia?",
+  "t": "أين iaia (الجدة)؟"
+ },
+ "on-casa": {
+  "ca": "On és la casa?",
+  "t": "أين casa (البيت)؟"
+ },
+ "on-porta": {
+  "ca": "On és la porta?",
+  "t": "أين porta (الباب)؟"
+ },
+ "on-llit": {
+  "ca": "On és el llit?",
+  "t": "أين llit (السرير)؟"
+ },
+ "on-cuina": {
+  "ca": "On és la cuina?",
+  "t": "أين cuina (المطبخ)؟"
+ },
+ "on-sofa": {
+  "ca": "On és el sofà?",
+  "t": "أين sofà (الأريكة)؟"
+ },
+ "on-banyera": {
+  "ca": "On és la banyera?",
+  "t": "أين banyera (حوض الاستحمام)؟"
+ },
+ "on-cotxe": {
+  "ca": "On és el cotxe?",
+  "t": "أين cotxe (السيارة)؟"
+ },
+ "on-pilota": {
+  "ca": "On és la pilota?",
+  "t": "أين pilota (الكرة)؟"
+ },
+ "on-llapis": {
+  "ca": "On és el llapis?",
+  "t": "أين llapis (قلم الرصاص)؟"
+ },
+ "qui-gos": {
+  "ca": "Qui fa bub, bub?",
+  "t": "من يقول bub, bub؟"
+ },
+ "qui-gat": {
+  "ca": "Qui fa mèu, mèu?",
+  "t": "من يقول mèu, mèu؟"
+ },
+ "qui-ocell": {
+  "ca": "Qui fa piu, piu?",
+  "t": "من يقول piu, piu؟"
+ },
+ "qui-peix": {
+  "ca": "Qui fa glub, glub?",
+  "t": "من يقول glub, glub؟"
+ },
+ "qui-vaca": {
+  "ca": "Qui fa muuu?",
+  "t": "من يقول muuu؟"
+ },
+ "qui-cavall": {
+  "ca": "Qui fa hi, hi, hi?",
+  "t": "من يقول hi, hi, hi؟"
+ },
+ "qui-porc": {
+  "ca": "Qui fa oinc, oinc?",
+  "t": "من يقول oinc, oinc؟"
+ },
+ "qui-ovella": {
+  "ca": "Qui fa beee?",
+  "t": "من يقول beee؟"
+ },
+ "qui-gallina": {
+  "ca": "Qui fa co, co, co?",
+  "t": "من يقول co, co, co؟"
+ },
+ "qui-anec": {
+  "ca": "Qui fa cuac, cuac?",
+  "t": "من يقول cuac, cuac؟"
+ },
+ "qui-granota": {
+  "ca": "Qui fa rac, rac?",
+  "t": "من يقول rac, rac؟"
+ },
+ "qui-lleo": {
+  "ca": "Qui fa grrr?",
+  "t": "من يقول grrr؟"
+ },
+ "qui-elefant": {
+  "ca": "Qui fa pruuu?",
+  "t": "من يقول pruuu؟"
+ },
+ "qui-mona": {
+  "ca": "Qui fa uh, uh, ah, ah?",
+  "t": "من يقول uh, uh, ah, ah؟"
+ },
+ "qui-ratoli": {
+  "ca": "Qui fa ii, ii?",
+  "t": "من يقول ii, ii؟"
+ },
+ "qui-conill": {
+  "ca": "Qui fa nyam, nyam?",
+  "t": "من يقول nyam, nyam؟"
+ },
+ "toca-roig": {
+  "ca": "Toca el roig!",
+  "t": "المس roig (الأحمر)!"
+ },
+ "bamb-roig": {
+  "ca": "Explota les bambolles de color roig!",
+  "t": "فجّر الفقاعات ذات اللون roig (الأحمر)!"
+ },
+ "toca-blau": {
+  "ca": "Toca el blau!",
+  "t": "المس blau (الأزرق)!"
+ },
+ "bamb-blau": {
+  "ca": "Explota les bambolles de color blau!",
+  "t": "فجّر الفقاعات ذات اللون blau (الأزرق)!"
+ },
+ "toca-groc": {
+  "ca": "Toca el groc!",
+  "t": "المس groc (الأصفر)!"
+ },
+ "bamb-groc": {
+  "ca": "Explota les bambolles de color groc!",
+  "t": "فجّر الفقاعات ذات اللون groc (الأصفر)!"
+ },
+ "toca-verd": {
+  "ca": "Toca el verd!",
+  "t": "المس verd (الأخضر)!"
+ },
+ "bamb-verd": {
+  "ca": "Explota les bambolles de color verd!",
+  "t": "فقّع الفقاعات ذات اللون verd (الأخضر)!"
+ },
+ "toca-taronja-color": {
+  "ca": "Toca el taronja!",
+  "t": "المس taronja (البرتقالي)!"
+ },
+ "bamb-taronja-color": {
+  "ca": "Explota les bambolles de color taronja!",
+  "t": "فقّع الفقاعات ذات اللون taronja (البرتقالي)!"
+ },
+ "toca-negre": {
+  "ca": "Toca el negre!",
+  "t": "المس negre (الأسود)!"
+ },
+ "bamb-negre": {
+  "ca": "Explota les bambolles de color negre!",
+  "t": "فقّع الفقاعات ذات اللون negre (الأسود)!"
+ },
+ "toca-blanc": {
+  "ca": "Toca el blanc!",
+  "t": "المس blanc (الأبيض)!"
+ },
+ "bamb-blanc": {
+  "ca": "Explota les bambolles de color blanc!",
+  "t": "فقّع الفقاعات ذات اللون blanc (الأبيض)!"
+ },
+ "toca-rosa": {
+  "ca": "Toca el rosa!",
+  "t": "المس rosa (الوردي)!"
+ },
+ "bamb-rosa": {
+  "ca": "Explota les bambolles de color rosa!",
+  "t": "فقّع الفقاعات ذات اللون rosa (الوردي)!"
+ },
+ "toca-morat": {
+  "ca": "Toca el morat!",
+  "t": "المس morat (البنفسجي)!"
+ },
+ "bamb-morat": {
+  "ca": "Explota les bambolles de color morat!",
+  "t": "فقّع الفقاعات ذات اللون morat (البنفسجي)!"
+ },
+ "toca-marro": {
+  "ca": "Toca el marró!",
+  "t": "المس marró (البني)!"
+ },
+ "bamb-marro": {
+  "ca": "Explota les bambolles de color marró!",
+  "t": "فقّع الفقاعات ذات اللون marró (البني)!"
+ },
+ "toca-gris": {
+  "ca": "Toca el gris!",
+  "t": "المس gris (الرمادي)!"
+ },
+ "bamb-gris": {
+  "ca": "Explota les bambolles de color gris!",
+  "t": "فقّع الفقاعات ذات اللون gris (الرمادي)!"
+ },
+ "dequin-poma": {
+  "ca": "De quin color és la poma?",
+  "t": "ما لون poma (التفاحة)؟"
+ },
+ "dequin-platan": {
+  "ca": "De quin color és el plàtan?",
+  "t": "ما لون plàtan (الموز)؟"
+ },
+ "dequin-granota": {
+  "ca": "De quin color és la granota?",
+  "t": "ما لون granota (الضفدع)؟"
+ },
+ "dequin-taronja": {
+  "ca": "De quin color és la taronja?",
+  "t": "ما لون taronja (البرتقالة)؟"
+ },
+ "dequin-raim": {
+  "ca": "De quin color és el raïm?",
+  "t": "ما لون raïm (العنب)؟"
+ },
+ "dequin-porc": {
+  "ca": "De quin color és el porc?",
+  "t": "ما لون porc (الخنزير)؟"
+ },
+ "dequin-elefant": {
+  "ca": "De quin color és l'elefant?",
+  "t": "ما لون elefant (الفيل)؟"
+ },
+ "dequin-os": {
+  "ca": "De quin color és l'ós?",
+  "t": "ما لون ós (الدب)؟"
+ },
+ "dequin-balena": {
+  "ca": "De quin color és la balena?",
+  "t": "ما لون balena (الحوت)؟"
+ },
+ "dequin-nuvol": {
+  "ca": "De quin color és el núvol?",
+  "t": "ما لون núvol (السحابة)؟"
+ },
+ "emo-feliç": {
+  "ca": "Està feliç!",
+  "t": "إنه feliç (سعيد)!"
+ },
+ "emo-trist": {
+  "ca": "Està trist!",
+  "t": "إنه trist (حزين)!"
+ },
+ "emo-enfadat": {
+  "ca": "Està enfadat!",
+  "t": "إنه enfadat (غاضب)!"
+ },
+ "emo-espantat": {
+  "ca": "Té por!",
+  "t": "إنه خائف!"
+ },
+ "emo-sorpres": {
+  "ca": "Està sorprès!",
+  "t": "إنه sorprès (متفاجئ)!"
+ },
+ "emo-adormit": {
+  "ca": "Té son!",
+  "t": "إنه يشعر بالنعاس!"
+ },
+ "dona-1": {
+  "ca": "Dona-li un caramel a la Taronjeta!",
+  "t": "أعطِ Taronjeta حلوى واحدة (un)!"
+ },
+ "onhiha-1": {
+  "ca": "On n'hi ha un?",
+  "t": "أين يوجد واحد (un)؟"
+ },
+ "dona-2": {
+  "ca": "Dona-li dos caramels a la Taronjeta!",
+  "t": "أعطِ Taronjeta حلوَيَين (dos)!"
+ },
+ "onhiha-2": {
+  "ca": "On n'hi ha dos?",
+  "t": "أين يوجد اثنان (dos)؟"
+ },
+ "dona-3": {
+  "ca": "Dona-li tres caramels a la Taronjeta!",
+  "t": "أعطِ Taronjeta ثلاث حلوى (tres)!"
+ },
+ "onhiha-3": {
+  "ca": "On n'hi ha tres?",
+  "t": "أين توجد ثلاثة (tres)؟"
+ },
+ "dona-4": {
+  "ca": "Dona-li quatre caramels a la Taronjeta!",
+  "t": "أعطِ Taronjeta أربع حلوى (quatre)!"
+ },
+ "onhiha-4": {
+  "ca": "On n'hi ha quatre?",
+  "t": "أين توجد أربعة (quatre)؟"
+ },
+ "dona-5": {
+  "ca": "Dona-li cinc caramels a la Taronjeta!",
+  "t": "أعطِ Taronjeta cinc (خمس) قطع حلوى!"
+ },
+ "onhiha-5": {
+  "ca": "On n'hi ha cinc?",
+  "t": "أين نجد cinc (خمسًا)؟"
+ },
+ "dona-6": {
+  "ca": "Dona-li sis caramels a la Taronjeta!",
+  "t": "أعطِ Taronjeta sis (ستّ) قطع حلوى!"
+ },
+ "onhiha-6": {
+  "ca": "On n'hi ha sis?",
+  "t": "أين نجد sis (ستًّا)؟"
+ },
+ "dona-7": {
+  "ca": "Dona-li set caramels a la Taronjeta!",
+  "t": "أعطِ Taronjeta set (سبع) قطع حلوى!"
+ },
+ "onhiha-7": {
+  "ca": "On n'hi ha set?",
+  "t": "أين نجد set (سبعًا)؟"
+ },
+ "dona-8": {
+  "ca": "Dona-li huit caramels a la Taronjeta!",
+  "t": "أعطِ Taronjeta huit (ثماني) قطع حلوى!"
+ },
+ "onhiha-8": {
+  "ca": "On n'hi ha huit?",
+  "t": "أين نجد huit (ثمانيًا)؟"
+ },
+ "dona-9": {
+  "ca": "Dona-li nou caramels a la Taronjeta!",
+  "t": "أعطِ Taronjeta nou (تسع) قطع حلوى!"
+ },
+ "onhiha-9": {
+  "ca": "On n'hi ha nou?",
+  "t": "أين نجد nou (تسعًا)؟"
+ },
+ "dona-10": {
+  "ca": "Dona-li deu caramels a la Taronjeta!",
+  "t": "أعطِ Taronjeta deu (عشر) قطع حلوى!"
+ },
+ "onhiha-10": {
+  "ca": "On n'hi ha deu?",
+  "t": "أين نجد deu (عشرًا)؟"
+ },
+ "plat-poma": {
+  "ca": "Posa la poma al plat!",
+  "t": "ضع la poma (التفاحة) في الطبق!"
+ },
+ "plat-pa": {
+  "ca": "Posa el pa al plat!",
+  "t": "ضع el pa (الخبز) في الطبق!"
+ },
+ "plat-aigua": {
+  "ca": "Posa l'aigua al plat!",
+  "t": "ضع l'aigua (الماء) في الطبق!"
+ },
+ "plat-llet": {
+  "ca": "Posa la llet al plat!",
+  "t": "ضع la llet (الحليب) في الطبق!"
+ },
+ "plat-formatge": {
+  "ca": "Posa el formatge al plat!",
+  "t": "ضع el formatge (الجبن) في الطبق!"
+ },
+ "plat-platan": {
+  "ca": "Posa el plàtan al plat!",
+  "t": "ضع el plàtan (الموز) في الطبق!"
+ },
+ "plat-taronja": {
+  "ca": "Posa la taronja al plat!",
+  "t": "ضع la taronja (البرتقالة) في الطبق!"
+ },
+ "plat-maduixa": {
+  "ca": "Posa la maduixa al plat!",
+  "t": "ضع la maduixa (الفراولة) في الطبق!"
+ },
+ "plat-raim": {
+  "ca": "Posa el raïm al plat!",
+  "t": "ضع el raïm (العنب) في الطبق!"
+ },
+ "plat-pera": {
+  "ca": "Posa la pera al plat!",
+  "t": "ضع la pera (الإجاصة) في الطبق!"
+ },
+ "plat-sindria": {
+  "ca": "Posa la síndria al plat!",
+  "t": "ضع la síndria (البطيخ) في الطبق!"
+ },
+ "plat-ou": {
+  "ca": "Posa l'ou al plat!",
+  "t": "ضع l'ou (البيضة) في الطبق!"
+ },
+ "plat-galeta": {
+  "ca": "Posa la galeta al plat!",
+  "t": "ضع la galeta (البسكويتة) في الطبق!"
+ },
+ "plat-pastanaga": {
+  "ca": "Posa la pastanaga al plat!",
+  "t": "ضع la pastanaga (الجزرة) في الطبق!"
+ },
+ "plat-tomaca": {
+  "ca": "Posa la tomaca al plat!",
+  "t": "ضع la tomaca (الطماطم) في الطبق!"
+ },
+ "plat-gelat": {
+  "ca": "Posa el gelat al plat!",
+  "t": "ضع el gelat (المثلّجات) في الطبق!"
+ },
+ "motxilla-poma": {
+  "ca": "Posa la poma a la motxilla!",
+  "t": "ضع la poma (التفاحة) في الحقيبة!"
+ },
+ "motxilla-pa": {
+  "ca": "Posa el pa a la motxilla!",
+  "t": "ضع el pa (الخبز) في الحقيبة!"
+ },
+ "motxilla-aigua": {
+  "ca": "Posa l'aigua a la motxilla!",
+  "t": "ضع l'aigua (الماء) في الحقيبة!"
+ },
+ "motxilla-llet": {
+  "ca": "Posa la llet a la motxilla!",
+  "t": "ضع la llet (الحليب) في الحقيبة!"
+ },
+ "motxilla-formatge": {
+  "ca": "Posa el formatge a la motxilla!",
+  "t": "ضع el formatge (الجبن) في الحقيبة!"
+ },
+ "motxilla-platan": {
+  "ca": "Posa el plàtan a la motxilla!",
+  "t": "ضع el plàtan (الموز) في الحقيبة!"
+ },
+ "motxilla-taronja": {
+  "ca": "Posa la taronja a la motxilla!",
+  "t": "ضع la taronja (البرتقالة) في الحقيبة!"
+ },
+ "motxilla-maduixa": {
+  "ca": "Posa la maduixa a la motxilla!",
+  "t": "ضع la maduixa (الفراولة) في الحقيبة!"
+ },
+ "motxilla-raim": {
+  "ca": "Posa el raïm a la motxilla!",
+  "t": "ضع el raïm (العنب) في الحقيبة!"
+ },
+ "motxilla-pera": {
+  "ca": "Posa la pera a la motxilla!",
+  "t": "ضع la pera (الإجاصة) في الحقيبة!"
+ },
+ "motxilla-sindria": {
+  "ca": "Posa la síndria a la motxilla!",
+  "t": "ضع la síndria (البطيخ) في الحقيبة!"
+ },
+ "motxilla-ou": {
+  "ca": "Posa l'ou a la motxilla!",
+  "t": "ضع l'ou (البيضة) في الحقيبة!"
+ },
+ "motxilla-galeta": {
+  "ca": "Posa la galeta a la motxilla!",
+  "t": "ضَعْ galeta (قطعة البسكويت) في motxilla (الحقيبة)!"
+ },
+ "motxilla-pastanaga": {
+  "ca": "Posa la pastanaga a la motxilla!",
+  "t": "ضَعْ pastanaga (الجزرة) في motxilla (الحقيبة)!"
+ },
+ "motxilla-tomaca": {
+  "ca": "Posa la tomaca a la motxilla!",
+  "t": "ضَعْ tomaca (الطماطم) في motxilla (الحقيبة)!"
+ },
+ "motxilla-gelat": {
+  "ca": "Posa el gelat a la motxilla!",
+  "t": "ضَعْ gelat (المثلّجات) في motxilla (الحقيبة)!"
+ },
+ "posali-cap": {
+  "ca": "Posa-li el cap!",
+  "t": "ضَعْ له cap (الرأس)!"
+ },
+ "posali-ulls": {
+  "ca": "Posa-li els ulls!",
+  "t": "ضَعْ له ulls (العينين)!"
+ },
+ "posali-nas": {
+  "ca": "Posa-li el nas!",
+  "t": "ضَعْ له nas (الأنف)!"
+ },
+ "posali-boca": {
+  "ca": "Posa-li la boca!",
+  "t": "ضَعْ له boca (الفم)!"
+ },
+ "posali-braç": {
+  "ca": "Posa-li el braç!",
+  "t": "ضَعْ له braç (الذراع)!"
+ },
+ "posali-mà": {
+  "ca": "Posa-li la mà!",
+  "t": "ضَعْ له mà (اليد)!"
+ },
+ "posali-cama": {
+  "ca": "Posa-li la cama!",
+  "t": "ضَعْ له cama (الساق)!"
+ },
+ "posali-peu": {
+  "ca": "Posa-li el peu!",
+  "t": "ضَعْ له peu (القدم)!"
+ },
+ "posali-sabates": {
+  "ca": "Posa-li les sabates!",
+  "t": "ضَعْ له sabates (الحذاء)!"
+ },
+ "posali-barret": {
+  "ca": "Posa-li el barret!",
+  "t": "ضَعْ له barret (القبعة)!"
+ },
+ "posali-samarreta": {
+  "ca": "Posa-li la samarreta!",
+  "t": "ضَعْ له samarreta (القميص)!"
+ },
+ "porta-pare-casa": {
+  "ca": "Porta el pare a la casa!",
+  "t": "أحضر pare (الأب) إلى casa (البيت)!"
+ },
+ "porta-pare-porta": {
+  "ca": "Porta el pare a la porta!",
+  "t": "أحضر pare (الأب) إلى porta (الباب)!"
+ },
+ "porta-pare-llit": {
+  "ca": "Porta el pare al llit!",
+  "t": "أحضر pare (الأب) إلى llit (السرير)!"
+ },
+ "porta-pare-cuina": {
+  "ca": "Porta el pare a la cuina!",
+  "t": "أحضر pare (الأب) إلى cuina (المطبخ)!"
+ },
+ "porta-pare-sofa": {
+  "ca": "Porta el pare al sofà!",
+  "t": "أحضر pare (الأب) إلى sofà (الأريكة)!"
+ },
+ "porta-pare-banyera": {
+  "ca": "Porta el pare a la banyera!",
+  "t": "أحضر pare (الأب) إلى banyera (حوض الاستحمام)!"
+ },
+ "porta-mare-casa": {
+  "ca": "Porta la mare a la casa!",
+  "t": "أحضر mare (الأم) إلى casa (البيت)!"
+ },
+ "porta-mare-porta": {
+  "ca": "Porta la mare a la porta!",
+  "t": "أحضر mare (الأم) إلى porta (الباب)!"
+ },
+ "porta-mare-llit": {
+  "ca": "Porta la mare al llit!",
+  "t": "أحضر mare (الأم) إلى llit (السرير)!"
+ },
+ "porta-mare-cuina": {
+  "ca": "Porta la mare a la cuina!",
+  "t": "أحضر mare (الأم) إلى cuina (المطبخ)!"
+ },
+ "porta-mare-sofa": {
+  "ca": "Porta la mare al sofà!",
+  "t": "أحضر mare (الأم) إلى sofà (الأريكة)!"
+ },
+ "porta-mare-banyera": {
+  "ca": "Porta la mare a la banyera!",
+  "t": "أحضر mare (الأم) إلى banyera (حوض الاستحمام)!"
+ },
+ "porta-germà-casa": {
+  "ca": "Porta el germà a la casa!",
+  "t": "أحضر germà (الأخ) إلى casa (البيت)!"
+ },
+ "porta-germà-porta": {
+  "ca": "Porta el germà a la porta!",
+  "t": "أحضر germà (الأخ) إلى porta (الباب)!"
+ },
+ "porta-germà-llit": {
+  "ca": "Porta el germà al llit!",
+  "t": "أحضر germà (الأخ) إلى llit (السرير)!"
+ },
+ "porta-germà-cuina": {
+  "ca": "Porta el germà a la cuina!",
+  "t": "أحضر germà (الأخ) إلى cuina (المطبخ)!"
+ },
+ "porta-germà-sofa": {
+  "ca": "Porta el germà al sofà!",
+  "t": "أحضر germà (الأخ) إلى sofà (الأريكة)!"
+ },
+ "porta-germà-banyera": {
+  "ca": "Porta el germà a la banyera!",
+  "t": "أحضر germà (الأخ) إلى banyera (حوض الاستحمام)!"
+ },
+ "porta-germana-casa": {
+  "ca": "Porta la germana a la casa!",
+  "t": "أحضر germana (الأخت) إلى casa (البيت)!"
+ },
+ "porta-germana-porta": {
+  "ca": "Porta la germana a la porta!",
+  "t": "أحضر germana (الأخت) إلى porta (الباب)!"
+ },
+ "porta-germana-llit": {
+  "ca": "Porta la germana al llit!",
+  "t": "أحضر germana (الأخت) إلى llit (السرير)!"
+ },
+ "porta-germana-cuina": {
+  "ca": "Porta la germana a la cuina!",
+  "t": "أحضر germana (الأخت) إلى cuina (المطبخ)!"
+ },
+ "porta-germana-sofa": {
+  "ca": "Porta la germana al sofà!",
+  "t": "أحضر germana (الأخت) إلى sofà (الأريكة)!"
+ },
+ "porta-germana-banyera": {
+  "ca": "Porta la germana a la banyera!",
+  "t": "أحضر germana (الأخت) إلى banyera (حوض الاستحمام)!"
+ },
+ "porta-bebe-casa": {
+  "ca": "Porta el bebé a la casa!",
+  "t": "أحضر bebé (الرضيع) إلى casa (البيت)!"
+ },
+ "porta-bebe-porta": {
+  "ca": "Porta el bebé a la porta!",
+  "t": "أحضر الطفل الرضيع إلى الباب!"
+ },
+ "porta-bebe-llit": {
+  "ca": "Porta el bebé al llit!",
+  "t": "أحضر الطفل الرضيع إلى السرير!"
+ },
+ "porta-bebe-cuina": {
+  "ca": "Porta el bebé a la cuina!",
+  "t": "أحضر الطفل الرضيع إلى المطبخ!"
+ },
+ "porta-bebe-sofa": {
+  "ca": "Porta el bebé al sofà!",
+  "t": "أحضر الطفل الرضيع إلى الأريكة!"
+ },
+ "porta-bebe-banyera": {
+  "ca": "Porta el bebé a la banyera!",
+  "t": "أحضر الطفل الرضيع إلى حوض الاستحمام!"
+ },
+ "porta-iaio-casa": {
+  "ca": "Porta el iaio a la casa!",
+  "t": "أحضر الجد إلى البيت!"
+ },
+ "porta-iaio-porta": {
+  "ca": "Porta el iaio a la porta!",
+  "t": "أحضر الجد إلى الباب!"
+ },
+ "porta-iaio-llit": {
+  "ca": "Porta el iaio al llit!",
+  "t": "أحضر الجد إلى السرير!"
+ },
+ "porta-iaio-cuina": {
+  "ca": "Porta el iaio a la cuina!",
+  "t": "أحضر الجد إلى المطبخ!"
+ },
+ "porta-iaio-sofa": {
+  "ca": "Porta el iaio al sofà!",
+  "t": "أحضر الجد إلى الأريكة!"
+ },
+ "porta-iaio-banyera": {
+  "ca": "Porta el iaio a la banyera!",
+  "t": "أحضر الجد إلى حوض الاستحمام!"
+ },
+ "porta-iaia-casa": {
+  "ca": "Porta la iaia a la casa!",
+  "t": "أحضري الجدة إلى البيت!"
+ },
+ "porta-iaia-porta": {
+  "ca": "Porta la iaia a la porta!",
+  "t": "أحضري الجدة إلى الباب!"
+ },
+ "porta-iaia-llit": {
+  "ca": "Porta la iaia al llit!",
+  "t": "أحضري الجدة إلى السرير!"
+ },
+ "porta-iaia-cuina": {
+  "ca": "Porta la iaia a la cuina!",
+  "t": "أحضري الجدة إلى المطبخ!"
+ },
+ "porta-iaia-sofa": {
+  "ca": "Porta la iaia al sofà!",
+  "t": "أحضري الجدة إلى الأريكة!"
+ },
+ "porta-iaia-banyera": {
+  "ca": "Porta la iaia a la banyera!",
+  "t": "أحضري الجدة إلى حوض الاستحمام!"
+ },
+ "on-abc-a": {
+  "ca": "On és la a?",
+  "t": "أين حرف a؟"
+ },
+ "comenca-a": {
+  "ca": "L'abella! Amb quina lletra comença?",
+  "t": "L'abella (النحلة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-b": {
+  "ca": "On és la be?",
+  "t": "أين حرف be؟"
+ },
+ "comenca-b": {
+  "ca": "La balena! Amb quina lletra comença?",
+  "t": "La balena (الحوت)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-c": {
+  "ca": "On és la ce?",
+  "t": "أين حرف ce؟"
+ },
+ "comenca-c": {
+  "ca": "La casa! Amb quina lletra comença?",
+  "t": "La casa (البيت)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-d": {
+  "ca": "On és la de?",
+  "t": "أين حرف de؟"
+ },
+ "comenca-d": {
+  "ca": "El dofí! Amb quina lletra comença?",
+  "t": "El dofí (الدلفين)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-e": {
+  "ca": "On és la e?",
+  "t": "أين حرف e؟"
+ },
+ "comenca-e": {
+  "ca": "L'elefant! Amb quina lletra comença?",
+  "t": "L'elefant (الفيل)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-f": {
+  "ca": "On és la efe?",
+  "t": "أين حرف efe؟"
+ },
+ "comenca-f": {
+  "ca": "La flor! Amb quina lletra comença?",
+  "t": "La flor (الزهرة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-g": {
+  "ca": "On és la ge?",
+  "t": "أين حرف ge؟"
+ },
+ "comenca-g": {
+  "ca": "El gat! Amb quina lletra comença?",
+  "t": "El gat (القط)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-h": {
+  "ca": "On és la hac?",
+  "t": "أين حرف hac؟"
+ },
+ "comenca-h": {
+  "ca": "L'helicòpter! Amb quina lletra comença?",
+  "t": "L'helicòpter (المروحية)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-i": {
+  "ca": "On és la i?",
+  "t": "أين حرف i؟"
+ },
+ "comenca-i": {
+  "ca": "L'illa! Amb quina lletra comença?",
+  "t": "L'illa (الجزيرة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-j": {
+  "ca": "On és la jota?",
+  "t": "أين حرف jota؟"
+ },
+ "comenca-j": {
+  "ca": "La jirafa! Amb quina lletra comença?",
+  "t": "La jirafa (الزرافة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-k": {
+  "ca": "On és la ka?",
+  "t": "أين حرف ka؟"
+ },
+ "comenca-k": {
+  "ca": "El koala! Amb quina lletra comença?",
+  "t": "El koala (الكوالا)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-l": {
+  "ca": "On és la ela?",
+  "t": "أين حرف ela؟"
+ },
+ "comenca-l": {
+  "ca": "La lluna! Amb quina lletra comença?",
+  "t": "La lluna (القمر)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-m": {
+  "ca": "On és la ema?",
+  "t": "أين حرف ema؟"
+ },
+ "comenca-m": {
+  "ca": "La maduixa! Amb quina lletra comença?",
+  "t": "La maduixa (الفراولة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-n": {
+  "ca": "On és la ena?",
+  "t": "أين حرف ena؟"
+ },
+ "comenca-n": {
+  "ca": "El núvol! Amb quina lletra comença?",
+  "t": "El núvol (السحابة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-o": {
+  "ca": "On és la o?",
+  "t": "أين حرف o؟"
+ },
+ "comenca-o": {
+  "ca": "L'ovella! Amb quina lletra comença?",
+  "t": "L'ovella (النعجة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-p": {
+  "ca": "On és la pe?",
+  "t": "أين حرف pe؟"
+ },
+ "comenca-p": {
+  "ca": "La poma! Amb quina lletra comença?",
+  "t": "La poma (التفاحة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-q": {
+  "ca": "On és la cu?",
+  "t": "أين حرف cu؟"
+ },
+ "comenca-q": {
+  "ca": "El quatre! Amb quina lletra comença?",
+  "t": "El quatre (الرقم أربعة)! بأيّ حرف يبدأ؟"
+ },
+ "on-abc-r": {
+  "ca": "On és la erre?",
+  "t": "أين حرف erre؟"
+ },
+ "comenca-r": {
+  "ca": "El ratolí! Amb quina lletra comença?",
+  "t": "El ratolí (الفأر)! بأيّ حرف يبدأ؟"
+ },
+ "on-abc-s": {
+  "ca": "On és la essa?",
+  "t": "أين حرف essa؟"
+ },
+ "comenca-s": {
+  "ca": "El sol! Amb quina lletra comença?",
+  "t": "El sol (الشمس)! بأيّ حرف يبدأ؟"
+ },
+ "on-abc-t": {
+  "ca": "On és la te?",
+  "t": "أين حرف te؟"
+ },
+ "comenca-t": {
+  "ca": "La tortuga! Amb quina lletra comença?",
+  "t": "La tortuga (السلحفاة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-u": {
+  "ca": "On és la u?",
+  "t": "أين حرف u؟"
+ },
+ "comenca-u": {
+  "ca": "L'unicorn! Amb quina lletra comença?",
+  "t": "L'unicorn (وحيد القرن)! بأيّ حرف يبدأ؟"
+ },
+ "on-abc-v": {
+  "ca": "On és la ve?",
+  "t": "أين حرف ve؟"
+ },
+ "comenca-v": {
+  "ca": "La vaca! Amb quina lletra comença?",
+  "t": "La vaca (البقرة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-x": {
+  "ca": "On és la xeix?",
+  "t": "أين حرف xeix؟"
+ },
+ "comenca-x": {
+  "ca": "La xocolata! Amb quina lletra comença?",
+  "t": "La xocolata (الشوكولاتة)! بأيّ حرف تبدأ؟"
+ },
+ "on-abc-z": {
+  "ca": "On és la zeta?",
+  "t": "أين حرف zeta؟"
+ },
+ "comenca-z": {
+  "ca": "La zebra! Amb quina lletra comença?",
+  "t": "La zebra (الحمار الوحشي)! بأيّ حرف تبدأ؟"
+ },
+ "illa-accions": {
+  "ca": "L'illa de les accions!",
+  "t": "جزيرة الأفعال!"
+ },
+ "illa-contraris": {
+  "ca": "L'illa dels contraris!",
+  "t": "جزيرة الأضداد!"
+ },
+ "parelles": {
+  "ca": "Busca les parelles! Gira dues cartes iguals.",
+  "t": "ابحث عن الأزواج! اقلب بطاقتين متطابقتين."
+ },
+ "primer": {
+  "ca": "Primer, toca...",
+  "t": "أولًا، المس..."
+ },
+ "despres": {
+  "ca": "I després...",
+  "t": "ثم..."
+ },
+ "ordre-numeros": {
+  "ca": "Toca'ls en ordre, de menys a més!",
+  "t": "المس الأرقام بالترتيب، من الأصغر إلى الأكبر!"
+ },
+ "ordre-vocals": {
+  "ca": "Toca les vocals en ordre: a, e, i, o, u!",
+  "t": "المس حروف العلّة بالترتيب: a, e, i, o, u!"
+ },
+ "mes": {
+  "ca": "On n'hi ha més?",
+  "t": "أين يوجد عدد أكبر؟"
+ },
+ "menys": {
+  "ca": "On n'hi ha menys?",
+  "t": "أين يوجد عدد أقل؟"
+ },
+ "sort-habitat": {
+  "ca": "On viu? Al cel, a l'aigua o a la terra?",
+  "t": "أين يعيش؟ في السماء أم في الماء أم على اليابسة؟"
+ },
+ "sort-fruita": {
+  "ca": "La fruita, a un costat! La verdura, a l'altre!",
+  "t": "ضَع الفاكهة في جهة، والخضار في الجهة الأخرى!"
+ },
+ "sort-calent": {
+  "ca": "Les coses calentes, al foc! Les coses fredes, al gel!",
+  "t": "الأشياء الساخنة قرب النار! والأشياء الباردة على الثلج!"
+ },
+ "quin-gran": {
+  "ca": "Quin és gran?",
+  "t": "أيّها كبير؟"
+ },
+ "quin-xicotet": {
+  "ca": "Quin és xicotet?",
+  "t": "أيّها صغير؟"
+ },
+ "tria-color": {
+  "ca": "Primer, tria un color!",
+  "t": "أولًا، اختر لونًا!"
+ },
+ "tria-cosa": {
+  "ca": "Primer, toca el dibuix que vols moure!",
+  "t": "أولًا، المس الصورة التي تريد تحريكها!"
+ },
+ "simon-no": {
+  "ca": "Ai! La Taronjeta no ho ha dit!",
+  "t": "آه! لم تقل Taronjeta ذلك!"
+ },
+ "no-ho-faig": {
+  "ca": "No ho faig!",
+  "t": "لن أفعل ذلك!"
+ },
+ "si": {
+  "ca": "Sí!",
+  "t": "نعم!"
+ },
+ "no": {
+  "ca": "No!",
+  "t": "لا!"
+ },
+ "qui-acc-menjar": {
+  "ca": "Qui menja?",
+  "t": "مَن menja (يأكل)؟"
+ },
+ "qui-acc-beure": {
+  "ca": "Qui beu?",
+  "t": "مَن beu (يشرب)؟"
+ },
+ "qui-acc-dormir": {
+  "ca": "Qui dorm?",
+  "t": "مَن dorm (ينام)؟"
+ },
+ "qui-acc-correr": {
+  "ca": "Qui corre?",
+  "t": "مَن corre (يركض)؟"
+ },
+ "qui-acc-saltar": {
+  "ca": "Qui salta?",
+  "t": "مَن salta (يقفز)؟"
+ },
+ "qui-acc-nadar": {
+  "ca": "Qui nada?",
+  "t": "مَن nada (يسبح)؟"
+ },
+ "qui-acc-ballar": {
+  "ca": "Qui balla?",
+  "t": "مَن balla (يرقص)؟"
+ },
+ "qui-acc-cantar": {
+  "ca": "Qui canta?",
+  "t": "مَن canta (يغنّي)؟"
+ },
+ "qui-acc-pintar": {
+  "ca": "Qui pinta?",
+  "t": "مَن pinta (يرسم)؟"
+ },
+ "qui-acc-llegir": {
+  "ca": "Qui llig?",
+  "t": "مَن llig (يقرأ)؟"
+ },
+ "qui-acc-plorar": {
+  "ca": "Qui plora?",
+  "t": "مَن plora (يبكي)؟"
+ },
+ "qui-acc-riure": {
+  "ca": "Qui riu?",
+  "t": "مَن riu (يضحك)؟"
+ },
+ "ask-op-dia": {
+  "ca": "On és el dia?",
+  "t": "أين dia (النهار)؟"
+ },
+ "ask-op-nit": {
+  "ca": "On és la nit?",
+  "t": "أين nit (الليل)؟"
+ },
+ "ask-op-calent": {
+  "ca": "Què està calent?",
+  "t": "ما الشيء calent (الساخن)؟"
+ },
+ "ask-op-fred": {
+  "ca": "Què està fred?",
+  "t": "ما الشيء fred (البارد)؟"
+ },
+ "ask-op-rapid": {
+  "ca": "Qui és ràpid?",
+  "t": "مَن rapid (السريع)؟"
+ },
+ "ask-op-lent": {
+  "ca": "Qui és lent?",
+  "t": "مَن lent (البطيء)؟"
+ },
+ "ask-op-alt": {
+  "ca": "Qui és alt?",
+  "t": "مَن alt (الطويل)؟"
+ },
+ "ask-op-baix": {
+  "ca": "Qui és baix?",
+  "t": "مَن baix (القصير)؟"
+ },
+ "ask-op-obert": {
+  "ca": "Quin llibre està obert?",
+  "t": "أيّ كتاب مفتوح (obert)؟"
+ },
+ "ask-op-tancat": {
+  "ca": "Quin llibre està tancat?",
+  "t": "أيّ كتاب مغلق (tancat)؟"
+ },
+ "ask-op-content": {
+  "ca": "Qui està content?",
+  "t": "مَن content (السعيد)؟"
+ },
+ "ask-op-trist": {
+  "ca": "Qui està trist?",
+  "t": "مَن trist (الحزين)؟"
+ },
+ "ll-119i01": {
+  "ca": "Escolta i toca!",
+  "t": "استمع والمس!"
+ },
+ "ll-1gbueyt": {
+  "ca": "Escolta i escriu la paraula, lletra a lletra!",
+  "t": "استمع واكتب الكلمة، حرفًا حرفًا!"
+ },
+ "ll-1v98umn": {
+  "ca": "Mira bé les dues files. Què ha canviat? Toca el dibuix diferent de la fila de baix!",
+  "t": "انظر جيدًا إلى الصفّين. ما الذي تغيّر؟ المس الصورة المختلفة في الصفّ السفلي!"
+ },
+ "ll-1ut3lgy": {
+  "ca": "Frases amb pictogrames!",
+  "t": "جمل بالصور الرمزية!"
+ },
+ "ll-rxzfgh": {
+  "ca": "Per a saludar i dir adéu, diem:",
+  "t": "للتحية والوداع، نقول:"
+ },
+ "ll-1knyiln": {
+  "ca": "Quan necessitem alguna cosa, diem:",
+  "t": "عندما نحتاج إلى شيء، نقول:"
+ },
+ "ll-ulapd5": {
+  "ca": "Tinc fam.",
+  "t": "Tinc fam. (أنا جائعة.)"
+ },
+ "ll-1e0yar9": {
+  "ca": "Tinc set.",
+  "t": "Tinc set. (أنا عطشانة.)"
+ },
+ "ll-1c05rkt": {
+  "ca": "Vull menjar.",
+  "t": "Vull menjar. (أريد أن آكل.)"
+ },
+ "ll-jpma7t": {
+  "ca": "Vull aigua.",
+  "t": "Vull aigua. (أريد ماءً.)"
+ },
+ "ll-1suwujk": {
+  "ca": "Per a dir com estem, diem:",
+  "t": "لكي نقول كيف نشعر، نقول:"
+ },
+ "ll-1ti1boo": {
+  "ca": "Estic content.",
+  "t": "أنا سعيدة (Estic content)."
+ },
+ "ll-d6ebyx": {
+  "ca": "Estic trist.",
+  "t": "أنا حزينة (Estic trist)."
+ },
+ "ll-lk6p2r": {
+  "ca": "Per a dir el que volem fer, diem:",
+  "t": "لنقول ما نريد أن نفعله، نقول:"
+ },
+ "ll-aphzx5": {
+  "ca": "Vull jugar.",
+  "t": "Vull jugar (أريد أن ألعب)."
+ },
+ "ll-yuvj7j": {
+  "ca": "Vull dormir.",
+  "t": "Vull dormir (أريد أن أنام)."
+ },
+ "ll-1mjf1mb": {
+  "ca": "Vull llegir.",
+  "t": "Vull llegir (أريد أن أقرأ)."
+ },
+ "ll-uksvoc": {
+  "ca": "Vull pintar.",
+  "t": "Vull pintar (أريد أن أرسم)."
+ },
+ "ll-1866kvl": {
+  "ca": "Vull cantar.",
+  "t": "Vull cantar (أريد أن أغني)."
+ },
+ "ll-1s4z1bw": {
+  "ca": "Per a dir on anem i què ens agrada, diem:",
+  "t": "لنسأل إلى أين نذهب وما الذي يعجبنا، نقول:"
+ },
+ "ll-1cqkcud": {
+  "ca": "Vaig a l'escola.",
+  "t": "Vaig a l'escola (أذهب إلى المدرسة)."
+ },
+ "ll-1o2mj2p": {
+  "ca": "Vaig a casa.",
+  "t": "Vaig a casa (أذهب إلى البيت)."
+ },
+ "ll-1owym3z": {
+  "ca": "M'agrada la pilota.",
+  "t": "M'agrada la pilota (تعجبني الكرة)."
+ },
+ "ll-4baekv": {
+  "ca": "I no ens oblidem de les paraules màgiques!",
+  "t": "ولا ننسى الكلمات السحرية!"
+ },
+ "ll-1yv4odu": {
+  "ca": "Per favor.",
+  "t": "Per favor (من فضلك)."
+ },
+ "ll-16d7ukh": {
+  "ca": "Ajuda'm, per favor.",
+  "t": "Ajuda'm, per favor (ساعدني، من فضلك)."
+ },
+ "ll-1invn1m": {
+  "ca": "La Taronjeta diu...",
+  "t": "تقول Taronjeta..."
+ },
+ "ll-1u54jhj": {
+  "ca": "No ho faig!",
+  "t": "No ho faig (لن أفعل ذلك)!"
+ },
+ "ll-e9e135": {
+  "ca": "Juguem a «La Taronjeta diu»! Si dic «La Taronjeta diu», ho fas. Si no ho dic, no ho fas: toca la mà que diu «No ho faig!».",
+  "t": "هيا نلعب «La Taronjeta diu»! إذا قلتُ «La Taronjeta diu»، نفّذ ما أقول. وإذا لم أقلها، فلا تفعل شيئًا: المس اليد التي تقول «No ho faig» (لن أفعل ذلك)!"
+ },
+ "ll-razchd": {
+  "ca": "Toca'ls en ordre, de menys a més!",
+  "t": "المسها بالترتيب، من الأصغر إلى الأكبر!"
+ },
+ "ll-wj43p3": {
+  "ca": "Com et dius?",
+  "t": "Com et dius (ما اسمك)؟"
+ },
+ "ll-ozu10d": {
+  "ca": "Quants anys tens?",
+  "t": "Quants anys tens (كم عمرك)؟"
+ },
+ "ll-4tfuh4": {
+  "ca": "Com s'escriu?",
+  "t": "Com s'escriu (كيف نكتبها)؟"
+ },
+ "ll-1a3edrh": {
+  "ca": "Hola! Qui és qui?",
+  "t": "مرحبًا! من يكون؟"
+ },
+ "ll-1l4mx5k": {
+  "ca": "Benvinguts a la guia Pre-A1! Hui coneixerem uns amics nous i aprendrem a dir com ens diem i quants anys tenim.",
+  "t": "أهلًا بكم في دليل Pre-A1! سنتعرّف اليوم إلى أصدقاء جدد، ونتعلّم كيف نقول أسماءنا وأعمارنا."
+ },
+ "ll-ttcpvo": {
+  "ca": "Estos són els nostres amics. Toca cada nom i escolta com es diu!",
+  "t": "هؤلاء أصدقاؤنا. المس كل اسم واستمع إلى طريقة نطقه!"
+ },
+ "ll-1tfjyef": {
+  "ca": "Hola! Em dic Laia. I tu, com et dius?",
+  "t": "مرحبًا! اسمي Laia. وأنت، ما اسمك؟"
+ },
+ "ll-1xfq0ti": {
+  "ca": "Hola, Laia! Jo em dic Pau.",
+  "t": "مرحبًا يا Laia! اسمي Pau."
+ },
+ "ll-15i1cab": {
+  "ca": "Quants anys tens, Pau?",
+  "t": "كم عمرك يا Pau؟"
+ },
+ "ll-1oanjds": {
+  "ca": "Tinc sis anys. I tu?",
+  "t": "عمري sis (ست) سنوات. وأنت؟"
+ },
+ "ll-tejung": {
+  "ca": "Jo tinc set anys!",
+  "t": "عمري set (سبع) سنوات!"
+ },
+ "ll-1g23lny": {
+  "ca": "Per a saber el nom d'algú, preguntem: Com et dius? I per a saber l'edat: Quants anys tens?",
+  "t": "لنسأل عن اسم شخص: Com et dius (ما اسمك)؟ ولنسأل عن عمره: Quants anys tens (كم عمرك)؟"
+ },
+ "ll-yi1l94": {
+  "ca": "Quants anys té Pau? Toca les espelmes!",
+  "t": "كم شمعة على كعكة Pau؟ المس الشموع!"
+ },
+ "ll-rztb3c": {
+  "ca": "I Laia, quants anys té?",
+  "t": "وكم عمر Laia؟"
+ },
+ "ll-1xqlidv": {
+  "ca": "Comptem de l'u al deu! Toca cada grup.",
+  "t": "هيا نعدّ من l'u (واحد) إلى deu (عشرة)! المس كل مجموعة."
+ },
+ "ll-scdx5g": {
+  "ca": "I ara, de l'onze al vint! Toca cada número.",
+  "t": "والآن من onze (أحد عشر) إلى vint (عشرين)! المس كل رقم."
+ },
+ "ll-ty3hh3": {
+  "ca": "Laia llig un llibre.",
+  "t": "Laia تقرأ كتابًا."
+ },
+ "ll-1n9oder": {
+  "ca": "Pau juga a futbol.",
+  "t": "Pau يلعب كرة القدم."
+ },
+ "ll-1f77se4": {
+  "ca": "Marta pinta un dibuix.",
+  "t": "Marta ترسم رسمة."
+ },
+ "ll-hlwid3": {
+  "ca": "Joan va amb bici.",
+  "t": "Joan يركب الدراجة."
+ },
+ "ll-14ehzz5": {
+  "ca": "I per a saber com s'escriu un nom, preguntem: Com s'escriu? Pau: P, A, U!",
+  "t": "ولنسأل كيف يُكتب الاسم، نقول: Com s'escriu (كيف نكتبها)؟ Pau: P, A, U!"
+ },
+ "ll-1viz5sr": {
+  "ca": "Pau dorm.",
+  "t": "Pau نائم."
+ },
+ "ll-wcfdep": {
+  "ca": "Marta menja un gelat.",
+  "t": "تأكل Marta مثلّجات."
+ },
+ "ll-1wf10us": {
+  "ca": "Molt bé! Ja saps preguntar: Com et dius? Quants anys tens? Com s'escriu? I ja saps comptar fins a vint!",
+  "t": "أحسنت! لقد تعلّمت أن تسأل: «Com et dius?» (ما اسمك؟) «Quants anys tens?» (كم عمرك؟) «Com s'escriu?» (كيف تُكتب؟) وأن تعدّ حتى vint (عشرين)!"
+ },
+ "ll-1vmoe7e": {
+  "ca": "Què és açò?",
+  "t": "«Què és açò?» (ما هذا؟)"
+ },
+ "ll-qj3atu": {
+  "ca": "M'agrada!",
+  "t": "«M'agrada!» (أحبّه!)"
+ },
+ "ll-9q6i07": {
+  "ca": "No m'agrada!",
+  "t": "«No m'agrada!» (لا أحبّه!)"
+ },
+ "ll-1d17bij": {
+  "ca": "Hui anem al zoo! Hi ha animals grans, xicotets, ràpids i lents. Escolta i descobrix-los!",
+  "t": "اليوم نذهب إلى حديقة الحيوانات! فيها حيوانات grans (كبيرة)، xicotets (صغيرة)، ràpids (سريعة) و lents (بطيئة). استمع واكتشفها!"
+ },
+ "ll-giywir": {
+  "ca": "Els animals del zoo! Toca cada un i escolta el seu nom.",
+  "t": "حيوانات حديقة الحيوانات! المس كل حيوان واستمع إلى اسمه."
+ },
+ "ll-defn4c": {
+  "ca": "I estos viuen a la granja. Toca i escolta!",
+  "t": "وهذه تعيش في المزرعة. المس واستمع!"
+ },
+ "ll-18jgjaq": {
+  "ca": "I estos són xicotets, xicotets! Toca i escolta.",
+  "t": "وهذه صغيرة، صغيرة جدًا! المس واستمع."
+ },
+ "ll-6ptars": {
+  "ca": "Al zoo, al zoo, anem tots al zoo!",
+  "t": "إلى حديقة الحيوانات، إلى حديقة الحيوانات، هيا بنا جميعًا!"
+ },
+ "ll-1dz1fu7": {
+  "ca": "La girafa és molt alta i té el coll llarg.",
+  "t": "girafa (الزرافة) طويلة جدًا، ولها coll (عنق) طويل."
+ },
+ "ll-1kpiddk": {
+  "ca": "L'elefant és molt gran i té la trompa llarga.",
+  "t": "elefant (الفيل) كبير جدًا، وله trompa (خرطوم) طويل."
+ },
+ "ll-7hzkbb": {
+  "ca": "La mona salta i salta, de branca en branca!",
+  "t": "mona (القردة) تقفز وتقفز من غصن إلى غصن!"
+ },
+ "ll-t64xwd": {
+  "ca": "La serp fa sss, sss, i no té cames.",
+  "t": "serp (الأفعى) تصدر صوت sss، sss، وليس لها cames (أرجل)."
+ },
+ "ll-4m5rxg": {
+  "ca": "Per a preguntar què és una cosa, diem: Què és açò? I contestem: És un tigre! És una zebra!",
+  "t": "لنسأل عن ماهية شيء، نقول: «Què és açò?» (ما هذا؟) ونجيب: «És un tigre!» (إنه نمر!) «És una zebra!» (إنها حمار وحشي!)"
+ },
+ "ll-3mial": {
+  "ca": "És un tigre.",
+  "t": "«És un tigre.» (إنه نمر.)"
+ },
+ "ll-opimmv": {
+  "ca": "És un cocodril.",
+  "t": "«És un cocodril.» (إنه تمساح.)"
+ },
+ "ll-1d5ycr9": {
+  "ca": "És una girafa.",
+  "t": "«És una girafa.» (إنها زرافة.)"
+ },
+ "ll-1m7d8p3": {
+  "ca": "És una aranya.",
+  "t": "«És una aranya.» (إنها عنكبوت.)"
+ },
+ "ll-19ku7vo": {
+  "ca": "És un ós polar.",
+  "t": "«És un ós polar.» (إنه دب قطبي.)"
+ },
+ "ll-f5v2y0": {
+  "ca": "Per a dir el que ens agrada, diem: M'agrada! I si no ens agrada: No m'agrada!",
+  "t": "لنعبّر عمّا نحبه، نقول: «M'agrada!» (أحبّه!) وإذا لم نحبه، نقول: «No m'agrada!» (لا أحبّه!)"
+ },
+ "ll-nmxku3": {
+  "ca": "Mira, Laia! Què és açò?",
+  "t": "انظري يا Laia! «Què és açò?» (ما هذا؟)"
+ },
+ "ll-1ete1mo": {
+  "ca": "És un cocodril! Té moltes dents!",
+  "t": "«És un cocodril!» (إنه تمساح!) لديه أسنان كثيرة!"
+ },
+ "ll-1at0a0w": {
+  "ca": "M'agraden els cocodrils!",
+  "t": "«M'agraden els cocodrils!» (أحب التماسيح!)"
+ },
+ "ll-nmiv07": {
+  "ca": "A mi no m'agraden. M'agraden les girafes!",
+  "t": "أما أنا فلا أحبّها. «M'agraden les girafes!» (أحب الزرافات!)"
+ },
+ "ll-1h0zf2k": {
+  "ca": "A Laia, quin animal li agrada?",
+  "t": "أي حيوان تحبه Laia؟"
+ },
+ "ll-29vw82": {
+  "ca": "Quin animal fa sss, sss?",
+  "t": "أي حيوان يصدر صوت sss، sss؟"
+ },
+ "ll-1uf7x7o": {
+  "ca": "On viu cada animal? A la granja o al zoo?",
+  "t": "أين يعيش كل حيوان؟ في المزرعة أم في حديقة الحيوانات؟"
+ },
+ "ll-wwm7uc": {
+  "ca": "Molt bé! Ja coneixes molts animals del zoo i de la granja. I saps preguntar: Què és açò?",
+  "t": "أحسنت! لقد تعرّفت إلى حيوانات كثيرة من حديقة الحيوانات والمزرعة. وتعرف كيف تسأل: «Què és açò?» (ما هذا؟)"
+ },
+ "ll-tx3kjr": {
+  "ca": "El cos i la cara!",
+  "t": "«El cos i la cara!» (الجسم والوجه!)"
+ },
+ "ll-1sfzqlj": {
+  "ca": "Hui coneixerem la cara i el cos. Mira't a l'espill i toca cada part del teu cos!",
+  "t": "اليوم سنتعرّف إلى الوجه والجسم. انظر إلى نفسك في المرآة والمس كل جزء من جسمك!"
+ },
+ "ll-rn4sxy": {
+  "ca": "Primer, la cara! Toca i escolta.",
+  "t": "أولًا، «la cara» (الوجه)! المس واستمع."
+ },
+ "ll-1kru8up": {
+  "ca": "Ara, el cos! Toca i escolta.",
+  "t": "والآن، «el cos» (الجسم)! المس واستمع."
+ },
+ "ll-18okbj3": {
+  "ca": "Per a dir les parts del cos, diem: Tinc dos ulls, un nas i una boca. Tinc dues mans i dos peus!",
+  "t": "لنتحدّث عن أجزاء الجسم، نقول: «Tinc dos ulls, un nas i una boca. Tinc dues mans i dos peus!» (لديّ عينان وأنف وفم. لديّ يدان وقدمان!)"
+ },
+ "ll-35ffzj": {
+  "ca": "Cap, espatlles, genolls i peus, genolls i peus!",
+  "t": "«Cap, espatlles, genolls i peus, genolls i peus!» (رأس وكتفان وركبتان وقدمان، ركبتان وقدمان!)"
+ },
+ "ll-1h1xth0": {
+  "ca": "Ulls, orelles, boca i nas!",
+  "t": "«Ulls, orelles, boca i nas!» (عينان وأذنان وفم وأنف!)"
+ },
+ "ll-1u1qk65": {
+  "ca": "La Taronjeta diu: toca el nas!",
+  "t": "تقول Taronjeta: المس nas (الأنف)!"
+ },
+ "ll-dsy1h1": {
+  "ca": "Toca la boca!",
+  "t": "المس boca (الفم)!"
+ },
+ "ll-1lhmmee": {
+  "ca": "La Taronjeta diu: toca les orelles!",
+  "t": "تقول Taronjeta: المس orelles (الأذنين)!"
+ },
+ "ll-whxk52": {
+  "ca": "La Taronjeta diu: toca els ulls!",
+  "t": "تقول Taronjeta: المس ulls (العينين)!"
+ },
+ "ll-1mp59qi": {
+  "ca": "Toca el peu!",
+  "t": "المس peu (القدم)!"
+ },
+ "ll-1fdjzfy": {
+  "ca": "La Taronjeta diu: toca la mà!",
+  "t": "تقول Taronjeta: المس mà (اليد)!"
+ },
+ "ll-111fnwf": {
+  "ca": "Pinta el nas de roig!",
+  "t": "لوّن nas (الأنف) باللون roig (الأحمر)!"
+ },
+ "ll-1vpi2kg": {
+  "ca": "Pinta els cabells de groc!",
+  "t": "لوّن cabells (الشعر) باللون groc (الأصفر)!"
+ },
+ "ll-lkmbf1": {
+  "ca": "Pinta els ulls de blau!",
+  "t": "لوّن ulls (العينين) باللون blau (الأزرق)!"
+ },
+ "ll-11r9h4i": {
+  "ca": "Pinta la boca de rosa!",
+  "t": "لوّن boca (الفم) باللون rosa (الوردي)!"
+ },
+ "ll-1cjkphv": {
+  "ca": "Són les orelles.",
+  "t": "إنهما orelles (الأذنان)."
+ },
+ "ll-1o7rapa": {
+  "ca": "És el peu.",
+  "t": "إنه peu (القدم)."
+ },
+ "ll-1f2qvmf": {
+  "ca": "És la boca.",
+  "t": "إنه boca (الفم)."
+ },
+ "ll-wa9c09": {
+  "ca": "És la mà.",
+  "t": "إنها mà (اليد)."
+ },
+ "ll-yn5d4c": {
+  "ca": "Amb què somriem?",
+  "t": "بماذا نبتسم؟"
+ },
+ "ll-xe4rt9": {
+  "ca": "Què et pentines cada matí?",
+  "t": "ماذا تُمشّط كل صباح؟"
+ },
+ "ll-1bqi5cq": {
+  "ca": "Molt bé! Ja saps les parts de la cara i del cos. I has jugat a «La Taronjeta diu»!",
+  "t": "أحسنت! لقد تعرّفت إلى أجزاء الوجه والجسم، ولعبت لعبة «La Taronjeta diu»!"
+ },
+ "ll-1ow2713": {
+  "ca": "Jo porte una samarreta!",
+  "t": "أنا أرتدي samarreta (قميصًا)!"
+ },
+ "ll-1bkozgn": {
+  "ca": "La roba!",
+  "t": "الملابس! roba"
+ },
+ "ll-tf7uf2": {
+  "ca": "Què portes hui? Anem a conéixer la roba que ens posem cada dia!",
+  "t": "ماذا ترتدي اليوم؟ هيا نتعرّف إلى roba (الملابس) التي نلبسها كل يوم!"
+ },
+ "ll-1x7n7us": {
+  "ca": "Toca cada peça de roba i escolta el seu nom!",
+  "t": "المس كل قطعة ملابس واستمع إلى اسمها!"
+ },
+ "ll-1tjuhgp": {
+  "ca": "Encara n'hi ha més! Toca i escolta.",
+  "t": "ما زال هناك المزيد! المس واستمع."
+ },
+ "ll-coqtrp": {
+  "ca": "Per a dir la roba que tenim posada, diem: porte. Jo porte una samarreta! Laia porta un vestit.",
+  "t": "لنتحدّث عن الملابس التي نرتديها، نقول: porte (أرتدي). أنا أرتدي samarreta (قميصًا)! Laia ترتدي vestit (فستانًا)."
+ },
+ "ll-13vsxi2": {
+  "ca": "Laia porta un vestit.",
+  "t": "Laia ترتدي vestit (فستانًا)."
+ },
+ "ll-f0249q": {
+  "ca": "Pau porta una gorra.",
+  "t": "Pau يرتدي gorra (قبعة)."
+ },
+ "ll-1aj9exf": {
+  "ca": "Marta porta botes.",
+  "t": "Marta ترتدي botes (حذاءً طويلًا)."
+ },
+ "ll-10lpwb": {
+  "ca": "Joan porta ulleres.",
+  "t": "Joan يرتدي ulleres (نظّارة)."
+ },
+ "ll-2iy65x": {
+  "ca": "Pinta la samarreta de verd!",
+  "t": "لوّن samarreta (القميص) باللون verd (الأخضر)!"
+ },
+ "ll-1xgei51": {
+  "ca": "Pinta els pantalons de blau!",
+  "t": "لوّن pantalons (البنطال) باللون blau (الأزرق)!"
+ },
+ "ll-pvx7u0": {
+  "ca": "Pinta la gorra de roig!",
+  "t": "لوّن gorra (القبعة) باللون roig (الأحمر)!"
+ },
+ "ll-l3wbfn": {
+  "ca": "Pinta les sabates de negre!",
+  "t": "لوّن sabates (الحذاء) باللون negre (الأسود)!"
+ },
+ "ll-1gcmnq1": {
+  "ca": "Quan fa fred, portem jaqueta, botes, bufanda i guants. Quan fa calor, portem pantalons curts i gorra!",
+  "t": "عندما يكون الجو باردًا، نرتدي jaqueta (سترة)، botes (حذاءً طويلًا)، bufanda (وشاحًا) وguants (قفّازات). وعندما يكون الجو حارًا، نرتدي pantalons curts (سروالًا قصيرًا) وgorra (قبعة)!"
+ },
+ "ll-iuugie": {
+  "ca": "Què ens posem? Quan fa fred, o quan fa calor?",
+  "t": "ماذا نرتدي؟ عندما يكون الجو باردًا أم عندما يكون حارًا؟"
+ },
+ "ll-1c4h5df": {
+  "ca": "Pau, fa fred! Posa't la jaqueta!",
+  "t": "Pau، الجو بارد! ارتدِ jaqueta (السترة)!"
+ },
+ "ll-1seef5i": {
+  "ca": "I la gorra també?",
+  "t": "وهل أرتدي gorra (القبعة) أيضًا؟"
+ },
+ "ll-15gr3s7": {
+  "ca": "No, la gorra no. Posa't la bufanda i els guants!",
+  "t": "لا، لا ترتدِ gorra (القبعة). ارتدِ bufanda (الوشاح) وguants (القفّازات)!"
+ },
+ "ll-143h8wi": {
+  "ca": "D'acord, mama!",
+  "t": "حسنًا يا أمي!"
+ },
+ "ll-9fer3a": {
+  "ca": "Què li diu la mare a Pau que es pose?",
+  "t": "ماذا قالت أم Pau أن يرتدي؟"
+ },
+ "ll-xpj7sz": {
+  "ca": "És un vestit.",
+  "t": "إنه vestit (فستان)."
+ },
+ "ll-8sqsyt": {
+  "ca": "Són unes sabates.",
+  "t": "إنهما sabates (حذاء)."
+ },
+ "ll-1q02yyk": {
+  "ca": "És una gorra.",
+  "t": "إنها gorra (قبعة)."
+ },
+ "ll-pqloin": {
+  "ca": "És una camisa.",
+  "t": "إنها camisa (قميص)."
+ },
+ "ll-13fh86c": {
+  "ca": "Molt bé! Ja coneixes la roba. I saps dir: jo porte una samarreta!",
+  "t": "أحسنت! لقد تعرّفت إلى الملابس، وتعرف كيف تقول: أنا أرتدي samarreta (قميصًا)!"
+ },
+ "ll-nbo93p": {
+  "ca": "De quin color és?",
+  "t": "ما لونُه؟"
+ },
+ "ll-ykc28z": {
+  "ca": "Els colors del món!",
+  "t": "ألوانُ العالم!"
+ },
+ "ll-chb51h": {
+  "ca": "El món està ple de colors! Hui escoltarem i pintarem, com els pintors.",
+  "t": "العالم مليء بالألوان! سنستمع اليوم ونلوّن مثل الرسّامين."
+ },
+ "ll-50pcjt": {
+  "ca": "Toca cada color i escolta el seu nom!",
+  "t": "المس كلَّ لون واستمع إلى اسمه!"
+ },
+ "ll-9hn7ky": {
+  "ca": "Per a preguntar el color, diem: De quin color és? I contestem: És roig! És blau!",
+  "t": "لنسأل عن اللون نقول: De quin color és? (ما لونه؟) ونجيب: És roig (إنه أحمر)! És blau (إنه أزرق)!"
+ },
+ "ll-14a87y2": {
+  "ca": "Roig, taronja, groc i verd, l'arc de Sant Martí!",
+  "t": "Roig (أحمر)، taronja (برتقالي)، groc (أصفر) وverd (أخضر)، ألوان قوس قزح!"
+ },
+ "ll-2li49b": {
+  "ca": "Blau i morat, i ja està: quin arc més bonic!",
+  "t": "Blau (أزرق) وmorat (بنفسجي)، وهكذا! يا له من قوس جميل!"
+ },
+ "ll-4exyq0": {
+  "ca": "Quan plou i fa sol alhora, mira cap al cel!",
+  "t": "عندما تمطر وتشرق الشمس في الوقت نفسه، انظر إلى السماء!"
+ },
+ "ll-ztccvz": {
+  "ca": "Ara jugarem a «Escolta i pinta». Primer, toca un color. Després, toca el dibuix que diu la veu!",
+  "t": "سنلعب الآن لعبة «استمع ولوّن». أولًا، المس لونًا. ثم المس الصورة التي تصفها الكلمات!"
+ },
+ "ll-1xlcw55": {
+  "ca": "Pinta la pilota de blau!",
+  "t": "لوّن الكرة باللون blau (الأزرق)!"
+ },
+ "ll-1gb0pmz": {
+  "ca": "Pinta el globus de roig!",
+  "t": "لوّن البالون باللون roig (الأحمر)!"
+ },
+ "ll-qd3ohz": {
+  "ca": "Pinta l'estrela de groc!",
+  "t": "لوّن النجمة باللون groc (الأصفر)!"
+ },
+ "ll-wr8hjy": {
+  "ca": "Pinta la flor de rosa!",
+  "t": "لوّن الزهرة باللون rosa (الوردي)!"
+ },
+ "ll-arvlke": {
+  "ca": "Pinta el cotxe de verd!",
+  "t": "لوّن السيارة باللون verd (الأخضر)!"
+ },
+ "ll-1vktwvu": {
+  "ca": "La granota és verda.",
+  "t": "الضفدع verd (أخضر)."
+ },
+ "ll-1u2gyin": {
+  "ca": "El plàtan és blau.",
+  "t": "الموزة blau (زرقاء)."
+ },
+ "ll-1cpo58x": {
+  "ca": "El núvol és blanc.",
+  "t": "السحابة blanc (بيضاء)."
+ },
+ "ll-1i3bvn5": {
+  "ca": "La maduixa és groga.",
+  "t": "الفراولة groga (صفراء)."
+ },
+ "ll-16rm7d8": {
+  "ca": "Pinta el plàtan de groc!",
+  "t": "لوّن الموزة باللون groc (الأصفر)!"
+ },
+ "ll-61dki6": {
+  "ca": "Pinta el raïm de morat!",
+  "t": "لوّن العنب باللون morat (البنفسجي)!"
+ },
+ "ll-1qxl0ky": {
+  "ca": "Pinta la poma de roig!",
+  "t": "لوّن التفاحة باللون roig (الأحمر)!"
+ },
+ "ll-1lkwa5l": {
+  "ca": "Pinta la pera de verd!",
+  "t": "لوّن الإجاصة باللون verd (الأخضر)!"
+ },
+ "ll-1vt9aax": {
+  "ca": "Molt bé! Ja saps preguntar: De quin color és? I has pintat com un artista. Mira l'arc de Sant Martí!",
+  "t": "أحسنت! تعلّمت أن تسأل: De quin color és? (ما لونه؟) ولوّنت مثل فنان! انظر إلى قوس قزح!"
+ },
+ "ll-krvjb": {
+  "ca": "Este és el meu pare!",
+  "t": "Este és el meu pare (هذا أبي)!"
+ },
+ "ll-h5ks5l": {
+  "ca": "Esta és la meua mare!",
+  "t": "Esta és la meua mare (هذه أمي)!"
+ },
+ "ll-g24waq": {
+  "ca": "La família i els amics!",
+  "t": "العائلة والأصدقاء!"
+ },
+ "ll-132ehtd": {
+  "ca": "Hui coneixerem la família i els amics de Laia. Vols vindre?",
+  "t": "سنتعرّف اليوم إلى عائلة Laia وأصدقائها. هل تريد أن تأتي؟"
+ },
+ "ll-1laa1x3": {
+  "ca": "La família! Toca i escolta.",
+  "t": "La família (العائلة)! المس واستمع."
+ },
+ "ll-1u2dghd": {
+  "ca": "I altres persones que coneixem! Toca i escolta.",
+  "t": "وأشخاص آخرين نعرفهم! المس واستمع."
+ },
+ "ll-sw5q7a": {
+  "ca": "Per a presentar la família, diem: Este és el meu pare. Esta és la meua mare.",
+  "t": "لنتعرّف إلى العائلة نقول: Este és el meu pare (هذا أبي). Esta és la meua mare (هذه أمي)."
+ },
+ "ll-vhpr9u": {
+  "ca": "Mira: jove i vell són contraris. El xiquet és jove. El iaio és vell.",
+  "t": "انظر: jove (شاب) وvell (مسنّ) كلمتان متضادتان. El xiquet (الطفل) jove (شاب). El iaio (الجد) vell (مسنّ)."
+ },
+ "ll-1wtmu9l": {
+  "ca": "Pel matí, Laia esmorza amb tota la família a la cuina.",
+  "t": "في الصباح، تتناول Laia الفطور مع كل العائلة في المطبخ."
+ },
+ "ll-pb5wr4": {
+  "ca": "Després, va a l'escola amb autobús amb el seu germà.",
+  "t": "بعد ذلك، تذهب إلى المدرسة بالحافلة مع أخيها."
+ },
+ "ll-omuy7k": {
+  "ca": "Per la vesprada, juga al parc amb la seua amiga Marta.",
+  "t": "في المساء، تلعب في الحديقة مع صديقتها Marta."
+ },
+ "ll-1urjw96": {
+  "ca": "Per la nit, sopen, i la iaia els conta un conte.",
+  "t": "في الليل، يتناولون العشاء، وتحكي لهم الجدة قصة."
+ },
+ "ll-vf02is": {
+  "ca": "I després, a dormir! Bona nit, Laia!",
+  "t": "وبعدها، حان وقت النوم! تصبحين على خير يا Laia!"
+ },
+ "ll-4f7019": {
+  "ca": "Amb què va Laia a l'escola?",
+  "t": "بماذا تذهب Laia إلى المدرسة؟"
+ },
+ "ll-1e8k6al": {
+  "ca": "Qui conta un conte per la nit?",
+  "t": "من يحكي قصة في الليل؟"
+ },
+ "ll-16oh7k8": {
+  "ca": "Amb qui juga Laia al parc?",
+  "t": "مع من تلعب Laia في الحديقة؟"
+ },
+ "ll-1prn42r": {
+  "ca": "Posa la iaia al jardí!",
+  "t": "ضَع الجدة في الحديقة!"
+ },
+ "ll-1xxk6je": {
+  "ca": "Posa el pare a la cuina!",
+  "t": "ضعي pare (الأب) في cuina (المطبخ)!"
+ },
+ "ll-ev76r6": {
+  "ca": "Posa el bebé al dormitori!",
+  "t": "ضعي bebé (الرضيع) في dormitori (غرفة النوم)!"
+ },
+ "ll-1xj9oj3": {
+  "ca": "Posa el gos al saló!",
+  "t": "ضعي gos (الكلب) في saló (غرفة الجلوس)!"
+ },
+ "ll-1i5tzva": {
+  "ca": "És el iaio.",
+  "t": "إنه iaio (الجد)."
+ },
+ "ll-1mh3vq3": {
+  "ca": "És la mare.",
+  "t": "إنها mare (الأم)."
+ },
+ "ll-1fsdaki": {
+  "ca": "És una xiqueta.",
+  "t": "إنها xiqueta (طفلة)."
+ },
+ "ll-17n3em9": {
+  "ca": "És jove.",
+  "t": "إنه jove (صغير السن)."
+ },
+ "ll-1ig4iaw": {
+  "ca": "Molt bé! Ja saps presentar la família: este és el meu pare, esta és la meua mare!",
+  "t": "أحسنت! لقد تعلمت كيف تقدّمين عائلتك: هذا هو pare (أبي)، وهذه هي mare (أمي)!"
+ },
+ "ll-gmb1t0": {
+  "ca": "Vull un suc, per favor!",
+  "t": "أريد suc (عصيرًا)، من فضلك!"
+ },
+ "ll-c9wnw4": {
+  "ca": "El menjar i la beguda!",
+  "t": "menjar (الطعام) وbeguda (الشراب)!"
+ },
+ "ll-12v05bl": {
+  "ca": "Tens fam? Hui parlarem del menjar i de la beguda. Mmm, quina fam!",
+  "t": "هل تشعر بالجوع؟ سنتحدث اليوم عن menjar (الطعام) وbeguda (الشراب). ممم، كم أنا جائعة!"
+ },
+ "ll-m0lolh": {
+  "ca": "La fruita! Toca i escolta.",
+  "t": "fruita (الفاكهة)! المس واستمع."
+ },
+ "ll-1aqjjbv": {
+  "ca": "Més menjar! Toca i escolta.",
+  "t": "المزيد من أنواع menjar (الطعام)! المس واستمع."
+ },
+ "ll-w6egw0": {
+  "ca": "Les coses dolces i les begudes! Toca i escolta.",
+  "t": "الحلويات والمشروبات! المس واستمع."
+ },
+ "ll-1qgweq0": {
+  "ca": "Cada dia fem quatre menjars: l'esmorzar, el dinar, el berenar i el sopar.",
+  "t": "نتناول أربع وجبات كل يوم: esmorzar (الفطور)، dinar (الغداء)، berenar (وجبة العصر) وsopar (العشاء)."
+ },
+ "ll-1ncuska": {
+  "ca": "Per a dir el que ens agrada, diem: M'agrada el gelat! No m'agrada la ceba!",
+  "t": "للتعبير عمّا نحب، نقول: M'agrada el gelat! (أحبّ المثلجات!) No m'agrada la ceba! (لا أحبّ البصل!)"
+ },
+ "ll-1hyglpa": {
+  "ca": "I per a demanar alguna cosa, diem: Vull un suc, per favor!",
+  "t": "ولطلب شيء، نقول: Vull un suc, per favor! (أريد عصيرًا، من فضلك!)"
+ },
+ "ll-hkw1xx": {
+  "ca": "Tinc fam! Què hi ha per a dinar?",
+  "t": "أنا جائعة! ماذا لدينا لوجبة dinar (الغداء)؟"
+ },
+ "ll-1nbhl6u": {
+  "ca": "Hi ha arròs i pollastre.",
+  "t": "لدينا arròs (أرز) وpollastre (دجاج)."
+ },
+ "ll-1q28enl": {
+  "ca": "Mmm, m'agrada l'arròs! I de postres?",
+  "t": "ممم، أحبّ arròs (الأرز)! وماذا عن الحلوى؟"
+ },
+ "ll-1oc0673": {
+  "ca": "Una poma o un plàtan.",
+  "t": "تفاحة أو plàtan (موزة)."
+ },
+ "ll-qevzgb": {
+  "ca": "Un plàtan, per favor!",
+  "t": "plàtan (موزة)، من فضلك!"
+ },
+ "ll-1ovg4eo": {
+  "ca": "Què hi ha per a dinar?",
+  "t": "ماذا لدينا لوجبة dinar (الغداء)؟"
+ },
+ "ll-50ywwu": {
+  "ca": "Què vol Pau de postres?",
+  "t": "ماذا يريد Pau للحلوى؟"
+ },
+ "ll-1m0e2ro": {
+  "ca": "Posa la poma a la cistella!",
+  "t": "ضعي poma (التفاحة) في cistella (السلة)!"
+ },
+ "ll-1ygi1x": {
+  "ca": "Posa el pa al plat!",
+  "t": "ضعي pa (الخبز) في plat (الطبق)!"
+ },
+ "ll-10x3ddm": {
+  "ca": "Posa la llet al got!",
+  "t": "ضعي llet (الحليب) في got (الكوب)!"
+ },
+ "ll-1ke4252": {
+  "ca": "Posa el plàtan a la cistella!",
+  "t": "ضعي plàtan (الموزة) في cistella (السلة)!"
+ },
+ "ll-1wrmcgp": {
+  "ca": "Posa el formatge al plat!",
+  "t": "ضعي formatge (الجبن) في plat (الطبق)!"
+ },
+ "ll-whdulo": {
+  "ca": "És dolç o és salat?",
+  "t": "هل هو dolç (حلو) أم salat (مالح)؟"
+ },
+ "ll-1rxgaxt": {
+  "ca": "És una hamburguesa.",
+  "t": "إنها hamburguesa (شطيرة برغر)."
+ },
+ "ll-6w0y8i": {
+  "ca": "És una ceba.",
+  "t": "إنها ceba (بصلة)."
+ },
+ "ll-1wh4rb6": {
+  "ca": "És formatge.",
+  "t": "إنه formatge (جبن)."
+ },
+ "ll-1r4b2ta": {
+  "ca": "És pa.",
+  "t": "إنه pa (خبز)."
+ },
+ "ll-1dx8ons": {
+  "ca": "Molt bé! Ja saps molts menjars i begudes. I saps dir: M'agrada! I: Vull un suc, per favor!",
+  "t": "أحسنت! لقد تعلمت الكثير من أنواع الطعام والشراب. وتعرف كيف تقول: M'agrada! (أحبّ هذا!) وVull un suc, per favor! (أريد عصيرًا، من فضلك!)"
+ },
+ "ll-1tun5co": {
+  "ca": "Hi ha!",
+  "t": "لدينا!"
+ },
+ "ll-51f6h1": {
+  "ca": "La meua casa!",
+  "t": "casa (بيتي)!"
+ },
+ "ll-ee2vpc": {
+  "ca": "Benvinguts a casa meua! Anem a visitar cada habitació. Passa, passa!",
+  "t": "أهلًا بكم في بيتي! هيا نزور كل غرفة. تفضّلوا، تفضّلوا!"
+ },
+ "ll-1l1bb8c": {
+  "ca": "Les habitacions de la casa! Toca i escolta.",
+  "t": "habitacions (غرف) البيت! المس واستمع."
+ },
+ "ll-291vin": {
+  "ca": "Els mobles! Toca i escolta.",
+  "t": "mobles (أثاث)! المس واستمع."
+ },
+ "ll-eqbw87": {
+  "ca": "I més coses de casa! Toca i escolta.",
+  "t": "وأشياء أخرى من البيت! المس واستمع."
+ },
+ "ll-tuyt8m": {
+  "ca": "Per a dir les coses que trobem, diem: Hi ha. A la cuina hi ha una taula i quatre cadires!",
+  "t": "لكي نقول ما الأشياء الموجودة، نقول: Hi ha (يوجد/توجد). في المطبخ (cuina) توجد طاولة (taula) وأربع كراسٍ (cadires)!"
+ },
+ "ll-1uzfb0v": {
+  "ca": "Posa el llit al dormitori!",
+  "t": "ضَع السرير (llit) في غرفة النوم (dormitori)!"
+ },
+ "ll-1fbxuig": {
+  "ca": "Posa el sofà al saló!",
+  "t": "ضَع الأريكة (sofà) في غرفة الجلوس (saló)!"
+ },
+ "ll-icw0u5": {
+  "ca": "Posa la banyera al bany!",
+  "t": "ضَع حوض الاستحمام (banyera) في الحمّام (bany)!"
+ },
+ "ll-1cbqj0a": {
+  "ca": "Posa la televisió al saló!",
+  "t": "ضَع التلفاز (televisió) في غرفة الجلوس (saló)!"
+ },
+ "ll-48x12n": {
+  "ca": "Posa la llet a la cuina!",
+  "t": "ضَع الحليب (llet) في المطبخ (cuina)!"
+ },
+ "ll-z750pq": {
+  "ca": "On dorms?",
+  "t": "أين تنام؟"
+ },
+ "ll-1ygib3n": {
+  "ca": "On fem el menjar?",
+  "t": "أين نُعِدّ الطعام؟"
+ },
+ "ll-63ezwv": {
+  "ca": "On et rentes les dents?",
+  "t": "أين تنظّف أسنانك (dents)؟"
+ },
+ "ll-hjdqm0": {
+  "ca": "Açò és un sofà.",
+  "t": "هذه أريكة (sofà)."
+ },
+ "ll-1lrnzbp": {
+  "ca": "Açò és una finestra.",
+  "t": "هذه نافذة (finestra)."
+ },
+ "ll-19loirq": {
+  "ca": "Açò és un llum.",
+  "t": "هذا مصباح (llum)."
+ },
+ "ll-hy00ce": {
+  "ca": "Açò és un telèfon.",
+  "t": "هذا هاتف (telèfon)."
+ },
+ "ll-1cvxit2": {
+  "ca": "Pau, què hi ha al teu dormitori?",
+  "t": "Pau، ماذا يوجد في غرفة نومك (dormitori)؟"
+ },
+ "ll-1tqy4el": {
+  "ca": "Hi ha un llit, un armari i moltes joguines.",
+  "t": "يوجد سرير (llit) وخزانة (armari) وألعاب كثيرة (joguines)."
+ },
+ "ll-6q65ml": {
+  "ca": "I hi ha televisió?",
+  "t": "وهل يوجد تلفاز (televisió)؟"
+ },
+ "ll-1aww1ch": {
+  "ca": "No, la televisió és al saló, al costat del sofà.",
+  "t": "لا، التلفاز (televisió) في غرفة الجلوس (saló)، بجانب الأريكة (sofà)."
+ },
+ "ll-acwauf": {
+  "ca": "On és la televisió de Pau?",
+  "t": "أين تلفاز (televisió) Pau؟"
+ },
+ "ll-1jhkxc3": {
+  "ca": "Molt bé! Ja coneixes la casa: la cuina, el saló, el bany, el dormitori i el jardí. I saps dir: hi ha!",
+  "t": "أحسنت! لقد تعرّفت إلى البيت: المطبخ (cuina)، وغرفة الجلوس (saló)، والحمّام (bany)، وغرفة النوم (dormitori)، والحديقة (jardí). وتعرف كيف تقول: Hi ha (يوجد/توجد)!"
+ },
+ "ll-1xoezgr": {
+  "ca": "Bon dia, classe! Hui coneixerem les coses de l'escola i el que ens diu la mestra.",
+  "t": "صباح الخير يا صفّنا! سنتعرّف اليوم إلى أشياء المدرسة (escola) وما تقوله المعلّمة (mestra)."
+ },
+ "ll-1p1u99q": {
+  "ca": "Les coses de classe! Toca i escolta.",
+  "t": "أشياء الصفّ! المس واستمع."
+ },
+ "ll-vwskde": {
+  "ca": "La mestra ens diu què hem de fer. Toca i escolta!",
+  "t": "تخبرنا المعلّمة (mestra) بما علينا فعله. المس واستمع!"
+ },
+ "ll-cz5xt": {
+  "ca": "Bon dia, classe! Obriu el llibre, per favor.",
+  "t": "صباح الخير يا صفّنا! افتحوا الكتاب (llibre)، من فضلكم."
+ },
+ "ll-16po6di": {
+  "ca": "Mestra, no tinc llapis!",
+  "t": "يا معلّمتي، ليس معي قلم رصاص (llapis)!"
+ },
+ "ll-fsc5sr": {
+  "ca": "Té, ací tens un llapis.",
+  "t": "تفضّل، هذا قلم رصاص (llapis) لك."
+ },
+ "ll-kk1z5z": {
+  "ca": "Gràcies, mestra!",
+  "t": "شكرًا يا معلّمتي!"
+ },
+ "ll-jy188l": {
+  "ca": "De res! Ara, escriviu el vostre nom.",
+  "t": "العفو! والآن، اكتبوا أسماءكم."
+ },
+ "ll-1mw59a": {
+  "ca": "Què no té Pau?",
+  "t": "ما الشيء الذي لا يملكه Pau؟"
+ },
+ "ll-p1p5r5": {
+  "ca": "Laia escriu el seu nom.",
+  "t": "تكتب Laia اسمها."
+ },
+ "ll-15pldt6": {
+  "ca": "Pau llig un llibre.",
+  "t": "يقرأ Pau كتابًا (llibre)."
+ },
+ "ll-12lt5cr": {
+  "ca": "Marta retalla un paper amb les tisores.",
+  "t": "تقصّ Marta ورقة (paper) بالمقصّ (tisores)."
+ },
+ "ll-12f4ty0": {
+  "ca": "Joan alça la mà.",
+  "t": "يرفع Joan يده (mà)."
+ },
+ "ll-15uj6so": {
+  "ca": "La Taronjeta diu: toca el llapis!",
+  "t": "تقول Taronjeta: المس قلم الرصاص (llapis)!"
+ },
+ "ll-8mrua": {
+  "ca": "Toca la motxilla!",
+  "t": "المس الحقيبة المدرسية (motxilla)!"
+ },
+ "ll-1us3apg": {
+  "ca": "La Taronjeta diu: toca el regle!",
+  "t": "تقول Taronjeta: المس المسطرة (regle)!"
+ },
+ "ll-1l274yg": {
+  "ca": "La Taronjeta diu: toca les ceres!",
+  "t": "تقول Taronjeta: المس أقلام الشمع (ceres)!"
+ },
+ "ll-1xadyls": {
+  "ca": "Toca el llibre!",
+  "t": "المس الكتاب (llibre)!"
+ },
+ "ll-1q0z1id": {
+  "ca": "La Taronjeta diu: toca les tisores!",
+  "t": "تقول Taronjeta: المس المقصّ (tisores)!"
+ },
+ "ll-110dg2y": {
+  "ca": "Pinta el llapis de groc!",
+  "t": "لوّن قلم الرصاص (llapis) بالأصفر (groc)!"
+ },
+ "ll-1vmp0ot": {
+  "ca": "Pinta la motxilla de roig!",
+  "t": "لوّن motxilla (الحقيبة) باللون roig (الأحمر)!"
+ },
+ "ll-3xuu46": {
+  "ca": "Pinta el llibre de blau!",
+  "t": "لوّن llibre (الكتاب) باللون blau (الأزرق)!"
+ },
+ "ll-1abbjnm": {
+  "ca": "Pinta el regle de verd!",
+  "t": "لوّن regle (المسطرة) باللون verd (الأخضر)!"
+ },
+ "ll-hsjr3f": {
+  "ca": "Amb què retallem el paper?",
+  "t": "بماذا نقصّ paper (الورق)؟"
+ },
+ "ll-eathx8": {
+  "ca": "Amb què fem una línia recta?",
+  "t": "بماذا نرسم línia recta (خطًا مستقيمًا)؟"
+ },
+ "ll-gz2dk0": {
+  "ca": "On guardem els llibres per a anar a casa?",
+  "t": "أين نضع llibres (الكتب) لنأخذها إلى البيت؟"
+ },
+ "ll-j2sivl": {
+  "ca": "Posa el llibre a la prestatgeria!",
+  "t": "ضع llibre (الكتاب) على الرف!"
+ },
+ "ll-1w78aeh": {
+  "ca": "Posa el llapis damunt de la taula!",
+  "t": "ضع llapis (قلم الرصاص) على الطاولة!"
+ },
+ "ll-zgxeee": {
+  "ca": "Posa el quadern dins de la motxilla!",
+  "t": "ضع quadern (الدفتر) داخل motxilla (الحقيبة)!"
+ },
+ "ll-wwpx6b": {
+  "ca": "Posa les lletres a la pissarra!",
+  "t": "ضع lletres (الحروف) على السبورة!"
+ },
+ "ll-108geca": {
+  "ca": "Molt bé! Ja saps les coses de l'escola. I quan la mestra diu: escolta, mira, llig, escriu!, ja saps què has de fer.",
+  "t": "أحسنت! الآن تعرف أشياء المدرسة. وعندما تقول المعلّمة: «escolta» (استمع)، «mira» (انظر)، «llig» (اقرأ)، «escriu» (اكتب)! تعرف ماذا عليك أن تفعل."
+ },
+ "ll-1ysqo6v": {
+  "ca": "Tinc un robot!",
+  "t": "«Tinc un robot!» (لديّ روبوت!)"
+ },
+ "ll-muxwbj": {
+  "ca": "No tinc cap milotxa!",
+  "t": "«No tinc cap milotxa!» (ليس لديّ طائرة ورقية!)"
+ },
+ "ll-6uvv6i": {
+  "ca": "De qui és?",
+  "t": "«De qui és?» (لمن هذا؟)"
+ },
+ "ll-h8w40c": {
+  "ca": "Les joguines!",
+  "t": "joguines (الألعاب)!"
+ },
+ "ll-14oozo3": {
+  "ca": "A tots ens agrada jugar! Hui coneixerem moltes joguines.",
+  "t": "نحبّ جميعًا اللعب! سنتعرّف اليوم إلى كثير من joguines (الألعاب)."
+ },
+ "ll-1nwkhc5": {
+  "ca": "Toca cada joguina i escolta el seu nom!",
+  "t": "المس كل joguina (لعبة) واستمع إلى اسمها!"
+ },
+ "ll-1ac7a8x": {
+  "ca": "Per a dir les coses que són nostres, diem: Tinc un robot! I si no en tenim: No tinc cap milotxa!",
+  "t": "لنقول إن الأشياء لنا، نقول: «Tinc un robot!» (لديّ روبوت!). وإذا لم تكن لدينا، نقول: «No tinc cap milotxa!» (ليس لديّ طائرة ورقية!)."
+ },
+ "ll-c6vk6a": {
+  "ca": "Per a saber de qui és una cosa, preguntem: De qui és? I contestem: És de Laia! És meu!",
+  "t": "لنعرف لمن شيءٌ ما، نسأل: «De qui és?» (لمن هذا؟) ونجيب: «És de Laia!» (إنه لـ Laia!)، «És meu!» (إنه لي!)."
+ },
+ "ll-15r2len": {
+  "ca": "Laia té una milotxa.",
+  "t": "لدى Laia milotxa (طائرة ورقية)."
+ },
+ "ll-1voqd7b": {
+  "ca": "Pau té un robot.",
+  "t": "لدى Pau robot (روبوت)."
+ },
+ "ll-jfyrkf": {
+  "ca": "Marta té una nina.",
+  "t": "لدى Marta nina (دمية)."
+ },
+ "ll-5uszme": {
+  "ca": "Joan té un tren.",
+  "t": "لدى Joan tren (قطار)."
+ },
+ "ll-mtsrxz": {
+  "ca": "De qui és el robot?",
+  "t": "لمن robot (الروبوت)؟"
+ },
+ "ll-125u42z": {
+  "ca": "Pinta el robot de gris!",
+  "t": "لوّن robot (الروبوت) باللون gris (الرمادي)!"
+ },
+ "ll-7e1uy6": {
+  "ca": "Pinta el cotxe de roig!",
+  "t": "لوّن cotxe (السيارة) باللون roig (الأحمر)!"
+ },
+ "ll-74b053": {
+  "ca": "Pinta el globus de groc!",
+  "t": "لوّن globus (البالون) باللون groc (الأصفر)!"
+ },
+ "ll-yz2sr9": {
+  "ca": "Pinta l'avió de blau!",
+  "t": "لوّن avió (الطائرة) باللون blau (الأزرق)!"
+ },
+ "ll-qj4rgx": {
+  "ca": "Pinta la milotxa de verd!",
+  "t": "لوّن milotxa (الطائرة الورقية) باللون verd (الأخضر)!"
+ },
+ "ll-pz7rm6": {
+  "ca": "Tinc un robot que fa bip, bip, bip!",
+  "t": "لديّ robot (روبوت) يصدر صوت «bip, bip, bip»!"
+ },
+ "ll-6z7vyv": {
+  "ca": "Tinc un tren que fa xu, xu, xu!",
+  "t": "لديّ tren (قطار) يصدر صوت «xu, xu, xu»!"
+ },
+ "ll-whmqdm": {
+  "ca": "Tinc un avió que fa rum, rum, rum!",
+  "t": "لديّ avió (طائرة) يصدر صوت «rum, rum, rum»!"
+ },
+ "ll-1f312wx": {
+  "ca": "I una pilota que bota, bota, bota!",
+  "t": "ولديّ pilota (كرة) ترتدّ، ترتدّ، ترتدّ!"
+ },
+ "ll-cidtrc": {
+  "ca": "Quina joguina fa xu, xu?",
+  "t": "أيّ joguina (لعبة) يصدر صوت «xu, xu»؟"
+ },
+ "ll-ws8bxm": {
+  "ca": "On juguem? Dins de casa, o fora de casa?",
+  "t": "أين نلعب؟ داخل البيت أم خارجه؟"
+ },
+ "ll-62q3ww": {
+  "ca": "És un helicòpter.",
+  "t": "إنها helicòpter (مروحية)."
+ },
+ "ll-nj9tcb": {
+  "ca": "És un vaixell.",
+  "t": "إنها vaixell (سفينة)."
+ },
+ "ll-3opg5g": {
+  "ca": "És un extraterrestre.",
+  "t": "إنه extraterrestre (كائن فضائي)."
+ },
+ "ll-bk3a47": {
+  "ca": "És un camió.",
+  "t": "إنها camió (شاحنة)."
+ },
+ "ll-qdiy6o": {
+  "ca": "Molt bé! Ja coneixes moltes joguines. I saps dir: tinc un robot! De qui és?",
+  "t": "أحسنت! لقد تعرّفت إلى كثير من joguines (الألعاب). وتعرف أن تقول: «Tinc un robot!» (لديّ روبوت!). «De qui és?» (لمن هذا؟)"
+ },
+ "ll-1me5in5": {
+  "ca": "Vaig a l'escola amb bici!",
+  "t": "سأذهب إلى المدرسة بالدراجة! Vaig a l'escola amb bici! (أذهب إلى المدرسة بالدراجة!)"
+ },
+ "ll-78zrug": {
+  "ca": "El transport!",
+  "t": "وسائل النقل!"
+ },
+ "ll-16rtrc2": {
+  "ca": "Pi, pi! Hui coneixerem cotxes, trens, avions i vaixells. Puja, que ens n'anem!",
+  "t": "بيب، بيب! سنتعرّف اليوم إلى cotxes (سيارات)، trens (قطارات)، avions (طائرات) وvaixells (سفن). اركب، هيا بنا!"
+ },
+ "ll-8a56vy": {
+  "ca": "Toca cada vehicle i escolta el seu nom!",
+  "t": "المس كل مركبة واستمع إلى اسمها!"
+ },
+ "ll-1660uke": {
+  "ca": "Els cotxes i els autobusos van per terra. Els avions volen pel cel. I els vaixells naveguen pel mar!",
+  "t": "تسير cotxes (السيارات) وautobusos (الحافلات) على اليابسة. وتحلّق avions (الطائرات) في السماء. وتبحر vaixells (السفن) في البحر!"
+ },
+ "ll-guujus": {
+  "ca": "Per on va? Pel cel, per terra o pel mar?",
+  "t": "إلى أين يذهب؟ Pel cel (في السماء)، per terra (على اليابسة) أم pel mar (في البحر)؟"
+ },
+ "ll-1rsilrt": {
+  "ca": "Per a dir com anem a un lloc, diem: Vaig a l'escola amb bici. Vaig amb autobús. O: Vaig a peu!",
+  "t": "لنتحدث عن كيف نذهب إلى مكان ما، نقول: Vaig a l'escola amb bici (أذهب إلى المدرسة بالدراجة). Vaig amb autobús (أذهب بالحافلة). أو: Vaig a peu (أذهب سيرًا على الأقدام)!"
+ },
+ "ll-s1p47l": {
+  "ca": "Laia, com vas a l'escola?",
+  "t": "يا Laia، كيف تذهبين إلى المدرسة؟"
+ },
+ "ll-cy4dtq": {
+  "ca": "Vaig amb bici. I tu?",
+  "t": "Vaig amb bici (أذهب بالدراجة). وأنت؟"
+ },
+ "ll-8izd3m": {
+  "ca": "Jo vaig amb autobús, amb el meu germà.",
+  "t": "Jo vaig amb autobús (أذهب بالحافلة)، مع أخي."
+ },
+ "ll-1x3i9pe": {
+  "ca": "I la mestra?",
+  "t": "وماذا عن المعلمة؟"
+ },
+ "ll-lt1jvx": {
+  "ca": "La mestra va a peu!",
+  "t": "المعلمة تذهب سيرًا على الأقدام!"
+ },
+ "ll-1a5l7e": {
+  "ca": "Com va Laia a l'escola?",
+  "t": "كيف تذهب Laia إلى المدرسة؟"
+ },
+ "ll-wef6zf": {
+  "ca": "Com va Pau a l'escola?",
+  "t": "كيف يذهب Pau إلى المدرسة؟"
+ },
+ "ll-u7f1pw": {
+  "ca": "Com va la mestra a l'escola?",
+  "t": "كيف تذهب المعلمة إلى المدرسة؟"
+ },
+ "ll-1jw6s08": {
+  "ca": "Laia va amb bici.",
+  "t": "تذهب Laia بالدراجة."
+ },
+ "ll-q6tn28": {
+  "ca": "Pau va amb autobús.",
+  "t": "يذهب Pau بالحافلة."
+ },
+ "ll-duheqe": {
+  "ca": "Marta viatja amb avió.",
+  "t": "تسافر Marta بالطائرة."
+ },
+ "ll-1wgkf7r": {
+  "ca": "Joan va amb tren.",
+  "t": "يذهب Joan بالقطار."
+ },
+ "ll-1wtvm3z": {
+  "ca": "És un tractor.",
+  "t": "إنه tractor (جرار)."
+ },
+ "ll-14nuinr": {
+  "ca": "És un avió.",
+  "t": "إنها طائرة."
+ },
+ "ll-182961e": {
+  "ca": "És una bici.",
+  "t": "إنها دراجة."
+ },
+ "ll-id9xon": {
+  "ca": "Molt bé! Ja coneixes el transport. I saps dir: vaig a l'escola amb bici!",
+  "t": "أحسنت! لقد تعرّفت إلى وسائل النقل. وتعرف أن تقول: Vaig a l'escola amb bici (أذهب إلى المدرسة بالدراجة)!"
+ },
+ "ll-1g4lw8d": {
+  "ca": "Saps nadar?",
+  "t": "هل تعرف السباحة؟ Saps nadar? (هل تعرف السباحة؟)"
+ },
+ "ll-186uvqk": {
+  "ca": "Sí, sé nadar!",
+  "t": "نعم، Sé nadar! (أعرف السباحة!)"
+ },
+ "ll-1nv2lv": {
+  "ca": "No, no sé nadar.",
+  "t": "لا، No sé nadar (لا أعرف السباحة)."
+ },
+ "ll-2lm9kw": {
+  "ca": "Esports i jocs!",
+  "t": "الرياضة والألعاب!"
+ },
+ "ll-osrw06": {
+  "ca": "Som-hi! Hui farem esport i parlarem de les coses que ens agrada fer.",
+  "t": "هيا بنا! سنمارس الرياضة اليوم ونتحدث عن الأشياء التي نحب فعلها."
+ },
+ "ll-clmd8f": {
+  "ca": "Els esports! Toca i escolta.",
+  "t": "الرياضات! المس واستمع."
+ },
+ "ll-sksa33": {
+  "ca": "I més coses que podem fer! Toca i escolta.",
+  "t": "وهناك أشياء أخرى يمكننا فعلها! المس واستمع."
+ },
+ "ll-4715wu": {
+  "ca": "Per a preguntar què sap fer algú, diem: Saps nadar? I contestem: Sí, sé nadar! O: No, no sé nadar.",
+  "t": "لنسأل عمّا يعرف أحدهم فعله، نقول: Saps nadar? (هل تعرف السباحة؟) ونجيب: Sí, sé nadar! (نعم، أعرف السباحة!) أو: No, no sé nadar (لا، لا أعرف السباحة)."
+ },
+ "ll-1y1c4wx": {
+  "ca": "Pau, saps nadar?",
+  "t": "يا Pau، Saps nadar? (هل تعرف السباحة؟)"
+ },
+ "ll-a1hpo6": {
+  "ca": "Sí, sé nadar molt bé! I tu, saps tocar la guitarra?",
+  "t": "نعم، أعرف السباحة جيدًا! وأنت، هل تعرف العزف على الغيتار؟ Saps tocar la guitarra? (هل تعرف العزف على الغيتار؟)"
+ },
+ "ll-zuw2kw": {
+  "ca": "No, no sé. Però sé tocar el piano!",
+  "t": "لا، لا أعرف. لكن أعرف العزف على البيانو!"
+ },
+ "ll-r8g99z": {
+  "ca": "Que bé! Juguem a futbol?",
+  "t": "رائع! هل نلعب futbol (كرة القدم)؟"
+ },
+ "ll-1j79ya": {
+  "ca": "Sí! Som-hi!",
+  "t": "نعم! هيا بنا!"
+ },
+ "ll-574xb6": {
+  "ca": "Què sap tocar Laia?",
+  "t": "على ماذا تعرف Laia أن تعزف؟"
+ },
+ "ll-itbei9": {
+  "ca": "A què juguen Laia i Pau?",
+  "t": "ما اللعبة التي يلعبها Laia وPau؟"
+ },
+ "ll-1brhkkg": {
+  "ca": "La Taronjeta diu: salta!",
+  "t": "تقول Taronjeta: salta (اقفز)!"
+ },
+ "ll-1425y91": {
+  "ca": "Corre!",
+  "t": "Corre (اركض)!"
+ },
+ "ll-1t9b6i9": {
+  "ca": "La Taronjeta diu: balla!",
+  "t": "تقول Taronjeta: ارقص!"
+ },
+ "ll-14c6byu": {
+  "ca": "La Taronjeta diu: canta!",
+  "t": "تقول Taronjeta: غنِّ!"
+ },
+ "ll-1metlle": {
+  "ca": "Nada!",
+  "t": "اسبح!"
+ },
+ "ll-16n8nw5": {
+  "ca": "La Taronjeta diu: pinta!",
+  "t": "تقول Taronjeta: ارسم!"
+ },
+ "ll-4ton8t": {
+  "ca": "Laia juga a tennis.",
+  "t": "تلعب Laia التنس."
+ },
+ "ll-170llnx": {
+  "ca": "Pau juga a bàsquet.",
+  "t": "يلعب Pau كرة السلة."
+ },
+ "ll-122w73n": {
+  "ca": "Marta toca la guitarra.",
+  "t": "تعزف Marta على الغيتار."
+ },
+ "ll-1r0f73g": {
+  "ca": "Joan pesca al riu.",
+  "t": "يصطاد Joan السمك في النهر."
+ },
+ "ll-19s8rxf": {
+  "ca": "Està nadant.",
+  "t": "إنه يسبح."
+ },
+ "ll-7rrel4": {
+  "ca": "Toca la guitarra.",
+  "t": "يعزف على الغيتار."
+ },
+ "ll-nkw91m": {
+  "ca": "Està saltant.",
+  "t": "إنه يقفز."
+ },
+ "ll-1f8a8q9": {
+  "ca": "Juga a futbol.",
+  "t": "يلعب كرة القدم."
+ },
+ "ll-1lick1m": {
+  "ca": "Què necessites per a pescar?",
+  "t": "ماذا تحتاج لتصطاد السمك؟"
+ },
+ "ll-1an3mdq": {
+  "ca": "Molt bé! Ja coneixes molts esports. I saps preguntar: Saps nadar? Sí, sé nadar!",
+  "t": "أحسنت! أنت تعرف الآن الكثير من الرياضات. وتعرف كيف تسأل: هل تعرف السباحة؟ نعم، أعرف السباحة!"
+ },
+ "ll-1od5kp0": {
+  "ca": "A la platja!",
+  "t": "إلى الشاطئ (platja)!"
+ },
+ "ll-1mwit92": {
+  "ca": "Hui fa sol i anem a la platja! Agafa el poal i la pala, que ens n'anem!",
+  "t": "الجو مشمس اليوم، وسنذهب إلى الشاطئ (platja)! خذ الدلو (poal) والمجرفة (pala)، هيا بنا!"
+ },
+ "ll-wxe6jd": {
+  "ca": "Què hi ha a la platja? Toca i escolta.",
+  "t": "ماذا يوجد على الشاطئ (platja)؟ المس واستمع."
+ },
+ "ll-neptnm": {
+  "ca": "Quin temps fa? A la platja, fa sol i fa calor. A vegades, fa vent i hi ha núvols.",
+  "t": "كيف الطقس؟ على الشاطئ (platja)، الجو مشمس وحار. أحيانًا تهب الرياح وتظهر الغيوم (núvols)."
+ },
+ "ll-o12yyn": {
+  "ca": "Posa el sol al cel!",
+  "t": "ضع الشمس (sol) في السماء (cel)!"
+ },
+ "ll-uogj3m": {
+  "ca": "Posa el vaixell al mar!",
+  "t": "ضع القارب (vaixell) في البحر (mar)!"
+ },
+ "ll-16aejpk": {
+  "ca": "Posa el cranc a la sorra!",
+  "t": "ضع السلطعون (cranc) على الرمل (sorra)!"
+ },
+ "ll-6kfpql": {
+  "ca": "Posa el peix al mar!",
+  "t": "ضع السمكة (peix) في البحر (mar)!"
+ },
+ "ll-1wpwb6c": {
+  "ca": "Posa el núvol al cel!",
+  "t": "ضع الغيمة (núvol) في السماء (cel)!"
+ },
+ "ll-1guc94u": {
+  "ca": "Posa la petxina a la sorra!",
+  "t": "ضع الصدفة (petxina) على الرمل (sorra)!"
+ },
+ "ll-1i7di7g": {
+  "ca": "Hui fa sol, i Laia i Pau van a la platja amb la família.",
+  "t": "الجو مشمس اليوم، وستذهب Laia وPau إلى الشاطئ (platja) مع العائلة."
+ },
+ "ll-1u3f2u5": {
+  "ca": "Pau i Laia fan un castell de sorra molt gran.",
+  "t": "يصنع Pau وLaia قلعة رملية كبيرة جدًا."
+ },
+ "ll-13l16zd": {
+  "ca": "Després, naden al mar. L'aigua està fresqueta!",
+  "t": "بعد ذلك، يسبحان في البحر (mar). الماء بارد قليلًا!"
+ },
+ "ll-zlrrss": {
+  "ca": "Laia troba una petxina i un cranc xicotet.",
+  "t": "تعثر Laia على صدفة (petxina) وسرطان صغير (cranc)."
+ },
+ "ll-im7p9g": {
+  "ca": "Per acabar, mengen un gelat. Quin dia més bonic!",
+  "t": "وفي النهاية، يأكلان المثلجات. يا له من يوم جميل!"
+ },
+ "ll-1vaf6yp": {
+  "ca": "Què fan Pau i Laia amb la sorra?",
+  "t": "ماذا يصنع Pau وLaia بالرمل (sorra)؟"
+ },
+ "ll-15o322h": {
+  "ca": "Què troba Laia?",
+  "t": "ماذا وجدت Laia؟"
+ },
+ "ll-2gumu0": {
+  "ca": "Què mengen per a acabar?",
+  "t": "ماذا يأكلان في النهاية؟"
+ },
+ "ll-1vw94c8": {
+  "ca": "És la lluna.",
+  "t": "إنه القمر (lluna)."
+ },
+ "ll-1dhjvua": {
+  "ca": "És una petxina.",
+  "t": "إنها صدفة (petxina)."
+ },
+ "ll-1nn5v3h": {
+  "ca": "És una palmera.",
+  "t": "إنها نخلة (palmera)."
+ },
+ "ll-udfm7k": {
+  "ca": "És un peix.",
+  "t": "إنها سمكة (peix)."
+ },
+ "ll-1q4e7i2": {
+  "ca": "Pinta el para-sol de roig!",
+  "t": "لوّن المظلّة (para-sol) بالأحمر (roig)!"
+ },
+ "ll-13c44z8": {
+  "ca": "Pinta el poal de blau!",
+  "t": "لوّن الدلو (poal) بالأزرق (blau)!"
+ },
+ "ll-cq6lq6": {
+  "ca": "Pinta la petxina de rosa!",
+  "t": "لوّن الصدفة (petxina) بالوردي (rosa)!"
+ },
+ "ll-1lku9n8": {
+  "ca": "Pinta el vaixell de groc!",
+  "t": "لوّن القارب (vaixell) بالأصفر (groc)!"
+ },
+ "ll-clstiz": {
+  "ca": "Molt bé! Ja coneixes la platja: el mar, la sorra, les petxines i el sol. Fa sol i fa calor!",
+  "t": "أحسنت! لقد تعرّفت إلى الشاطئ: el mar (البحر)، la sorra (الرمل)، les petxines (الأصداف) وel sol (الشمس). الجو مشمس وحار!"
+ },
+ "ll-iwozx8": {
+  "ca": "El gat és damunt de la caixa!",
+  "t": "el gat (القط) فوق (damunt) الصندوق!"
+ },
+ "ll-ymbd8v": {
+  "ca": "El gat és davall de la caixa!",
+  "t": "el gat (القط) تحت (davall) الصندوق!"
+ },
+ "ll-1inrz1l": {
+  "ca": "El gat és dins de la caixa!",
+  "t": "el gat (القط) داخل (dins) الصندوق!"
+ },
+ "ll-1u9b5il": {
+  "ca": "El gat és davant de la caixa!",
+  "t": "el gat (القط) أمام (davant) الصندوق!"
+ },
+ "ll-1ycue4k": {
+  "ca": "El gat és darrere de la caixa!",
+  "t": "el gat (القط) خلف (darrere) الصندوق!"
+ },
+ "ll-xkwaaw": {
+  "ca": "El gat és entre les caixes!",
+  "t": "el gat (القط) بين (entre) الصناديق!"
+ },
+ "ll-xzp533": {
+  "ca": "On és? Llocs i direccions!",
+  "t": "أين؟ الأماكن والاتجاهات!"
+ },
+ "ll-1ujujzw": {
+  "ca": "Anem a passejar pel poble! Hui aprendrem els llocs i a dir on són les coses.",
+  "t": "هيا نتمشّى في القرية! سنتعلّم اليوم أسماء الأماكن وكيف نقول أين توجد الأشياء."
+ },
+ "ll-1x8ffgb": {
+  "ca": "Els llocs del poble! Toca i escolta.",
+  "t": "أماكن القرية! المس واسمع."
+ },
+ "ll-cnphcj": {
+  "ca": "Recordes? El gat pot estar damunt, davall, dins, davant o darrere de la caixa.",
+  "t": "هل تتذكّر؟ يمكن أن يكون el gat (القط) damunt (فوق)، davall (تحت)، dins (داخل)، davant (أمام) أو darrere (خلف) الصندوق."
+ },
+ "ll-1xmhb59": {
+  "ca": "I una paraula nova: entre! El gat és entre les caixes: una a cada costat.",
+  "t": "وهذه كلمة جديدة: entre (بين)! el gat (القط) بين (entre) الصناديق: صندوق على كل جانب."
+ },
+ "ll-q3abc6": {
+  "ca": "Ací vol dir prop de mi. Allà vol dir lluny de mi.",
+  "t": "Ací (هنا) تعني قريبًا مني. Allà (هناك) تعني بعيدًا عني."
+ },
+ "ll-1w6w3r8": {
+  "ca": "Toca el gat que és entre les caixes!",
+  "t": "المس el gat (القط) الذي بين (entre) الصناديق!"
+ },
+ "ll-1vwq2a8": {
+  "ca": "Toca el gat que és darrere de la caixa!",
+  "t": "المس el gat (القط) الذي خلف (darrere) الصندوق!"
+ },
+ "ll-9j6p9a": {
+  "ca": "Pau, on és la llibreria?",
+  "t": "يا Pau، أين المكتبة (la llibreria)؟"
+ },
+ "ll-xy5kon": {
+  "ca": "És allà, entre el parc i la botiga.",
+  "t": "إنها هناك (allà)، بين (entre) الحديقة (el parc) والمتجر (la botiga)."
+ },
+ "ll-18r9df5": {
+  "ca": "I l'escola?",
+  "t": "وماذا عن المدرسة (l'escola)؟"
+ },
+ "ll-a0y7mu": {
+  "ca": "L'escola és ací, davant de casa meua!",
+  "t": "المدرسة (l'escola) هنا (ací)، أمام بيتي (casa meua)!"
+ },
+ "ll-1d0b14a": {
+  "ca": "On és la llibreria?",
+  "t": "أين المكتبة (la llibreria)؟"
+ },
+ "ll-1ook19g": {
+  "ca": "Posa el gat damunt del banc!",
+  "t": "ضع el gat (القط) فوق (damunt) المقعد (el banc)!"
+ },
+ "ll-1bxu92f": {
+  "ca": "Posa l'ocell a l'arbre!",
+  "t": "ضع l'ocell (الطائر) على الشجرة (l'arbre)!"
+ },
+ "ll-1x4bh2h": {
+  "ca": "Posa la pilota al costat de la font!",
+  "t": "ضع la pilota (الكرة) بجانب النافورة (la font)!"
+ },
+ "ll-502i0z": {
+  "ca": "Posa el xiquet al tobogan!",
+  "t": "ضع el xiquet (الطفل) على الزحليقة!"
+ },
+ "ll-hb0yhx": {
+  "ca": "Posa el gos davall de l'arbre!",
+  "t": "ضع el gos (الكلب) تحت (davall) الشجرة (l'arbre)!"
+ },
+ "ll-kum7s1": {
+  "ca": "El gat és damunt de la caixa.",
+  "t": "el gat (القط) فوق (damunt) الصندوق."
+ },
+ "ll-1l5oeac": {
+  "ca": "El gat és dins de la caixa.",
+  "t": "el gat (القط) داخل (dins) الصندوق."
+ },
+ "ll-xawolx": {
+  "ca": "El gat és entre les caixes.",
+  "t": "el gat (القط) بين (entre) الصناديق."
+ },
+ "ll-1vuxyvt": {
+  "ca": "El gat és darrere de la caixa.",
+  "t": "el gat (القط) خلف (darrere) الصندوق."
+ },
+ "ll-6o8629": {
+  "ca": "Molt bé! Ja coneixes els llocs del poble i saps dir on són les coses: damunt, davall, dins, davant, darrere i entre!",
+  "t": "أحسنت! لقد تعرّفت إلى أماكن القرية، وأصبحت تعرف أين توجد الأشياء: damunt (فوق)، davall (تحت)، dins (داخل)، davant (أمام)، darrere (خلف) وentre (بين)!"
+ },
+ "ll-6kmmds": {
+  "ca": "Quan és el teu aniversari?",
+  "t": "متى عيد ميلادك؟"
+ },
+ "ll-1164sy3": {
+  "ca": "El dia i l'aniversari!",
+  "t": "اليوم وعيد الميلاد!"
+ },
+ "ll-1enzw1e": {
+  "ca": "Hui és un dia molt especial: és l'aniversari de Pau! Però primer, aprendrem les parts del dia.",
+  "t": "اليوم يوم مميّز جدًا: إنه عيد ميلاد Pau! لكننا سنتعلّم أولًا أجزاء اليوم."
+ },
+ "ll-y1bbdt": {
+  "ca": "El dia té tres parts! Toca i escolta.",
+  "t": "لليوم ثلاثة أجزاء! المس واسمع."
+ },
+ "ll-1dga690": {
+  "ca": "Pel matí esmorzem i anem a l'escola. Per la vesprada berenem i juguem. Per la nit sopem i dormim.",
+  "t": "في pel matí (الصباح) نتناول الفطور ونذهب إلى المدرسة. وفي per la vesprada (بعد الظهر) نتناول وجبة خفيفة ونلعب. وفي per la nit (الليل) نتعشّى وننام."
+ },
+ "ll-j4slgh": {
+  "ca": "Quan ho fem? Pel matí, per la vesprada, o per la nit?",
+  "t": "متى نفعل ذلك؟ pel matí (في الصباح)، per la vesprada (بعد الظهر)، أم per la nit (في الليل)؟"
+ },
+ "ll-1jjt02x": {
+  "ca": "Quan sopem?",
+  "t": "متى نتعشّى؟"
+ },
+ "ll-1o8e9n": {
+  "ca": "Quan esmorzem?",
+  "t": "متى نتناول الفطور؟"
+ },
+ "ll-ll83uy": {
+  "ca": "L'aniversari és el dia que fem anys. Per a preguntar-ho, diem: Quan és el teu aniversari? Hui és el meu aniversari!",
+  "t": "L'aniversari (عيد الميلاد) هو اليوم الذي نكبر فيه عامًا. لنسأل عن ذلك، نقول: Quan és el teu aniversari? (متى عيد ميلادك؟) Hui és el meu aniversari! (اليوم عيد ميلادي!)"
+ },
+ "ll-3qqr4w": {
+  "ca": "Hui és el meu aniversari!",
+  "t": "Hui és el meu aniversari! (اليوم عيد ميلادي!)"
+ },
+ "ll-1ubopor": {
+  "ca": "Tinc set anys, set espelmes!",
+  "t": "عمري set (سبع) سنوات، وهناك set (سبع) شمعات!"
+ },
+ "ll-1e97i81": {
+  "ca": "Bufe fort: fffff!",
+  "t": "انفخ بقوة: fffff!"
+ },
+ "ll-116zlk7": {
+  "ca": "Per molts anys! Per molts anys!",
+  "t": "عيد ميلاد سعيد! عيد ميلاد سعيد!"
+ },
+ "ll-8k2a43": {
+  "ca": "Quantes espelmes té el pastís de Pau? En té set!",
+  "t": "كم شمعة على كعكة Pau؟ عليها set (سبع) شمعات!"
+ },
+ "ll-v168yp": {
+  "ca": "Hui és l'aniversari de Pau, i fa una festa a casa.",
+  "t": "اليوم عيد ميلاد Pau، وهو يقيم حفلة في البيت."
+ },
+ "ll-nfvz2k": {
+  "ca": "Laia li porta un regal: una milotxa verda!",
+  "t": "أحضرت Laia هدية له: milotxa verda (طائرة ورقية خضراء)!"
+ },
+ "ll-1vdw4h9": {
+  "ca": "Pau bufa les espelmes, i tots canten: Per molts anys!",
+  "t": "ينفخ Pau الشمعات، ويغنّي الجميع: عيد ميلاد سعيد!"
+ },
+ "ll-19z89w4": {
+  "ca": "Després, mengen pastís de xocolata. Que bo!",
+  "t": "وبعدها يأكلون كعكة الشوكولاتة. ما أطيبها!"
+ },
+ "ll-1gavzif": {
+  "ca": "Què li regala Laia a Pau?",
+  "t": "ماذا أهدت Laia إلى Pau؟"
+ },
+ "ll-i19v6g": {
+  "ca": "De què és el pastís?",
+  "t": "ممَّ صُنعت الكعكة؟"
+ },
+ "ll-h32cta": {
+  "ca": "Pinta el globus de blau!",
+  "t": "لوّن البالون blau (بالأزرق)!"
+ },
+ "ll-1639xx3": {
+  "ca": "Pinta el pastís de marró!",
+  "t": "لوّن الكعكة marró (بالبني)!"
+ },
+ "ll-bzz0al": {
+  "ca": "Molt bé! Ja saps les parts del dia: el matí, la vesprada i la nit. I saps dir: Per molts anys!",
+  "t": "أحسنت! لقد تعلّمت أجزاء اليوم: el matí (الصباح)، la vesprada (بعد الظهر) و la nit (الليل). وتعرف كيف تقول: Per molts anys (عيد ميلاد سعيد)!"
+ },
+ "ll-1vuvpv5": {
+  "ca": "Mini-Starters: el gran repàs!",
+  "t": "Mini-Starters: المراجعة الكبرى!"
+ },
+ "ll-ttwew8": {
+  "ca": "Hui farem una prova com la dels xiquets de Cambridge, però en valencià i jugant! Si l'acabes, guanyaràs el diploma Pre-A1.",
+  "t": "اليوم سنجري اختبارًا مثل اختبار أطفال Cambridge، لكن باللغة الفالنسية وباللعب! أكمله واربح شهادة Pre-A1."
+ },
+ "ll-18kre2f": {
+  "ca": "Primera part: escolta i uneix! Toca el dibuix de la persona que diu la veu.",
+  "t": "الجزء الأول: استمع وصِل! المس صورة الشخص الذي يتحدث."
+ },
+ "ll-1oi6yup": {
+  "ca": "Neus passeja el gos.",
+  "t": "تتمشّى Neus مع gos (كلب)."
+ },
+ "ll-1xdecg9": {
+  "ca": "Biel menja una poma.",
+  "t": "يأكل Biel poma (تفاحة)."
+ },
+ "ll-n9quzx": {
+  "ca": "Aina canta una cançó.",
+  "t": "تغنّي Aina cançó (أغنية)."
+ },
+ "ll-1l5hgs7": {
+  "ca": "Vicent vola la milotxa.",
+  "t": "يُحلّق Vicent milotxa (طائرة ورقية)."
+ },
+ "ll-ya3fpq": {
+  "ca": "Segona part: escolta i tria! Toca el dibuix correcte.",
+  "t": "الجزء الثاني: استمع واختر! المس الصورة الصحيحة."
+ },
+ "ll-18s5l4o": {
+  "ca": "Laia vol un gelat de maduixa. Quin és el seu gelat?",
+  "t": "تريد Laia gelat de maduixa (مثلّجات بالفراولة). أيّ المثلّجات لها؟"
+ },
+ "ll-1bmo5dm": {
+  "ca": "Pau va al parc amb el seu gos. Quin és Pau?",
+  "t": "يذهب Pau إلى الحديقة مع gos (كلبه). أيّهم Pau؟"
+ },
+ "ll-vtp40m": {
+  "ca": "La iaia porta ulleres i un barret. Quina és la iaia?",
+  "t": "ترتدي الجدّة نظّارة وقبعة. أيّ واحدة هي الجدّة؟"
+ },
+ "ll-euym3t": {
+  "ca": "Tercera part: escolta i pinta!",
+  "t": "الجزء الثالث: استمع ولوّن!"
+ },
+ "ll-1r7j2ec": {
+  "ca": "Pinta la pilota de taronja!",
+  "t": "لوّن الكرة taronja (بالبرتقالي)!"
+ },
+ "ll-ctmcv7": {
+  "ca": "Pinta el cotxe de blau!",
+  "t": "لوّن السيارة blau (بالأزرق)!"
+ },
+ "ll-1wtyf7a": {
+  "ca": "Pinta el tren de verd!",
+  "t": "لوّن القطار verd (بالأخضر)!"
+ },
+ "ll-1v77jld": {
+  "ca": "Pinta l'osset de peluix de marró!",
+  "t": "لوّن osset de peluix (الدبّ الصغير المحشو) marró (بالبني)!"
+ },
+ "ll-1vefgow": {
+  "ca": "Quarta part: mira i respon. És veritat? Sí o no?",
+  "t": "الجزء الرابع: انظر وأجب. أهذا صحيح؟ نعم أم لا؟"
+ },
+ "ll-uj6e8z": {
+  "ca": "És un elefant.",
+  "t": "إنّه elefant (فيل)."
+ },
+ "ll-16ukehy": {
+  "ca": "El plàtan és groc.",
+  "t": "plàtan (الموز) أصفر."
+ },
+ "ll-1txjc11": {
+  "ca": "És el dormitori.",
+  "t": "إنّه dormitori (غرفة النوم)."
+ },
+ "ll-5h5s6r": {
+  "ca": "Cinquena part: lletreja! Posa les lletres en ordre.",
+  "t": "الجزء الخامس: تهجَّ! رتّب الحروف."
+ },
+ "ll-1ha4ycs": {
+  "ca": "Última part: escolta i col·loca!",
+  "t": "الجزء الأخير: استمع وضَع!"
+ },
+ "ll-1tavrk1": {
+  "ca": "Posa el castell a la sorra!",
+  "t": "ضع castell (القلعة) على sorra (الرمل)!"
+ },
+ "ll-yjageu": {
+  "ca": "Felicitats! Has acabat el gran repàs i has guanyat el diploma Pre-A1 de la Taronjeta. Ja estàs preparat per al nivell A1!",
+  "t": "تهانينا! أنهيت المراجعة الكبرى وربحت شهادة Pre-A1 من Taronjeta. أنت الآن مستعدّ للمستوى A1!"
+ },
+ "ll-z0r06y": {
+  "ca": "Hola i adéu!",
+  "t": "Hola (مرحبًا) و adéu (وداعًا)!"
+ },
+ "ll-2vojlv": {
+  "ca": "Hola! Hui aprendrem a saludar i a dir adéu. Escolta bé i toca els dibuixos!",
+  "t": "مرحبًا! سنتعلّم اليوم كيف نحيّي الآخرين ونقول وداعًا. استمع جيدًا والمس الصور!"
+ },
+ "ll-1ilzsq3": {
+  "ca": "Quan veiem algú, el saludem i diem: Hola!",
+  "t": "عندما نرى أحدًا، نحيّيه ونقول: Hola (مرحبًا)!"
+ },
+ "ll-wknal9": {
+  "ca": "Pel matí, quan ix el sol, diem: Bon dia!",
+  "t": "في الصباح، عندما تشرق الشمس، نقول: Bon dia! (صباح الخير!)"
+ },
+ "ll-3lyhha": {
+  "ca": "Per la vesprada, després de dinar, diem: Bona vesprada!",
+  "t": "بعد الظهر، بعد الغداء، نقول: Bona vesprada! (مساء الخير!)"
+ },
+ "ll-1d5mdi6": {
+  "ca": "Per la nit, quan ens n'anem a dormir, diem: Bona nit!",
+  "t": "في الليل، عندما نذهب إلى النوم، نقول: Bona nit! (تصبح على خير!)"
+ },
+ "ll-rb1drv": {
+  "ca": "I quan ens n'anem, diem: Adéu! O també: Fins demà!",
+  "t": "وعندما نغادر، نقول: Adéu! (إلى اللقاء!) أو أيضًا: Fins demà! (أراك غدًا!)"
+ },
+ "ll-bi462r": {
+  "ca": "Ara toca tots els dibuixos i repeteix amb mi!",
+  "t": "المس كل الصور وكرّر معي!"
+ },
+ "ll-tizire": {
+  "ca": "Bon dia, Pep!",
+  "t": "Bon dia! (صباح الخير!) يا Pep!"
+ },
+ "ll-h3q1ox": {
+  "ca": "Bon dia, Taronjeta!",
+  "t": "Bon dia! (صباح الخير!) يا Taronjeta!"
+ },
+ "ll-stl6g0": {
+  "ca": "Me'n vaig a l'escola. Adéu!",
+  "t": "أنا ذاهب إلى المدرسة. Adéu! (إلى اللقاء!)"
+ },
+ "ll-ollic0": {
+  "ca": "Adéu! Fins demà!",
+  "t": "Adéu! (إلى اللقاء!) Fins demà! (أراك غدًا!)"
+ },
+ "ll-12t0u2e": {
+  "ca": "Arribes a l'escola pel matí. Què dius?",
+  "t": "تصل إلى المدرسة في الصباح. ماذا تقول؟"
+ },
+ "ll-4luti2": {
+  "ca": "És de nit i te'n vas a dormir. Què dius?",
+  "t": "حلّ الليل، وأنت ذاهب إلى النوم. ماذا تقول؟"
+ },
+ "ll-17v8ge6": {
+  "ca": "També hi ha paraules màgiques! Són xicotetes, però posen molt contenta la gent.",
+  "t": "هناك أيضًا كلمات سحرية! هي صغيرة، لكنها تُفرح الناس كثيرًا."
+ },
+ "ll-1bnebsi": {
+  "ca": "Quan vols alguna cosa, la demanes per favor: Em dones una galeta, per favor?",
+  "t": "عندما تريد شيئًا، اطلبه بلطف وقل: Em dones una galeta, per favor? (هل تعطيني قطعة بسكويت، من فضلك؟)"
+ },
+ "ll-105rxo7": {
+  "ca": "Quan algú et dona alguna cosa, dius: Gràcies! I l'altra persona contesta: De res!",
+  "t": "عندما يعطيك أحدهم شيئًا، قل: Gràcies! (شكرًا!) ويجيبك: De res! (على الرحب والسعة!)"
+ },
+ "ll-gj7nfl": {
+  "ca": "I si fas mal a algú sense voler, dius: Perdó!",
+  "t": "وإذا آذيت أحدًا من دون قصد، قل: Perdó! (آسف!)"
+ },
+ "ll-k5xnfc": {
+  "ca": "Toca les paraules màgiques i digues-les amb mi!",
+  "t": "المس الكلمات السحرية وقلها معي!"
+ },
+ "ll-12fa6v1": {
+  "ca": "La iaia et dona un regal. Què dius?",
+  "t": "أعطتك جدتك هدية. ماذا تقول؟"
+ },
+ "ll-it7cx3": {
+  "ca": "Sense voler, trepitges el peu d'un amic. Què dius?",
+  "t": "دستَ من دون قصد على قدم صديقك. ماذا تقول؟"
+ },
+ "ll-1s2lisn": {
+  "ca": "Tens set i vols aigua. Com la demanes?",
+  "t": "أنت عطشان وتريد ماءً. كيف تطلبه؟"
+ },
+ "ll-imomim": {
+  "ca": "Molt bé! Ja saps saludar: hola, bon dia, bona vesprada i bona nit. I saps dir adéu. I recorda les paraules màgiques: per favor, gràcies, de res i perdó!",
+  "t": "أحسنت! لقد تعلمت كيف تلقي التحية: hola (مرحبًا)، Bon dia (صباح الخير)، Bona vesprada (مساء الخير) وBona nit (تصبح على خير). وتعلمت كيف تقول Adéu (إلى اللقاء). وتذكّر الكلمات السحرية: per favor (من فضلك)، gràcies (شكرًا)، de res (على الرحب والسعة) وperdó (آسف)!"
+ },
+ "ll-2x1ulw": {
+  "ca": "Per a saludar!",
+  "t": "لإلقاء التحية!"
+ },
+ "ll-mgsqfe": {
+  "ca": "Per a dir adéu!",
+  "t": "للتوديع!"
+ },
+ "ll-h11sdf": {
+  "ca": "Saludem o diem adéu? Toca la caixa bona!",
+  "t": "هل نلقي التحية أم نودّع؟ المس الصندوق المناسب!"
+ },
+ "ll-einf3d": {
+  "ca": "Després de dinar, la iaia ve a vore't. Què li dius?",
+  "t": "بعد الغداء، تأتي جدتك لزيارتك. ماذا تقول لها؟"
+ },
+ "ll-196rkvb": {
+  "ca": "Te'n vas a casa i demà tornaràs a l'escola. Què dius?",
+  "t": "أنت ذاهب إلى البيت، وستعود إلى المدرسة غدًا. ماذا تقول؟"
+ },
+ "ll-1pjxoef": {
+  "ca": "Pep et diu: Gràcies! Què li contestes?",
+  "t": "قال لك Pep: Gràcies! (شكرًا!) ماذا تجيبه؟"
+ },
+ "ll-1v52mg7": {
+  "ca": "Sense voler, tires el got de la teua amiga. Què dius?",
+  "t": "أسقطتَ كأس صديقتك من دون قصد. ماذا تقول؟"
+ },
+ "ll-18b8gt2": {
+  "ca": "Pel matí diem: Bon dia!",
+  "t": "في الصباح نقول: Bon dia! (صباح الخير!)"
+ },
+ "ll-1drhbcn": {
+  "ca": "Quan ens n'anem a dormir, diem: Bon dia!",
+  "t": "عندما نذهب إلى النوم، نقول: Bon dia! (صباح الخير!)"
+ },
+ "ll-35nskl": {
+  "ca": "Per la vesprada diem: Bona vesprada!",
+  "t": "بعد الظهر نقول: Bona vesprada! (مساء الخير!)"
+ },
+ "ll-ojt2if": {
+  "ca": "Quan ens donen un regal, diem: Gràcies!",
+  "t": "عندما يعطوننا هدية، نقول: Gràcies! (شكرًا!)"
+ },
+ "ll-1hjcakl": {
+  "ca": "Si fem mal a algú sense voler, diem: De res!",
+  "t": "إذا آذينا أحدًا من دون قصد، نقول: De res! (على الرحب والسعة!)"
+ },
+ "ll-u3uew1": {
+  "ca": "Quan ens n'anem, diem: Adéu!",
+  "t": "عندما نغادر، نقول: Adéu! (إلى اللقاء!)"
+ },
+ "ll-1kywk0u": {
+  "ca": "Per a demanar aigua, diem: Perdó!",
+  "t": "لطلب الماء، نقول: Perdó! (آسف!)"
+ },
+ "ll-583kpy": {
+  "ca": "On vius?",
+  "t": "أين تسكن؟"
+ },
+ "ll-1ndzqaq": {
+  "ca": "Encantat! Encantada!",
+  "t": "Encantat! (سعيد بلقائك!) Encantada! (سعيدة بلقائك!)"
+ },
+ "ll-il88pp": {
+  "ca": "Qui soc jo?",
+  "t": "من أنا؟"
+ },
+ "ll-wl9pkt": {
+  "ca": "Hola! Hui aprendràs a presentar-te. Així podràs fer amics nous!",
+  "t": "مرحبًا! ستتعلم اليوم كيف تعرّف بنفسك. وهكذا ستتمكن من تكوين صداقات جديدة!"
+ },
+ "ll-gz4o4k": {
+  "ca": "Per a dir el teu nom, diem: Em dic... Jo em dic Taronjeta! I tu, com et dius?",
+  "t": "لنقول اسمنا، نقول: Em dic... (اسمي...) أنا اسمي Taronjeta! وأنت، ما اسمك؟"
+ },
+ "ll-t35exx": {
+  "ca": "Per a preguntar-li el nom a un amic, diem: Com et dius?",
+  "t": "لنسأل صديقًا عن اسمه، نقول: Com et dius? (ما اسمك؟)"
+ },
+ "ll-9zmjwf": {
+  "ca": "Un xiquet diu: Soc un xiquet. Una xiqueta diu: Soc una xiqueta.",
+  "t": "يقول ولد: Soc un xiquet (أنا ولد). وتقول بنت: Soc una xiqueta (أنا بنت)."
+ },
+ "ll-1g7kv0e": {
+  "ca": "Per a dir quants anys tens, diem: Tinc... anys. Mira les espelmes: jo tinc cinc anys!",
+  "t": "لنسأل عن عمرك، نقول: Tinc... anys (عمري... سنوات). انظر إلى الشموع: jo tinc cinc anys (عمري خمس سنوات)!"
+ },
+ "ll-2audwg": {
+  "ca": "Toca les espelmes i escolta quants anys són!",
+  "t": "المس الشموع واستمع: كم عمري؟"
+ },
+ "ll-3ce6cb": {
+  "ca": "Per a preguntar l'edat, diem: Quants anys tens?",
+  "t": "لنسأل عن العمر، نقول: Quants anys tens? (كم عمرك؟)"
+ },
+ "ll-11v40ry": {
+  "ca": "I per a saber on viu algú, preguntem: On vius? I contestem: Visc a València!",
+  "t": "ولنعرف أين يسكن أحدهم، نسأل: On vius? (أين تسكن؟) ونجيب: Visc a València (أسكن في València)!"
+ },
+ "ll-195ndfw": {
+  "ca": "Quan coneixes algú, dius: Encantat! I si ets una xiqueta: Encantada!",
+  "t": "عندما تتعرّف إلى أحدهم، تقول: Encantat (سعيد بلقائك)! وإذا كنت بنتًا، تقولين: Encantada (سعيدة بلقائك)!"
+ },
+ "ll-1mce8zw": {
+  "ca": "Hola! Com et dius?",
+  "t": "Hola (مرحبًا)! Com et dius? (ما اسمك؟)"
+ },
+ "ll-5ehyaf": {
+  "ca": "Em dic Pep. I tu?",
+  "t": "Em dic Pep (اسمي Pep). I tu? (وأنت؟)"
+ },
+ "ll-126f55g": {
+  "ca": "Jo em dic Taronjeta. Quants anys tens?",
+  "t": "Jo em dic Taronjeta (اسمي Taronjeta). Quants anys tens? (كم عمرك؟)"
+ },
+ "ll-1nhcki2": {
+  "ca": "Jo, cinc. Encantada, Pep!",
+  "t": "Jo, cinc (عمري خمس سنوات). Encantada, Pep (سعيدة بلقائك يا Pep)!"
+ },
+ "ll-135gpde": {
+  "ca": "Encantat, Taronjeta!",
+  "t": "Encantat, Taronjeta (سعيد بلقائك يا Taronjeta)!"
+ },
+ "ll-qw13s": {
+  "ca": "Qui té tres anys? Compta les espelmes!",
+  "t": "من عمره tres (ثلاث) سنوات؟ عُدّ الشموع!"
+ },
+ "ll-38j3s2": {
+  "ca": "Vols saber el nom d'una amiga. Què li preguntes?",
+  "t": "تريد أن تعرف اسم صديقتك. ماذا تسألها؟"
+ },
+ "ll-lbypks": {
+  "ca": "Vols saber quants anys té el teu amic. Què li preguntes?",
+  "t": "تريد أن تعرف كم عمر صديقك. ماذا تسأله؟"
+ },
+ "ll-1mrgg9w": {
+  "ca": "Fantàstic! Ja et saps presentar: em dic..., tinc... anys, visc a... I saps preguntar: com et dius?, quants anys tens? i on vius?",
+  "t": "رائع! لقد تعلّمت كيف تعرّف بنفسك: em dic... (اسمي...)، tinc... anys (عمري... سنوات)، visc a... (أسكن في...). وتعرف كيف تسأل: com et dius? (ما اسمك؟)، quants anys tens? (كم عمرك؟) وon vius? (أين تسكن؟)"
+ },
+ "ll-1vsc56v": {
+  "ca": "Qui diu: Tinc tres anys? Compta les espelmes!",
+  "t": "من يقول: Tinc tres anys (عمري ثلاث سنوات)؟ عُدّ الشموع!"
+ },
+ "ll-j08ctz": {
+  "ca": "Qui diu: Tinc quatre anys? Compta les espelmes!",
+  "t": "من يقول: Tinc quatre anys (عمري أربع سنوات)؟ عُدّ الشموع!"
+ },
+ "ll-o170eo": {
+  "ca": "Qui diu: Tinc cinc anys? Compta les espelmes!",
+  "t": "من يقول: Tinc cinc anys (عمري خمس سنوات)؟ عُدّ الشموع!"
+ },
+ "ll-7x748i": {
+  "ca": "Qui diu: Tinc sis anys? Compta les espelmes!",
+  "t": "من يقول: Tinc sis anys (عمري ست سنوات)؟ عُدّ الشموع!"
+ },
+ "ll-11u0pll": {
+  "ca": "Qui diu: Tinc set anys? Compta les espelmes!",
+  "t": "من يقول: Tinc set anys (عمري سبع سنوات)؟ عُدّ الشموع!"
+ },
+ "ll-y7a7bb": {
+  "ca": "Qui diu: Tinc huit anys? Compta les espelmes!",
+  "t": "من يقول: Tinc huit anys (عمري ثماني سنوات)؟ عُدّ الشموع!"
+ },
+ "ll-qurrxg": {
+  "ca": "Laia té tres anys.",
+  "t": "عمر Laia ثلاث سنوات."
+ },
+ "ll-1mx608y": {
+  "ca": "Pau té sis anys.",
+  "t": "عمر Pau ست سنوات."
+ },
+ "ll-g3agdw": {
+  "ca": "Marta té huit anys.",
+  "t": "عمر Marta ثماني سنوات."
+ },
+ "ll-avv6r1": {
+  "ca": "Joan té quatre anys.",
+  "t": "عمر Joan أربع سنوات."
+ },
+ "ll-5fts7d": {
+  "ca": "Pep et pregunta: Com et dius? Què li contestes?",
+  "t": "يسألك Pep: Com et dius? (ما اسمك؟) ماذا تجيب؟"
+ },
+ "ll-1ngtmdr": {
+  "ca": "Pau és un xiquet. Què diu Pau?",
+  "t": "Pau ولد. ماذا يقول Pau؟"
+ },
+ "ll-kt0qj7": {
+  "ca": "Laia és una xiqueta. Què diu Laia?",
+  "t": "Laia بنت. ماذا تقول Laia؟"
+ },
+ "ll-10v50ir": {
+  "ca": "Vols saber on viu la teua amiga. Què li preguntes?",
+  "t": "تريد أن تعرف أين تسكن صديقتك. ماذا تسألها؟"
+ },
+ "ll-cn8qf4": {
+  "ca": "Pep et pregunta: On vius? Què li contestes?",
+  "t": "يسألك Pep: On vius? (أين تسكن؟) ماذا تجيب؟"
+ },
+ "ll-1y66k99": {
+  "ca": "Coneixes una amiga nova. Què li dius?",
+  "t": "تتعرّف إلى صديقة جديدة. ماذا تقول لها؟"
+ },
+ "ll-1ej9o8b": {
+  "ca": "Per a preguntar el nom, diem: Com et dius?",
+  "t": "لنسأل عن الاسم، نقول: Com et dius? (ما اسمك؟)"
+ },
+ "ll-1oq18b4": {
+  "ca": "Per a preguntar l'edat, diem: On vius?",
+  "t": "لنسأل عن العمر، نقول: On vius? (أين تسكن؟)"
+ },
+ "ll-1imldrw": {
+  "ca": "Mira les espelmes: tinc quatre anys!",
+  "t": "انظر إلى الشموع: tinc quatre anys (عمري أربع سنوات)!"
+ },
+ "ll-133rou8": {
+  "ca": "Mira les espelmes: tinc tres anys!",
+  "t": "انظر إلى الشموع: tinc tres anys (عمري ثلاث سنوات)!"
+ },
+ "ll-y1j8a6": {
+  "ca": "Una xiqueta diu: Soc un xiquet.",
+  "t": "تقول بنت: Soc un xiquet (أنا ولد)."
+ },
+ "ll-tx0acu": {
+  "ca": "Un xiquet diu: Soc un xiquet.",
+  "t": "يقول ولد: Soc un xiquet (أنا ولد)."
+ },
+ "ll-1l9a9gb": {
+  "ca": "Per a dir on vius, diem: Visc a València.",
+  "t": "لنقول أين نسكن، نقول: Visc a València (أسكن في València)."
+ },
+ "ll-8pky05": {
+  "ca": "Quan coneixem algú, diem: Bona nit!",
+  "t": "عندما نتعرّف إلى أحدهم، نقول: Bona nit (تصبح على خير)!"
+ },
+ "ll-12pwr4o": {
+  "ca": "Ajuda'm a ordenar! Si diem EL, a la caixa blava. Si diem LA, a la caixa rosa.",
+  "t": "ساعدني في الترتيب! إذا قلنا EL، نضعه في الصندوق الأزرق. وإذا قلنا LA، نضعها في الصندوق الوردي."
+ },
+ "ll-1d4gej": {
+  "ca": "El, la, els i les!",
+  "t": "EL، LA، ELS وLES!"
+ },
+ "ll-1qu7m5c": {
+  "ca": "Hola! Hui descobrirem unes paraules molt xicotetes que van davant de les coses: el, la, l', els i les!",
+  "t": "مرحبًا! اليوم سنتعرّف إلى كلمات صغيرة جدًا تأتي قبل الأشياء: el، la، l'، els وles!"
+ },
+ "ll-1lad7fx": {
+  "ca": "Moltes paraules van amb EL: el gos, el pa, el sol.",
+  "t": "كلمات كثيرة تأتي مع EL: el gos (الكلب)، el pa (الخبز)، el sol (الشمس)."
+ },
+ "ll-1tp0js1": {
+  "ca": "Toca-les i escolta: totes van amb EL!",
+  "t": "المسيها واستمعي: كلّها تأتي مع EL!"
+ },
+ "ll-141ipf3": {
+  "ca": "Altres paraules van amb LA: la poma, la casa, la lluna.",
+  "t": "كلمات أخرى تأتي مع LA: la poma (التفاحة)، la casa (البيت)، la lluna (القمر)."
+ },
+ "ll-eak73j": {
+  "ca": "Toca-les i escolta: totes van amb LA!",
+  "t": "المسيها واستمعي: كلّها تأتي مع LA!"
+ },
+ "ll-1xkja3g": {
+  "ca": "Escolta! Quan la paraula comença per a, e, i, o, u, l'EL i el LA es fan curtets i diem L': l'ocell, l'abella, l'aigua.",
+  "t": "استمعي! عندما تبدأ الكلمة بحرف a أو e أو i أو o أو u، تصبح EL وLA أقصر، ونقول L': l'ocell (الطائر)، l'abella (النحلة)، l'aigua (الماء)."
+ },
+ "ll-1slcj1b": {
+  "ca": "Toca-les i escolta la L' del principi!",
+  "t": "المسيها واستمعي إلى L' في بداية الكلمة!"
+ },
+ "ll-531xas": {
+  "ca": "I quan n'hi ha molts? EL es fa ELS: el gos, els gossos. El gat, els gats.",
+  "t": "وماذا نقول عندما يكون هناك أكثر من واحد؟ تصبح EL هي ELS: el gos (الكلب)، els gossos (الكلاب). El gat (القط)، els gats (القطط)."
+ },
+ "ll-b7qayk": {
+  "ca": "I LA es fa LES: la poma, les pomes. La flor, les flors.",
+  "t": "وتصبح LA هي LES: la poma (التفاحة)، les pomes (التفاحات). La flor (الزهرة)، les flors (الزهور)."
+ },
+ "ll-1qh8mt1": {
+  "ca": "On són els gossos?",
+  "t": "أين الكلاب؟"
+ },
+ "ll-1oqirh3": {
+  "ca": "On és la poma?",
+  "t": "أين التفاحة؟"
+ },
+ "ll-3xpayx": {
+  "ca": "On són les flors?",
+  "t": "أين الزهور؟"
+ },
+ "ll-kd3qcn": {
+  "ca": "Molt bé! Recorda: el gos, la poma. Si la paraula comença per vocal, L': l'ocell. I si n'hi ha molts: els gossos, les pomes!",
+  "t": "أحسنتِ! تذكّري: el gos (الكلب)، la poma (التفاحة). إذا بدأت الكلمة بحرف علّة، نقول L': l'ocell (الطائر). وإذا كان هناك أكثر من واحد: els gossos (الكلاب)، les pomes (التفاحات)!"
+ },
+ "ll-lpmdky": {
+  "ca": "La ela amb apòstrof!",
+  "t": "حرف ela مع الفاصلة العليا!"
+ },
+ "ll-qh3z9z": {
+  "ca": "Quina va amb EL? El...",
+  "t": "أيّ كلمة تأتي مع EL؟ El..."
+ },
+ "ll-6zgxrb": {
+  "ca": "Quina va amb LA? La...",
+  "t": "أيّ كلمة تأتي مع LA؟ La..."
+ },
+ "ll-7ptm7j": {
+  "ca": "Quina comença per vocal i va amb L'?",
+  "t": "أيّ كلمة تبدأ بحرف علّة وتأتي مع L'؟"
+ },
+ "ll-kw6r5t": {
+  "ca": "El, la o l'? Toca la caixa bona!",
+  "t": "EL أم LA أم L'؟ المسِي الصندوق الصحيح!"
+ },
+ "ll-1nb1v8k": {
+  "ca": "On són els gats?",
+  "t": "أين القطط؟"
+ },
+ "ll-12g2029": {
+  "ca": "On són les pomes?",
+  "t": "أين التفاحات؟"
+ },
+ "ll-1xpudzy": {
+  "ca": "N'hi ha molts! Va amb ELS o amb LES? Toca la caixa!",
+  "t": "هناك أكثر من واحد! هل نستخدم ELS أم LES؟ المسِي الصندوق!"
+ },
+ "ll-1tkwyic": {
+  "ca": "Diem: la gos.",
+  "t": "نقول: la gos."
+ },
+ "ll-14doxiy": {
+  "ca": "Diem: la poma.",
+  "t": "نقول: la poma (التفاحة)."
+ },
+ "ll-uxqa82": {
+  "ca": "Diem: l'ocell.",
+  "t": "نقول: l'ocell (الطائر)."
+ },
+ "ll-r5xhln": {
+  "ca": "Diem: la sol.",
+  "t": "نقول: la sol."
+ },
+ "ll-15y916k": {
+  "ca": "Diem: els gossos.",
+  "t": "نقول: els gossos (الكلاب)."
+ },
+ "ll-exakxe": {
+  "ca": "Diem: els pomes.",
+  "t": "نقول: els pomes."
+ },
+ "ll-1bcm1x5": {
+  "ca": "Diem: el casa.",
+  "t": "نقول: el casa."
+ },
+ "ll-1qg9blz": {
+  "ca": "Diem: la lluna.",
+  "t": "نقول: la lluna (القمر)."
+ },
+ "ll-w1dzpz": {
+  "ca": "Cinc i cinc, deu dits!",
+  "t": "خمسة وخمسة، عشرة أصابع!"
+ },
+ "ll-n3cyqx": {
+  "ca": "Toca'ls en ordre: u, dos, tres, quatre i cinc!",
+  "t": "المسيها بالترتيب: u (واحد)، dos (اثنان)، tres (ثلاثة)، quatre (أربعة) وcinc (خمسة)!"
+ },
+ "ll-yf1z5f": {
+  "ca": "Comptem!",
+  "t": "هيا نعدّ!"
+ },
+ "ll-1f5qlm8": {
+  "ca": "Hola! Anem a comptar! Els números ens diuen quantes coses hi ha.",
+  "t": "مرحبًا! هيا نعدّ! تخبرنا الأعداد كم شيئًا هناك."
+ },
+ "ll-1wi1aiy": {
+  "ca": "Toca cada grup i compta amb mi, de l'u al cinc!",
+  "t": "المسي كل مجموعة وعدّي معي من l'u (الواحد) إلى cinc (الخمسة)!"
+ },
+ "ll-qa3k6r": {
+  "ca": "Ara, del sis al deu! Toca i compta.",
+  "t": "والآن من sis (الستة) إلى deu (العشرة)! المسِي وعدّي."
+ },
+ "ll-1bpi9g3": {
+  "ca": "Mira les teues mans: tens cinc dits en cada mà. Cinc i cinc, deu dits!",
+  "t": "انظري إلى يديك: لديك خمسة أصابع في كل يد. خمسة وخمسة، عشرة أصابع!"
+ },
+ "ll-5o5h42": {
+  "ca": "I quan no hi ha res de res? Diem: zero! Mira, el plat està buit: zero galetes.",
+  "t": "وماذا نقول عندما لا يوجد شيء أبدًا؟ نقول: zero (صفر)! انظري، الطبق فارغ: zero galetes (صفر من قطع البسكويت)."
+ },
+ "ll-7rcfkl": {
+  "ca": "Després del deu, venen més números: onze, dotze, tretze, catorze, quinze, setze, dèsset, díhuit, dènou i vint! Toca-los.",
+  "t": "بعد deu (العشرة)، تأتي أعداد أخرى: onze (أحد عشر)، dotze (اثنا عشر)، tretze (ثلاثة عشر)، catorze (أربعة عشر)، quinze (خمسة عشر)، setze (ستة عشر)، dèsset (سبعة عشر)، díhuit (ثمانية عشر)، dènou (تسعة عشر) وvint (عشرون)! المسيها."
+ },
+ "ll-m7h2se": {
+  "ca": "Atenció! L'u i el dos canvien una miqueta: un gos, però una poma. Dos gossos, però dues pomes!",
+  "t": "انتبهي! يتغيّر l'u (الواحد) وdos (الاثنان) قليلًا: un gos (كلب واحد)، لكن una poma (تفاحة واحدة). Dos gossos (كلبان)، لكن dues pomes (تفاحتان)!"
+ },
+ "ll-1d1lc6v": {
+  "ca": "Toca on hi ha una poma!",
+  "t": "المسي المكان الذي توجد فيه poma (تفاحة)!"
+ },
+ "ll-12t5mfa": {
+  "ca": "Molt bé! Ja saps comptar fins a vint! I recorda: un gos, una poma; dos gossos, dues pomes.",
+  "t": "أحسنت! لقد تعلّمت العدّ حتى vint (عشرين)! وتذكّر: un gos (كلب)، una poma (تفاحة)؛ dos gossos (كلبان)، dues pomes (تفاحتان)."
+ },
+ "ll-p8utbe": {
+  "ca": "En quin plat hi ha zero galetes?",
+  "t": "في أيّ طبق لا توجد galetes (قطع بسكويت)؟"
+ },
+ "ll-n4qwhx": {
+  "ca": "Quants dits tens en una mà? Compta!",
+  "t": "كم إصبعًا من dits (أصابع) في يدك؟ عُدّها!"
+ },
+ "ll-cu9xnx": {
+  "ca": "Toca on hi ha dues pomes!",
+  "t": "المسي المكان الذي توجد فيه dues pomes (تفاحتان)!"
+ },
+ "ll-1kfv2ik": {
+  "ca": "Toca on hi ha un gos!",
+  "t": "المسي المكان الذي يوجد فيه un gos (كلب)!"
+ },
+ "ll-cslzs4": {
+  "ca": "Toca on hi ha dos gossos!",
+  "t": "المسي المكان الذي يوجد فيه dos gossos (كلبان)!"
+ },
+ "ll-1ssseoy": {
+  "ca": "Diem: un poma.",
+  "t": "نقول: un poma (تفاحة واحدة)."
+ },
+ "ll-1xzgsjl": {
+  "ca": "Diem: dues pomes.",
+  "t": "نقول: dues pomes (تفاحتان)."
+ },
+ "ll-1ldfo8p": {
+  "ca": "Diem: dues gossos.",
+  "t": "نقول: dues gossos (كلبان)."
+ },
+ "ll-12j1t7g": {
+  "ca": "Diem: un gos.",
+  "t": "نقول: un gos (كلب)."
+ },
+ "ll-13bkmps": {
+  "ca": "Tenim deu dits.",
+  "t": "لدينا deu dits (عشرة أصابع)."
+ },
+ "ll-iiz8ft": {
+  "ca": "En el plat hi ha tres galetes.",
+  "t": "في الطبق ثلاث galetes (قطع بسكويت)."
+ },
+ "ll-1ridtcm": {
+  "ca": "Ací hi ha quatre maduixes.",
+  "t": "هنا أربع maduixes (حبّات فراولة)."
+ },
+ "ll-1iupwdn": {
+  "ca": "Ací hi ha dues maduixes.",
+  "t": "هنا حبّتا maduixes (فراولة)."
+ },
+ "ll-1x87fvm": {
+  "ca": "Els colors!",
+  "t": "الألوان!"
+ },
+ "ll-1wdjyu6": {
+  "ca": "Hola! El món està ple de colors! Anem a conéixer-los tots.",
+  "t": "مرحبًا! العالم مليء بالألوان! هيا نتعرّف إليها كلّها."
+ },
+ "ll-seufkt": {
+  "ca": "Encara n'hi ha més! Toca'ls.",
+  "t": "هناك المزيد! المسِيها."
+ },
+ "ll-e1afip": {
+  "ca": "Cada cosa té el seu color: el plàtan és groc, la granota és verda i el núvol és blanc.",
+  "t": "لكلّ شيء لونه: plàtan (الموزة) صفراء، وgranota (الضفدعة) خضراء، وnúvol (الغيمة) بيضاء."
+ },
+ "ll-1nkatdl": {
+  "ca": "Mira què passa! Amb EL diem roig, però amb LA diem roja: el cotxe roig, la poma roja. I el pollet groc, però la flor groga!",
+  "t": "انظري ماذا يحدث! مع EL نقول roig (أحمر)، ومع LA نقول roja (حمراء): el cotxe roig (السيارة الحمراء)، la poma roja (التفاحة الحمراء). وpollet (الصوص) groc (أصفر)، أمّا flor (الزهرة) فـgroga (صفراء)!"
+ },
+ "ll-17gk2i9": {
+  "ca": "Passa amb molts colors: negre i negra, blanc i blanca, blau i blava!",
+  "t": "وهذا يحدث مع ألوان كثيرة: negre (أسود) وnegra (سوداء)، blanc (أبيض) وblanca (بيضاء)، blau (أزرق) وblava (زرقاء)!"
+ },
+ "ll-1dt4zxc": {
+  "ca": "Ara farem màgia! Barregem el groc i el blau. Toca els dos pots!",
+  "t": "والآن سنقوم بالسحر! لنمزج groc (الأصفر) وblau (الأزرق). المسي الوعاءين!"
+ },
+ "ll-13m78gf": {
+  "ca": "Ix el verd!",
+  "t": "ظهر verd (الأخضر)!"
+ },
+ "ll-fhm0tq": {
+  "ca": "Ara, el roig i el groc. Toca els pots!",
+  "t": "والآن، roig (الأحمر) وgroc (الأصفر). المسي الوعاءين!"
+ },
+ "ll-1lfp3kx": {
+  "ca": "Ix el taronja!",
+  "t": "ظهر taronja (البرتقالي)!"
+ },
+ "ll-d8xo9o": {
+  "ca": "I si barregem el roig i el blau?",
+  "t": "وماذا يحدث إذا مزجنا roig (الأحمر) وblau (الأزرق)؟"
+ },
+ "ll-vn0vbx": {
+  "ca": "Ix el morat!",
+  "t": "ظهر morat (البنفسجي)!"
+ },
+ "ll-1ukjino": {
+  "ca": "I el roig amb el blanc?",
+  "t": "وماذا عن roig (الأحمر) مع blanc (الأبيض)؟"
+ },
+ "ll-iufm8z": {
+  "ca": "Ix el rosa!",
+  "t": "ظهر rosa (الوردي)!"
+ },
+ "ll-1c7an58": {
+  "ca": "El groc i el blau, junts, fan...",
+  "t": "groc (الأصفر) وblau (الأزرق) معًا يصنعان..."
+ },
+ "ll-1g2cxj6": {
+  "ca": "Molt bé! Ja coneixes els colors i saps fer-ne de nous. I recorda: el cotxe roig, la poma roja!",
+  "t": "أحسنت! تعرّفت إلى الألوان وتعلّمت كيف تصنع ألوانًا جديدة. وتذكّر: el cotxe roig (السيارة الحمراء)، la poma roja (التفاحة الحمراء)!"
+ },
+ "ll-1vks054": {
+  "ca": "Pinta la pilota de verd!",
+  "t": "لوّني الكرة بـverd (الأخضر)!"
+ },
+ "ll-uc19l8": {
+  "ca": "Pinta la pilota de groc!",
+  "t": "لوّني الكرة بـgroc (الأصفر)!"
+ },
+ "ll-1oywbzn": {
+  "ca": "Pinta la casa de rosa!",
+  "t": "لوّني البيت بـrosa (الوردي)!"
+ },
+ "ll-1mrf3wx": {
+  "ca": "Pinta la casa de taronja!",
+  "t": "لوّني البيت بـtaronja (البرتقالي)!"
+ },
+ "ll-1wh5jri": {
+  "ca": "Pinta la flor de morat!",
+  "t": "لوّني الزهرة بـmorat (البنفسجي)!"
+ },
+ "ll-rrcn9u": {
+  "ca": "Pinta la flor de groc!",
+  "t": "لوّني الزهرة بـgroc (الأصفر)!"
+ },
+ "ll-d4xeu1": {
+  "ca": "El roig i el groc, junts, fan...",
+  "t": "roig (الأحمر) وgroc (الأصفر) معًا يصنعان..."
+ },
+ "ll-1m8c3ew": {
+  "ca": "Diem: la poma roja.",
+  "t": "نقول: la poma roja (التفاحة الحمراء)."
+ },
+ "ll-1ul4rte": {
+  "ca": "Diem: el cotxe roja.",
+  "t": "نقول: el cotxe roja (السيارة الحمراء)."
+ },
+ "ll-itydj0": {
+  "ca": "Diem: la flor groga.",
+  "t": "نقول: la flor groga (الزهرة الصفراء)."
+ },
+ "ll-x0t12f": {
+  "ca": "Diem: el pollet groga.",
+  "t": "نقول: el pollet groga (الكتكوت الأصفر)."
+ },
+ "ll-df3jzv": {
+  "ca": "Diem: la gata negre.",
+  "t": "نقول: la gata negre (القطة السوداء)."
+ },
+ "ll-s00jqp": {
+  "ca": "Diem: l'ovella blanca.",
+  "t": "نقول: l'ovella blanca (الخروف الأبيض)."
+ },
+ "ll-1gze1l6": {
+  "ca": "Diem: la balena blau.",
+  "t": "نقول: la balena blau (الحوت الأزرق)."
+ },
+ "ll-90b0ex": {
+  "ca": "Diem: el mar blau.",
+  "t": "نقول: el mar blau (البحر الأزرق)."
+ },
+ "ll-725y0g": {
+  "ca": "El roig i el blau, junts, fan...",
+  "t": "roig (الأحمر) وblau (الأزرق) معًا يصنعان..."
+ },
+ "ll-11a3pmc": {
+  "ca": "El roig i el blanc, junts, fan...",
+  "t": "roig (الأحمر) وblanc (الأبيض) معًا يصنعان..."
+ },
+ "ll-1cc41b9": {
+  "ca": "El meu cos!",
+  "t": "el meu cos (جسمي)!"
+ },
+ "ll-1fzilnv": {
+  "ca": "Hola! Hui coneixerem el nostre cos. Toca cada part i, si vols, assenyala-la en el teu cos!",
+  "t": "مرحبًا! سنتعرّف اليوم إلى cos (الجسم). المس كل جزء، وإذا أردت، أشر إليه في جسمك!"
+ },
+ "ll-17egwpk": {
+  "ca": "Primer, el cap i la cara! Toca i escolta.",
+  "t": "أولًا، cap (الرأس) وcara (الوجه)! المس واستمع."
+ },
+ "ll-pke0rf": {
+  "ca": "Ara, la resta del cos! Toca i escolta.",
+  "t": "والآن، بقية cos (الجسم)! المس واستمع."
+ },
+ "ll-18f7n0": {
+  "ca": "Amb el cos descobrim el món! Toca i escolta què fem amb cada part.",
+  "t": "بجسمنا نكتشف العالم! المس واستمع إلى ما نفعله بكل جزء."
+ },
+ "ll-k8ituw": {
+  "ca": "Comptem! Tenim un nas i una boca. Però tenim dos ulls, dues orelles i dues mans, amb deu dits!",
+  "t": "هيا نعدّ! لدينا un nas (أنف واحد) وفم واحد. لكن لدينا dos ulls (عينان)، وdues orelles (أذنان)، وdues mans (يدان)، فيها deu dits (عشرة أصابع)!"
+ },
+ "ll-vu9de0": {
+  "ca": "Amb què escoltes la música?",
+  "t": "بماذا تستمع إلى الموسيقى؟"
+ },
+ "ll-1kmyx5b": {
+  "ca": "Amb què olores una flor?",
+  "t": "بماذا تشمّ الزهرة؟"
+ },
+ "ll-sp4xhh": {
+  "ca": "Amb què xutes la pilota?",
+  "t": "بماذا تركل الكرة؟"
+ },
+ "ll-dzl4wl": {
+  "ca": "Amb què mires els dibuixos?",
+  "t": "بماذا تشاهد الرسوم؟"
+ },
+ "ll-1utinfz": {
+  "ca": "Amb què mossegues la poma?",
+  "t": "بماذا تعضّ التفاحة؟"
+ },
+ "ll-wotfbb": {
+  "ca": "Molt bé! Ja coneixes el teu cos: el cap, els ulls, el nas, la boca, els braços, les mans, les cames i els peus!",
+  "t": "أحسنت! لقد تعرّفت إلى cos (جسمك): cap (الرأس)، ulls (العينان)، nas (الأنف)، boca (الفم)، braços (الذراعان)، mans (اليدان)، cames (الساقان) وpeus (القدمان)!"
+ },
+ "ll-1x90284": {
+  "ca": "És de la cara o de la resta del cos? Toca la caixa!",
+  "t": "هل هذا جزء من cara (الوجه) أم من بقية cos (الجسم)؟ المس الصندوق!"
+ },
+ "ll-1mhlq1r": {
+  "ca": "Tenim un nas.",
+  "t": "لدينا un nas (أنف واحد)."
+ },
+ "ll-37johm": {
+  "ca": "Tenim tres ulls.",
+  "t": "لدينا tres ulls (ثلاث عيون)."
+ },
+ "ll-rh3ofg": {
+  "ca": "Tenim dues mans.",
+  "t": "لدينا dues mans (يدان)."
+ },
+ "ll-1k5h23j": {
+  "ca": "Tenim una orella.",
+  "t": "لدينا una orella (أذن واحدة)."
+ },
+ "ll-1qfac3c": {
+  "ca": "Tenim dues boques.",
+  "t": "لدينا dues boques (فمان)."
+ },
+ "ll-z2qrxw": {
+  "ca": "Amb els ulls, veig.",
+  "t": "أرى بعينيّ: Amb els ulls, veig."
+ },
+ "ll-13kaqx1": {
+  "ca": "Amb el nas, escolte la música.",
+  "t": "أستمع إلى الموسيقى بأنفي: Amb el nas, escolte la música."
+ },
+ "ll-fjjyfw": {
+  "ca": "La Taronjeta diu: toca la boca!",
+  "t": "تقول Taronjeta: المس boca (الفم)!"
+ },
+ "ll-1rx85g7": {
+  "ca": "Toca la mà!",
+  "t": "المس mà (اليد)!"
+ },
+ "ll-rdr0h1": {
+  "ca": "La Taronjeta diu: toca el peu!",
+  "t": "تقول Taronjeta: المس peu (القدم)!"
+ },
+ "ll-zrylyq": {
+  "ca": "Toca el nas!",
+  "t": "المس nas (الأنف)!"
+ },
+ "ll-1gxe38u": {
+  "ca": "Amb què tastes el gelat?",
+  "t": "بماذا تتذوّق المثلّجات؟"
+ },
+ "ll-15gn0k1": {
+  "ca": "Amb què acaricies el gat?",
+  "t": "بماذا تربّت على القط؟"
+ },
+ "ll-1sgpuqs": {
+  "ca": "La meua família!",
+  "t": "la meua família (عائلتي)!"
+ },
+ "ll-imjqxs": {
+  "ca": "Hola! Vols conéixer la meua família? Anem a aprendre com es diu cada persona!",
+  "t": "مرحبًا! هل تريد التعرّف إلى عائلتي؟ هيا نتعلّم كيف نسمّي كل شخص!"
+ },
+ "ll-1d9jslh": {
+  "ca": "Este és el pare, i esta és la mare.",
+  "t": "هذا هو pare (الأب)، وهذه هي mare (الأم)."
+ },
+ "ll-1m25uns": {
+  "ca": "Els altres fills dels teus pares són els teus germans: el germà, la germana... i el bebé, que és molt xicotet!",
+  "t": "أولاد والديك الآخرون هم إخوتك: germà (الأخ)، germana (الأخت)... والرضيع bebé (البيبي)، وهو صغير جدًا!"
+ },
+ "ll-6b4cj3": {
+  "ca": "Els pares del teu pare i de la teua mare són els teus iaios: el iaio i la iaia.",
+  "t": "والدا أبيك وأمك هما iaios (الجدّان): iaio (الجد) وiaia (الجدّة)."
+ },
+ "ll-s25diu": {
+  "ca": "El germà de la mare o del pare és l'oncle. I la germana, la tia.",
+  "t": "أخو أمك أو أبيك هو oncle (العم أو الخال). وأختهما هي tia (العمّة أو الخالة)."
+ },
+ "ll-1561d5r": {
+  "ca": "I els fills dels oncles són els teus cosins: el cosí i la cosina!",
+  "t": "وأبناء أعمامك وعماتك هم cosins (أبناء العمومة): el cosí (ابن العم) وla cosina (بنت العم)!"
+ },
+ "ll-wobnwr": {
+  "ca": "Toca tota la família i escolta!",
+  "t": "المس كل أفراد العائلة واستمع!"
+ },
+ "ll-1smop6m": {
+  "ca": "Quan parlem de la nostra família, diem: el meu pare, la meua mare. El meu germà, la meua germana!",
+  "t": "عندما نتحدث عن عائلتنا، نقول: el meu pare (أبي)، la meua mare (أمي). el meu germà (أخي)، la meua germana (أختي)!"
+ },
+ "ll-3yyw9n": {
+  "ca": "Qui és la mare de la teua mare?",
+  "t": "من هي أم أمك؟ (la mare de la teua mare)"
+ },
+ "ll-nlo65w": {
+  "ca": "Qui és el germà del teu pare?",
+  "t": "من هو أخو أبيك؟ (el germà del teu pare)"
+ },
+ "ll-7pred8": {
+  "ca": "Qui és el més xicotet de tots?",
+  "t": "من هو الأصغر بينهم جميعًا؟"
+ },
+ "ll-16lw226": {
+  "ca": "Molt bé! Ja coneixes tota la família: el pare, la mare, els germans, els iaios, els oncles i els cosins!",
+  "t": "أحسنت! الآن تعرف أفراد العائلة: el pare (الأب)، la mare (الأم)، els germans (الإخوة)، els iaios (الأجداد)، els oncles (الأعمام والأخوال) وels cosins (أبناء العمومة)!"
+ },
+ "ll-1ophjzb": {
+  "ca": "Qui és el pare del teu pare?",
+  "t": "من هو أبو أبيك؟ (el pare del teu pare)"
+ },
+ "ll-1i9a4wn": {
+  "ca": "El meu o la meua? Toca la caixa bona!",
+  "t": "el meu أم la meua؟ المس الصندوق الصحيح!"
+ },
+ "ll-q1voo3": {
+  "ca": "Qui és la germana de la teua mare?",
+  "t": "من هي أخت أمك؟ (la germana de la teua mare)"
+ },
+ "ll-db7yhm": {
+  "ca": "Diem: el meu pare.",
+  "t": "نقول: el meu pare (أبي)."
+ },
+ "ll-1fi1l1t": {
+  "ca": "Diem: el meu mare.",
+  "t": "نقول: el meu mare (أمي)."
+ },
+ "ll-ep9200": {
+  "ca": "Diem: la meua germana.",
+  "t": "نقول: la meua germana (أختي)."
+ },
+ "ll-9mw0ji": {
+  "ca": "Diem: la meua germà.",
+  "t": "نقول: la meua germà (أخي)."
+ },
+ "ll-mby331": {
+  "ca": "Diem: la meua iaia.",
+  "t": "نقول: la meua iaia (جدتي)."
+ },
+ "ll-mbcyhf": {
+  "ca": "Diem: la meua iaio.",
+  "t": "نقول: la meua iaio (جدي)."
+ },
+ "ll-22760j": {
+  "ca": "Qui és el fill del teu oncle?",
+  "t": "من هو ابن عمك؟ (el fill del teu oncle)"
+ },
+ "ll-1745203": {
+  "ca": "Qui és la filla de la teua tia?",
+  "t": "من هي ابنة عمتك؟ (la filla de la teua tia)"
+ },
+ "ll-13nn1p4": {
+  "ca": "Com estàs?",
+  "t": "كيف حالك؟ (Com estàs?)"
+ },
+ "ll-hjwl3z": {
+  "ca": "Hola! Com estàs hui? Anem a aprendre a dir com ens sentim.",
+  "t": "مرحبًا! كيف حالك اليوم؟ هيا نتعلم كيف نقول ما نشعر به."
+ },
+ "ll-1iajzak": {
+  "ca": "Quan tot va bé i tenim ganes de riure, diem: Estic feliç!",
+  "t": "عندما تسير الأمور على ما يرام ونرغب في الضحك، نقول: Estic feliç (أنا سعيد)!"
+ },
+ "ll-18hd99x": {
+  "ca": "Quan alguna cosa no ens agrada i tenim ganes de plorar, diem: Estic trist.",
+  "t": "عندما لا يعجبنا شيء ونرغب في البكاء، نقول: Estic trist (أنا حزين)."
+ },
+ "ll-1p2mohh": {
+  "ca": "I quan algú ens pren la joguina, a vegades diem: Estic enfadat!",
+  "t": "وعندما يأخذ أحدهم لعبتنا، نقول أحيانًا: Estic enfadat (أنا غاضب)!"
+ },
+ "ll-1lwzh2": {
+  "ca": "Diem ESTIC per a dir com estem. Toca les cares i escolta!",
+  "t": "نقول ESTIC لنعبر عن شعورنا. المس الوجوه واستمع!"
+ },
+ "ll-1mtaes3": {
+  "ca": "Atenció! Un xiquet diu: estic cansat. Una xiqueta diu: estic cansada!",
+  "t": "انتبه! يقول الولد: estic cansat (أنا متعب). وتقول البنت: estic cansada (أنا متعبة)!"
+ },
+ "ll-fim9pf": {
+  "ca": "A vegades diem TINC: tinc son, quan se'ns tanquen els ulls. Tinc fam, quan volem menjar!",
+  "t": "نقول أحيانًا TINC: tinc son (أشعر بالنعاس) عندما تكاد أعيننا تنغلق. وtinc fam (أنا جائع) عندما نريد أن نأكل!"
+ },
+ "ll-1ukg0ft": {
+  "ca": "Toca i escolta: tinc por, tinc son, tinc fam, tinc set, tinc fred i tinc calor!",
+  "t": "المس واستمع: tinc por (أنا خائف)، tinc son (أشعر بالنعاس)، tinc fam (أنا جائع)، tinc set (أنا عطشان)، tinc fred (أشعر بالبرد) وtinc calor (أشعر بالحر)!"
+ },
+ "ll-mdej54": {
+  "ca": "Hola, Pep! Com estàs?",
+  "t": "مرحبًا يا Pep! كيف حالك؟"
+ },
+ "ll-1xvez2a": {
+  "ca": "Estic molt bé! I tu?",
+  "t": "Estic molt bé (أنا بخير جدًا)! وأنت؟"
+ },
+ "ll-1b5baj1": {
+  "ca": "Jo estic una miqueta cansada... i tinc fam!",
+  "t": "أنا متعبة قليلًا... وtinc fam (أنا جائعة)!"
+ },
+ "ll-11v7gi5": {
+  "ca": "Vols una poma?",
+  "t": "هل تريد تفاحة؟"
+ },
+ "ll-1w1vk17": {
+  "ca": "Sí, per favor! Gràcies!",
+  "t": "نعم، من فضلك! شكرًا!"
+ },
+ "ll-hz9sle": {
+  "ca": "Fa molt de temps que no menges. Què tens?",
+  "t": "لم تأكل منذ وقت طويل. ماذا تشعر؟ (Què tens?)"
+ },
+ "ll-1tv54sq": {
+  "ca": "Neva i no portes jaqueta. Què tens?",
+  "t": "الثلج يتساقط وأنت لا ترتدي سترة. ماذا تشعر؟ (Què tens?)"
+ },
+ "ll-j05qu5": {
+  "ca": "S'ha trencat la teua joguina preferida. Com estàs?",
+  "t": "لقد انكسرت لعبتك المفضلة. كيف حالك؟ (Com estàs?)"
+ },
+ "ll-es4hez": {
+  "ca": "És molt tard i se't tanquen els ulls. Què tens?",
+  "t": "تأخر الوقت وأوشكت عيناك على الانغلاق. ماذا تشعر؟ (Què tens?)"
+ },
+ "ll-1ek7uuz": {
+  "ca": "Et fan una festa sorpresa! Com estàs?",
+  "t": "يقيمون لك حفلة مفاجأة! كيف حالك؟ (Com estàs?)"
+ },
+ "ll-131vzkv": {
+  "ca": "Molt bé! Diem ESTIC per a feliç, trist, enfadat o cansat. I diem TINC per a por, son, fam, set, fred i calor.",
+  "t": "أحسنت! نقول ESTIC مع feliç (سعيد)، trist (حزين)، enfadat (غاضب) أو cansat (متعب). ونقول TINC مع por (الخوف)، son (النعاس)، fam (الجوع)، set (العطش)، fred (البرد) وcalor (الحر)!"
+ },
+ "ll-143lwyk": {
+  "ca": "Hui és el teu aniversari! Com estàs?",
+  "t": "اليوم عيد ميلادك! كيف حالك؟ (Com estàs?)"
+ },
+ "ll-xo42pu": {
+  "ca": "El teu germà et pren la joguina. Com estàs?",
+  "t": "أخذ أخوك لعبتك. كيف حالك؟ (Com estàs?)"
+ },
+ "ll-cg0wei": {
+  "ca": "Diem ESTIC o diem TINC? Toca la caixa bona!",
+  "t": "نقول ESTIC (أنا أكون) أم TINC (لديّ)؟ المس الصندوق الصحيح!"
+ },
+ "ll-1907hs": {
+  "ca": "Has jugat molt i vols beure aigua. Què tens?",
+  "t": "لعبت كثيرًا وتريد أن تشرب الماء. ماذا لديك؟"
+ },
+ "ll-lhv4xj": {
+  "ca": "Corres molt i fa molt de sol. Què tens?",
+  "t": "تركض كثيرًا والشمس حارّة. ماذا لديك؟"
+ },
+ "ll-1ayp38m": {
+  "ca": "Pau ha corregut molt. Què diu?",
+  "t": "ركض Pau كثيرًا. ماذا يقول؟"
+ },
+ "ll-1a7u43p": {
+  "ca": "Laia ha corregut molt. Què diu?",
+  "t": "ركضت Laia كثيرًا. ماذا تقول؟"
+ },
+ "ll-1b8cz9r": {
+  "ca": "És fosc i sents un soroll estrany. Què tens?",
+  "t": "الظلام حالك وتسمع صوتًا غريبًا. ماذا تشعر؟"
+ },
+ "ll-11ptlam": {
+  "ca": "Neva i diem: tinc calor.",
+  "t": "إنها تثلج ونقول: tinc calor (أشعر بالحرّ)."
+ },
+ "ll-9hw653": {
+  "ca": "Quan volem menjar, diem: tinc fam.",
+  "t": "عندما نريد أن نأكل، نقول: tinc fam (أنا جائع)."
+ },
+ "ll-lbw82d": {
+  "ca": "Quan se'ns tanquen els ulls, diem: tinc son.",
+  "t": "عندما تغمض أعيننا، نقول: tinc son (أشعر بالنعاس)."
+ },
+ "ll-vd6bfk": {
+  "ca": "Esta cara està feliç.",
+  "t": "هذا الوجه سعيد."
+ },
+ "ll-b5ssz1": {
+  "ca": "Quan volem beure, diem: tinc set.",
+  "t": "عندما نريد أن نشرب، نقول: tinc set (أنا عطشان)."
+ },
+ "ll-l2pnm1": {
+  "ca": "Diem: tinc enfadat.",
+  "t": "نقول: tinc enfadat (أنا غاضب)."
+ },
+ "ll-1e074xw": {
+  "ca": "Et fa mal la panxa i tens febre. Com estàs?",
+  "t": "تؤلمك بطنك ولديك حمّى. كيف تشعر؟"
+ },
+ "ll-gkvhxr": {
+  "ca": "Pep et pregunta: Com estàs? I tu estàs molt content. Què li dius?",
+  "t": "يسألك Pep: Com estàs? (كيف حالك؟) وأنت سعيد جدًا. ماذا تقول له؟"
+ },
+ "ll-obcbm2": {
+  "ca": "Què fem?",
+  "t": "ماذا نفعل؟"
+ },
+ "ll-69azbw": {
+  "ca": "Hola! Hui aprendrem les accions: són les coses que fem, com córrer, menjar o dormir!",
+  "t": "مرحبًا! سنتعلّم اليوم الأفعال: إنها الأشياء التي نفعلها، مثل الجري أو الأكل أو النوم!"
+ },
+ "ll-1umrb8u": {
+  "ca": "Toca cada dibuix i escolta què fa!",
+  "t": "المس كل صورة واستمع إلى ما يفعله!"
+ },
+ "ll-9tvhee": {
+  "ca": "Quan ho fas tu, la paraula canvia! Menjar: jo menge. Beure: jo bec. Dormir: jo dorm. Jugar: jo jugue.",
+  "t": "عندما تفعلها أنت، تتغيّر الكلمة! Menjar (الأكل): jo menge (أنا آكل). Beure (الشرب): jo bec (أنا أشرب). Dormir (النوم): jo dorm (أنا أنام). Jugar (اللعب): jo jugue (أنا ألعب)."
+ },
+ "ll-1vlbv08": {
+  "ca": "I quan ho fa un altre, també canvia: el gat dorm, el peix nada, l'ocell canta i la granota salta!",
+  "t": "وعندما يفعلها شخص آخر، تتغيّر الكلمة أيضًا: el gat (القط) dorm (ينام)، el peix (السمك) nada (يسبح)، l'ocell (الطائر) canta (يغنّي) وla granota (الضفدعة) salta (تقفز)!"
+ },
+ "ll-g50awu": {
+  "ca": "Tens set. Què fas?",
+  "t": "أنت عطشان. ماذا تفعل؟"
+ },
+ "ll-aup31b": {
+  "ca": "Abans de menjar, què has de fer?",
+  "t": "ماذا عليك أن تفعل قبل الأكل؟"
+ },
+ "ll-1n62339": {
+  "ca": "Què fa el peix en l'aigua?",
+  "t": "ماذا يفعل el peix (السمك) في الماء؟"
+ },
+ "ll-1806eyl": {
+  "ca": "Molt bé! Ja coneixes moltes accions. I recorda: jo menge, jo bec, jo dorm i jo jugue!",
+  "t": "أحسنت! لقد تعلّمت أفعالًا كثيرة. وتذكّر: jo menge (أنا آكل)، jo bec (أنا أشرب)، jo dorm (أنا أنام) وjo jugue (أنا ألعب)!"
+ },
+ "ll-1mfi80j": {
+  "ca": "És l'hora de dinar. Què dius?",
+  "t": "حان وقت الغداء. ماذا تقول؟"
+ },
+ "ll-mlmdsi": {
+  "ca": "Tens molta set. Què dius?",
+  "t": "أنت عطشان جدًا. ماذا تقول؟"
+ },
+ "ll-142tv58": {
+  "ca": "Ho fem amb la boca o amb les cames? Toca la caixa!",
+  "t": "هل نفعل ذلك بالفم أم بالساقين؟ المس الصندوق!"
+ },
+ "ll-kglj4u": {
+  "ca": "Tens molta son. Què dius?",
+  "t": "أنت نعسان جدًا. ماذا تقول؟"
+ },
+ "ll-1qq6yyi": {
+  "ca": "Vas al parc amb la pilota. Què dius?",
+  "t": "أنت ذاهب إلى الحديقة ومعك الكرة. ماذا تقول؟"
+ },
+ "ll-t96ldw": {
+  "ca": "Dorm!",
+  "t": "Dorm! (نَمْ!)"
+ },
+ "ll-1hmk8fq": {
+  "ca": "La Taronjeta diu: corre!",
+  "t": "تقول Taronjeta: corre! (اركض!)"
+ },
+ "ll-zpdk79": {
+  "ca": "Canta!",
+  "t": "Canta! (غنِّ!)"
+ },
+ "ll-15zibcq": {
+  "ca": "Balla!",
+  "t": "Balla! (ارقص!)"
+ },
+ "ll-yg4uca": {
+  "ca": "El gat dorm.",
+  "t": "El gat (القط) dorm (ينام)."
+ },
+ "ll-4pamf3": {
+  "ca": "El peix canta.",
+  "t": "El peix (السمك) canta (يغنّي)."
+ },
+ "ll-1xnvux6": {
+  "ca": "L'ocell canta.",
+  "t": "L'ocell (الطائر) canta (يغنّي)."
+ },
+ "ll-1sb33xg": {
+  "ca": "La granota dorm.",
+  "t": "La granota (الضفدعة) dorm (تنام)."
+ },
+ "ll-14hp5u8": {
+  "ca": "Jo menge.",
+  "t": "Jo menge (أنا آكل)."
+ },
+ "ll-yq388o": {
+  "ca": "Jo dorm.",
+  "t": "Jo dorm (أنا أنام)."
+ },
+ "ll-1viybiw": {
+  "ca": "La primavera: ixen les flors!",
+  "t": "La primavera (الربيع): تتفتح الأزهار!"
+ },
+ "ll-1r5wrd5": {
+  "ca": "L'estiu: fa calor i anem a la platja!",
+  "t": "L'estiu (الصيف): الجو حار ونذهب إلى الشاطئ!"
+ },
+ "ll-t32lrj": {
+  "ca": "La tardor: cauen les fulles dels arbres!",
+  "t": "tardor (الخريف): تتساقط أوراق الأشجار!"
+ },
+ "ll-sq2lam": {
+  "ca": "L'hivern: fa fred i, a vegades, neva!",
+  "t": "hivern (الشتاء): الجو بارد، وأحيانًا تتساقط الثلوج!"
+ },
+ "ll-1gnsc3z": {
+  "ca": "On va cada dia? A l'escola o al cap de setmana?",
+  "t": "إلى أين يذهب كل يوم؟ إلى المدرسة أم في عطلة نهاية الأسبوع (cap de setmana)؟"
+ },
+ "ll-181u2z2": {
+  "ca": "Els dies i el temps!",
+  "t": "الأيام والطقس!"
+ },
+ "ll-73o6yg": {
+  "ca": "Hola! Hui aprendrem els dies de la setmana, les estacions i el temps que fa.",
+  "t": "مرحبًا! سنتعلّم اليوم أيام الأسبوع والفصول والطقس."
+ },
+ "ll-i69ujx": {
+  "ca": "La setmana té set dies. Toca-los i escolta: dilluns, dimarts, dimecres, dijous, divendres, dissabte i diumenge!",
+  "t": "يتكوّن الأسبوع من سبعة أيام. المسها واستمع: dilluns (الاثنين)، dimarts (الثلاثاء)، dimecres (الأربعاء)، dijous (الخميس)، divendres (الجمعة)، dissabte (السبت) وdiumenge (الأحد)!"
+ },
+ "ll-1tpzk7q": {
+  "ca": "De dilluns a divendres anem a l'escola. I dissabte i diumenge és cap de setmana: a jugar i a descansar!",
+  "t": "من dilluns (الاثنين) إلى divendres (الجمعة) نذهب إلى المدرسة. أمّا dissabte (السبت) وdiumenge (الأحد)، فهما عطلة نهاية الأسبوع: هيا نلعب ونرتاح!"
+ },
+ "ll-qmllux": {
+  "ca": "L'any té quatre estacions. Toca-les i escolta!",
+  "t": "للسنة أربعة فصول. المسها واستمع!"
+ },
+ "ll-6qft90": {
+  "ca": "I quin temps fa hui? Toca i escolta!",
+  "t": "كيف الطقس اليوم؟ المس واستمع!"
+ },
+ "ll-1rwo8af": {
+  "ca": "Plou molt! Què necessites?",
+  "t": "Plou (تمطر) بغزارة! ماذا تحتاج؟"
+ },
+ "ll-1nkwjv7": {
+  "ca": "Fa molta calor i anem a la platja. Quina estació és?",
+  "t": "Fa molta calor (الجو حار جدًا)، ونحن ذاهبون إلى الشاطئ. أيّ فصل هذا؟"
+ },
+ "ll-1lhczwc": {
+  "ca": "Cauen les fulles dels arbres. Quina estació és?",
+  "t": "تتساقط أوراق الأشجار. أيّ فصل هذا؟"
+ },
+ "ll-18gbap5": {
+  "ca": "Neva i fem un ninot de neu. Quina estació és?",
+  "t": "Neva (تتساقط الثلوج)، ونصنع رجلًا من الثلج. أيّ فصل هذا؟"
+ },
+ "ll-1gq3r0y": {
+  "ca": "Molt bé! Ja saps els set dies de la setmana i les quatre estacions: la primavera, l'estiu, la tardor i l'hivern!",
+  "t": "أحسنت! لقد تعلّمت أيام الأسبوع السبعة والفصول الأربعة: primavera (الربيع)، estiu (الصيف)، tardor (الخريف) وhivern (الشتاء)!"
+ },
+ "ll-vswopy": {
+  "ca": "Toca els dies en ordre, com van en la setmana!",
+  "t": "المس الأيام بالترتيب، كما تأتي خلال الأسبوع!"
+ },
+ "ll-9oudi0": {
+  "ca": "Ixen les flors i els ocells canten. Quina estació és?",
+  "t": "تتفتح الأزهار وتغرد الطيور. أيّ فصل هذا؟"
+ },
+ "ll-n4uxop": {
+  "ca": "Fa molt de sol a la platja. Què et poses?",
+  "t": "Fa molt de sol (الشمس ساطعة جدًا) على الشاطئ. ماذا ترتدي؟"
+ },
+ "ll-dfjfus": {
+  "ca": "Fa sol.",
+  "t": "Fa sol (الجو مشمس)."
+ },
+ "ll-1ubmx2x": {
+  "ca": "Neva.",
+  "t": "Neva (تتساقط الثلوج)."
+ },
+ "ll-1kpi0vf": {
+  "ca": "Fa vent.",
+  "t": "Fa vent (الجو عاصف)."
+ },
+ "ll-1r1l9ek": {
+  "ca": "Hi ha tempesta.",
+  "t": "Hi ha tempesta (هناك عاصفة)."
+ },
+ "ll-jgy40d": {
+  "ca": "A l'hivern fa fred.",
+  "t": "في hivern (الشتاء)، fa fred (يكون الجو باردًا)."
+ },
+ "ll-ss2yp7": {
+  "ca": "A l'estiu neva.",
+  "t": "في estiu (الصيف)، Neva (تتساقط الثلوج)."
+ },
+ "ll-s2ahx9": {
+  "ca": "Dissabte i diumenge anem a l'escola.",
+  "t": "نذهب إلى المدرسة يومي dissabte (السبت) وdiumenge (الأحد)."
+ },
+ "ll-160772r": {
+  "ca": "La setmana té set dies.",
+  "t": "يتكوّن الأسبوع من set (سبعة) أيام."
+ },
+ "ll-pw7fbn": {
+  "ca": "El gat és fora de la caixa!",
+  "t": "القط خارج الصندوق! (fora: خارج)"
+ },
+ "ll-13flt30": {
+  "ca": "El gat és al costat de la caixa!",
+  "t": "القط بجانب الصندوق! (al costat de: بجانب)"
+ },
+ "ll-1q091oi": {
+  "ca": "On és el gat?",
+  "t": "أين القط؟"
+ },
+ "ll-1f053s5": {
+  "ca": "Hola! Este és el gat Pelut. És molt juganer i sempre s'amaga. Anem a aprendre a dir on és!",
+  "t": "مرحبًا! هذا القط Pelut. يحب اللعب كثيرًا ويختبئ دائمًا. هيا نتعلّم كيف نقول أين هو!"
+ },
+ "ll-psjdhm": {
+  "ca": "Mira! El gat és dins de la caixa.",
+  "t": "انظر! القط داخل الصندوق! (dins: داخل)"
+ },
+ "ll-ge11j3": {
+  "ca": "Ara ha eixit: el gat és fora de la caixa!",
+  "t": "والآن خرج: القط خارج الصندوق! (fora: خارج)"
+ },
+ "ll-e18f63": {
+  "ca": "Ara puja: el gat és damunt de la caixa! I ara s'amaga baix: el gat és davall de la caixa.",
+  "t": "والآن يصعد: القط فوق الصندوق! (damunt: فوق) والآن يختبئ في الأسفل: القط تحت الصندوق! (davall: تحت)"
+ },
+ "ll-bv1h5x": {
+  "ca": "El gat és davant de la caixa: el veiem molt bé! I ara, darrere de la caixa: quasi no el veiem!",
+  "t": "القط أمام الصندوق: نراه جيدًا! والآن خلف الصندوق: بالكاد نراه! (davant: أمام، darrere: خلف)"
+ },
+ "ll-1250rey": {
+  "ca": "I ara, el gat és al costat de la caixa.",
+  "t": "والآن، القط بجانب الصندوق! (al costat de: بجانب)"
+ },
+ "ll-18aivqf": {
+  "ca": "Toca cada dibuix i digues on és el gat!",
+  "t": "المس كل صورة وقل أين القط!"
+ },
+ "ll-gk9wyo": {
+  "ca": "Són contraris! Damunt i davall. Davant i darrere. Dins i fora.",
+  "t": "هذه كلمات متضادة! damunt (فوق) وdavall (تحت). davant (أمام) وdarrere (خلف). dins (داخل) وfora (خارج)."
+ },
+ "ll-1mly38w": {
+  "ca": "Toca el gat que és damunt de la caixa!",
+  "t": "المس القط الذي فوق الصندوق! (damunt: فوق)"
+ },
+ "ll-heprcl": {
+  "ca": "Toca el gat que és dins de la caixa!",
+  "t": "المس القط الذي داخل الصندوق! (dins: داخل)"
+ },
+ "ll-3ngou3": {
+  "ca": "Toca el gat que és davall de la caixa!",
+  "t": "المس القط الذي تحت الصندوق! (davall: تحت)"
+ },
+ "ll-bbd1dc": {
+  "ca": "Toca el gat que és al costat de la caixa!",
+  "t": "المس القط الذي بجانب الصندوق! (al costat de: بجانب)"
+ },
+ "ll-175iawt": {
+  "ca": "Molt bé! Ja saps dir on són les coses: dins, fora, damunt, davall, davant, darrere i al costat!",
+  "t": "أحسنت! تعرف الآن كيف تقول أين الأشياء: dins (داخل)، fora (خارج)، damunt (فوق)، davall (تحت)، davant (أمام)، darrere (خلف) و al costat (بجانب)!"
+ },
+ "ll-xpo4ov": {
+  "ca": "Toca el gat que és fora de la caixa!",
+  "t": "المسّ gat (القط) الموجود fora (خارج) الصندوق!"
+ },
+ "ll-1btkhih": {
+  "ca": "Toca el gat que és davant de la caixa!",
+  "t": "المسّ gat (القط) الموجود davant (أمام) الصندوق!"
+ },
+ "ll-ja37ea": {
+  "ca": "Quin és el contrari de damunt?",
+  "t": "ما عكس damunt (فوق)؟"
+ },
+ "ll-17tegwh": {
+  "ca": "Quin és el contrari de davall?",
+  "t": "ما عكس davall (تحت)؟"
+ },
+ "ll-1wh4x23": {
+  "ca": "Quin és el contrari de davant?",
+  "t": "ما عكس davant (أمام)؟"
+ },
+ "ll-1at2pp2": {
+  "ca": "Quin és el contrari de darrere?",
+  "t": "ما عكس darrere (خلف)؟"
+ },
+ "ll-174dypz": {
+  "ca": "Quin és el contrari de dins?",
+  "t": "ما عكس dins (داخل)؟"
+ },
+ "ll-3wej39": {
+  "ca": "Quin és el contrari de fora?",
+  "t": "ما عكس fora (خارج)؟"
+ },
+ "ll-1b6emqr": {
+  "ca": "Mira: el gat és dins de la caixa.",
+  "t": "انظر: gat (القط) داخل dins (داخل) الصندوق."
+ },
+ "ll-ym3yta": {
+  "ca": "Mira: el gat és damunt de la caixa.",
+  "t": "انظر: gat (القط) فوق damunt (فوق) الصندوق."
+ },
+ "ll-2sefah": {
+  "ca": "Mira: el gat és fora de la caixa.",
+  "t": "انظر: gat (القط) خارج fora (خارج) الصندوق."
+ },
+ "ll-1kofq4p": {
+  "ca": "Mira: el gat és davall de la caixa.",
+  "t": "انظر: gat (القط) تحت davall (تحت) الصندوق."
+ },
+ "ll-1bjct43": {
+  "ca": "Mira: el gat és davant de la caixa.",
+  "t": "انظر: gat (القط) أمام davant (أمام) الصندوق."
+ },
+ "ll-1boev9w": {
+  "ca": "Mira: el gat és darrere de la caixa.",
+  "t": "انظر: gat (القط) خلف darrere (خلف) الصندوق."
+ },
+ "ll-1shx10s": {
+  "ca": "Mira: el gat és al costat de la caixa.",
+  "t": "انظر: gat (القط) بجانب al costat (بجانب) الصندوق."
+ },
+ "ll-1vwnk6v": {
+  "ca": "Els contraris!",
+  "t": "الأضداد!"
+ },
+ "ll-xsl1pu": {
+  "ca": "Hola! Hui jugarem amb els contraris: paraules ben diferents, com el dia i la nit!",
+  "t": "مرحبًا! اليوم سنلعب بالأضداد: كلمات مختلفة تمامًا، مثل el dia (النهار) و la nit (الليل)!"
+ },
+ "ll-5m6scu": {
+  "ca": "Toca i escolta: gran i xicotet. El dia i la nit. Calent i fred.",
+  "t": "المس واستمع: gran (كبير) و xicotet (صغير). el dia (النهار) و la nit (الليل). Calent (حار) و fred (بارد)."
+ },
+ "ll-1ocvafz": {
+  "ca": "Més contraris! El conill és ràpid i la tortuga és lenta. La girafa és alta i el pingüí és baix.",
+  "t": "المزيد من الأضداد! conill (الأرنب) سريع ràpid (سريع)، و tortuga (السلحفاة) بطيئة lenta (بطيئة). girafa (الزرافة) طويلة alta (طويلة)، و pingüí (البطريق) قصير baix (قصير)."
+ },
+ "ll-kpscfk": {
+  "ca": "I encara més: el llibre obert i el llibre tancat. Content i trist!",
+  "t": "والمزيد أيضًا: llibre (الكتاب) obert (مفتوح) و llibre (الكتاب) tancat (مغلق). Content (سعيد) و trist (حزين)!"
+ },
+ "ll-1nux3te": {
+  "ca": "Molt bé! Ja coneixes molts contraris: gran i xicotet, calent i fred, ràpid i lent, alt i baix, obert i tancat!",
+  "t": "أحسنت! تعرف الآن الكثير من الأضداد: gran (كبير) و xicotet (صغير)، calent (حار) و fred (بارد)، ràpid (سريع) و lent (بطيء)، alt (طويل) و baix (قصير)، obert (مفتوح) و tancat (مغلق)!"
+ },
+ "ll-9rmj3h": {
+  "ca": "Quin és el contrari del dia?",
+  "t": "ما عكس el dia (النهار)؟"
+ },
+ "ll-m1dbsn": {
+  "ca": "Quin és el contrari de la nit?",
+  "t": "ما عكس la nit (الليل)؟"
+ },
+ "ll-1kmuqck": {
+  "ca": "Quin és el contrari de calent?",
+  "t": "ما عكس calent (حار)؟"
+ },
+ "ll-1xak1p0": {
+  "ca": "Quin és el contrari de fred?",
+  "t": "ما عكس fred (بارد)؟"
+ },
+ "ll-nmel32": {
+  "ca": "Quin és el contrari de ràpid?",
+  "t": "ما عكس ràpid (سريع)؟"
+ },
+ "ll-q49f1c": {
+  "ca": "Quin és el contrari de lent?",
+  "t": "ما عكس lent (بطيء)؟"
+ },
+ "ll-1upivb8": {
+  "ca": "Quin és el contrari d'alt?",
+  "t": "ما عكس alt (طويل)؟"
+ },
+ "ll-j7p6f3": {
+  "ca": "Quin és el contrari de baix?",
+  "t": "ما عكس baix (قصير)؟"
+ },
+ "ll-ihzp4b": {
+  "ca": "Quin és el contrari d'obert?",
+  "t": "ما عكس obert (مفتوح)؟"
+ },
+ "ll-x7q0sg": {
+  "ca": "Quin és el contrari de tancat?",
+  "t": "ما عكس tancat (مغلق)؟"
+ },
+ "ll-1794w90": {
+  "ca": "Quin és el contrari de content?",
+  "t": "ما عكس content (سعيد)؟"
+ },
+ "ll-4ergl5": {
+  "ca": "Quin és el contrari de trist?",
+  "t": "ما عكس trist (حزين)؟"
+ },
+ "ll-1txsub6": {
+  "ca": "És del dia o de la nit? Toca la caixa!",
+  "t": "هل هو el dia (النهار) أم la nit (الليل)؟ المس الصندوق!"
+ },
+ "ll-1o4kkcc": {
+  "ca": "El conill és lent.",
+  "t": "conill (الأرنب) بطيء lent (بطيء)."
+ },
+ "ll-grnn76": {
+  "ca": "La tortuga és lenta.",
+  "t": "tortuga (السلحفاة) بطيئة lenta (بطيئة)."
+ },
+ "ll-1291mqu": {
+  "ca": "La girafa és alta.",
+  "t": "girafa (الزرافة) طويلة alta (طويلة)."
+ },
+ "ll-q74asc": {
+  "ca": "El pingüí és alt.",
+  "t": "pingüí (البطريق) طويل alt (طويل)."
+ },
+ "ll-l92xq3": {
+  "ca": "El llibre està tancat.",
+  "t": "الكتاب مغلق tancat (مغلق)."
+ },
+ "ll-5jjdml": {
+  "ca": "El gel està fred.",
+  "t": "الـgel (الجليد) بارد."
+ },
+ "ll-j5foel": {
+  "ca": "El foc està fred.",
+  "t": "الـfoc (النار) بارد."
+ },
+ "ll-1hdyoi": {
+  "ca": "Està content.",
+  "t": "إنه سعيد."
+ },
+ "ll-1r39ubz": {
+  "ca": "Les lletres i els sons!",
+  "t": "الحروف والأصوات!"
+ },
+ "ll-9kyrg8": {
+  "ca": "Hola! Les paraules estan fetes de sons, i els sons s'escriuen amb lletres. Escoltem-les!",
+  "t": "مرحبًا! الكلمات مكوّنة من أصوات، ونكتب الأصوات بالحروف. هيا نستمع إليها!"
+ },
+ "ll-1djy76x": {
+  "ca": "Hi ha cinc lletres molt especials: les vocals! A, e, i, o, u. Sonen fort i clar.",
+  "t": "هناك خمسة أحرف مميزة جدًا: حروف العلة! A, e, i, o, u. تُسمَع بوضوح وقوة."
+ },
+ "ll-1xh56uz": {
+  "ca": "Toca cada vocal i escolta una paraula que comença així!",
+  "t": "المسي كل حرف علة واستمعي إلى كلمة تبدأ به!"
+ },
+ "ll-z29jme": {
+  "ca": "Més paraules que comencen per vocal: l'avió, l'elefant, l'illa, l'ou i l'ull! Toca-les.",
+  "t": "كلمات أخرى تبدأ بحرف علة: l'avió (الطائرة)، l'elefant (الفيل)، l'illa (الجزيرة)، l'ou (البيضة) و l'ull (العين)! المسِيها."
+ },
+ "ll-ghh5jw": {
+  "ca": "Les altres lletres es diuen consonants. Si ajuntem lletres, fem paraules: la pe i la a fan... pa!",
+  "t": "تُسمّى الأحرف الأخرى consonants (الحروف الساكنة). إذا جمعنا الحروف، صنعنا كلمات: pe و a تصنعان... pa (خبزًا)!"
+ },
+ "ll-1vkrp4s": {
+  "ca": "En valencià tenim sons molt especials! Toca-los i escolta.",
+  "t": "لدينا في valenciano أصوات مميزة جدًا! المسيها واستمعي."
+ },
+ "ll-ribv0m": {
+  "ca": "Quina paraula té el so nya, nye, nyi?",
+  "t": "أيّ كلمة فيها الصوت nya, nye, nyi؟"
+ },
+ "ll-10trlbu": {
+  "ca": "Quina paraula té la ce trencada?",
+  "t": "أيّ كلمة فيها ce trencada (حرف ç)؟"
+ },
+ "ll-wjxr20": {
+  "ca": "Molt bé! Ja coneixes les vocals, a, e, i, o, u, i els sons especials del valencià!",
+  "t": "أحسنتِ! لقد تعرّفتِ إلى حروف العلة a, e, i, o, u، وإلى الأصوات المميزة في valenciano!"
+ },
+ "ll-1twdfti": {
+  "ca": "Quina paraula té el so txe, txe?",
+  "t": "أيّ كلمة فيها الصوت txe, txe؟"
+ },
+ "ll-1kkok50": {
+  "ca": "Quina paraula té la te i la ge juntes?",
+  "t": "أيّ كلمة فيها الحرفان te و ge معًا؟"
+ },
+ "ll-h6hsg9": {
+  "ca": "Quina paraula té el so lla, lle, lli?",
+  "t": "أيّ كلمة فيها الصوت lla, lle, lli؟"
+ },
+ "ll-wzffem": {
+  "ca": "Quina paraula té la ela geminada?",
+  "t": "أيّ كلمة فيها ela geminada (حرف l المضعّف)؟"
+ },
+ "ll-1ih6zik": {
+  "ca": "Quina paraula té el so ix, ix?",
+  "t": "أيّ كلمة فيها الصوت ix, ix؟"
+ },
+ "ll-d40a0m": {
+  "ca": "Quina paraula té el so gue, gui?",
+  "t": "أيّ كلمة فيها الصوت gue, gui؟"
+ },
+ "ll-1oc7uc4": {
+  "ca": "El gos xicotet és el gosset!",
+  "t": "الكلب الصغير هو gosset (جرو صغير)!"
+ },
+ "ll-1455lj9": {
+  "ca": "El gat xicotet és el gatet!",
+  "t": "القط الصغير هو gatet (قط صغير)!"
+ },
+ "ll-1vwnxwp": {
+  "ca": "La gallina té pollets!",
+  "t": "للدجاجة pollets (كتاكيت)!"
+ },
+ "ll-17ggmor": {
+  "ca": "Els animals!",
+  "t": "الحيوانات!"
+ },
+ "ll-cdhbgb": {
+  "ca": "Hola! Hui coneixerem els animals. Cada animal fa un so diferent: escolta bé!",
+  "t": "مرحبًا! سنتعرّف اليوم إلى الحيوانات. لكل حيوان صوته الخاص: استمعي جيدًا!"
+ },
+ "ll-1lpvv7i": {
+  "ca": "Primer, els animals de casa. Toca cada un i escolta quin so fa!",
+  "t": "أولًا، حيوانات البيت. المسِي كل حيوان واستمعي إلى صوته!"
+ },
+ "ll-6wri1f": {
+  "ca": "Ara, els animals de la granja. Toca i escolta!",
+  "t": "والآن، حيوانات المزرعة. المسي واستمعي!"
+ },
+ "ll-1echmxp": {
+  "ca": "I estos viuen lluny, a la selva o a la bassa. Toca i escolta!",
+  "t": "وهذه تعيش بعيدًا، في الغابة أو عند البركة. المسي واستمعي!"
+ },
+ "ll-1v99d5b": {
+  "ca": "Els animals xicotets tenen un nom molt dolç: el gosset, el gatet, el pollet.",
+  "t": "للحيوانات الصغيرة أسماء لطيفة جدًا: gosset (جرو صغير)، gatet (قط صغير)، pollet (كتكوت)."
+ },
+ "ll-1jkk7e": {
+  "ca": "Uns animals volen pel cel, uns altres naden en l'aigua, i molts caminen per la terra.",
+  "t": "بعض الحيوانات تطير في السماء، وبعضها يسبح في الماء، وكثير منها يمشي على الأرض."
+ },
+ "ll-9ansg3": {
+  "ca": "Molt bé! Ja coneixes molts animals i els seus sons. Recorda: el gos fa bub, bub, i el gat fa mèu, mèu!",
+  "t": "أحسنتِ! تعرّفتِ إلى حيوانات كثيرة وأصواتها. تذكّري: الكلب يقول bub, bub، والقط يقول mèu, mèu!"
+ },
+ "ll-o8pqio": {
+  "ca": "Els animals de casa!",
+  "t": "حيوانات البيت!"
+ },
+ "ll-fuk204": {
+  "ca": "Els animals de la granja!",
+  "t": "حيوانات المزرعة!"
+ },
+ "ll-dqe8b2": {
+  "ca": "Els animals de la selva!",
+  "t": "حيوانات الغابة!"
+ },
+ "ll-1qhma2m": {
+  "ca": "On viu? A casa, a la granja o a la selva?",
+  "t": "أين يعيش؟ في البيت، أم في المزرعة، أم في الغابة؟"
+ },
+ "ll-18pcood": {
+  "ca": "Com es diu el gos xicotet?",
+  "t": "ما اسم الكلب الصغير؟"
+ },
+ "ll-1c2v7ak": {
+  "ca": "Com es diu el gat xicotet?",
+  "t": "ما اسم القط الصغير؟"
+ },
+ "ll-6smgag": {
+  "ca": "Com es diuen els fills de la gallina?",
+  "t": "ماذا نسمّي صغار الدجاجة؟"
+ },
+ "ll-1bn9qge": {
+  "ca": "La vaca fa muuu.",
+  "t": "البقرة تقول muuu."
+ },
+ "ll-kymkbe": {
+  "ca": "El gos fa mèu, mèu.",
+  "t": "الكلب يقول mèu, mèu."
+ },
+ "ll-29g3mv": {
+  "ca": "El peix viu a l'aigua.",
+  "t": "السمكة تعيش في الماء."
+ },
+ "ll-1ovngig": {
+  "ca": "El cavall vola pel cel.",
+  "t": "يطير cavall (الحصان) في السماء."
+ },
+ "ll-14f5788": {
+  "ca": "El gat xicotet és el gatet.",
+  "t": "gat xicotet (القط الصغير) هو gatet (القُطَيْط)."
+ },
+ "ll-nut565": {
+  "ca": "El lleó viu a la granja.",
+  "t": "يعيش lleó (الأسد) في المزرعة."
+ },
+ "ll-12lryqp": {
+  "ca": "La gallina fa co, co, co.",
+  "t": "تقول gallina (الدجاجة): co, co, co."
+ },
+ "llicons": {
+  "ca": "Les lliçons de la Taronjeta! Tria una lliçó i aprendrem moltes coses noves.",
+  "t": "دروس Taronjeta! اختر درسًا وسنتعلّم أشياء جديدة كثيرة."
+ },
+ "llico-medalla": {
+  "ca": "Molt bé! Has acabat la lliçó i has guanyat una medalla!",
+  "t": "أحسنت! أنهيت الدرس وربحت ميدالية!"
+ },
+ "llico-fi": {
+  "ca": "Molt bé! Has acabat la lliçó una altra vegada!",
+  "t": "أحسنت! أنهيت الدرس مرة أخرى!"
+ }
+}

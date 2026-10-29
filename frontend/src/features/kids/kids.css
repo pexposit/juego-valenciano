@@ -515,6 +515,9 @@
   font-size: .85em; font-weight: 700; font-style: italic; color: #0F47AF; line-height: 1.3;
 }
 .kid-dialog-line.right .kid-translation { text-align: right; }
+/* Àrab: de dreta a esquerra (també en les línies de diàleg, que van alineades a l'esquerra) i sense cursiva. */
+.kid-dialog-line .kid-translation[dir="rtl"] { text-align: right; }
+.kid-translation[dir="rtl"] { font-style: normal; }
 
 /* ── Guia Pre-A1: jocs a l'estil de Cambridge Pre A1 Starters ──────────── */
 /* Escolta i pinta */
