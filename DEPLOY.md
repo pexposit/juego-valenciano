@@ -236,6 +236,20 @@ curl https://$DOMAIN/health                  # {"ok":true}
 - **Embebido:** la CSP lleva `frame-ancestors 'none'`; si la web se incrusta en un iframe de otro sitio, hay que cambiarlo en el Caddyfile.
 - Reenviar `X-Forwarded-For` / `X-Forwarded-Proto` (el backend usa `trust proxy 1`).
 
+### Redes de Docker
+
+El compose separa los servicios en redes para limitar hasta dónde llega un servicio comprometido:
+
+| Red | Servicios | Salida a Internet |
+|---|---|---|
+| `edge` | `web`, `api` | sí |
+| `services` | `api`, `mcp`, `rag`, `toxicity-classificator` | sí (OpenAI, DNV, Apertium, descarga de modelos) |
+| `supabase` | `web`, `auth`, `rest` | no (`internal`) |
+| `data` | `auth`, `rest`, `migrate`, `db` | no (`internal`) |
+| `egress` | solo `auth` | sí (SMTP) |
+
+`db` solo es alcanzable desde `auth`, `rest` y `migrate`; `api` no ve la base de datos, solo habla con Supabase a través de `web:8000`; `web` no llega a `mcp`, `rag` ni `toxicity`. Si añades un servicio, ponlo en la red mínima que necesite. `docker compose up -d` recrea las redes al cambiarlas (puede ser necesario `docker compose down` antes, sin `-v`).
+
 ### Mantenimiento
 
 - **Actualizar:** `git pull && docker compose up -d --build`. Las migraciones nuevas de `supabase/migrations/` se aplican solas, cada una una sola vez (registro en `deploy.applied_migrations`).

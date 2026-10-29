@@ -14,6 +14,13 @@ name: parlaval-deploy
 x-deploy-labels: &deploy-labels
   com.parlaval.stack: deploy
 
+# Xarxes separades (cada servici només veu els que ha de veure):
+#   edge     web <-> api. L'API cridava Supabase per `web:8000`, així que és l'únic enllaç api-Supabase.
+#   supabase web <-> auth, rest. INTERNA: sense eixida a Internet.
+#   data     auth, rest, migrate <-> db. INTERNA: la base de dades no té eixida a Internet ni és accessible des de web/api.
+#   services api <-> mcp, rag, toxicity. Amb eixida (OpenAI, DNV, Apertium, descàrrega de models...); web no hi arriba.
+#   egress   només auth: eixida a Internet per a SMTP (la resta d'Supabase és interna).
+# Els únics ports publicats són els de web (80/443 i 127.0.0.1:8000) i 127.0.0.1:8001 de toxicity per a dev.
 services:
   web:
     container_name: parlaval-deploy-web
@@ -49,6 +56,7 @@ services:
       # reinici i es podria topar amb el límit de peticions.
       - caddy_data:/data
       - caddy_config:/config
+    networks: [edge, supabase]
     depends_on:
       - api
       - auth
@@ -91,6 +99,7 @@ services:
       toxicity-classificator:
         condition: service_healthy
     # Sense `ports`: només és accessible des de Caddy, dins de la xarxa de compose.
+    networks: [edge, services]
     restart: unless-stopped
 
   # Servidor MCP lingüístic (DNV, conjugació, Apertium i SoftValència) per HTTP: el backend el crida per la xarxa
@@ -108,6 +117,7 @@ services:
       PORT: 3002
       # El mateix token ací i en l'API (buit = sense token; el servici només és accessible dins de la xarxa de compose).
       MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
+    networks: [services]
     restart: unless-stopped
 
   # RAG de la Gramàtica Normativa Valenciana (rag_gnv/): el tutor el consulta per als dubtes de normativa i per a triar
@@ -130,6 +140,7 @@ services:
       - rag_index:/app/rag_gnv/index_gnv
       - rag_models:/home/app/.cache/huggingface
     # Sense claus (rag_gnv/.env) el RAG no arranca: es reintenta unes voltes i para, en lloc de fer bucle indefinidament.
+    networks: [services]
     restart: on-failure:5
 
   # Classificador informatiu de toxicitat del xat: només escriu deteccions al log de l'API.
@@ -145,6 +156,7 @@ services:
       HF_HOME: /home/app/.cache/huggingface
     volumes:
       - toxicity_model_cache:/home/app/.cache/huggingface
+    networks: [services]
     # Només exposat a localhost per a poder-lo executar també amb `npm run dev`.
     ports:
       - "127.0.0.1:8001:8001"
@@ -182,6 +194,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks: [data]
     restart: unless-stopped
 
   auth:
@@ -227,6 +240,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    # `supabase` (web) i `data` (db) són internes: `egress` només dona eixida per a SMTP.
+    networks: [supabase, data, egress]
     restart: unless-stopped
 
   # Aplica supabase/migrations quan GoTrue ja ha creat l'esquema auth, i acaba.
@@ -244,6 +259,7 @@ services:
       - ./deploy/db/migrate.sh:/migrate.sh:ro
       - ./deploy/db/squash-map.txt:/squash-map.txt:ro
     entrypoint: ["sh", "/migrate.sh"]
+    networks: [data]
     restart: "no"
 
   rest:
@@ -262,7 +278,17 @@ services:
       PGRST_DB_USE_LEGACY_GUCS: "false"
       PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
       PGRST_APP_SETTINGS_JWT_EXP: 3600
+    networks: [supabase, data]
     restart: unless-stopped
+
+networks:
+  edge:
+  services:
+  egress:
+  supabase:
+    internal: true
+  data:
+    internal: true
 
 volumes:
   caddy_data:
