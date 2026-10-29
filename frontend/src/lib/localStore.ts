@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { GnvRule, RouteOffer, StudyPathRef, TutorActivity, TutorExercise, VerbConjugation } from './types';
+import type { GnvRule, PracticeOffer, PracticeResult, RouteOffer, StudyPathRef, TutorActivity, TutorExercise, VerbConjugation } from './types';
 
 /**
  * Dades de l'usuari que poden ser sensibles (el que escriu o diu): es guarden només en este
@@ -42,6 +42,8 @@ export type LocalMessage = {
   exercise?: TutorExercise;
   // Tutor: l'activitat que ha enllaçat (si n'hi ha pràctica del tema però no s'ha pogut mostrar l'exercici).
   activity?: TutorActivity;
+  // Tutor: el botó «Practica-ho» (després d'un dubte; l'exercici s'afig en prémer-lo).
+  practiceOffer?: PracticeOffer;
   // Tutor del Nivell 0: la lliçó de l'app que ha enllaçat.
   lessonId?: string;
   createdAt: string;
@@ -188,7 +190,7 @@ const byDate = <T extends { createdAt: string }>(a: T, b: T) => a.createdAt.loca
 export async function addMessages(
   conversationId: string,
   kind: ConversationKind,
-  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; createdAt?: string }[],
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; practiceOffer?: PracticeOffer; lessonId?: string; createdAt?: string }[],
 ) {
   const userId = await currentUserId();
   if (!userId || messages.length === 0) return;
@@ -206,6 +208,7 @@ export async function addMessages(
     ...(m.routeOffer ? { routeOffer: m.routeOffer } : {}),
     ...(m.exercise ? { exercise: m.exercise } : {}),
     ...(m.activity ? { activity: m.activity } : {}),
+    ...(m.practiceOffer ? { practiceOffer: m.practiceOffer } : {}),
     ...(m.lessonId ? { lessonId: m.lessonId } : {}),
     createdAt: m.createdAt ?? new Date(now + i).toISOString(),
   }));
@@ -257,6 +260,25 @@ export async function saveExerciseAnswer(conversationId: string, exerciseId: str
     .filter(m => m.exercise?.id === exerciseId && !m.exercise.chosen)
     .map(m => ({ ...m, exercise: { ...m.exercise!, chosen } }));
   await putAll('messages', rows);
+}
+
+/** Guarda el que ha tornat el botó «Practica-ho» d'un missatge (l'exercici, l'activitat o l'avís): ja no es torna a mostrar. */
+export async function savePracticeResult(conversationId: string, offerId: string, result: PracticeResult) {
+  const userId = await currentUserId();
+  if (!userId) return;
+  const rows = (await getMessages(conversationId))
+    .filter(m => m.practiceOffer?.id === offerId)
+    .map(m => ({ ...m, ...withPracticeResult(m, result) }));
+  await putAll('messages', rows);
+}
+
+/** El missatge amb el resultat del botó «Practica-ho» dins (el xat i el que es guarda fan servir el mateix). */
+export function withPracticeResult<T extends { practiceOffer?: PracticeOffer }>(message: T, result: PracticeResult) {
+  return {
+    ...(result.exercise ? { exercise: result.exercise } : {}),
+    ...(result.activity ? { activity: result.activity } : {}),
+    practiceOffer: { ...message.practiceOffer!, done: true, ...(result.message ? { message: result.message } : {}) },
+  };
 }
 
 /** Guarda com ha contestat l'aprenent l'oferta del tutor de preparar-li una ruta (ja no se li tornen a mostrar els botons). */

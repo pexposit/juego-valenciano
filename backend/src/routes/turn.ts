@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 import { sanitizeHistory, type HistoryMessage } from '@parlaval/shared';
@@ -7,7 +8,7 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
-import { findSkillActivity, findTutorActivity, pickTutorExercise, NO_AT_LEVEL, NO_AT_LEVEL_MESSAGE, NO_EXERCISE_MESSAGE, CHAT_SKILLS, CHAT_ACTIVITY_MESSAGE, NO_CHAT_ACTIVITY_MESSAGE, type ExerciseMode, type TutorActivity, type TutorExercise } from '../services/tutorExercise.js';
+import { findSkillActivity, findTutorActivity, hasTutorPractice, pickTutorExercise, NO_AT_LEVEL, NO_AT_LEVEL_MESSAGE, NO_EXERCISE_MESSAGE, CHAT_SKILLS, CHAT_ACTIVITY_MESSAGE, NO_CHAT_ACTIVITY_MESSAGE, type ExerciseMode, type PracticeOffer, type TutorActivity, type TutorExercise } from '../services/tutorExercise.js';
 import { getScenario } from '../services/scenarios.js';
 import { ASSISTANT_CATEGORY, hasOwnPaths, hasStudyPaths, isVoiceOnlyCategory, type StudyPathRef } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
@@ -299,6 +300,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     const lessonId = lessons.some(l => l.id === leccio_id) ? leccio_id : undefined;
     let exercise: TutorExercise | null = null;
     let activity: TutorActivity | null = null;
+    let practiceOffer: PracticeOffer | undefined;
     let noAtLevel = false;
     // Si ha respost amb una regla de la GNV, l'exercici és del seu tema (l'últim apartat de la ruta, sense numeració)
     // encara que el model no haja escrit el tema: primer la norma i després la pràctica.
@@ -324,22 +326,23 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     // no puga descriure ni proposar escenaris inventats (ni enllaçar-ne cap si no n'hi ha).
     const chatSkill = exerciseTool && CHAT_SKILLS.includes(skill);
     if (chatSkill) replyBody.reply_text = activity ? CHAT_ACTIVITY_MESSAGE : NO_CHAT_ACTIVITY_MESSAGE;
-    if (exerciseTool && topic && mode && !activity && !chatSkill) {
-      // Només es mostra un exercici si n'hi ha un prou relacionat amb el tema (també quan l'aprenent demana practicar).
-      const picked = await pickTutorExercise(topic, level, data.shown_exercises, gnvSections,
-        // Dubte simple: es puntua amb el concepte normalitzat, no amb les paraules literals de la pregunta.
-        mode === 'simple' ? topic : `${text}. ${gnvTopic ?? ''}`.trim(), mode);
+    if (exerciseTool && topic && mode === 'complex' && !activity && !chatSkill) {
+      // Dubte complex: no es busca l'exercici, es mostra el botó «Practica-ho» si el catàleg en té del tema (es busca en
+      // prémer-lo, /api/assistant/practice). Amb regla de la GNV, el tema és el de la secció (fix per a la mateixa regla).
+      const offerTopic = gnvTopic || topic;
+      if (await hasTutorPractice(offerTopic, gnvSections)) practiceOffer = { id: randomUUID(), topic: offerTopic, sections: gnvSections };
+    } else if (exerciseTool && topic && mode === 'request' && !activity && !chatSkill) {
+      // Ha demanat practicar: l'exercici es busca ara (o l'avís si no n'hi ha). Els dubtes simples no en reben cap.
+      const picked = await pickTutorExercise(topic, level, data.shown_exercises, gnvSections, `${text}. ${gnvTopic ?? ''}`.trim(), mode);
       if (picked === NO_AT_LEVEL) {
-        // Hi ha exercicis del tema però no del seu nivell: no se'n mostra cap d'un altre ni s'enllaça cap activitat. Només
-        // si ho ha demanat, la resposta passa a ser l'avís (en un dubte, la resposta del model es manté).
+        // Hi ha exercicis del tema però no del seu nivell: no se'n mostra cap d'un altre ni s'enllaça cap activitat.
         noAtLevel = true;
-        if (askedToPractice) replyBody.reply_text = `${NO_AT_LEVEL_MESSAGE}.`;
+        replyBody.reply_text = `${NO_AT_LEVEL_MESSAGE}.`;
       } else exercise = picked;
       // Hi ha pràctica del tema però cap exercici que càpiga en el xat: s'enllaça l'activitat.
-      // Només amb una regla de la GNV al darrere o si ho ha demanat: un tema solt (p. ex. el significat d'una paraula) no en dóna prou.
-      if (!exercise && !noAtLevel && (reply.gnv || askedToPractice)) activity = await findTutorActivity(topic, gnvSections);
+      if (!exercise && !noAtLevel) activity = await findTutorActivity(topic, gnvSections);
       // Ha demanat un exercici i no n'hi ha cap (ni activitat que enllaçar): se li diu, en lloc de callar.
-      if (!exercise && !noAtLevel && !activity && askedToPractice) replyBody.reply_text = NO_EXERCISE_MESSAGE;
+      if (!exercise && !noAtLevel && !activity) replyBody.reply_text = NO_EXERCISE_MESSAGE;
     }
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
@@ -377,6 +380,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       ...(generateRoute ? { generate_route: generateRoute } : {}),
       ...(exercise ? { exercise } : {}),
       ...(activity ? { activity } : {}),
+      ...(practiceOffer ? { practice_offer: practiceOffer } : {}),
       ...(lessonId ? { lesson_id: lessonId } : {}),
       transcription: data.input_mode === 'voice' ? text : null,
       reply_audio_base64: audio?.audio.toString('base64') || null,

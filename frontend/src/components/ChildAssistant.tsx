@@ -6,13 +6,13 @@ import { ChatBubble } from './ChatBubble';
 import { VoiceInput } from './VoiceInput';
 import { RobotVoiceMenu, savedRobotVoice } from './RobotVoiceMenu';
 import { DashboardRobot, isRobotAvatarEnabled } from '../features/robot-avatar'; // [robot-avatar]
-import { analyzeMessage, ensureSession, fetchErrorCitations, fetchTts, generateOwnPath, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem, type TextError } from '../lib/api';
-import { addMessages, saveExerciseAnswer, saveRouteOfferAnswer } from '../lib/localStore';
+import { analyzeMessage, ensureSession, fetchErrorCitations, fetchTts, fetchTutorPractice, generateOwnPath, openAssistant, recordPracticeAnswers, restartAssistant, sendTurn, type AssistantConversation, type HistoryItem, type TextError } from '../lib/api';
+import { addMessages, saveExerciseAnswer, savePracticeResult, saveRouteOfferAnswer, withPracticeResult } from '../lib/localStore';
 import { correctionsText } from '../lib/corrections';
 import { useThinkingSound } from '../lib/useThinkingSound';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { ALL_LESSONS } from '../features/kids/lessons';
-import type { Mood, RouteOffer, TutorExercise } from '../lib/types';
+import type { Mood, PracticeOffer, RouteOffer, TutorExercise } from '../lib/types';
 
 // `transcription`: en un missatge de veu, el que ha entés el model; es mostra davall l'etiqueta del missatge.
 type Message = AssistantConversation['messages'][number] & { transcription?: string };
@@ -24,6 +24,7 @@ const ERROR_REPLY = "No t'he sentit bé, pots repetir-ho?";
 // Rutes d'aprenentatge: si no s'ha pogut preparar la ruta i si l'aprenent diu que no la vol.
 const ROUTE_ERROR_REPLY = "No he pogut preparar la ruta ara mateix. Torna-ho a provar d'ací a un moment.";
 const ROUTE_DECLINED_REPLY = "D'acord! Si més endavant la vols, només m'ho has de dir.";
+const PRACTICE_ERROR_REPLY = "Ara no he pogut buscar l'exercici. Torna-ho a provar d'ací a un moment.";
 const TTS_ATTEMPTS = 2;
 // El professor ho diu en triar una veu nova en el menú del robot, perquè se senta com sona.
 const VOICE_SAMPLE = 'Hola! Ara parle amb esta veu.';
@@ -298,11 +299,11 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       setMessages(m => {
         const next = [...m];
         if (reply.transcription) next[next.length - 1] = { role: 'user', text: VOICE_MESSAGE_LABEL, transcription: reply.transcription };
-        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, studyPath: reply.study_path, routeOffer, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id }];
+        return [...next, { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, studyPath: reply.study_path, routeOffer, exercise: reply.exercise, activity: reply.activity, practiceOffer: reply.practice_offer, lessonId: reply.lesson_id }];
       });
       void addMessages(opened.session_resource_id, 'tutor', [
         { role: 'user', text: said || VOICE_MESSAGE_LABEL },
-        { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, studyPath: reply.study_path, routeOffer, exercise: reply.exercise, activity: reply.activity, lessonId: reply.lesson_id },
+        { role: 'character', text: reply.reply_text, gnv: reply.gnv, conjugacio: reply.conjugacio, studyPath: reply.study_path, routeOffer, exercise: reply.exercise, activity: reply.activity, practiceOffer: reply.practice_offer, lessonId: reply.lesson_id },
       ]).catch(error => console.error('Error guardant la conversa:', error));
       // Els errors del xat amb el professor compten per a la ruta, però no es practiquen.
       if (reply.analyze_errors && said) {
@@ -318,6 +319,26 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
       turnAbort.current = null;
       setSending(false);
       setLoading(false);
+    }
+  };
+
+  // Botó «Practica-ho»: es busca l'exercici del tema i es mostra dins del mateix missatge (o l'activitat, o l'avís).
+  const [practicingId, setPracticingId] = useState<string | null>(null);
+  const practice = async (offer: PracticeOffer) => {
+    if (practicingId || offer.done) return;
+    setPracticingId(offer.id);
+    try {
+      const result = await fetchTutorPractice(offer, messages.flatMap(m => (m.exercise ? [m.exercise.id] : [])));
+      if (!mounted.current) return;
+      setMessages(m => m.map(x => (x.practiceOffer?.id === offer.id ? { ...x, ...withPracticeResult(x, result) } : x)));
+      void conversation.current
+        ?.then(opened => savePracticeResult(opened.session_resource_id, offer.id, result))
+        .catch(error => console.error("Error guardant l'exercici:", error));
+    } catch (error) {
+      console.error("Error buscant l'exercici:", error);
+      if (mounted.current) addTutorMessage({ role: 'character', text: PRACTICE_ERROR_REPLY });
+    } finally {
+      setPracticingId(null);
     }
   };
 
@@ -356,7 +377,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         >
           {openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold opacity-60">Un moment...</p>}
-          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} conjugacio={m.conjugacio} studyPath={m.studyPath} routeOffer={m.routeOffer} exercise={m.exercise} activity={m.activity} lessonId={m.lessonId} onAnswer={answerExercise} onRouteAnswer={answerRouteOffer} showHelp={showHelp} />)}
+          {messages.map((m, i) => <ChatBubble key={i} role={m.role} text={m.text} transcription={m.transcription} gnv={m.gnv} conjugacio={m.conjugacio} studyPath={m.studyPath} routeOffer={m.routeOffer} exercise={m.exercise} activity={m.activity} practiceOffer={m.practiceOffer} practicing={practicingId === m.practiceOffer?.id} lessonId={m.lessonId} onAnswer={answerExercise} onRouteAnswer={answerRouteOffer} onPractice={practice} showHelp={showHelp} />)}
           {(loading || correcting || buildingRoute) && <p className="max-w-[85%] rounded-2xl bg-cream px-4 py-2 text-[length:var(--chat-font,1rem)] font-bold opacity-60"><ThinkingIndicator /></p>}
         </div>
 

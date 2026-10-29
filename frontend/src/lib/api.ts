@@ -1,4 +1,4 @@
-import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, PronunciationResult, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, VerbConjugation, WritingEvaluation, RouteOffer, StudyPathRef } from './types';
+import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, PronunciationResult, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, VerbConjugation, WritingEvaluation, RouteOffer, StudyPathRef, PracticeOffer, PracticeResult } from './types';
 import { sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type OwnPathResult, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
@@ -460,6 +460,18 @@ export function analyzeMessage(
 export type TextError = Pick<ServerError, 'id' | 'error_text' | 'correction' | 'category' | 'subcategory' | 'explanation'>;
 
 // Seccions de la GNV que cobrixen els errors d'un text (una per error, o null); sense cites si el servidor no pot consultar-la.
+// Botó «Practica-ho» del tutor: l'exercici del tema de la resposta (o l'activitat per a enllaçar, o l'avís si no n'hi ha).
+export async function fetchTutorPractice(offer: PracticeOffer, shownExercises: string[]): Promise<PracticeResult> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/practice`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ topic: offer.topic, sections: offer.sections, shown_exercises: shownExercises }),
+  });
+  if (!res.ok) throw new Error(`El backend ha respost amb codi ${res.status}`);
+  return res.json() as Promise<PracticeResult>;
+}
+
 export async function fetchErrorCitations(errors: TextError[]): Promise<({ seccio: string; etiqueta: string } | null)[]> {
   try {
     const token = (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -564,7 +576,7 @@ export async function recordPracticeAnswers(answers: { exercise_id: string; answ
 export type AssistantConversation = {
   session_id: string;
   session_resource_id: string;
-  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string }[];
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; practiceOffer?: PracticeOffer; lessonId?: string }[];
 };
 // Llengües maternes amb traducció (les mateixes que els subtítols del Nivell 0).
 const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'];
@@ -615,7 +627,7 @@ async function callAssistant(action: 'open' | 'restart', sessionId: string): Pro
   if (!res.ok) throw new Error("No s'ha pogut obrir la conversa amb el professor");
   const opened = await res.json() as { session_id: string; session_resource_id: string; greeting: string };
   await setCurrentTutorConversation(opened.session_resource_id);
-  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, conjugacio: m.conjugacio, studyPath: m.studyPath, routeOffer: m.routeOffer, exercise: m.exercise, activity: m.activity, lessonId: m.lessonId }));
+  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, conjugacio: m.conjugacio, studyPath: m.studyPath, routeOffer: m.routeOffer, exercise: m.exercise, activity: m.activity, practiceOffer: m.practiceOffer, lessonId: m.lessonId }));
   // Conversa nova (o d'un altre dispositiu, sense missatges ací): comença amb la salutació.
   if (messages.length === 0) {
     messages = [{ role: 'character', text: opened.greeting }];

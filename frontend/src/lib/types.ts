@@ -21,12 +21,15 @@ export type { StudyPathRef };
 // Oferta del tutor de preparar una ruta nova sobre el que li costa a l'aprenent; `answer`: com l'ha contestada
 // (amb els botons o escrivint), i ja no es mostren els botons.
 export type RouteOffer = { topic: string; answer?: 'yes' | 'no' };
+// Botó «Practica-ho» del tutor: l'exercici es busca en prémer-lo. `done`: ja s'ha premut; `message`: l'avís si no n'hi havia.
+export type PracticeOffer = { id: string; topic: string; sections: string[]; done?: boolean; message?: string };
+export type PracticeResult = { exercise?: TutorExercise; activity?: TutorActivity; message?: string };
 
 // Exercici del catàleg que el tutor mostra dins del xat; `chosen` és la resposta que ha donat l'aprenent.
 export type TutorExercise={id:string;resource_id:string;resource_name:string;level:string;prompt:string;options:string[];answer:string;explanation:string;chosen?:string};
 // Activitat del catàleg que el tutor enllaça quan hi ha pràctica del tema però cap exercici que càpiga en el xat.
 export type TutorActivity={resource_id:string;resource_name:string;type:string;category:string};
-export type TurnResponse={reply_text:string;gnv?:GnvRule;conjugacio?:VerbConjugation;exercise?:TutorExercise;activity?:TutorActivity;lesson_id?:string;transcription?:string|null;reply_audio_base64?:string|null;reply_audio_mime_type?:string|null;mood:Mood;detected_level_signal:'below'|'on'|'above';error_flags:string[];xp_delta:number;analyze_errors?:boolean;correct_text?:boolean;study_path?:StudyPathRef;route_offer?:string;generate_route?:string};
+export type TurnResponse={reply_text:string;gnv?:GnvRule;conjugacio?:VerbConjugation;exercise?:TutorExercise;activity?:TutorActivity;lesson_id?:string;transcription?:string|null;reply_audio_base64?:string|null;reply_audio_mime_type?:string|null;mood:Mood;detected_level_signal:'below'|'on'|'above';error_flags:string[];xp_delta:number;analyze_errors?:boolean;correct_text?:boolean;study_path?:StudyPathRef;route_offer?:string;generate_route?:string;practice_offer?:PracticeOffer};
 
 // Fila de la taula resources: `category` agrupa les activitats (p. ex. 'escenari')
 // i `type` n'és la secció dins de la categoria (p. ex. 'mercat').

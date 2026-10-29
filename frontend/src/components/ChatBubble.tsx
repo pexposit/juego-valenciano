@@ -1,16 +1,16 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Check, ChevronRight, Dumbbell, ExternalLink, Puzzle, Route, Sparkles, SpellCheck, Table, Tag, X } from 'lucide-react';
+import { BookOpen, Check, ChevronRight, Dumbbell, ExternalLink, Loader2, Puzzle, Route, Sparkles, SpellCheck, Table, Tag, X } from 'lucide-react';
 import { isGroupLine, isItemLine, parseCorrections, type CorrectionGroup } from '../lib/corrections';
 import { activityRoute, KIDS_ROUTES, practiceRoute, studyPathRoute } from '../data/content';
 import { lessonById } from '../features/kids/lessons';
-import type { GnvRule, RouteOffer, StudyPathRef, TutorActivity, TutorExercise, VerbConjugation } from '../lib/types';
+import type { GnvRule, PracticeOffer, RouteOffer, StudyPathRef, TutorActivity, TutorExercise, VerbConjugation } from '../lib/types';
 
 // Bombolla d'un missatge del xat amb el tutor. En els missatges del professor, la primera línia és en
 // valencià i la resta, en gris clar, l'ajuda en la llengua materna del xiquet (amagada si `showHelp` és fals).
 // Si el professor ha respost un dubte de normativa amb la GNV, davall va la regla oficial; si li han demanat la
 // conjugació d'un verb, la taula del DNV. Si li ha enllaçat una ruta d'aprenentatge, la targeta per a obrir-la; si li
 // ha oferit preparar-ne una, la pregunta amb els botons (`onRouteAnswer`; sense, com en l'historial, només el text).
-export function ChatBubble({ role, text, transcription, gnv, conjugacio, studyPath, routeOffer, exercise, activity, lessonId, onAnswer, onRouteAnswer, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; onRouteAnswer?: (offer: RouteOffer, answer: 'yes' | 'no') => void; showHelp?: boolean }) {
+export function ChatBubble({ role, text, transcription, gnv, conjugacio, studyPath, routeOffer, exercise, activity, practiceOffer, practicing = false, lessonId, onAnswer, onRouteAnswer, onPractice, showHelp = true }: { role: 'user' | 'character'; text: string; transcription?: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; practiceOffer?: PracticeOffer; practicing?: boolean; lessonId?: string; onAnswer?: (exercise: TutorExercise, chosen: string) => void; onRouteAnswer?: (offer: RouteOffer, answer: 'yes' | 'no') => void; onPractice?: (offer: PracticeOffer) => void; showHelp?: boolean }) {
   const [valencian, ...rest] = role === 'character' ? text.split('\n') : [text];
   // Correcció d'un text: després de la primera línia, una línia per error numerada («1) ...»), que es mostra com a llista.
   // La resta de línies són l'ajuda en la llengua materna.
@@ -33,6 +33,7 @@ export function ChatBubble({ role, text, transcription, gnv, conjugacio, studyPa
       {routeOffer && <RouteOfferCard offer={routeOffer} onAnswer={onRouteAnswer} />}
       {lessonId && <LessonLink lessonId={lessonId} />}
       {exercise && <ExerciseCard exercise={exercise} onAnswer={onAnswer} />}
+      {practiceOffer && !exercise && !activity && <PracticeButton offer={practiceOffer} practicing={practicing} onPractice={onPractice} />}
       {!exercise && activity && (
         <Link to={activityRoute({ id: activity.resource_id, type: activity.type, category: activity.category }) ?? practiceRoute(activity.resource_id)} className="mt-3 flex items-center gap-2 rounded-xl bg-white/80 px-3 py-2 text-[0.9em] font-extrabold text-orange ring-2 ring-orange/30 hover:ring-orange">
           <Dumbbell size={20} className="shrink-0" aria-hidden />
@@ -154,6 +155,22 @@ function RouteOfferCard({ offer, onAnswer }: { offer: RouteOffer; onAnswer?: (of
         </div>
       )}
     </section>
+  );
+}
+
+// Botó «Practica-ho» després d'un dubte: l'exercici es busca en prémer-lo. Si no n'hi havia, queda l'avís.
+function PracticeButton({ offer, practicing, onPractice }: { offer: PracticeOffer; practicing: boolean; onPractice?: (offer: PracticeOffer) => void }) {
+  if (offer.done) return offer.message ? <p className="mt-2 text-[0.85em] font-semibold text-slate-500">{offer.message}</p> : null;
+  if (!onPractice) return null;
+  return (
+    <button
+      onClick={() => onPractice(offer)}
+      disabled={practicing}
+      className="btn-press mt-3 flex items-center gap-2 rounded-full bg-orange px-4 py-1.5 text-[0.9em] font-extrabold text-white hover:bg-orange/90 disabled:opacity-70"
+    >
+      {practicing ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <Dumbbell size={16} aria-hidden />}
+      Practica-ho
+    </button>
   );
 }
 

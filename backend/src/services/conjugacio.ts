@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getMcpTools } from './subagentErrorDetector.js';
+import { callMcpTool } from './subagentErrorDetector.js';
 
 /**
  * Conjugació d'un verb segons el DNV de l'AVL, per al tutor del xat. Es demana a la ferramenta `consultar_conjugacio`
@@ -23,8 +23,10 @@ const resultSchema = z.object({
 
 /** La conjugació del verb, o `null` si el DNV no la té (no és un verb, porta pronoms...). Llança si el MCP falla. */
 export async function consultarConjugacioVerb(verb: string): Promise<VerbConjugation | null> {
-  const { client } = await getMcpTools();
-  const result = await client.callTool({ name: 'consultar_conjugacio', arguments: { verb } });
+  // callMcpTool la guarda en memòria: el mateix verb no es torna a demanar al DNV.
+  const result = await callMcpTool('consultar_conjugacio', { verb });
+  // L'AVL no respon (xarxa, servidor caigut...): no és que el verb no existisca.
+  if (result.isError) throw new Error('El DNV no està disponible ara mateix');
   const parsed = resultSchema.safeParse(result.structuredContent);
   if (!parsed.success) throw new Error('La ferramenta consultar_conjugacio no ha tornat una conjugació vàlida');
   const { existeix, modes, observacions, url } = parsed.data;

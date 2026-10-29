@@ -33,6 +33,7 @@ function openAiResponse(content: string, options: { ok?: boolean; status?: numbe
   return {
     ok,
     status,
+    headers: new Headers(),
     json: async () => ({
       choices: [{ message: { content } }],
       ...(!ok ? { error: { message: `code_${status}` } } : {}),
@@ -334,8 +335,9 @@ describe('estado de la petición enviada a OpenAI', () => {
         // La font 2 completa la regla; la 7 no existix i la 3 no s'ha usat.
         relacionades: [{ regla: 'GNV § 5.1.1 · Ortografia > 5.1.1. Regles generals', seccio: '5.1.1', ruta: 'Ortografia > 5.1.1. Regles generals', text: 'Les agudes porten accent.' }],
       });
-      // La segona petició porta les fonts i exigix el camp gnv.
+      // Primera vegada per a la secció: com abans, una sola crida amb la conversa i les fonts que exigix el camp gnv.
       const second = JSON.parse(fetchMock.mock.calls.at(-1)![1].body);
+      expect(second.messages[1].content).toContain("Quan porta accent 'què'?");
       expect(second.messages.at(-1).content).toContain('<font id="1" seccio="5.1.3"');
       expect(second.response_format.json_schema.schema.required).toContain('gnv');
     });
@@ -363,6 +365,95 @@ describe('estado de la petición enviada a OpenAI', () => {
       const reply = await replyFromAgent(gnvArgs);
       expect(reply.reply_text).toBe('Es diu sofàs.');
       expect(reply.gnv).toBeUndefined();
+    });
+
+    /** Mock del RAG i d'OpenAI: `rag` pot canviar d'una crida a l'altra. */
+    function scripted(openAi: string[], rags: unknown[]) {
+      const replies = [...openAi];
+      const results = [...rags];
+      fetchMock.mockImplementation(async (url: string) => {
+        if (String(url).includes('/consultar')) return { ok: true, status: 200, json: async () => results.shift() ?? ragResult };
+        return openAiResponse(replies.shift() ?? '');
+      });
+    }
+    const openAiBodies = () => fetchMock.mock.calls
+      .filter(([url]) => String(url).includes('chat/completions'))
+      .map(([, init]) => JSON.parse(init.body));
+    const rule = { fonts: [1], contingut: 'Què tònic porta accent.', explicacio: '• Accent.' };
+
+    it('la segona vegada, la regla de la secció ix de la cache tal com està i només es demana la resposta', async () => {
+      const { replyFromAgent } = await loadAgent();
+      scripted([
+        jsonReply({ consulta_gnv: 'Accentuació diacrítica de «QUÈ»?' }), jsonReply({ reply_text: 'Sí, «què» porta accent.', gnv: rule }),
+        jsonReply({ consulta_gnv: 'quan porta accent que pronom' }), jsonReply({ reply_text: 'Com a pronom, sí.', regla_id: 'g1' }),
+      ], []);
+
+      await replyFromAgent(gnvArgs);
+      const reply = await replyFromAgent({ ...gnvArgs, message: 'i que de pregunta?', history: [{ role: 'user', content_text: 'Hola' }] });
+
+      expect(reply.reply_text).toBe('Com a pronom, sí.');
+      expect(reply).not.toHaveProperty('regla_id');
+      expect(reply.gnv?.contingut).toBe('Què tònic porta accent.');
+      expect(JSON.parse(ragCalls()[0][1].body).consulta).toBe('accentuació diacrítica de què');
+      const bodies = openAiBodies();
+      expect(bodies).toHaveLength(4);
+      expect(bodies[1].response_format.json_schema.schema.required).toContain('gnv');
+      // La segona vegada no redacta la regla: tria entre les de la cache (sense les fonts) amb la seua conversa.
+      expect(bodies[3].response_format.json_schema.schema.required).not.toContain('gnv');
+      expect(bodies[3].response_format.json_schema.schema.properties.regla_id.enum).toEqual(['', 'g1']);
+      expect(bodies[3].messages.at(-1).content).toContain('Què tònic porta accent.');
+      expect(bodies[3].messages.at(-1).content).not.toContain('<font');
+      expect(bodies[3].messages[1].content).toContain('i que de pregunta?');
+      // Crida curta: prompt mínim (sense les instruccions de la GNV) i només reply_text, mood i regla_id.
+      expect(bodies[3].messages[0].content).not.toContain('CONSULTA DE LA GRAMÀTICA');
+      expect(bodies[3].messages[0].content.length).toBeLessThan(bodies[2].messages[0].content.length / 2);
+      expect(bodies[3].response_format.json_schema.schema.required).toEqual(['mood', 'reply_text', 'regla_id']);
+    });
+
+    it('en el tutor del tauler, la crida curta amb la regla de la cache va sense raonament', async () => {
+      const { replyFromAgent } = await loadAgent();
+      scripted([
+        jsonReply({ consulta_gnv: 'accentuació diacrítica' }), jsonReply({ reply_text: 'Sí.', gnv: rule }),
+        jsonReply({ consulta_gnv: 'accentuació diacrítica' }), jsonReply({ reply_text: 'Com a pronom, sí.', regla_id: 'g1' }),
+      ], []);
+
+      await replyFromAgent({ ...gnvArgs, dashboardAgent: true });
+      await replyFromAgent({ ...gnvArgs, dashboardAgent: true });
+
+      expect(openAiBodies().map(b => b.reasoning_effort)).toEqual(['low', 'low', 'low', 'none']);
+    });
+
+    it('troba la regla de la cache encara que el RAG no pose la seua secció la primera', async () => {
+      const { replyFromAgent } = await loadAgent();
+      const [main, other, third] = ragResult.fuentes;
+      scripted([
+        jsonReply({ consulta_gnv: 'accentuació diacrítica' }), jsonReply({ reply_text: 'Sí.', gnv: rule }),
+        jsonReply({ consulta_gnv: 'quan porta accent què' }), jsonReply({ reply_text: 'Com a pronom, sí.', regla_id: 'g1' }),
+      ], [ragResult, { ...ragResult, fuentes: [other, third, main] }]);
+
+      await replyFromAgent(gnvArgs);
+      const reply = await replyFromAgent(gnvArgs);
+
+      expect(reply.gnv?.regla).toBe(main.etiqueta);
+      expect(openAiBodies()).toHaveLength(4);
+    });
+
+    it('si cap regla de la cache encaixa, la redacta; però si tria una secció que ja en té, mostra la de la cache', async () => {
+      const { replyFromAgent } = await loadAgent();
+      scripted([
+        jsonReply({ consulta_gnv: 'accentuació diacrítica' }), jsonReply({ reply_text: 'Sí.', gnv: rule }),
+        jsonReply({ consulta_gnv: 'accent de què' }), jsonReply({ reply_text: '-', regla_id: '' }),
+        jsonReply({ reply_text: 'Com a pronom, sí.', gnv: { fonts: [1], contingut: 'Una altra redacció.', explicacio: '• Altra.' } }),
+      ], []);
+
+      await replyFromAgent(gnvArgs);
+      const reply = await replyFromAgent(gnvArgs);
+
+      expect(openAiBodies()).toHaveLength(5);
+      expect(reply.reply_text).toBe('Com a pronom, sí.');
+      // La secció 5.1.3 ja tenia regla: es mostra la guardada, no la nova redacció.
+      expect(reply.gnv?.contingut).toBe('Què tònic porta accent.');
+      expect(reply.gnv?.explicacio).toBe('• Accent.');
     });
 
     it('sense gnvTool no demana consulta_gnv', async () => {
