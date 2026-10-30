@@ -7,7 +7,7 @@ import { PATH_LEVELS } from './teacherPaths';
 /**
  * Pestanya «Rutes» de la docent: tria una classe i hi crea, edita o genera amb IA les rutes d'aprenentatge.
  * Una ruta sempre és d'una classe (l'alumnat la veu en «Classe»), per això primer es tria la classe; les rutes són
- * de l'A1 al C1, així que les classes del Nivell 0 no hi surten.
+ * de l'A1 al C2, així que les classes del Nivell 0 no hi surten.
  */
 export function TeacherPathsTab({ classes }: { classes: KidsClass[] }) {
   const eligible = classes.filter(c => !isLevel0Class(c.levels) && c.levels.some(l => PATH_LEVELS.some(p => p.value === l)));
@@ -18,12 +18,12 @@ export function TeacherPathsTab({ classes }: { classes: KidsClass[] }) {
     <>
       <h1 className="text-5xl font-black">Rutes d'aprenentatge</h1>
       <p className="mt-2 text-lg opacity-70">
-        Crea rutes d'activitats per a una classe (de l'A1 al C1), a mà o amb IA. L'alumnat les veu en la secció «Classe».
+        Crea rutes d'activitats per a una classe (de l'A1 al C2), a mà o amb IA. L'alumnat les veu en la secció «Classe».
       </p>
 
       {!selected ? (
         <p className="mt-6 rounded-3xl bg-white p-5 text-lg opacity-80 shadow-sm">
-          Encara no tens cap classe d'A1 a C1. Crea'n una en la pestanya «Classes» per a poder crear-hi rutes.
+          Encara no tens cap classe d'A1 a C2. Crea'n una en la pestanya «Classes» per a poder crear-hi rutes.
         </p>
       ) : (
         <>

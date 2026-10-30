@@ -46,7 +46,7 @@ export type OwnPathResult =
 /** Màxim de caràcters del tema d'una ruta pròpia (el que li costa a l'aprenent, segons el tutor). */
 export const OWN_PATH_TOPIC_MAX = 120;
 /** Nivells en què el tutor del xat pot preparar rutes pròpies de l'alumne (study_paths.student_id). */
-export const OWN_PATH_LEVELS: readonly string[] = ['A1', 'A2', 'B1', 'B2', 'C1'];
+export const OWN_PATH_LEVELS: readonly string[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 export const hasOwnPaths = (level: string | null | undefined) => !!level && OWN_PATH_LEVELS.includes(level);
 /** La pantalla de rutes (/ruta) mostra les rutes de study_paths: predefinides, de classe i pròpies. */
 export const hasStudyPaths = (level: string | null | undefined) => hasPredefinedPaths(level) || hasOwnPaths(level);

@@ -16,11 +16,11 @@ const messageOf = (error: unknown) => (error as { message?: string } | null)?.me
 type Draft = { id?: string; level: string; title: string; description: string; resources: string[] };
 
 /**
- * Rutes d'aprenentatge que la docent crea per a una classe (de l'A1 al C1). L'alumnat de la classe
+ * Rutes d'aprenentatge que la docent crea per a una classe (de l'A1 al C2). L'alumnat de la classe
  * les veu en «La meua ruta», al costat de les rutes predefinides del seu nivell.
  */
 export function ClassPaths({ classId, className = 'Esta classe', classLevels, onSaved }: { classId: string; className?: string; classLevels: string[]; onSaved?: () => void }) {
-  // Les rutes són de l'A1 al C1: només els d'estos nivells que té la classe.
+  // Les rutes són de l'A1 al C2: només els d'estos nivells que té la classe.
   const { confirm } = useConfirm();
   const levels = PATH_LEVELS.filter(l => classLevels.includes(l.value));
   const [paths, setPaths] = useState<ClassPath[]>();
@@ -88,7 +88,7 @@ export function ClassPaths({ classId, className = 'Esta classe', classLevels, on
       <p className="mt-1 text-base opacity-60">
         {levels.length
           ? "Rutes per a l'alumnat d'esta classe: les veuen en la secció «Classe»."
-          : "Les rutes són per a classes d'A1 a C1."}
+          : "Les rutes són per a classes d'A1 a C2."}
       </p>
       {error && <p className="mt-3 rounded-2xl bg-coral/10 p-3 text-coral">{error}</p>}
 

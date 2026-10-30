@@ -99,7 +99,7 @@ teacherAgentRouter.post('/api/teacher/agent/path', requireAuth, requireTeacher, 
     if (!klass) return res.status(404).json({ error: 'La classe no existix' });
     const levels = (klass.levels as string[]).filter(l => (PATH_LEVELS as readonly string[]).includes(l));
     if (isLevel0Class(klass.levels) || !levels.length) {
-      return res.json({ status: 'error', message: "Les rutes són per a classes d'A1 a C1." } satisfies AgentPathResult);
+      return res.json({ status: 'error', message: "Les rutes són per a classes d'A1 a C2." } satisfies AgentPathResult);
     }
 
     const rejected = injectionMessage(req.userId, parsed.data.prompt);

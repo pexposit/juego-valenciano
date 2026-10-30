@@ -266,7 +266,7 @@ const MAX_PATH_STEPS = 40;
 const MAX_CANDIDATES = 250;
 const MAX_MISSING = 5;
 /** Nivells per als quals la docent pot crear rutes (com save_study_path a la BDD). */
-export const PATH_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'] as const;
+export const PATH_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 
 export type PathCandidate = { id: string; title: string; category: string; icon: string | null; own: boolean; level: string };
 

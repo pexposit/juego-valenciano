@@ -214,9 +214,10 @@ describe('generateActivity / generatePath (fetch simulat)', () => {
   });
 });
 
-describe('rutes de nivell C1', () => {
-  it('el C1 és un nivell on la docent pot crear rutes', () => {
+describe('rutes de nivell C1 i C2', () => {
+  it('el C1 i el C2 són nivells on la docent pot crear rutes', () => {
     expect(PATH_LEVELS).toContain('C1');
+    expect(PATH_LEVELS).toContain('C2');
   });
 
   it("carrega com a candidates les activitats de C1 d'una classe de C1", async () => {
@@ -234,9 +235,21 @@ describe('rutes de nivell C1', () => {
     expect(result.every(c => c.level === 'C1')).toBe(true);
   });
 
-  it('una classe de C2 sola no té rutes', async () => {
+  it("carrega com a candidates les activitats de C2 d'una classe de C2", async () => {
+    const levelsAsked: string[][] = [];
+    const client = { from: () => { const q: any = {
+      select: () => q, or: () => q,
+      limit: () => Promise.resolve({ data: [{ id: 'c', name: 'Activitat c', category: 'lexic_semantica', difficulty: 'C2', url: null, teacher_id: null, metadata: null, practice_exercises: [{ count: 5 }] }], error: null }),
+      in: (_: string, levels: string[]) => { levelsAsked.push(levels); return q; },
+    }; return q; } };
+    const result = await loadPathCandidates(client, 'teacher-1', ['C2'], 'registres');
+    expect(levelsAsked).toEqual([['C2']]);
+    expect(result.map(c => c.id)).toEqual(['c']);
+  });
+
+  it('una classe del Nivell 0 sola no té rutes', async () => {
     const client = { from: () => { throw new Error('no hauria de consultar la BDD'); } };
-    expect(await loadPathCandidates(client, 'teacher-1', ['C2'], 'x')).toEqual([]);
+    expect(await loadPathCandidates(client, 'teacher-1', ['nivell0'], 'x')).toEqual([]);
   });
 });
 

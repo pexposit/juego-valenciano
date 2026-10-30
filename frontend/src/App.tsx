@@ -416,7 +416,7 @@ export function App() {
           path={ROUTES.learningpath}
           element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
             <PageTransition>
-              {/* De l'A1 al C1: rutes de study_paths (predefinides en l'A2, el B1 i el B2, de classe i pròpies), amb un enllaç a la de la IA on n'hi ha; la resta de nivells, la ruta de la IA. */}
+              {/* De l'A1 al C2: rutes de study_paths (predefinides en l'A2, el B1 i el B2, de classe i pròpies), amb un enllaç a la de la IA on n'hi ha; la resta de nivells, la ruta de la IA. */}
               {hasStudyPaths(level) ? (
                 <StudyPaths
                   onOpen={resource => {
@@ -442,7 +442,7 @@ export function App() {
           path={`${ROUTES.learningpath}/:pathId`}
           element={kids ? <Navigate to={KIDS_ROUTES.home} replace /> : (
             <PageTransition>
-              {/* De l'A1 al C1: rutes de study_paths (predefinides en l'A2, el B1 i el B2, de classe i pròpies), amb un enllaç a la de la IA on n'hi ha; la resta de nivells, la ruta de la IA. */}
+              {/* De l'A1 al C2: rutes de study_paths (predefinides en l'A2, el B1 i el B2, de classe i pròpies), amb un enllaç a la de la IA on n'hi ha; la resta de nivells, la ruta de la IA. */}
               {hasStudyPaths(level) ? (
                 <StudyPaths
                   onOpen={resource => {
