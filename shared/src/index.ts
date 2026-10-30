@@ -35,7 +35,7 @@ export const levelBand = (level: string | null | undefined): 'A' | 'B' | 'C' | n
 export const PREDEFINED_PATH_LEVELS: readonly string[] = ['A2', 'B1', 'B2'];
 export const hasPredefinedPaths = (level: string | null | undefined) => !!level && PREDEFINED_PATH_LEVELS.includes(level);
 /** Nivells amb ruta personalitzada generada per la IA (learning_paths), a més de les predefinides. */
-export const AI_PATH_LEVELS: readonly string[] = ['B1', 'B2', 'C1'];
+export const AI_PATH_LEVELS: readonly string[] = ['B1', 'B2', 'C1', 'C2'];
 export const hasAiPath = (level: string | null | undefined) => !!level && AI_PATH_LEVELS.includes(level);
 /** Una ruta que el tutor del xat enllaça (la que l'aprenent ha demanat o la que li acaba de preparar). */
 export type StudyPathRef = { id: string; title: string; description: string };
