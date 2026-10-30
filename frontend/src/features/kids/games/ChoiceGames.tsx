@@ -141,7 +141,7 @@ export function BubbleGame({ round, onDone }: Props<'bubbles'>) {
             }}
             className={`kid-bubble ${wobble === b.key ? 'kid-nope' : ''}`}
             style={{
-              left: `${b.left}%`, width: b.size, height: b.size,
+              left: `${b.left}%`, width: `calc(${b.size}px * var(--kid-bubble-scale, 1))`, height: `calc(${b.size}px * var(--kid-bubble-scale, 1))`,
               animationDelay: `${b.delay}s`, animationDuration: `${b.duration}s`,
               background: `radial-gradient(circle at 30% 30%, #ffffffcc 0 12%, ${b.color.color} 13% 100%)`,
               borderColor: b.color.id === 'blanc' ? '#CBD5E1' : 'transparent',
