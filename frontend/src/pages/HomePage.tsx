@@ -21,7 +21,7 @@ export function HomePage({ setPage }: { setPage: (p: Page) => void }) {
   return (
     <main className="fade-up min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4">
+      <nav className="flex items-center justify-between px-6 py-4 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!py-2">
         <Logo />
         <button
           onClick={() => setPage('auth')}
@@ -31,8 +31,8 @@ export function HomePage({ setPage }: { setPage: (p: Page) => void }) {
         </button>
       </nav>
 
-      {/* Hero */}
-      <section className="mx-auto grid max-w-6xl flex-1 items-center gap-10 px-6 pb-16 pt-6 md:grid-cols-2 md:pt-16">
+      {/* Hero: en tauleta vertical el text i la imatge van apilats (una columna); en horitzontal o en pantalla ampla, en dues. */}
+      <section className="mx-auto grid max-w-6xl flex-1 items-center gap-10 px-6 pb-16 pt-6 md:pt-16 xl:grid-cols-2 [@media(orientation:landscape)_and_(min-width:768px)]:grid-cols-2 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!gap-8 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!pb-4 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!pt-2">
         <div className="hero-stagger">
           <span
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-extrabold"
@@ -40,26 +40,26 @@ export function HomePage({ setPage }: { setPage: (p: Page) => void }) {
           >
             ✨ Valencià per a la vida real
           </span>
-          <h1 className="mt-5 text-5xl font-black leading-[1.08] sm:text-6xl">
+          <h1 className="mt-5 text-5xl font-black leading-[1.08] sm:text-6xl [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:mt-3 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!text-5xl">
             Parla valencià.<br />
             <em className="not-italic" style={{ color: '#FF3B3B' }}>Viu-lo.</em>
           </h1>
-          <p className="mt-4 max-w-md text-lg leading-relaxed opacity-65">
+          <p className="mt-4 max-w-md text-lg leading-relaxed opacity-65 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:mt-2">
             Practica converses reals, al teu ritme, amb personatges que t'acompanyen cada dia pels carrers de València.
           </p>
           <button
             onClick={() => setPage('auth')}
             id="hero-cta"
-            className="btn-press mt-8 inline-flex items-center gap-2 rounded-2xl px-7 py-4 text-lg font-extrabold text-white shadow-lg transition hover:scale-[1.03] hover:shadow-xl active:scale-[0.98]"
+            className="btn-press mt-8 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!mt-4 inline-flex items-center gap-2 rounded-2xl px-7 py-4 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!py-3 text-lg font-extrabold text-white shadow-lg transition hover:scale-[1.03] hover:shadow-xl active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, #FF3B3B, #FF6B6B)' }}
           >
             Comença ara <ChevronRight size={20} />
           </button>
-          <p className="mt-4 text-sm opacity-50">🍊 Mercat · Bar · Oficina · Ajuntament · Escola · Turisme</p>
+          <p className="mt-4 text-sm opacity-50 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:mt-2">🍊 Mercat · Bar · Oficina · Ajuntament · Escola · Turisme</p>
         </div>
 
         {/* Hero image carousel — Comunitat Valenciana */}
-        <div className="relative h-[400px] overflow-hidden rounded-[44px] shadow-2xl">
+        <div className="relative h-[400px] [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!h-[330px] overflow-hidden rounded-[44px] shadow-2xl">
           {HOME_IMAGES.map((item, index) => (
             <img
               key={item.src}
@@ -109,7 +109,7 @@ export function HomePage({ setPage }: { setPage: (p: Page) => void }) {
 
       {/* Footer strip */}
       <div
-        className="py-6 text-center text-white font-black text-lg"
+        className="py-6 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!py-2 text-center text-white font-black text-lg"
         style={{ background: 'linear-gradient(90deg, #0F47AF, #0B3785)' }}
       >
         Aprén parlant, no memoritzant.

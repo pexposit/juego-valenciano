@@ -191,8 +191,8 @@ export function ScenarioSelect({
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-4xl px-5 pt-6 pb-20">
-        <h1 className="mb-6 text-4xl text-center font-black uppercase tracking-wider opacity-55">
+      <div className="relative z-10 mx-auto max-w-4xl px-5 pt-6 pb-20 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-none [@media(max-height:500px)_and_(orientation:landscape)]:px-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-3 [@media(max-height:500px)_and_(orientation:landscape)]:pb-6">
+        <h1 className="mb-6 text-4xl text-center font-black uppercase tracking-wider opacity-55 [@media(max-height:500px)_and_(orientation:landscape)]:mb-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-2xl">
           ACTIVITATS
         </h1>
 
@@ -210,14 +210,16 @@ export function ScenarioSelect({
           <p className="mt-10 text-center text-sm font-bold opacity-50">Encara no hi ha activitats per al teu nivell.</p>
         )}
 
+        {/* Mòbil en horitzontal: els tipus d'activitat (categories) a l'esquerra i el llistat d'activitats a la dreta. */}
+        <div className="[@media(max-height:500px)_and_(orientation:landscape)]:flex [@media(max-height:500px)_and_(orientation:landscape)]:items-start [@media(max-height:500px)_and_(orientation:landscape)]:gap-4">
         {/* Categories (resources.category), generades a partir de la BDD. */}
         {categories.length > 0 && (
-          <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-3 [@media(max-height:500px)_and_(orientation:landscape)]:sticky [@media(max-height:500px)_and_(orientation:landscape)]:top-2 [@media(max-height:500px)_and_(orientation:landscape)]:mb-0 [@media(max-height:500px)_and_(orientation:landscape)]:w-40 [@media(max-height:500px)_and_(orientation:landscape)]:shrink-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-col [@media(max-height:500px)_and_(orientation:landscape)]:flex-nowrap [@media(max-height:500px)_and_(orientation:landscape)]:items-stretch [@media(max-height:500px)_and_(orientation:landscape)]:justify-start [@media(max-height:500px)_and_(orientation:landscape)]:gap-2">
             {categories.map(c => (
               <button
                 key={c.id}
                 onClick={() => { setSelected(c.id); writeSelected(c.id); }}
-                className={`btn-press rounded-full px-4 py-2 text-xl font-black transition-colors ${
+                className={`btn-press rounded-full px-4 py-2 text-xl font-black transition-colors [@media(max-height:500px)_and_(orientation:landscape)]:rounded-2xl [@media(max-height:500px)_and_(orientation:landscape)]:px-3 [@media(max-height:500px)_and_(orientation:landscape)]:py-1.5 [@media(max-height:500px)_and_(orientation:landscape)]:text-left [@media(max-height:500px)_and_(orientation:landscape)]:text-base ${
                   current?.id === c.id ? 'bg-teal text-white' : 'bg-white text-teal hover:bg-teal/10'
                 }`}
               >
@@ -229,7 +231,7 @@ export function ScenarioSelect({
 
         {/* Seccions de la categoria triada (resources.type). */}
         {current && (
-          <div key={current.id} className="desk-grid grid gap-4">
+          <div key={current.id} className="desk-grid grid gap-4 [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1 [@media(max-height:500px)_and_(orientation:landscape)]:grid-cols-2">
             {current.sections.map(({ type, resources: list }) => {
               const [first] = list;
               // L'aparença de la secció ve de metadata; es pren del primer recurs que la tinga.
@@ -278,7 +280,8 @@ export function ScenarioSelect({
                       {list.length === 1 ? (
                         <>
                           <p className="text-sm font-bold">{first.name}</p>
-                          {first.content && <p className="text-sm opacity-70">{first.content}</p>}
+                          {/* La descripció (text gris) no es mostra en mòbil, per a no allargar les targetes. */}
+                          {first.content && <p className="text-sm opacity-70 max-sm:hidden [@media(max-height:500px)_and_(orientation:landscape)]:hidden">{first.content}</p>}
                         </>
                       ) : (
                         <ul className="list-disc pl-4 text-sm">
@@ -306,6 +309,7 @@ export function ScenarioSelect({
             })}
           </div>
         )}
+        </div>
       </div>
 
       {lesson && (

@@ -16,6 +16,9 @@ const INITIAL_GREETING = 'Bon dia! Com et puc ajudar hui?';
 const VOICE_MESSAGE_LABEL = '🎙️ Missatge de veu';
 const ERROR_REPLY = "No t'he sentit bé, pots repetir-ho?";
 const TTS_ATTEMPTS = 2;
+// El quadre d'objectius ja ve desplegat només en pantalla ampla amb ratolí; en mòbil i tauleta, plegat.
+const OBJECTIVES_OPEN_BY_DEFAULT = '(min-width: 1024px) and (min-height: 501px) and (pointer: fine)';
+const OBJECTIVES_HINT_MS = 8000;
 const ROUND_BUTTON = 'btn-press grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow backdrop-blur-sm hover:bg-white transition-colors';
 
 // Mida de lletra fluida segons la pantalla, com en el xat del tauler.
@@ -65,9 +68,16 @@ ${translation.initial_prompt}` : text;
   useThinkingSound(loading);
   const [history, setHistory] = useState<Msg[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  // En pantalles estretes el quadre tapa la bombolla del personatge: comença tancat.
-  const [showObjectives, setShowObjectives] = useState(() => window.matchMedia('(min-width: 768px) and (min-height: 501px)').matches);
+  // En mòbil i tauleta el quadre tapa la bombolla del personatge: comença tancat (només s'obri sol en escriptori).
+  const [showObjectives, setShowObjectives] = useState(() => window.matchMedia(OBJECTIVES_OPEN_BY_DEFAULT).matches);
   const hasObjectives = Boolean(summary) || objectives.length > 0;
+  // Si comença tancat, una bombolla assenyala el botó on es desplega; desapareix en obrir-lo, en tocar-la o als 8 s.
+  const [objectivesHint, setObjectivesHint] = useState(() => !window.matchMedia(OBJECTIVES_OPEN_BY_DEFAULT).matches);
+  useEffect(() => {
+    if (!objectivesHint) return;
+    const timer = window.setTimeout(() => setObjectivesHint(false), OBJECTIVES_HINT_MS);
+    return () => window.clearTimeout(timer);
+  }, [objectivesHint]);
   const [bubbleKey, setBubbleKey] = useState(0);
   const [audioSource, setAudioSource] = useState<string>();
   const [talking, setTalking] = useState(false); // [robot-avatar] true mentre sona l'àudio del personatge
@@ -273,7 +283,7 @@ ${translation.initial_prompt}` : text;
       {/* Nom i rol de l'actor, davall seu (resources.metadata.character). */}
       {actor && (
         <div
-          className="absolute left-1/2 top-[76%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:left-[72%] z-10 [@media(max-height:500px)_and_(orientation:landscape)]:hidden max-w-[90vw] -translate-x-1/2 truncate rounded-full px-3 py-1 text-[length:calc(var(--sc-font)*0.9)] font-black uppercase tracking-wide [@media(max-width:1440px)_and_(orientation:portrait)]:top-[71%] sm:px-4 sm:py-1.5 sm:tracking-wider text-slate-800 shadow-md backdrop-blur-sm"
+          className="absolute left-1/2 top-[76%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:left-[72%] z-10 [@media(max-height:500px)_and_(orientation:landscape)]:hidden max-w-[90vw] -translate-x-1/2 truncate rounded-full px-3 py-1 text-[length:calc(var(--sc-font)*0.9)] font-black uppercase tracking-wide [@media(max-width:1440px)_and_(orientation:portrait)]:top-[71%] [@media(max-width:639px)_and_(orientation:portrait)]:!top-[73%] sm:px-4 sm:py-1.5 sm:tracking-wider text-slate-800 shadow-md backdrop-blur-sm"
           style={{ background: 'rgba(255,255,255,0.92)' }}
         >
           {actor}
@@ -300,11 +310,11 @@ ${translation.initial_prompt}` : text;
         <div className="flex items-center gap-2">
           {hasObjectives && (
             <button
-              onClick={() => setShowObjectives(v => !v)}
+              onClick={() => { setShowObjectives(v => !v); setObjectivesHint(false); }}
               id="chat-objectives-btn"
               aria-label="Objectius"
               aria-pressed={showObjectives}
-              className={ROUND_BUTTON}
+              className={`${ROUND_BUTTON} ${objectivesHint && !showObjectives ? 'animate-pulse ring-4 ring-[#FCDD09]' : ''}`}
             >
               <Target size={19} />
             </button>
@@ -318,6 +328,19 @@ ${translation.initial_prompt}` : text;
           </button>
         </div>
       </header>
+
+      {/* Avís: assenyala el botó on es despleguen els objectius (la fletxa apunta al botó de la dreta de la barra). */}
+      {hasObjectives && objectivesHint && !showObjectives && (
+        <button
+          type="button"
+          onClick={() => setObjectivesHint(false)}
+          id="chat-objectives-hint"
+          className="absolute right-4 top-[4.75rem] z-20 w-max max-w-[16rem] rounded-2xl bg-[#0F47AF] px-3.5 py-2 text-left text-[length:calc(var(--sc-font)*0.85)] font-bold text-white shadow-lg"
+        >
+          <span aria-hidden="true" className="absolute -top-1.5 h-3 w-3 rotate-45 bg-[#0F47AF]" style={{ right: 62 }} />
+          Toca <Target size={14} className="inline -mt-0.5" aria-hidden="true" /> per veure els objectius
+        </button>
+      )}
 
       {/* Quadre d'objectius de l'escenari */}
       {hasObjectives && showObjectives && (
@@ -399,12 +422,14 @@ ${translation.initial_prompt}` : text;
       )}
 
       {/* Input */}
-      <div className="absolute inset-x-4 bottom-5 z-20">
-        <VoiceInput onSend={submit} disabled={loading} voiceOnly={isVoiceOnlyCategory(category)} />
+      <div className="absolute inset-x-4 bottom-5 z-20 [@media(max-height:500px)_and_(orientation:landscape)]:bottom-3 [@media(max-height:500px)_and_(orientation:landscape)]:flex [@media(max-height:500px)_and_(orientation:landscape)]:items-center [@media(max-height:500px)_and_(orientation:landscape)]:gap-3">
+        <div className="min-w-0 flex-1">
+          <VoiceInput onSend={submit} disabled={loading} voiceOnly={isVoiceOnlyCategory(category)} />
+        </div>
         <button
           onClick={handleEnd}
           id="chat-end-btn"
-          className="btn-press mx-auto mt-3 block rounded-full bg-white/80 px-6 py-2.5 text-lg font-extrabold backdrop-blur-sm hover:bg-white transition-colors"
+          className="btn-press mx-auto mt-3 block rounded-full bg-white/80 px-6 py-2.5 text-lg font-extrabold backdrop-blur-sm hover:bg-white transition-colors max-sm:px-5 max-sm:py-2 max-sm:text-sm [@media(max-height:500px)_and_(orientation:landscape)]:mt-0 [@media(max-height:500px)_and_(orientation:landscape)]:mx-0 [@media(max-height:500px)_and_(orientation:landscape)]:shrink-0 [@media(max-height:500px)_and_(orientation:landscape)]:px-5 [@media(max-height:500px)_and_(orientation:landscape)]:py-2 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm"
         >
           Acabar conversa
         </button>

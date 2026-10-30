@@ -7,8 +7,9 @@
 .kids-world {
   --island: #FFE8BA;
   position: relative;
-  min-height: 100vh;
-  min-height: 100dvh;
+  /* El cos ja reserva espai per a la barra institucional (--app-footer): sense restar-lo, la pantalla sempre feia scroll. */
+  min-height: calc(100vh - var(--app-footer, 0px));
+  min-height: calc(100dvh - var(--app-footer, 0px));
   overflow: hidden;
   background: linear-gradient(180deg, color-mix(in srgb, var(--island) 55%, #fff) 0%, #FFF9ED 100%);
   touch-action: manipulation;
@@ -187,6 +188,8 @@
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
+/* Mòbil (vertical, i horitzontal amb poca alçada): bambolles més menudes (la mida ve en línia, de 84 a 112 px). */
+@media (max-width: 639px), (orientation: landscape) and (max-height: 500px) { .kid-bubble-field { --kid-bubble-scale: .7; } }
 
 /* Comptar caramels */
 .kid-mascot { font-size: clamp(110px, 24vw, 170px); line-height: 1; animation: kidBob 2.4s ease-in-out infinite; }
@@ -616,3 +619,104 @@
 .kid-chant-line.now .kid-chant-emoji { animation: kidTalk .35s ease-in-out infinite alternate; }
 .kid-chant-emoji { flex: none; font-size: 40px; }
 @keyframes kidDraw { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
+
+/* ── Mòbil en horitzontal: caixes i icones dels exercicis més menudes ─────
+   Amb ~375 px d'alçada no hi caben targetes de 200 px ni emojis de 110 px: es redueix tot per a evitar el scroll.
+   Al final del fitxer perquè guanye a les regles generals (mateixa especificitat). */
+@media (orientation: landscape) and (max-height: 500px) {
+  .kid-stage { gap: 8px; padding: 2px 16px 8px; }
+  .kid-speaker { width: 48px; height: 48px; }
+  .kid-speaker svg { width: 22px; height: 22px; }
+  .kid-cards { gap: 8px; }
+  .kid-card-wrap, .kid-card { max-width: 92px; }
+  .kid-card { border-width: 3px; border-radius: 18px; box-shadow: 0 4px 0 #0000001a, 0 6px 12px #2637471f; }
+  .kid-card-emoji { font-size: 40px; }
+  .kid-card-letter { font-size: 44px; }
+  .kid-picture { font-size: 48px; }
+  .kid-hear { width: 30px; height: 30px; top: -6px; right: -6px; border-width: 2px; }
+  .kid-hear svg { width: 15px; height: 15px; }
+  .kid-memory { max-width: 340px; gap: 6px; }
+  .kid-memory-8 { max-width: 380px; }
+  .kid-memory-back { font-size: 28px; border-width: 3px; }
+  .kid-memory-front { border-width: 3px; }
+  .kid-memory-front .kid-card-emoji { font-size: 30px; }
+  .kid-memory-front .kid-card-letter { font-size: 32px; }
+  .kid-candy { width: 44px; height: 44px; font-size: 26px; border-radius: 14px; }
+  .kid-count-row { gap: 8px; }
+  .kid-mascot { font-size: 60px; }
+  .kid-monster-face { font-size: 56px; }
+  .kid-dot { font-size: 20px; }
+  .kid-stage-stars { font-size: 44px; }
+  .kid-sort-bin-label .kid-card-emoji { font-size: 34px; }
+}
+
+/* ── Lliçons de xiquets, mòbil en horitzontal: caixes i emojis més menuts ──
+   Completa el bloc d'adalt (que serveix a les illes) amb els elements propis de les lliçons. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .kid-lesson-page { gap: 10px; padding: 2px 16px 12px; }
+  .kid-lesson-hero { font-size: 72px; margin-top: 2px; }
+  .kid-lesson-mascot { width: 52px; height: 52px; font-size: 32px; }
+  .kid-lesson-bubble p { margin-top: 2px; padding: 8px 14px; border-radius: 18px; font-size: 16px; }
+  .kid-lesson-bubble p::before { top: 14px; }
+  .kid-lesson-caption { margin-bottom: 2px; font-size: 14px; }
+  /* Pictogrames (targetes de «Escolta i repeteix», resum...) */
+  .kid-picto-grid { gap: 8px; }
+  .kid-picto { width: 96px; gap: 2px; padding: 6px 4px; border-width: 3px; border-radius: 20px; box-shadow: 0 4px 0 #0000001a, 0 6px 12px #2637471a; }
+  .kid-picto-lg { width: 112px; }
+  .kid-picto .kid-card-emoji { font-size: 40px; }
+  .kid-picto-lg .kid-card-emoji { font-size: 48px; }
+  .kid-picto .kid-face-glyph { font-size: 34px; }
+  .kid-picto-star { top: -8px; right: -6px; font-size: 22px; }
+  .kid-label { font-size: 14px; }
+  .kid-summary .kid-picto { width: 84px; }
+  .kid-summary .kid-picto .kid-card-emoji { font-size: 32px; }
+  .kid-pair-arrow { font-size: 28px; }
+  /* Barreja de colors i pintar */
+  .kid-mix { max-width: 400px; gap: 6px 12px; }
+  .kid-mix-plus { font-size: 34px; }
+  .kid-pot { width: 100px; padding: 8px 6px 6px; border-radius: 22px; }
+  .kid-palette { gap: 6px; padding: 8px 10px; }
+  .kid-palette-color { width: 36px; height: 36px; border-width: 3px; }
+  /* Escolta i uneix */
+  .kid-lines { max-width: 520px; gap: 0 clamp(20px, 6vw, 60px); }
+  .kid-lines-col { gap: 6px; }
+  .kid-name-chip { padding: 6px 8px; border-width: 3px; border-radius: 14px; font-size: 16px; }
+  .kid-person { max-width: 96px; }
+  .kid-person .kid-face-stack, .kid-yesno-picture .kid-face-stack { font-size: 24px; }
+  /* Sí o no */
+  .kid-yesno-picture { width: 112px; }
+  .kid-yesno-picture .kid-card-emoji { font-size: 60px; }
+  .kid-yesno { gap: 20px; }
+  .kid-yesno-btn { width: 68px; height: 68px; box-shadow: 0 5px 0 #0000002a; }
+  .kid-yesno-btn svg { width: 32px; height: 32px; }
+  /* Escolta i col·loca / arrossegar */
+  .kid-place { max-width: 520px; max-height: 44vh; }
+  .kid-place-zone-emoji { font-size: 24px; }
+  .kid-place-zone-label { font-size: 11px; }
+  .kid-place-zone-items { font-size: 26px; }
+  .kid-scene { height: min(44vh, 240px); }
+  .kid-scene-monstre { height: min(46vh, 260px); max-width: 260px; }
+  .kid-zone { width: 60px; height: 60px; border-width: 3px; }
+  .kid-zone-big, .kid-scene-casa .kid-zone-big { width: 112px; height: 112px; }
+  .kid-zone-emoji, .kid-scene-casa .kid-zone-emoji { font-size: 56px; }
+  .kid-placed { font-size: 38px; }
+  .kid-draggable { width: 64px; height: 64px; font-size: 38px; border-radius: 18px; }
+  .kid-sticker { font-size: 44px; }
+  /* Lletreja */
+  .kid-spell-picture { width: 112px; }
+  .kid-spell-picture .kid-face-glyph { font-size: 32px; }
+  .kid-spell-slots { gap: 6px; }
+  .kid-spell-slots span { width: 38px; height: 46px; border-radius: 12px; border-bottom-width: 4px; font-size: 24px; }
+  .kid-spell-tiles { gap: 8px; }
+  /* Classificar */
+  .kid-sort-current { min-height: 96px; }
+  .kid-sort-item { width: 96px; }
+  .kid-sort-bins { gap: 8px; }
+  .kid-sort-bin { min-height: 110px; gap: 4px; padding: 6px 6px; }
+  .kid-sort-bin-label { max-width: 72px; }
+  .kid-sort-bin-items { font-size: 20px; }
+  .kid-trace-word { font-size: 56px; }
+  .kid-cromo-emoji { font-size: 44px; }
+  .kid-spell-tile { width: 44px; height: 44px; border-radius: 14px; font-size: 24px; box-shadow: 0 4px 0 #D97706; }
+  .kid-drag-ghost { font-size: 50px; }
+}
