@@ -50,10 +50,10 @@ const pointsOf = (scoring: ExamScoring, byExercise: ExerciseScore[]) =>
   Math.round(byExercise.reduce((sum, e) => sum + e.correct * pointsPerCorrect(scoring, e.n), 0));
 const passes = (scoring: ExamScoring, points: number) => points >= scoring.pass_points;
 
-// Exercicis amb rúbrica d'avaluació amb IA: el formulari de l'A1 i les redaccions de l'A2, el B1, el B2 i el C1.
+// Exercicis amb rúbrica d'avaluació amb IA: el formulari de l'A1 i les redaccions de l'A2, el B1, el B2, el C1 i el C2.
 type EvaluableExercise = Extract<ExamExercise, { kind: 'form' | 'writing' }>;
 const evaluable = (level: string, e: ExamExercise): e is EvaluableExercise =>
-  (level === 'A1' && e.kind === 'form') || (['A2', 'B1', 'B2', 'C1'].includes(level) && e.kind === 'writing');
+  (level === 'A1' && e.kind === 'form') || (['A2', 'B1', 'B2', 'C1', 'C2'].includes(level) && e.kind === 'writing');
 // El text de cada redacció es guarda a `form` amb esta clau (vegeu ExerciseBody).
 const writingKey = (n: number) => `writing-${n}`;
 const evaluationBody = (e: EvaluableExercise, form: Record<string, string>) =>
@@ -259,8 +259,8 @@ export function Exam({ exam: resource, onBack }: { exam: ExamResource; onBack: (
           />
         )}
 
-        {/* Resultat de l'àrea d'expressió escrita del B1, el B2 i el C1: mitjana de les dos redaccions avaluades amb IA */}
-        {['B1', 'B2', 'C1'].includes(exam.level) && (() => {
+        {/* Resultat de l'àrea d'expressió escrita del B1, el B2, el C1 i el C2: mitjana de les dos redaccions avaluades amb IA */}
+        {['B1', 'B2', 'C1', 'C2'].includes(exam.level) && (() => {
           const writings = area.exercises.filter(e => evaluable(exam.level, e));
           const marks = writings.map(e => progress.evaluations[e.n]).flatMap(ev => isB1OrB2Writing(ev) ? [ev.mitjana_base_10] : []);
           if (writings.length < 2 || marks.length < writings.length) return null;

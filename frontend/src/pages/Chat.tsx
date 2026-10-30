@@ -273,7 +273,7 @@ ${translation.initial_prompt}` : text;
       {/* Nom i rol de l'actor, davall seu (resources.metadata.character). */}
       {actor && (
         <div
-          className="absolute left-1/2 top-[76%] z-10 [@media(max-height:500px)_and_(orientation:landscape)]:hidden max-w-[90vw] -translate-x-1/2 truncate rounded-full px-3 py-1 text-[length:calc(var(--sc-font)*0.9)] font-black uppercase tracking-wide [@media(max-width:1023px)_and_(orientation:portrait)]:top-[68%] sm:px-4 sm:py-1.5 sm:tracking-wider text-slate-800 shadow-md backdrop-blur-sm"
+          className="absolute left-1/2 top-[76%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:left-[72%] z-10 [@media(max-height:500px)_and_(orientation:landscape)]:hidden max-w-[90vw] -translate-x-1/2 truncate rounded-full px-3 py-1 text-[length:calc(var(--sc-font)*0.9)] font-black uppercase tracking-wide [@media(max-width:1440px)_and_(orientation:portrait)]:top-[71%] sm:px-4 sm:py-1.5 sm:tracking-wider text-slate-800 shadow-md backdrop-blur-sm"
           style={{ background: 'rgba(255,255,255,0.92)' }}
         >
           {actor}
@@ -353,8 +353,8 @@ ${translation.initial_prompt}` : text;
       )}
 
       {/* Character bubble with entrance animation */}
-      <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] z-10 max-w-[min(60%,320px)] sm:max-w-[min(72%,440px)] lg:max-w-[min(55%,460px)] 2xl:max-w-[min(72%,600px)] rounded-3xl bg-white p-4 sm:p-5 lg:p-7 font-bold shadow-xl text-[length:calc(var(--sc-font)*1.15)] [@media(max-height:500px)_and_(orientation:landscape)]:left-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:p-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm">
-        <div className="[@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-10.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:overflow-y-auto">
+      <section key={`char-${bubbleKey}`} className="bubble-enter bubble bubble-to-avatar absolute left-[8%] top-[17%] [@media(max-width:639px)_and_(orientation:portrait)]:top-[10%] [@media(min-width:640px)_and_(max-width:1440px)_and_(orientation:portrait)]:top-auto [@media(min-width:640px)_and_(max-width:1440px)_and_(orientation:portrait)]:bottom-[66%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:left-[4%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:top-[12%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:max-w-[44%] z-10 max-w-[min(60%,320px)] sm:max-w-[min(72%,440px)] lg:max-w-[min(55%,460px)] 2xl:max-w-[min(72%,600px)] rounded-3xl bg-white p-4 sm:p-5 lg:p-7 font-bold shadow-xl text-[length:calc(var(--sc-font)*1.15)] [@media(max-height:500px)_and_(orientation:landscape)]:left-3 [@media(max-height:500px)_and_(orientation:landscape)]:top-14 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:p-3 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm">
+        <div className="[@media(max-width:1440px)_and_(orientation:portrait)]:max-h-[calc(24dvh-2rem)] [@media(max-width:1440px)_and_(orientation:portrait)]:overflow-y-auto [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:max-h-[calc(88dvh-13.5rem)] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:overflow-y-auto [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-10.5rem)] [@media(max-height:500px)_and_(orientation:landscape)]:overflow-y-auto">
         <p className="leading-relaxed">
           {loading ? <ThinkingIndicator className="opacity-60" /> : characterText}
         </p>
@@ -390,7 +390,7 @@ ${translation.initial_prompt}` : text;
       {user && (
         <div
           key={`user-${bubbleKey}`}
-          className="user-bubble-enter user-bubble absolute bottom-48 lg:bottom-52 right-5 z-10 max-w-[70%] [@media(max-height:500px)_and_(orientation:landscape)]:bottom-24 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[40%] [@media(max-height:500px)_and_(orientation:landscape)]:p-2 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm rounded-3xl p-4 lg:p-5 text-[length:calc(var(--sc-font)*1.05)] font-bold text-white shadow-lg"
+          className="user-bubble-enter user-bubble absolute bottom-48 lg:bottom-52 right-5 [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:left-5 [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:right-auto [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:max-w-[44%] z-10 max-w-[70%] [@media(max-height:500px)_and_(orientation:landscape)]:bottom-24 [@media(max-height:500px)_and_(orientation:landscape)]:max-w-[40%] [@media(max-height:500px)_and_(orientation:landscape)]:p-2 [@media(max-height:500px)_and_(orientation:landscape)]:text-sm rounded-3xl p-4 lg:p-5 text-[length:calc(var(--sc-font)*1.05)] font-bold text-white shadow-lg"
           style={{ background: '#0F47AF' }}
         >
           <p>{user}</p>

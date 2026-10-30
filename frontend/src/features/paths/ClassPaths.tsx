@@ -7,6 +7,7 @@ import { fetchResources } from '../../lib/api';
 import type { Resource } from '../../lib/types';
 import { deleteClassPath, loadClassPaths, PATH_LEVELS, saveClassPath, type ClassPath } from './teacherPaths';
 
+import { useConfirm } from '../../components/ConfirmDialog';
 const FIELD = 'w-full rounded-2xl border-2 border-gray-100 p-3 text-lg outline-none focus:border-[#0F47AF] transition-colors';
 const MAX_STEPS = 40;
 const levelLabel = (level: string) => PATH_LEVELS.find(l => l.value === level)?.label ?? level;
@@ -20,6 +21,7 @@ type Draft = { id?: string; level: string; title: string; description: string; r
  */
 export function ClassPaths({ classId, className = 'Esta classe', classLevels, onSaved }: { classId: string; className?: string; classLevels: string[]; onSaved?: () => void }) {
   // Les rutes són de l'A1 al C1: només els d'estos nivells que té la classe.
+  const { confirm } = useConfirm();
   const levels = PATH_LEVELS.filter(l => classLevels.includes(l.value));
   const [paths, setPaths] = useState<ClassPath[]>();
   const [catalog, setCatalog] = useState<Resource[]>([]);
@@ -44,7 +46,7 @@ export function ClassPaths({ classId, className = 'Esta classe', classLevels, on
   const byId = useMemo(() => new Map(catalog.map(r => [r.id, r])), [catalog]);
 
   const remove = async (path: ClassPath) => {
-    if (!confirm(`Segur que vols esborrar la ruta «${path.title}»?`)) return;
+    if (!(await confirm({ title: 'Esborrar la ruta?', message: `Segur que vols esborrar la ruta «${path.title}»?`, confirmLabel: 'Esborra', tone: 'danger' }))) return;
     try {
       await deleteClassPath(path.id);
       setPaths(list => list?.filter(p => p.id !== path.id));
@@ -166,6 +168,7 @@ function PathEditor({ draft: initial, levels, classLevels, catalog, byId, onCanc
   onCancel: () => void;
   onSave: (draft: Draft) => Promise<void>;
 }) {
+  const { confirm } = useConfirm();
   const [draft, setDraft] = useState(initial);
   const [saving, setSaving] = useState(false);
   const set = (patch: Partial<Draft>) => setDraft(d => ({ ...d, ...patch }));
@@ -186,9 +189,9 @@ function PathEditor({ draft: initial, levels, classLevels, catalog, byId, onCanc
     set({ resources: list });
   };
 
-  const changeLevel = (level: string) => {
+  const changeLevel = async (level: string) => {
     if (level === draft.level) return;
-    if (draft.resources.length && !confirm("En canviar de nivell es buidarà la llista d'activitats. Vols continuar?")) return;
+    if (draft.resources.length && !(await confirm({ title: 'Canviar de nivell?', message: "En canviar de nivell es buidarà la llista d'activitats. Vols continuar?", confirmLabel: 'Continua' }))) return;
     set({ level, resources: [] });
   };
 

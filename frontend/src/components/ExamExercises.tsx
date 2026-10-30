@@ -336,7 +336,7 @@ export function WritingExercise({
   onChoose?: (key: string) => void;
   value: string;
   onChange: (value: string) => void;
-  level?: string; // el C1 admet textos més llargs
+  level?: string; // el C1 i el C2 admeten textos més llargs
 }) {
   const maxChars = writingMaxChars(level);
   const count = countWords(value);
@@ -586,12 +586,15 @@ export const B1_PASS_MARK = 5;
 export const B2_PASS_MARK = 4;
 // En el C1 val un 35 %: cal el 50 % de l'àrea (5 de 10), amb la mitjana de les dos redaccions.
 export const C1_PASS_MARK = 5;
+// En el C2 val un 45 %: també cal el 50 % de l'àrea (5 de 10), amb la mitjana de les dos redaccions.
+export const C2_PASS_MARK = 5;
 export const passMarkOf = (evaluation: B1WritingEvaluation | C1WritingEvaluation) =>
-  ({ b1_redaccio: B1_PASS_MARK, b2_redaccio: B2_PASS_MARK, c1_redaccio: C1_PASS_MARK })[evaluation.rubrica];
-export const writingPassMark = (level: string) => (level === 'B1' ? B1_PASS_MARK : level === 'B2' ? B2_PASS_MARK : C1_PASS_MARK);
-// Redacció del B1, el B2 o el C1: totes porten la nota sobre 10 (`mitjana_base_10`).
+  ({ b1_redaccio: B1_PASS_MARK, b2_redaccio: B2_PASS_MARK, c1_redaccio: C1_PASS_MARK, c2_redaccio: C2_PASS_MARK })[evaluation.rubrica];
+export const writingPassMark = (level: string) => (level === 'B1' ? B1_PASS_MARK : level === 'B2' ? B2_PASS_MARK : level === 'C2' ? C2_PASS_MARK : C1_PASS_MARK);
+// Redacció del B1, el B2, el C1 o el C2: totes porten la nota sobre 10 (`mitjana_base_10`).
 export const isB1OrB2Writing = (evaluation?: WritingEvaluation): evaluation is B1WritingEvaluation | C1WritingEvaluation =>
-  evaluation?.rubrica === 'b1_redaccio' || evaluation?.rubrica === 'b2_redaccio' || evaluation?.rubrica === 'c1_redaccio';
+  evaluation?.rubrica === 'b1_redaccio' || evaluation?.rubrica === 'b2_redaccio' || evaluation?.rubrica === 'c1_redaccio'
+  || evaluation?.rubrica === 'c2_redaccio';
 
 // Botó "Avaluar" i resultat de l'avaluació amb IA d'un exercici d'expressió escrita.
 export function WritingEvaluationPanel({
@@ -621,7 +624,7 @@ export function WritingEvaluationPanel({
       {error && <p className="rounded-2xl bg-coral/10 p-4 text-sm font-bold text-coral">{error}</p>}
 
       {evaluation && !loading && (
-        evaluation.rubrica === 'c1_redaccio' ? <C1Result evaluation={evaluation} />
+        evaluation.rubrica === 'c1_redaccio' || evaluation.rubrica === 'c2_redaccio' ? <C1Result evaluation={evaluation} />
           : evaluation.rubrica === 'b1_redaccio' || evaluation.rubrica === 'b2_redaccio' ? <B1Result evaluation={evaluation} />
           : evaluation.rubrica === 'a2_redaccio' ? <A2Result evaluation={evaluation} />
           : <A1Result evaluation={evaluation as A1WritingEvaluation} />
@@ -786,7 +789,7 @@ const C1_PROBLEMS: Record<string, string> = {
   M: 'Extensió fora del marge', N: 'Tasca sense acabar', O: 'Tasca en blanc', P: 'Text il·legible', Q: 'Text en majúscules',
 };
 
-// Redacció del C1: rúbrica oficial amb quatre aspectes en bandes A-E (total sobre 50).
+// Redacció del C1 o del C2: rúbrica oficial amb quatre aspectes en bandes A-E (total sobre 50).
 function C1Result({ evaluation }: { evaluation: C1WritingEvaluation }) {
   const mark = evaluation.mitjana_base_10;
   const passMark = passMarkOf(evaluation);

@@ -14,6 +14,7 @@ import { ThinkingIndicator } from './ThinkingIndicator';
 import { ALL_LESSONS } from '../features/kids/lessons';
 import type { Mood, PracticeOffer, RouteOffer, TutorExercise } from '../lib/types';
 
+import { useConfirm } from './ConfirmDialog';
 // `transcription`: en un missatge de veu, el que ha entés el model; es mostra davall l'etiqueta del missatge.
 type Message = AssistantConversation['messages'][number] & { transcription?: string };
 
@@ -30,7 +31,7 @@ const TTS_ATTEMPTS = 2;
 const VOICE_SAMPLE = 'Hola! Ara parle amb esta veu.';
 
 // Mida del professor segons l'amplada de la pantalla: més xicotet en mòbils i tauletes.
-// En horitzontal en un mòbil (poca altura) el professor va a l'esquerra i ha de cabre en l'altura.
+// En apaïsat en un mòbil (poca altura) el professor va a l'esquerra i ha de cabre en l'altura.
 const isShortLandscape = () => window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
 // En ordenador (≥ 1024 px) el professor creix amb la finestra, tant en amplada com en altura (entre 280 i 560 px): en un
 // monitor gran no es queda xicotet i en un portàtil baix no tapa el xat. Reserva la capçalera i la barra del peu.
@@ -53,8 +54,14 @@ const adaptiveAvatarSize = (width: number, height: number) => {
   const size = Math.min(width * ofWidth, availableHeight * 0.85);
   return Math.round(Math.max(min, Math.min(max, size)));
 };
+// Mòbil i tauleta en vertical (< 1024 px d'amplada i més alts que amples): el professor va dalt i el xat davall, així que pot ser
+// més gran (fins a 180 px en mòbil i 260 en tauleta) sense menjar-se l'altura del xat (com a molt un quart de la pantalla).
+// Apaïsat (poca altura): al costat del xat, que ha de cabre en l'altura.
+const isStackedLayout = (width: number, height: number) => width < DESKTOP_MIN_WIDTH && height >= width;
 const avatarSizeFor = (width: number, height = window.innerHeight) =>
-  isShortLandscape() ? Math.min(200, height - 160) : adaptiveAvatarSize(width, height);
+  isShortLandscape() ? Math.min(200, height - 160)
+    : isStackedLayout(width, height) ? Math.round(Math.max(96, Math.min(width < 640 ? 180 : 260, width * 0.42, height * 0.25)))
+    : adaptiveAvatarSize(width, height);
 
 function useAvatarSize() {
   const [size, setSize] = useState(() => avatarSizeFor(window.innerWidth));
@@ -74,6 +81,7 @@ function useAvatarSize() {
 // Reutilitza el xat de les activitats (/api/turn): els missatges es guarden en este navegador (no
 // al servidor) i la conversa continua entre visites. El professor també respon en veu alta.
 export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
+  const { confirm } = useConfirm();
   const [messages, setMessages] = useState<Message[]>([]);
   const [ready, setReady] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
@@ -175,7 +183,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   // Tanca la conversa i en comença una de nova: el professor torna a saludar.
   const restart = async () => {
     if (loading || !ready) return;
-    if (!window.confirm('Vols començar una conversa nova amb el professor?')) return;
+    if (!(await confirm({ title: 'Començar una conversa nova?', message: 'Vols començar una conversa nova amb el professor?', confirmLabel: 'Sí, començar', icon: RotateCcw }))) return;
     stopAudio();
     setLoading(true);
     try {
@@ -352,7 +360,7 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
   };
 
   return (
-    <div className="relative z-20 flex min-h-0 flex-1 items-center gap-4 px-5 lg:justify-center lg:gap-8pb-6 pt-4 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
+    <div className="relative z-20 flex min-h-0 flex-1 flex-col items-center gap-2 px-3 pb-3 pt-12 sm:gap-4 sm:px-5 lg:flex-row lg:pt-4 [@media(min-width:640px)_and_(orientation:landscape)]:flex-row [@media(min-width:640px)_and_(orientation:landscape)]:pt-4 lg:justify-center lg:gap-8 lg:pb-6 [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:gap-2 [@media(max-height:500px)_and_(orientation:landscape)]:flex-row [@media(max-height:500px)_and_(orientation:landscape)]:gap-5 [@media(max-height:500px)_and_(orientation:landscape)]:pb-3 [@media(max-height:500px)_and_(orientation:landscape)]:pt-2">
       {/* Tocant el professor ix el menú per a triar-li la veu. */}
       <div ref={robotRef} className="relative shrink-0" title="Toca'm per a canviar-me la veu">
         {isRobotAvatarEnabled('dashboard')
@@ -369,11 +377,11 @@ export function ChildAssistant({ showHelp }: { showHelp: boolean }) {
         {voiceMenuOpen && <RobotVoiceMenu anchor={robotRef} voice={voice} onChange={changeVoice} onClose={closeVoiceMenu} />}
       </div>
 
-      <section className="flex min-h-0 w-full max-w-4xl flex-1 flex-col lg:self-stretch lg:pb-4 lg:max-w-[clamp(40rem,62vw,90rem)] [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor" style={CHAT_FONT_STYLE}>
+      <section className="flex min-h-0 min-w-0 w-full max-w-4xl flex-1 flex-col lg:self-stretch lg:pb-4 lg:max-w-[clamp(40rem,62vw,90rem)] [@media(max-height:500px)_and_(orientation:landscape)]:min-w-0 [@media(max-height:500px)_and_(orientation:landscape)]:flex-1" aria-label="Xat amb el professor" style={CHAT_FONT_STYLE}>
         <div
           ref={listRef}
           aria-live="polite"
-          className="flex max-h-[36rem] min-h-24 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white lg:max-h-none lg:min-h-0 lg:p-5[@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-var(--app-footer,0px)-14rem)]"
+          className="flex max-h-[36rem] [@media(min-width:640px)_and_(max-width:1023px)_and_(orientation:portrait)]:max-h-none min-h-24 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/85 p-4 shadow-lg ring-2 ring-white lg:max-h-none lg:min-h-0 lg:p-5 [@media(max-height:500px)_and_(orientation:landscape)]:max-h-[calc(100dvh-var(--app-footer,0px)-14rem)]"
         >
           {openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold text-orange">No hem pogut connectar amb el professor. Torna-ho a provar més tard.</p>}
           {!ready && !openFailed && <p className="text-center text-[length:var(--chat-font,1.125rem)] font-bold opacity-60">Un moment...</p>}
