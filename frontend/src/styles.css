@@ -8,7 +8,8 @@
 /* Lletra més menuda en tauletes i mòbils: tot el text i els espais en rem s'escalen amb l'arrel. */
 html { -webkit-text-size-adjust: 100%; }
 @media (max-width: 1023px) { html { font-size: 15px; } }
-@media (max-width: 639px) { html { font-size: 13.5px; } }
+/* Mòbil (vertical, i horitzontal amb poca alçada): lletra una mica més menuda perquè càpiga més a la pantalla. */
+@media (max-width: 639px), (orientation: landscape) and (max-height: 500px) { html { font-size: 12.5px; } }
 
 /* Barra institucional fixa al peu (InstitutionalBar): App.tsx posa --app-footer a --footer-h quan es mostra.
    En mòbil i tauleta (vertical i horitzontal) la barra és molt més baixa per a guanyar alçada. */
@@ -617,4 +618,55 @@ button { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lesson-step { animation: none; }
+}
+
+
+/* ── Pantalla d'accés (AuthPage) ─────────────────────────────────────────
+   Mòbil i tauleta: l'inici de sessió ocupa exactament la pantalla, sense scroll (alçada = pantalla menys la barra
+   institucional). Només en mòbil en horitzontal es permet el scroll, i allí la targeta passa a dues columnes.
+   Crear compte (molts camps) fa scroll sempre que cal: no porta .auth-fit. */
+@media (max-width: 1023px), (orientation: landscape) and (pointer: coarse) {
+  .auth-main.auth-fit { height: calc(100dvh - var(--app-footer, 0px)); min-height: 0; overflow: hidden; }
+}
+/* Pantalles baixes (mòbil vertical, tauleta xicoteta): espais més ajustats perquè càpiga sense scroll. */
+@media (max-height: 800px) and ((max-width: 1023px) or (pointer: coarse)) {
+  .auth-main { padding: 12px; }
+  .auth-main .auth-card { padding: 20px 24px; }
+  .auth-card .auth-intro > div:first-child { margin-bottom: 8px; }
+  .auth-card .auth-head { margin-bottom: 12px; }
+  .auth-card .auth-emoji { display: none; }
+  .auth-card input, .auth-card select { padding: 10px 12px; }
+  .auth-card .auth-actions > button { padding-top: 10px; padding-bottom: 10px; }
+  .auth-card .auth-class { margin-top: 12px; padding-top: 10px; }
+}
+@media (max-height: 600px) and (orientation: portrait) {
+  .auth-card .auth-sub, .auth-card .auth-class p { display: none; }
+}
+/* Mòbil en horitzontal: la targeta en dues columnes (presentació a l'esquerra, formulari a la dreta). */
+@media (orientation: landscape) and (max-height: 500px) {
+  .auth-main.auth-fit { height: auto; min-height: calc(100dvh - var(--app-footer, 0px)); overflow: visible; }
+  .auth-main { padding: 12px; }
+  .auth-main .auth-card { display: flex; align-items: center; gap: 28px; max-width: 54rem; padding: 18px 28px; border-radius: 28px; }
+  .auth-card .auth-intro { flex: 0 0 34%; }
+  .auth-card .auth-head { margin-bottom: 0; }
+  .auth-card .auth-emoji { display: inline; font-size: 1.75rem; }
+  .auth-card .auth-form { flex: 1 1 0; min-width: 0; }
+  .auth-card .auth-fields { display: flex; gap: 12px; }
+  .auth-card .auth-fields .auth-field { flex: 1 1 0; min-width: 0; margin-top: 0; }
+  .auth-card .auth-actions { display: flex; gap: 12px; margin-top: 14px; }
+  .auth-card .auth-actions > button { flex: 1 1 0; margin-top: 0; padding-top: 10px; padding-bottom: 10px; }
+  .auth-card .auth-class { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; text-align: left; }
+  .auth-card .auth-class p { white-space: nowrap; }
+  .auth-card .auth-class button { width: auto; flex: 1 1 0; margin-top: 0; padding-top: 10px; padding-bottom: 10px; }
+}
+
+/* Cabecera de les pantalles (.classroom-header): més baixa en mòbil i tauleta (menys farciment i vora groga més fina),
+   per a guanyar alçada. El selector `> div` guanya als p-4/py-3 de cada pàgina. En escriptori no canvia. */
+@media (max-width: 1023px), (orientation: landscape) and (pointer: coarse) {
+  .classroom-header { border-bottom-width: 5px; }
+  .classroom-header > div { padding-top: 6px; padding-bottom: 6px; }
+  /* Botons de la cabecera: lletra, icones i alçada més menudes (el text-xl i el h-10 de cada pàgina). */
+  .classroom-header button { font-size: 0.875rem; }
+  .classroom-header button.h-10 { height: 32px; padding-left: 10px; padding-right: 10px; }
+  .classroom-header button svg { width: 15px; height: 15px; }
 }

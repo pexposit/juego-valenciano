@@ -12,6 +12,9 @@ import { createHash } from 'node:crypto';
  *   Només viu en la memòria del procés: no s'escriu a disc ni es comparteix entre instàncies.
  * - Límits: crides simultànies (OPENAI_MAX_CONCURRENCY) i crides reals per hora (OPENAI_MAX_CALLS_PER_HOUR)
  *   perquè un error o un abús no puga cremar el crèdit. Les respostes de la cache no compten.
+ * 
+ * 
+ * Para desarrollo 8 llamadas está bien, para producción hay que ajustar los límites. Igual con las 3000 llamadas por hora
  */
 
 const MB = 1024 * 1024;
@@ -25,7 +28,7 @@ const CACHE_TTL_MS = num('OPENAI_CACHE_TTL_MIN', 24 * 60) * 60_000;
 // Una resposta sola no pot ocupar més d'una quarta part de la cache.
 const ENTRY_MAX_BYTES = CACHE_MAX_BYTES / 4;
 const MAX_CONCURRENCY = num('OPENAI_MAX_CONCURRENCY', 8);
-const MAX_CALLS_PER_HOUR = num('OPENAI_MAX_CALLS_PER_HOUR', 3000);
+const MAX_CALLS_PER_HOUR = num('OPENAI_MAX_CALLS_PER_HOUR', 1000);
 
 /** Capçalera interna: la petició ni llig ni escriu la cache (p. ex. un reintent després d'una resposta invàlida). */
 export const NO_CACHE_HEADER = 'x-no-cache';

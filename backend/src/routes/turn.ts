@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 import { sanitizeHistory, type HistoryMessage } from '@parlaval/shared';
@@ -7,12 +8,13 @@ import { db } from '../db.js';
 import { validationError } from '../validation.js';
 import { turnSchema } from '../schemas.js';
 import { replyFromAgent } from '../services/agent.js';
-import { findSkillActivity, findTutorActivity, pickTutorExercise, NO_AT_LEVEL, NO_AT_LEVEL_MESSAGE, NO_EXERCISE_MESSAGE, CHAT_SKILLS, CHAT_ACTIVITY_MESSAGE, NO_CHAT_ACTIVITY_MESSAGE, type ExerciseMode, type TutorActivity, type TutorExercise } from '../services/tutorExercise.js';
+import { findSkillActivity, findTutorActivity, hasTutorPractice, pickTutorExercise, NO_AT_LEVEL, NO_AT_LEVEL_MESSAGE, NO_EXERCISE_MESSAGE, CHAT_SKILLS, CHAT_ACTIVITY_MESSAGE, NO_CHAT_ACTIVITY_MESSAGE, type ExerciseMode, type PracticeOffer, type TutorActivity, type TutorExercise } from '../services/tutorExercise.js';
 import { getScenario } from '../services/scenarios.js';
-import { ASSISTANT_CATEGORY, isVoiceOnlyCategory } from '@parlaval/shared';
+import { ASSISTANT_CATEGORY, hasOwnPaths, hasStudyPaths, isVoiceOnlyCategory, type StudyPathRef } from '@parlaval/shared';
 import { motherTongueInstructions } from '../services/motherTongue.js';
 import { ADULT_VALENCIAN_ONLY_INSTRUCTIONS, assistantLevelInstructions } from '../services/assistantLevel.js';
 import { stt, tts } from '../services/voice.js';
+import { loadVisiblePaths } from '../services/ownPaths.js';
 import { gnvRagEnabled } from '../services/gnvRag.js';
 import { detectPromptInjection, INJECTION_REPLY } from '../services/promptInjection.js';
 import { createRepeatTracker, isLoopError, LOOP_STOPPED_MESSAGE, requestAbortSignal } from '../services/loopGuard.js';
@@ -224,6 +226,9 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     let conjugationTool = false;
     let exerciseTool = false;
     let lessons: { id: string; title: string; summary: string }[] = [];
+    let routeTool = false;
+    let paths: StudyPathRef[] = [];
+    let pendingRouteOffer: string | undefined;
     if (client && scenario.category === ASSISTANT_CATEGORY) {
       const { data: profile } = await client.from('profiles').select('mother_tongue, level, age_group').eq('id', req.userId!).maybeSingle();
       extraInstructions = motherTongueInstructions(profile?.mother_tongue);
@@ -239,6 +244,17 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       // El Nivell 0 no fa exercicis del catàleg: als xiquets se'ls enllaça una lliçó de l'app (les envia el client).
       // Els adults del Nivell 0 no tenen lliçons.
       lessons = levelZero && profile?.age_group === 'child' ? data.lessons : [];
+      // Rutes d'aprenentatge (/ruta): el tutor hi porta l'aprenent i li n'ofereix de pròpies sobre el que li costa.
+      routeTool = !levelZero && hasStudyPaths(profile?.level);
+      if (routeTool) {
+        paths = await loadVisiblePaths(client, req.userId!, profile!.level).catch((error) => {
+          console.warn('[turn] no hem pogut carregar les rutes:', error instanceof Error ? error.message : error);
+          return [];
+        });
+        // L'oferta pendent l'envia el client: si sembla una injecció, es descarta.
+        const offer = data.pending_route_offer?.trim();
+        pendingRouteOffer = offer && hasOwnPaths(level) && !detectPromptInjection(offer).flagged ? offer : undefined;
+      }
     } else if (client) {
       // Escenaris del Nivell 0: si el xiquet té activada la llengua materna, el personatge hi afig
       // la traducció de cada resposta (segona línia), que el xat mostra com a subtítol.
@@ -262,19 +278,29 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
       conjugationTool,
       exerciseTool,
       lessons,
+      routeTool,
+      paths,
+      pendingRouteOffer,
       // El tutor del tauler: sempre gpt-6-luna amb esforç 'low' (DASHBOARD_AGENT).
       dashboardAgent: scenario.category === ASSISTANT_CATEGORY,
       signal: abortSignal,
     });
 
     // El tutor ha oferit un exercici: se'n tria un de real del catàleg (mai inventat).
-    const { exercici_tema, tipus_dubte, area_practica, leccio_id, corregir_text, ...replyBody } = reply;
+    const { exercici_tema, tipus_dubte, area_practica, leccio_id, corregir_text, ruta, ...replyBody } = reply;
+    // Rutes: obrir-ne una o acceptar l'oferta ja és la resposta (sense exercicis ni activitats). Una oferta de ruta nova
+    // només en els nivells que en poden tindre de pròpies; l'acceptació, només si hi havia una oferta pendent.
+    const studyPath = ruta?.path;
+    const generateRoute = ruta?.accepted && pendingRouteOffer ? pendingRouteOffer : undefined;
+    const routeOffer = ruta?.offer && hasOwnPaths(level) ? ruta.offer : undefined;
+    const routeAction = Boolean(studyPath || generateRoute);
     // Text per a corregir: el client mostra després la llista d'errors de l'anàlisi; ací ni exercicis ni activitats.
     const correctText = Boolean(corregir_text) && exerciseTool && !levelZero;
     // Només una lliçó de les que s'han enviat (el model no pot inventar-ne).
     const lessonId = lessons.some(l => l.id === leccio_id) ? leccio_id : undefined;
     let exercise: TutorExercise | null = null;
     let activity: TutorActivity | null = null;
+    let practiceOffer: PracticeOffer | undefined;
     let noAtLevel = false;
     // Si ha respost amb una regla de la GNV, l'exercici és del seu tema (l'últim apartat de la ruta, sense numeració)
     // encara que el model no haja escrit el tema: primer la norma i després la pràctica.
@@ -282,7 +308,7 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     // Tipus de pregunta: una regla de la GNV és sempre un dubte complex; si no, el que diu el model. Qui demana practicar
     // sempre rep l'exercici (o l'avís que no n'hi ha); «cap» no en dóna mai.
     const askedToPractice = tipus_dubte === 'demana_exercici' || /exerci/i.test(text);
-    const mode: ExerciseMode | null = correctText ? null
+    const mode: ExerciseMode | null = correctText || routeAction ? null
       : askedToPractice ? 'request'
       : reply.gnv || tipus_dubte === 'complex' ? 'complex'
       : tipus_dubte === 'simple' ? 'simple' : null;
@@ -294,28 +320,29 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     // Si vol practicar la conversa, sempre se li enllaça un escenari concret, encara que el model no ho haja marcat.
     const wantsConversation = /convers|xarr|xat|xatej|joc de rol|escenari|situaci/i.test(text) && !/exerci/i.test(text);
     const wantsOral = /expres+i[oó]n?\s+oral/i.test(text);
-    const skill = correctText ? '' : area_practica || (wantsOral ? 'expressio_oral' : '') || (wantsConversation ? 'escenari' : '');
+    const skill = correctText || routeAction ? '' : area_practica || (wantsOral ? 'expressio_oral' : '') || (wantsConversation ? 'escenari' : '');
     if (exerciseTool && skill) activity = await findSkillActivity(skill, level, text);
     // Conversa i expressió oral: només s'enllaça un escenari real del catàleg i la frase la posa l'app, perquè el model
     // no puga descriure ni proposar escenaris inventats (ni enllaçar-ne cap si no n'hi ha).
     const chatSkill = exerciseTool && CHAT_SKILLS.includes(skill);
     if (chatSkill) replyBody.reply_text = activity ? CHAT_ACTIVITY_MESSAGE : NO_CHAT_ACTIVITY_MESSAGE;
-    if (exerciseTool && topic && mode && !activity && !chatSkill) {
-      // Només es mostra un exercici si n'hi ha un prou relacionat amb el tema (també quan l'aprenent demana practicar).
-      const picked = await pickTutorExercise(topic, level, data.shown_exercises, gnvSections,
-        // Dubte simple: es puntua amb el concepte normalitzat, no amb les paraules literals de la pregunta.
-        mode === 'simple' ? topic : `${text}. ${gnvTopic ?? ''}`.trim(), mode);
+    if (exerciseTool && topic && mode === 'complex' && !activity && !chatSkill) {
+      // Dubte complex: no es busca l'exercici, es mostra el botó «Practica-ho» si el catàleg en té del tema (es busca en
+      // prémer-lo, /api/assistant/practice). Amb regla de la GNV, el tema és el de la secció (fix per a la mateixa regla).
+      const offerTopic = gnvTopic || topic;
+      if (await hasTutorPractice(offerTopic, gnvSections)) practiceOffer = { id: randomUUID(), topic: offerTopic, sections: gnvSections };
+    } else if (exerciseTool && topic && mode === 'request' && !activity && !chatSkill) {
+      // Ha demanat practicar: l'exercici es busca ara (o l'avís si no n'hi ha). Els dubtes simples no en reben cap.
+      const picked = await pickTutorExercise(topic, level, data.shown_exercises, gnvSections, `${text}. ${gnvTopic ?? ''}`.trim(), mode);
       if (picked === NO_AT_LEVEL) {
-        // Hi ha exercicis del tema però no del seu nivell: no se'n mostra cap d'un altre ni s'enllaça cap activitat. Només
-        // si ho ha demanat, la resposta passa a ser l'avís (en un dubte, la resposta del model es manté).
+        // Hi ha exercicis del tema però no del seu nivell: no se'n mostra cap d'un altre ni s'enllaça cap activitat.
         noAtLevel = true;
-        if (askedToPractice) replyBody.reply_text = `${NO_AT_LEVEL_MESSAGE}.`;
+        replyBody.reply_text = `${NO_AT_LEVEL_MESSAGE}.`;
       } else exercise = picked;
       // Hi ha pràctica del tema però cap exercici que càpiga en el xat: s'enllaça l'activitat.
-      // Només amb una regla de la GNV al darrere o si ho ha demanat: un tema solt (p. ex. el significat d'una paraula) no en dóna prou.
-      if (!exercise && !noAtLevel && (reply.gnv || askedToPractice)) activity = await findTutorActivity(topic, gnvSections);
+      if (!exercise && !noAtLevel) activity = await findTutorActivity(topic, gnvSections);
       // Ha demanat un exercici i no n'hi ha cap (ni activitat que enllaçar): se li diu, en lloc de callar.
-      if (!exercise && !noAtLevel && !activity && askedToPractice) replyBody.reply_text = NO_EXERCISE_MESSAGE;
+      if (!exercise && !noAtLevel && !activity) replyBody.reply_text = NO_EXERCISE_MESSAGE;
     }
 
     console.log(`[turn] agente=${Date.now() - agentStart}ms`);
@@ -348,8 +375,12 @@ turnRouter.post('/api/turn', requireAuth, rateLimit(TURN_RATE_LIMIT), async (req
     res.json({
       ...replyBody,
       ...(correctText ? { correct_text: true } : {}),
+      ...(studyPath ? { study_path: studyPath } : {}),
+      ...(routeOffer ? { route_offer: routeOffer } : {}),
+      ...(generateRoute ? { generate_route: generateRoute } : {}),
       ...(exercise ? { exercise } : {}),
       ...(activity ? { activity } : {}),
+      ...(practiceOffer ? { practice_offer: practiceOffer } : {}),
       ...(lessonId ? { lesson_id: lessonId } : {}),
       transcription: data.input_mode === 'voice' ? text : null,
       reply_audio_base64: audio?.audio.toString('base64') || null,

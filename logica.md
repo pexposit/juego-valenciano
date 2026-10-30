@@ -137,7 +137,7 @@ Consecuencia: si se borran los datos del navegador o se cambia de dispositivo, e
 ### 3.2 Rutas por nivel
 
 - `PREDEFINED_PATH_LEVELS = ['A2','B1','B2']` → `hasPredefinedPaths(level)`: estos niveles ven las rutas predefinidas en `/ruta`.
-- `AI_PATH_LEVELS = ['B1','B2','C1']` → `hasAiPath(level)`: además tienen la ruta personalizada de IA (`/ruta/personalitzada`), y son **los únicos** para los que el backend genera ruta de IA.
+- `AI_PATH_LEVELS = ['B1','B2','C1','C2']` → `hasAiPath(level)`: además tienen la ruta personalizada de IA (`/ruta/personalitzada`), y son **los únicos** para los que el backend genera ruta de IA.
 
 ### 3.3 Categorías de recursos y áreas
 
@@ -613,7 +613,7 @@ Avaluadores del Área 3 (Expressió i Interacció Escrites) con las rúbricas of
 
 ### 6.8 Ruta personalizada de IA (`services/learningPath.ts` + `learningSignals.ts`)
 
-**Solo B1 y B2** (`hasAiPath`). Solo se genera cuando el usuario lo pide (botón); terminar actividades solo marca pasos.
+**Solo B1, B2, C1 y C2** (`hasAiPath`). Solo se genera cuando el usuario lo pide (botón); terminar actividades solo marca pasos.
 
 Señales (`loadLearningSignals`):
 - Últimas 5 evaluaciones (`priority_focus`, fecha).
@@ -1386,7 +1386,7 @@ Efecto lateral: A1, C1 y C2 siguen viendo `LearningPath` en `/ruta`, pero el bac
 10. «Softvalencià» es en realidad el LanguageTool de Softcatalà.
 
 ### 19.3 Lógica y producto
-11. **Ruta de IA para A1 y C2**: `/ruta` les muestra `LearningPath`, pero el backend solo genera para B1/B2/C1 → «Generar» no crea nada: devuelve la ruta antigua si la había o un 404 «Encara no hi ha activitats per al teu nivell».
+11. **Ruta de IA para A1**: `/ruta` le muestra `LearningPath`, pero el backend solo genera para B1/B2/C1/C2 → «Generar» no crea nada: devuelve la ruta antigua si la había o un 404 «Encara no hi ha activitats per al teu nivell».
 12. **El resumen (`/resum`) es inalcanzable**: «Acabar conversa» vuelve atrás; la evaluación se guarda pero no se muestra salvo escribiendo la URL.
 13. **«Reinicia el progrés»** solo recarga la página.
 14. ~~El nivel no se puede cambiar~~: resuelto (perfil y prueba de nivel, §20).

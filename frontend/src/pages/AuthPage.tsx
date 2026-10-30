@@ -126,19 +126,24 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
   if (joiningClass) return <ClassCodeEntry onBack={() => setJoiningClass(false)} onDone={() => setPage('dashboard')} />;
 
   return (
-    <main className="fade-up grid min-h-screen place-items-center p-6" style={{ background: '#FAFAF9' }}>
-      <section className="w-full max-w-md rounded-[36px] bg-white p-8 shadow-xl">
+    <main className={`auth-main fade-up grid min-h-screen place-items-center p-6 ${creating ? '' : 'auth-fit'}`} style={{ background: '#FAFAF9' }}>
+      <section className="auth-card w-full max-w-md rounded-[36px] bg-white p-8 shadow-xl">
+        <div className="auth-intro">
         <div className="mb-6 flex items-center gap-3">
           <button onClick={() => setPage('home')} className="text-sm font-bold opacity-50 hover:opacity-100 transition-opacity">
             ← Tornar
           </button>
         </div>
-        <div className="text-center mb-6">
-          <span className="text-4xl">🍊</span>
+        <div className="auth-head text-center mb-6">
+          <span className="auth-emoji text-4xl">🍊</span>
           <h1 className="mt-2 text-3xl font-black"><span style={{ color: '#0F47AF' }}>Parla</span><span style={{ color: '#FF3B3B' }}>Val</span></h1>
-          <p className="mt-1 opacity-60">{creating ? 'Crea el teu compte i comença: no et demanem cap correu ni dades personals.' : 'Inicia sessió per continuar.'}</p>
+          <p className="auth-sub mt-1 opacity-60">{creating ? 'Crea el teu compte i comença: no et demanem cap correu ni dades personals.' : 'Inicia sessió per continuar.'}</p>
+        </div>
         </div>
 
+        <div className="auth-form">
+        <div className="auth-fields">
+        <div className="auth-field">
         <label className="block text-sm font-extrabold mb-1" htmlFor="auth-username">Nom d'usuari</label>
         <input
           value={username}
@@ -153,8 +158,10 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           className={INPUT_CLASS}
         />
         {creating && <p className="mt-1 text-xs opacity-60">Pots posar el nom que vulgues; no cal que siga el teu nom real. Serveix per a entrar i no es pot recuperar si l'oblides.</p>}
+        </div>
 
-        <label className="mt-4 block text-sm font-extrabold mb-1">Contrasenya</label>
+        <div className="auth-field mt-4">
+        <label className="block text-sm font-extrabold mb-1" htmlFor="auth-password">Contrasenya</label>
         <input
           value={password}
           onChange={e => { setPassword(e.target.value); setNotice(''); }}
@@ -165,6 +172,8 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
           onKeyDown={e => { if (e.key === 'Enter') void (creating ? signUp() : logIn()); }}
           className={INPUT_CLASS}
         />
+        </div>
+        </div>
 
         {creating && (
           <>
@@ -250,7 +259,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
         )}
 
         {creating ? (
-          <>
+          <div className="auth-actions">
             <button
               onClick={() => void signUp()}
               disabled={busy}
@@ -269,9 +278,9 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
             >
               Ja tinc compte · Inicia sessió
             </button>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="auth-actions">
             <button
               onClick={() => void logIn()}
               disabled={busy}
@@ -290,11 +299,11 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
             >
               Crear compte
             </button>
-          </>
+          </div>
         )}
 
         {/* Tercera via: amb el codi de la classe, sense compte. */}
-        <div className="mt-5 border-t border-gray-100 pt-4 text-center">
+        <div className="auth-class mt-5 border-t border-gray-100 pt-4 text-center">
           <p className="text-sm opacity-60">Tens un codi de classe?</p>
           <button
             onClick={() => { setJoiningClass(true); setNotice(''); }}
@@ -315,6 +324,7 @@ export function AuthPage({ setPage }: { setPage: (p: Page) => void }) {
             {notice}
           </div>
         )}
+        </div>
       </section>
     </main>
   );

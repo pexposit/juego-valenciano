@@ -11,6 +11,7 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { contentsForPrompt, LANGUAGE_AREAS, type LevelContent } from './levelContents.js';
 import { reasoningEffortFor } from './reasoningEffort.js';
 import { createLoopGuard } from './loopGuard.js';
+import { createLookupCache } from './lookupCache.js';
 
 // Variables de entorno
 const UJI_HOST = process.env.UJI_HOST;
@@ -92,6 +93,27 @@ export async function getMcpTools(): Promise<{ client: Client; tools: ChatComple
   });
 
   return { client: mcpClient, tools: cachedTools };
+}
+
+// Ferramentes del MCP que només depenen d'una paraula o d'un verb: la resposta del DNV es guarda en memòria i no es
+// torna a demanar a l'AVL. softvalencia i apertium reben frases de l'usuari i no es guarden mai.
+const CACHED_TOOL_ARGS: Record<string, string> = { consultar_dnv: 'paraula', consultar_conjugacio: 'verb' };
+type ToolResult = Awaited<ReturnType<Client['callTool']>>;
+const toolCache = createLookupCache<ToolResult>({
+  ttlMs: (Number(process.env.MCP_CACHE_TTL_MIN) || 7 * 24 * 60) * 60_000,
+  maxEntries: Number(process.env.MCP_CACHE_ENTRIES) || 3000,
+  keep: result => !result.isError,
+});
+export const clearMcpToolCache = () => toolCache.clear();
+
+/** Crida una ferramenta del MCP; les del DNV es guarden per paraula (sense distingir majúscules ni espais). */
+export async function callMcpTool(name: string, args: Record<string, unknown>): Promise<ToolResult> {
+  const { client } = await getMcpTools();
+  const argName = CACHED_TOOL_ARGS[name];
+  const value = argName ? args[argName] : undefined;
+  if (typeof value !== 'string' || Object.keys(args).length !== 1) return client.callTool({ name, arguments: args });
+  const word = value.normalize('NFC').trim().toLocaleLowerCase('ca');
+  return toolCache.get(`${name}\0${word}`, () => client.callTool({ name, arguments: { [argName]: word } }));
 }
 
 // -------------------------------------------------------------
@@ -203,7 +225,7 @@ export async function analyzeErrorsWithLocalLLM(
   const guard = createLoopGuard({ label: 'error-detector', signal, ...GUARD_LIMITS });
 
   try {
-    const { client: mcp, tools } = await getMcpTools();
+    const { tools } = await getMcpTools();
 
     const messages: ChatCompletionMessageParam[] = [
       { role: 'system', content: SYSTEM_PROMPT_AVL + levelInstructions(level, contents) },
@@ -245,10 +267,7 @@ export async function analyzeErrorsWithLocalLLM(
           // Sense els arguments: porten text de l'usuari, que no ha de quedar en els logs.
           console.log(`[MCP Tool Exec] ${toolCall.function.name} (${toolCallCount}/${MAX_TOOL_CALLS})`);
           try {
-            const result = await mcp.callTool({
-              name: toolCall.function.name,
-              arguments: JSON.parse(toolCall.function.arguments || '{}'),
-            });
+            const result = await callMcpTool(toolCall.function.name, JSON.parse(toolCall.function.arguments || '{}'));
             toolOutput = result.content;
           } catch (err: any) {
             toolOutput = { error: `Error executant ferramenta: ${err.message}` };

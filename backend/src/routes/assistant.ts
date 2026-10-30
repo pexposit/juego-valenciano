@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { ASSISTANT_CATEGORY, KID_ASSISTANT_TYPE } from '@parlaval/shared';
+import { ASSISTANT_CATEGORY, KID_ASSISTANT_TYPE, TRANSLATED_TONGUES } from '@parlaval/shared';
 import { getAdmin, requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { db } from '../db.js';
@@ -10,6 +10,7 @@ import { retranslateLines } from '../services/retranslate.js';
 import { MESSAGE_MAX_CHARS } from '@parlaval/shared';
 import { bilingualGreeting } from '../services/motherTongue.js';
 import { assistantGreeting, assistantGreetingIsTranslated } from '../services/assistantLevel.js';
+import { practiceForTutor } from '../services/tutorExercise.js';
 
 export const assistantRouter = Router();
 
@@ -199,7 +200,7 @@ assistantRouter.post(
 );
 
 const translateSchema = z.object({
-  tongue: z.enum(['es', 'en', 'fr', 'it', 'ro', 'uk']),
+  tongue: z.enum(TRANSLATED_TONGUES),
   lines: z.array(z.string().min(1).max(MESSAGE_MAX_CHARS * 2)).min(1).max(60),
 });
 
@@ -215,5 +216,31 @@ assistantRouter.post(
     const translations = await retranslateLines(parsed.data.lines, parsed.data.tongue);
     if (!translations) return res.status(503).json({ error: "No s'han pogut traduir les frases" });
     res.json({ translations });
+  },
+);
+
+const practiceSchema = z.object({
+  topic: z.string().trim().min(1).max(200),
+  sections: z.array(z.string().max(30)).max(10).default([]),
+  shown_exercises: z.array(z.string().uuid()).max(100).default([]),
+});
+
+// Botó «Practica-ho» del tutor: l'exercici del tema de la resposta (o l'activitat per a enllaçar, o l'avís). El nivell
+// és el del perfil, no el que envia el client.
+assistantRouter.post(
+  '/api/assistant/practice',
+  requireAuth,
+  rateLimit({ windowMs: 60_000, max: 30, maxAnonymous: 6 }),
+  async (req: AuthRequest, res) => {
+    const parsed = practiceSchema.safeParse(req.body);
+    if (!parsed.success) return validationError(res, parsed.error);
+    try {
+      const { data: profile } = await db(req.userId).from('profiles').select('level').eq('id', req.userId).maybeSingle();
+      const { topic, sections, shown_exercises } = parsed.data;
+      res.json(await practiceForTutor(topic, sections, profile?.level, shown_exercises));
+    } catch (error) {
+      console.error('[assistant] no hem pogut buscar l\'exercici:', error);
+      res.status(503).json({ error: "No hem pogut buscar l'exercici" });
+    }
   },
 );

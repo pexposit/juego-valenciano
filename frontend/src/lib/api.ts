@@ -1,5 +1,5 @@
-import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, PronunciationResult, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, VerbConjugation, WritingEvaluation } from './types';
-import { sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
+import type { ActivityResult, Exam, GnvRule, LatestEvaluation, LearningPath, Lesson, Practice, PronunciationResult, Resource, MyClass, Scenario, StudyPath, TurnResponse, TutorActivity, TutorExercise, VerbConjugation, WritingEvaluation, RouteOffer, StudyPathRef, PracticeOffer, PracticeResult } from './types';
+import { isTranslatedTongue, sanitizeHistory, type AgentActivityResult, type AgentDocument, type AgentPathResult, type CefrLevel, type OwnPathResult, type TeacherActivity, type TeacherActivityInput, type TeacherActivityKind } from '@parlaval/shared';
 import { supabase } from './supabase';
 import { userKey } from './progressStorage';
 import { markRestartedAt } from '../features/paths/progress';
@@ -112,7 +112,7 @@ export async function evaluateExamWriting(
   }
   return res.json();
 }
-export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];shown_exercises?:string[];lessons?:{id:string;title:string;summary:string}[];include_audio?:boolean},signal?:AbortSignal):Promise<TurnResponse>{
+export async function sendTurn(payload:{session_id:string;session_resource_id:string;scenario:Scenario;level:string;input_mode:'text'|'voice';text:string;audio_base64?:string|null;history?:HistoryItem[];shown_exercises?:string[];lessons?:{id:string;title:string;summary:string}[];include_audio?:boolean;pending_route_offer?:string},signal?:AbortSignal):Promise<TurnResponse>{
   const token=(await supabase?.auth.getSession())?.data.session?.access_token;
   // L'historial es retalla amb el pressupost compartit abans d'enviar-lo:
   // el servidor, a més, ho tornarà a aplicar (defensa en profunditat).
@@ -460,6 +460,18 @@ export function analyzeMessage(
 export type TextError = Pick<ServerError, 'id' | 'error_text' | 'correction' | 'category' | 'subcategory' | 'explanation'>;
 
 // Seccions de la GNV que cobrixen els errors d'un text (una per error, o null); sense cites si el servidor no pot consultar-la.
+// Botó «Practica-ho» del tutor: l'exercici del tema de la resposta (o l'activitat per a enllaçar, o l'avís si no n'hi ha).
+export async function fetchTutorPractice(offer: PracticeOffer, shownExercises: string[]): Promise<PracticeResult> {
+  const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assistant/practice`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ topic: offer.topic, sections: offer.sections, shown_exercises: shownExercises }),
+  });
+  if (!res.ok) throw new Error(`El backend ha respost amb codi ${res.status}`);
+  return res.json() as Promise<PracticeResult>;
+}
+
 export async function fetchErrorCitations(errors: TextError[]): Promise<({ seccio: string; etiqueta: string } | null)[]> {
   try {
     const token = (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -564,10 +576,8 @@ export async function recordPracticeAnswers(answers: { exercise_id: string; answ
 export type AssistantConversation = {
   session_id: string;
   session_resource_id: string;
-  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; exercise?: TutorExercise; activity?: TutorActivity; lessonId?: string }[];
+  messages: { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; exercise?: TutorExercise; activity?: TutorActivity; practiceOffer?: PracticeOffer; lessonId?: string }[];
 };
-// Llengües maternes amb traducció (les mateixes que els subtítols del Nivell 0).
-const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'];
 // Canvi de llengua materna en curs: obrir el xat del tauler l'espera, perquè no mostre les traduccions velles.
 let retranslating: Promise<void> | undefined;
 
@@ -584,7 +594,7 @@ export function retranslateTutorConversation(tongue: string): Promise<void> {
     if (messages.length === 0) return;
     const valencian = (text: string) => text.split('\n')[0];
 
-    if (!TRANSLATED_TONGUES.includes(tongue)) {
+    if (!isTranslatedTongue(tongue)) {
       await updateMessageTexts(messages.map(m => ({ id: m.id, text: valencian(m.text) })));
       return;
     }
@@ -615,7 +625,7 @@ async function callAssistant(action: 'open' | 'restart', sessionId: string): Pro
   if (!res.ok) throw new Error("No s'ha pogut obrir la conversa amb el professor");
   const opened = await res.json() as { session_id: string; session_resource_id: string; greeting: string };
   await setCurrentTutorConversation(opened.session_resource_id);
-  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, conjugacio: m.conjugacio, exercise: m.exercise, activity: m.activity, lessonId: m.lessonId }));
+  let messages: AssistantConversation['messages'] = (await getMessages(opened.session_resource_id)).map(m => ({ role: m.role, text: m.text, gnv: m.gnv, conjugacio: m.conjugacio, studyPath: m.studyPath, routeOffer: m.routeOffer, exercise: m.exercise, activity: m.activity, practiceOffer: m.practiceOffer, lessonId: m.lessonId }));
   // Conversa nova (o d'un altre dispositiu, sense missatges ací): comença amb la salutació.
   if (messages.length === 0) {
     messages = [{ role: 'character', text: opened.greeting }];
@@ -630,10 +640,10 @@ export const restartAssistant = (sessionId: string) => callAssistant('restart', 
 // Converses anteriors del xiquet amb el tutor (pestanya «Converses» del tauler infantil).
 // `title`: el nom que ha posat l'usuari (title_edited) o el resum del LLM; si encara no n'hi ha, el primer missatge.
 export type TutorConversation = { id: string; started_at: string; message_count: number; title: string; title_edited: boolean; preview: string; current: boolean };
-export type TutorMessage = { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; created_at: string };
+export type TutorMessage = { role: 'user' | 'character'; text: string; gnv?: GnvRule; conjugacio?: VerbConjugation; studyPath?: StudyPathRef; routeOffer?: RouteOffer; created_at: string };
 
 const toTutorMessages = (messages: Awaited<ReturnType<typeof getMessages>>): TutorMessage[] =>
-  messages.map(m => ({ role: m.role, text: m.text, gnv: m.gnv, conjugacio: m.conjugacio, created_at: m.createdAt }));
+  messages.map(m => ({ role: m.role, text: m.text, gnv: m.gnv, conjugacio: m.conjugacio, studyPath: m.studyPath, routeOffer: m.routeOffer, created_at: m.createdAt }));
 
 // Reobri una conversa anterior com a l'actual; en tornar al tauler el professor la continua.
 export async function resumeTutorConversation(id: string): Promise<void> {
@@ -755,11 +765,32 @@ export async function restartActivity(resourceId: string): Promise<void> {
   if (restarted_at) markRestartedAt({ id: resourceId }, restarted_at);
 }
 
-export async function fetchStudyPaths(): Promise<{ level: string; paths: StudyPath[] }> {
+// `own_paths`: les rutes pròpies, les que li ha preparat el tutor del xat.
+export async function fetchStudyPaths(): Promise<{ level: string; paths: StudyPath[]; own_paths: StudyPath[] }> {
   const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/study-paths`, { headers: await authHeaders() });
   const payload = await res.json().catch(() => null);
   if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut carregar les rutes');
+  return { ...payload, own_paths: payload.own_paths ?? [] };
+}
+
+// El tutor prepara (i guarda) una ruta pròpia sobre el que li costa a l'aprenent, quan ho accepta.
+export async function generateOwnPath(topic: string, signal?: AbortSignal): Promise<OwnPathResult> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/study-paths/generate`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ topic }),
+    signal,
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut preparar la ruta');
   return payload;
+}
+
+// Esborra una ruta pròpia de l'aprenent.
+export async function deleteOwnPath(id: string): Promise<void> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/study-paths/${id}`, { method: 'DELETE', headers: await authHeaders() });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(payload?.error ?? 'No hem pogut esborrar la ruta');
 }
 
 /* ── Nivell i prova de nivell ─────────────────────────────────────────── */

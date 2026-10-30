@@ -2,10 +2,13 @@ import { z } from 'zod';
 import type { ScenarioDefinition } from './scenarios.js';
 import { consultarGnv, gnvContext, type GnvResultat, type GnvRule } from './gnvRag.js';
 import { conjugationContext, consultarConjugacioVerb, type VerbConjugation } from './conjugacio.js';
+import { OWN_PATH_TOPIC_MAX, type StudyPathRef } from '@parlaval/shared';
 import { guardedFetch, NO_CACHE_HEADER } from './openaiGuard.js';
 import { detectPromptLeak, LEAK_REPLY } from './outputGuard.js';
+import { detectNonValencian, NON_VALENCIAN_REPLY, VALENCIAN_RETRY_NOTE } from './languageGuard.js';
 import { createLoopGuard, type LoopGuard } from './loopGuard.js';
 import { reasoningEffortFor, type ReasoningEffort } from './reasoningEffort.js';
+import { createLookupCache, normalizeQuery } from './lookupCache.js';
 
 
 
@@ -28,7 +31,14 @@ const outputSchema = z.object({
   area_practica: z.string().optional(),
   // Tutor del Nivell 0: la lliçó de l'app relacionada amb la pregunta ('' si no n'hi ha cap).
   leccio_id: z.string().optional(),
-  // Només quan el tutor ha consultat la GNV i hi ha trobat respaldo.
+  // Tutor: rutes d'aprenentatge. La ruta que vol obrir (codi de la llista, '' si cap), el que diu que li costa ('' si
+  // res) i, si hi havia una oferta de ruta pendent, si l'accepta.
+  ruta_id: z.string().optional(),
+  ruta_dificultat: z.string().optional(),
+  ruta_acceptada: z.boolean().optional(),
+  // Tutor: entre les regles de la GNV ja redactades (cache), el codi de la que respon el dubte ('' si cap).
+  regla_id: z.string().optional(),
+  // Només la primera vegada que es consulta una secció de la GNV: la regla redactada, que es guarda per a la secció.
   gnv: z.object({
     fonts: z.array(z.number().int()),
     contingut: z.string().min(1),
@@ -36,12 +46,17 @@ const outputSchema = z.object({
   }).optional(),
 });
 
-export type AgentReply = Omit<z.infer<typeof outputSchema>, 'gnv' | 'help_text' | 'consulta_gnv' | 'verb_conjugar'> & { gnv?: GnvRule; conjugacio?: VerbConjugation };
+// Què vol fer l'aprenent amb les rutes: obrir-ne una (`path`), rebre l'oferta d'una de nova sobre el que li costa
+// (`offer`, el tema) o acceptar l'oferta pendent (`accepted`).
+export type TutorRouteIntent = { path?: StudyPathRef; offer?: string; accepted?: boolean };
+
+export type AgentReply = Omit<z.infer<typeof outputSchema>, 'gnv' | 'regla_id' | 'help_text' | 'consulta_gnv' | 'verb_conjugar' | 'ruta_id' | 'ruta_dificultat' | 'ruta_acceptada'> & { gnv?: GnvRule; conjugacio?: VerbConjugation; ruta?: TutorRouteIntent };
 
 // Cadena de models: el principal (OPENAI_MODEL) i dos de reserva per si falla.
 // El nom ha d'existir a OpenAI: un valor inventat gasta dos intents (404) en
 // cada torn abans de passar al model de reserva.
 // El tutor del tauler va fix amb este model i este esforç de raonament: mai un altre (gpt-4o, models de reserva...).
+// Única excepció: la crida curta amb una regla de la GNV de la cache (pas «regla-cache») va sense raonament.
 export const DASHBOARD_AGENT = { model: 'gpt-6-luna', reasoningEffort: 'low' } as const satisfies { model: string; reasoningEffort: ReasoningEffort };
 
 const OPENAI_MODELS = [
@@ -85,6 +100,17 @@ const CONJUGATION_INSTRUCTIONS = `CONJUGACIÓ DE VERBS (DICCIONARI NORMATIU VALE
 - Si l'aprenent demana com es conjuga un verb concret (o un temps o les formes d'un verb concret), omple verb_conjugar amb el verb en infinitiu i sense pronoms: després rebràs la conjugació oficial del DNV i l'aplicació li mostrarà la taula completa. En eixe cas deixa consulta_gnv buida.
 - Per a dubtes generals sobre els verbs (com es formen els temps, quan s'usa un temps...) deixa verb_conjugar buit.`;
 
+// Tutor: les rutes d'aprenentatge que pot obrir l'aprenent (codis curts r1, r2...: el model copia malament els UUID) i,
+// si en el torn anterior se li va oferir preparar-ne una, el tema de l'oferta.
+const routeCode = (i: number) => `r${i + 1}`;
+
+const routeInstructions = (paths: StudyPathRef[], pendingOffer?: string) => `RUTES D'APRENENTATGE:
+${paths.length ? `- Rutes que l'aprenent pot obrir (codi: títol — descripció):
+${paths.map((p, i) => `  ${routeCode(i)}: ${p.title}${p.description ? ` — ${p.description.slice(0, 160)}` : ''}`).join('\n')}
+- Si l'aprenent demana practicar o obrir una ruta concreta (pel nom) o una ruta que treballe un tema, omple ruta_id amb el codi de la que millor hi encaixe i en reply_text digues només una frase curta que la presente (p. ex. «Ací tens la ruta «Títol».»): l'aplicació li mostrarà l'enllaç. Si cap no hi encaixa, deixa ruta_id buit, digues-li que no en tens cap d'eixe tema i omple ruta_dificultat amb el tema (l'aplicació li oferirà preparar-ne una).` : `- L'aprenent encara no té cap ruta per a obrir. Si en demana una d'un tema, digues-li que no en té cap i omple ruta_dificultat amb el tema (l'aplicació li oferirà preparar-ne una).`}
+- Si l'aprenent diu que li costa molt alguna cosa de la llengua, que no l'entén o que sempre s'hi equivoca (p. ex. «em costen molt els pronoms febles», «no entenc mai quan va accent»), omple ruta_dificultat amb eixe tema, en valencià i normalitzat (1 a 5 paraules, com el nom d'una lliçó: "pronoms febles", "accentuació"). En reply_text anima'l breument i, si cal, respon-li el dubte; NO li preguntes si vol una ruta: l'aplicació li ho pregunta davall de la teua resposta. Per a un dubte puntual sense dificultat expressa, deixa ruta_dificultat buit.${pendingOffer ? `
+- En el torn anterior li vas oferir preparar-li una ruta sobre «${pendingOffer}». Si l'últim missatge accepta l'oferta (sí, d'acord, vale, prepara-la...), posa ruta_acceptada a true i en reply_text digues només una frase curta (p. ex. «Perfecte! Te la prepare ara mateix.»): l'aplicació la prepararà. Si la rebutja o parla d'una altra cosa, posa ruta_acceptada a false i respon normalment.` : ''}`;
+
 const EXERCISE_INSTRUCTIONS = `EXERCICIS DEL CATÀLEG:
 - Mai no t'inventes exercicis: l'aplicació en mostra un de real del catàleg dins del xat, si n'hi ha, quan omples exercici_tema.
 - Classifica l'últim missatge de l'aprenent en tipus_dubte:
@@ -117,7 +143,7 @@ const lessonInstructions = (lessons: LessonRef[]) => `LLIÇONS DE L'APP:
 - Si el que pregunta o diu el xiquet té relació amb alguna d'estes lliçons, omple leccio_id amb el seu id i digues-li, en una frase molt curta i amb paraules senzilles, que li deixes la lliçó. Només una, la més adequada. Si cap no té relació, deixa leccio_id buit. Mai no t'inventes lliçons ni ids.
 ${lessons.map(l => `- ${l.id}: ${l.title}${l.summary ? ` (${l.summary})` : ''}`).join('\n')}`;
 
-function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, askExercise = false, lessons: LessonRef[] = [], askVerb = false) {
+function replySchema(withHelp: boolean, askGnvQuery = false, askExercise = false, lessons: LessonRef[] = [], askVerb = false, routes?: { count: number; pending: boolean }, withGnv = false, ruleChoices = 0) {
   return {
     type: 'json_schema',
     json_schema: {
@@ -144,35 +170,17 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
           ...(askGnvQuery ? { consulta_gnv: { type: 'string', description: GNV_QUERY_DESCRIPTION } } : {}),
           ...(askVerb ? { verb_conjugar: { type: 'string', description: VERB_QUERY_DESCRIPTION } } : {}),
           ...(askGnvQuery ? { corregir_text: { type: 'boolean', description: CORRECT_TEXT_DESCRIPTION } } : {}),
+          ...(routes?.count ? { ruta_id: { type: 'string', enum: ['', ...Array.from({ length: routes.count }, (_, i) => routeCode(i))], description: "El codi de la ruta d'aprenentatge que l'aprenent vol obrir; cadena buida si no en demana cap." } } : {}),
+          ...(routes ? { ruta_dificultat: { type: 'string', description: "El tema de la llengua que l'aprenent diu que li costa molt (1 a 5 paraules, normalitzat); cadena buida si no en diu cap." } } : {}),
+          ...(routes?.pending ? { ruta_acceptada: { type: 'boolean', description: "true si l'últim missatge accepta l'oferta de preparar-li una ruta; false si no." } } : {}),
           ...(lessons.length ? { leccio_id: { type: 'string', enum: ['', ...lessons.map(l => l.id)], description: "L'id de la lliçó de l'app relacionada amb la pregunta del xiquet; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { area_practica: { type: 'string', enum: ['', ...PRACTICE_SKILLS], description: "La destresa que l'aprenent vol practicar si no es pot fer dins del xat; cadena buida si no n'hi ha cap." } } : {}),
           ...(askExercise ? { tipus_dubte: { type: 'string', enum: ['cap', 'simple', 'complex', 'demana_exercici'], description: "Tipus de l'últim missatge de l'aprenent: dubte de llengua complex, dubte simple, petició d'exercici o res de llengua ('cap')." } } : {}),
           ...(askExercise ? { exercici_tema: { type: 'string', description: "Tema de l'exercici del catàleg que ofereixes a l'aprenent; cadena buida si no n'ofereixes cap." } } : {}),
-          ...(withGnv ? {
-            gnv: {
-              type: 'object',
-              description: 'La regla de la GNV que respon la pregunta.',
-              properties: {
-                fonts: {
-                  type: 'array',
-                  items: { type: 'integer' },
-                  description: "Els ids de les fonts (<font id=...>) que has fet servir: primer la que respon directament la pregunta i després les que la completen (el cas contrari, excepcions...).",
-                },
-                contingut: {
-                  type: 'string',
-                  description: 'La regla completa tal com la diu la norma, fidel a les fonts: quan s\'aplica, quin és el cas contrari i les excepcions o observacions que hi afecten.',
-                },
-                explicacio: {
-                  type: 'string',
-                  description: "La regla explicada per a un estudiant que no sap gramàtica, sense tecnicismes, en punts curts que comencen per «• »: per què la seua paraula és així, el cas contrari, més exemples i un truc.",
-                },
-              },
-              required: ['fonts', 'contingut', 'explicacio'],
-              additionalProperties: false,
-            },
-          } : {}),
+          ...(withGnv ? { gnv: GNV_RULE_SCHEMA } : {}),
+          ...(ruleChoices ? { regla_id: { type: 'string', enum: ['', ...Array.from({ length: ruleChoices }, (_, i) => ruleCode(i))], description: "El codi de la regla que respon el dubte de l'aprenent; cadena buida si cap no el respon." } } : {}),
         },
-        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv', 'corregir_text'] : []), ...(askVerb ? ['verb_conjugar'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(withGnv ? ['gnv'] : [])],
+        required: [...(withHelp ? ['help_text'] : []), 'mood', 'reply_text', ...(askGnvQuery ? ['consulta_gnv', 'corregir_text'] : []), ...(askVerb ? ['verb_conjugar'] : []), ...(askExercise ? ['tipus_dubte', 'exercici_tema', 'area_practica'] : []), ...(lessons.length ? ['leccio_id'] : []), ...(routes?.count ? ['ruta_id'] : []), ...(routes ? ['ruta_dificultat'] : []), ...(routes?.pending ? ['ruta_acceptada'] : []), ...(withGnv ? ['gnv'] : []), ...(ruleChoices ? ['regla_id'] : [])],
         additionalProperties: false,
       },
     },
@@ -182,11 +190,12 @@ function replySchema(withHelp: boolean, withGnv: boolean, askGnvQuery = false, a
 // Una petició a chat/completions; retorna el contingut de la resposta.
 // `fresh`: en un reintent no es llig la cache (la resposta anterior ha fallat) i la nova no la substituïx fins que es valide.
 async function complete(
-  guard: LoopGuard, key: string, model: string, body: Record<string, unknown>, fresh = false, effort: ReasoningEffort = 'none',
+  guard: LoopGuard, key: string, model: string, body: Record<string, unknown>, fresh = false, effort: ReasoningEffort = 'none', step = '',
 ): Promise<string | null | undefined> {
   // L'últim missatge enviat: si és el mateix una vegada i una altra, el model no avança.
   const last = (body.messages as { content?: unknown }[] | undefined)?.at(-1)?.content;
   guard.llmCall(typeof last === 'string' ? last : JSON.stringify(last ?? ''));
+  const started = Date.now();
   const response = await guardedFetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -200,7 +209,13 @@ async function complete(
     body: JSON.stringify({ model, ...reasoningEffortFor(model, effort), ...body }),
   });
   if (!response.ok) throw new Error(`OpenAI API error (${model}): ${response.status}`);
-  const payload = (await response.json()) as { choices?: { message?: { content?: string | null } }[] };
+  const payload = (await response.json()) as { choices?: { message?: { content?: string | null } }[]; usage?: { completion_tokens?: number; completion_tokens_details?: { reasoning_tokens?: number } } };
+  // Temps de cada crida i tokens generats (els de raonament a part): és on se'n va el temps del torn.
+  const usage = payload.usage;
+  // `peticio-identica`: la cache d'openaiGuard (mateix cos exacte). En el tutor quasi sempre és MISS (la conversa canvia):
+  // la de les regles de la GNV es veu en el pas (regla-cache / regla-nova).
+  const prompt = (payload as { usage?: { prompt_tokens?: number } }).usage?.prompt_tokens;
+  console.log(`[agent] openai pas=${step || '-'} ${Date.now() - started}ms entrada=${prompt ?? '?'} eixida=${usage?.completion_tokens ?? '?'} raonament=${usage?.completion_tokens_details?.reasoning_tokens ?? 0} peticio-identica=${response.headers.get('x-cache') ?? 'MISS'}`);
   return payload.choices?.[0]?.message?.content;
 }
 
@@ -210,26 +225,87 @@ function gnvSourcesMessage(consulta: string, resultat: GnvResultat | null): stri
   if (!resultat) {
     return `${intro} La consulta no està disponible ara mateix. Respon amb prudència, sense citar cap regla, i no inventes normativa.`;
   }
-  if (!resultat.hay_respaldo) {
-    return `${intro} Resultat: ${resultat.mensaje} Digues-li a l'aprenent, amb naturalitat, que no ho has trobat a la Gramàtica Normativa Valenciana; si ho saps, orienta'l amb prudència, sense inventar cap regla.`;
-  }
-  return `${intro} Fonts trobades (de més a menys rellevant):
+  return `${intro} Resultat: ${resultat.mensaje} Digues-li a l'aprenent, amb naturalitat, que no ho has trobat a la Gramàtica Normativa Valenciana; si ho saps, orienta'l amb prudència, sense inventar cap regla.`;
+}
+
+// La regla dins de la resposta (només la primera vegada que es consulta la secció). Ha de ser genèrica: es guarda per a
+// la secció i la reben els següents aprenents que pregunten per la mateixa regla.
+const GNV_RULE_SCHEMA = {
+  type: 'object',
+  description: 'La regla de la GNV que respon la pregunta, explicada de manera general (sense la paraula concreta de l\'aprenent).',
+  properties: {
+    fonts: {
+      type: 'array',
+      items: { type: 'integer' },
+      description: "Els ids de les fonts (<font id=...>) que has fet servir: primer la principal i després les que la completen (el cas contrari, excepcions...).",
+    },
+    contingut: {
+      type: 'string',
+      description: 'La regla completa tal com la diu la norma, fidel a les fonts: quan s\'aplica, quin és el cas contrari i les excepcions o observacions que hi afecten.',
+    },
+    explicacio: {
+      type: 'string',
+      description: "La regla explicada per a un estudiant que no sap gramàtica, sense tecnicismes, en punts curts que comencen per «• »: què diu, el cas contrari, exemples i un truc.",
+    },
+  },
+  required: ['fonts', 'contingut', 'explicacio'],
+  additionalProperties: false,
+};
+
+// Primera vegada que es consulta una secció: com abans, una sola crida amb la conversa i les fonts del RAG que respon la
+// pregunta (reply_text) i redacta la regla (gnv), que es guarda per a la secció.
+function gnvRuleSourcesMessage(consulta: string, resultat: GnvResultat): string {
+  return `Has consultat la Gramàtica Normativa Valenciana amb: "${consulta}". Fonts trobades (de més a menys rellevant):
 
 ${gnvContext(resultat)}
 
 Respon ara l'últim missatge de l'aprenent NOMÉS amb el que diuen estes fonts, en text pla (sense Markdown ni asteriscs; per a citar paraules usa cometes «»):
-- reply_text: resposta breu i directa a la pregunta (1-2 frases), com a professor i en paraules senzilles, sense tecnicismes.
-- gnv.fonts: els ids de les fonts que fas servir; primer la que respon la pregunta i després les que la completen.
+- reply_text: resposta breu i directa a la seua pregunta (1-2 frases), aplicant la regla al seu cas concret, com a professor i en paraules senzilles, sense tecnicismes.
+- gnv: la regla, de manera GENERAL. No hi mencions la pregunta ni la paraula concreta de l'aprenent: altres aprenents amb un dubte sobre la mateixa regla rebran este mateix camp.
+- gnv.fonts: els ids de les fonts que fas servir; primer la principal i després les que la completen.
 - gnv.contingut: el que diu la norma, complet i fidel a les fonts (3-5 frases). No et quedes amb la meitat de la regla: si la norma depén d'un contrast (so sord / so sonor, tònica / àtona, davant de vocal / de consonant...), explica els dos casos, i afig les excepcions o observacions que hi afecten. No digues que una cosa passa "sempre" si les fonts diuen que depén d'alguna condició.
 - gnv.explicacio: la regla explicada com un bon professor a un estudiant que no sap gramàtica, siga quin siga el seu nivell (ací NO apliques les pautes de nivell sobre terminologia o registre):
   - Paraules del dia a dia i frases curtes. Res de tecnicismes (alveolar, fricatiu, sord, sonor, àton, sintagma...): si un és imprescindible, explica'l amb una comparació senzilla (p. ex. sord = «sona fort, com una serp: sss»; sonor = «sona suau i vibra, com una abella: zzz»).
   - Escriu-la en 3-5 punts curts, cada un en una línia que comence per «• »:
-    • per què la paraula de l'aprenent s'escriu (o es diu) així;
+    • què diu la regla, amb un exemple molt comú;
     • què passaria en el cas contrari, amb un parell de paraules que es diferencien només en això si n'hi ha (p. ex. «casa» / «cassa»);
     • 2-3 exemples més, molt comuns;
     • un truc pràctic per a encertar-ho la pròxima vegada.
   - Simplificar NO vol dir llevar la condició que decidix la regla: si depén del so (com sona la s, si la e és oberta o tancada...), explica com distingir-ho amb la comparació senzilla. Abans d'escriure el truc, comprova'l amb l'exemple del cas contrari: ha d'encertar en els dos (p. ex. un truc per a la ss ha de funcionar amb «cassa» i també amb «casa»).`;
 }
+
+// Regles de la GNV ja redactades, per la secció principal que va triar el model en redactar-la (la que es mostra). Cada
+// secció té una sola regla fixa: sempre que es mostre eixa secció, es mostra esta regla tal com està.
+const ruleCache = createLookupCache<GnvRule>({
+  ttlMs: (Number(process.env.GNV_RULE_CACHE_TTL_MIN) || 7 * 24 * 60) * 60_000,
+  maxEntries: Number(process.env.GNV_RULE_CACHE_ENTRIES) || 1000,
+});
+const ruleKeyOf = (model: string, etiqueta: string) => `${model}\0${etiqueta}`;
+const ruleCode = (i: number) => `g${i + 1}`;
+
+// Segona vegada o més: les regles ja redactades de les seccions que ha tornat el RAG. El model tria la que respon el
+// dubte (el RAG no sempre posa la bona la primera) i respon la pregunta concreta aplicant-la.
+function cachedRulesMessage(rules: GnvRule[]): string {
+  return `Has consultat la Gramàtica Normativa Valenciana. Estes són regles ja redactades de les seccions trobades:
+
+${rules.map((rule, i) => `[${ruleCode(i)}] ${rule.regla}\n${rule.contingut}`).join('\n\n')}
+
+L'aplicació mostrarà davall de la teua resposta, tal com està, la regla que tries. Respon ara l'últim missatge de l'aprenent en text pla (sense Markdown ni asteriscs; per a citar paraules usa cometes «»):
+- regla_id: el codi de la regla que respon directament el dubte de l'aprenent; cadena buida si cap no el respon (no en tries una que només hi tinga relació).
+- reply_text: si has triat una regla, resposta breu i directa a la seua pregunta (1-2 frases), aplicant-la al seu cas concret, com a professor i en paraules senzilles, sense tecnicismes, i NOMÉS amb el que diu la regla. Si no n'has triat cap, escriu només «-».`;
+}
+
+// El codi de regla_id triat, com a índex (-1 si cap o si no es pot llegir).
+function ruleChoiceOf(content: string, count: number): number {
+  try {
+    const code = (parseJsonResponse(content) as { regla_id?: unknown }).regla_id;
+    return Array.from({ length: count }, (_, i) => ruleCode(i)).indexOf(typeof code === 'string' ? code : '');
+  } catch {
+    return -1;
+  }
+}
+
+export const clearGnvRuleCache = () => ruleCache.clear();
 
 // El model ha detectat un text per a corregir (la llista d'errors la mostra el client amb l'anàlisi).
 function correctTextOf(content: string): boolean {
@@ -254,15 +330,32 @@ function conjugationMessage(verb: string, conjugation: VerbConjugation | null | 
 
 ${conjugationContext(conjugation)}
 
-L'aplicació mostrarà la taula completa davall de la teua resposta. Respon ara l'últim missatge de l'aprenent en text pla (sense Markdown ni asteriscs; per a citar paraules usa cometes «»):
-- reply_text: 1-3 frases breus. Presenta la conjugació (p. ex. «Ací tens la conjugació del verb «anar».») i, si ha preguntat per un temps o una forma concreta, respon-ho directament. Si el verb és irregular, destaca una o dues formes que solen costar. No copies la taula sencera i usa NOMÉS formes que apareguen en la conjugació de dalt.`;
+L'aplicació mostrarà la taula completa davall de la teua resposta. Respon ara a l'aprenent en text pla (sense Markdown ni asteriscs; per a citar paraules usa cometes «»):
+- reply_text: 1-3 frases breus. Presenta la conjugació (p. ex. «Ací tens la conjugació del verb «anar».»). Si el verb és irregular, destaca una o dues formes que solen costar. No copies la taula sencera i usa NOMÉS formes que apareguen en la conjugació de dalt.`;
 }
 
-// Un camp de text de la primera resposta del tutor ('' si no n'hi ha o no es pot llegir).
+// Què vol fer l'aprenent amb les rutes, segons la primera resposta del tutor (la segona, amb la GNV o la conjugació, ja
+// no ho torna a preguntar). Acceptar l'oferta pendent té preferència; després, obrir una ruta; si no, oferir-ne una.
+function routeIntentOf(content: string, paths: StudyPathRef[], pendingOffer?: string): TutorRouteIntent | undefined {
+  try {
+    const value = parseJsonResponse(content) as { ruta_id?: unknown; ruta_dificultat?: unknown; ruta_acceptada?: unknown };
+    if (pendingOffer && value.ruta_acceptada === true) return { accepted: true };
+    const code = typeof value.ruta_id === 'string' ? value.ruta_id : '';
+    const path = paths.find((_, i) => routeCode(i) === code);
+    if (path) return { path };
+    const offer = typeof value.ruta_dificultat === 'string' ? value.ruta_dificultat.trim().slice(0, OWN_PATH_TOPIC_MAX) : '';
+    return offer ? { offer } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// Un camp de text de la primera resposta del tutor, normalitzat ('' si no n'hi ha o no es pot llegir): la consulta és la
+// clau de la cache del RAG i de la segona resposta, i no ha de dependre de majúscules, cometes o puntuació.
 function queryFieldOf(content: string, field: 'consulta_gnv' | 'verb_conjugar', max: number): string {
   try {
     const value = (parseJsonResponse(content) as Record<string, unknown>)[field];
-    return typeof value === 'string' ? value.trim().slice(0, max) : '';
+    return typeof value === 'string' ? normalizeQuery(value.slice(0, max)) : '';
   } catch {
     return '';
   }
@@ -311,6 +404,11 @@ export async function replyFromAgent(args: {
   exerciseTool?: boolean;
   // Tutor del Nivell 0: les lliçons que pot enllaçar (leccio_id); les resol qui crida.
   lessons?: LessonRef[];
+  // Tutor: pot portar l'aprenent a una de les seues rutes (`paths`) i oferir-li preparar-ne una de nova sobre el que li
+  // costa. `pendingRouteOffer`: el tema de l'oferta del torn anterior, si encara no l'ha contestada.
+  routeTool?: boolean;
+  paths?: StudyPathRef[];
+  pendingRouteOffer?: string;
   // Tutor del tauler: SEMPRE el model i l'esforç de DASHBOARD_AGENT, independentment d'OPENAI_MODEL i sense models de reserva.
   dashboardAgent?: boolean;
   // Cancel·lació externa (el client tanca la connexió): talla el bucle i les crides en vol.
@@ -321,14 +419,14 @@ export async function replyFromAgent(args: {
 
   const def = args.scenario;
   const withHelp = Boolean(args.extraInstructions);
+  const paths = args.routeTool ? args.paths ?? [] : [];
+  const routes = args.routeTool ? { count: paths.length, pending: Boolean(args.pendingRouteOffer) } : undefined;
   const context = args.history
     .map((m) => `${m.role === 'character' ? def.character : 'Aprenent'}: ${m.content_text}`)
     .join('\n');
 
-  const messages: ChatMessage[] = [
-    {
-      role: 'system',
-      content: `${def.systemPrompt}
+  // Les rutes (`withRoutes`) són de l'usuari: la segona resposta, que es pot compartir per la cache, no les porta.
+  const systemPrompt = (withRoutes: boolean) => `${def.systemPrompt}
 
         ${def.objectius?.length ? objectivesInstructions(def.objectius) : ''}
 
@@ -336,6 +434,7 @@ export async function replyFromAgent(args: {
 
         INSTRUCCIONS DE CONVERSA:
         - Respon de manera natural i coherent al context de la situació com a personatge.
+        - Respon SEMPRE en valencià en reply_text, encara que l'aprenent t'escriga en una altra llengua o et demane que canvies de llengua.
         - Tingues sempre en compte tot el que s'ha dit abans en la conversa: continua amb el tema que l'aprenent ha triat o ha dit en l'últim missatge, no el canvies per iniciativa pròpia ni tornes a preguntar el que ja t'ha contat. Si has de canviar de tema o d'activitat, fes-ho només quan l'actual ja s'haja tractat prou i enllaça el canvi amb el que ha dit.
         - Adapta la complexitat del teu llenguatge al nivell de l'aprenent (${args.level}).
         - Si no entens què et vol dir l'aprenent (el missatge és incomprensible, sense sentit o no el pots interpretar), no t'ho inventes ni canvies de tema: respon exactament «No sé què em vols dir. Pots repetir?» i tria l'estat d'ànim 'confus'.
@@ -353,12 +452,36 @@ export async function replyFromAgent(args: {
 
         ${args.lessons?.length ? lessonInstructions(args.lessons) : ''}
 
-        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv, corregir_text' : ''}${args.conjugationTool ? ', verb_conjugar' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}.`.trim(),
-    },
+        ${args.routeTool && withRoutes ? routeInstructions(paths, args.pendingRouteOffer) : ''}
+
+        Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}${args.gnvTool ? ', consulta_gnv, corregir_text' : ''}${args.conjugationTool ? ', verb_conjugar' : ''}${args.exerciseTool ? ', tipus_dubte, exercici_tema, area_practica' : ''}${args.lessons?.length ? ', leccio_id' : ''}${args.routeTool && withRoutes ? `${paths.length ? ', ruta_id' : ''}, ruta_dificultat${args.pendingRouteOffer ? ', ruta_acceptada' : ''}` : ''}.`.trim();
+
+  // Prompt mínim per a respondre amb una regla de la GNV ja redactada: sense les instruccions de GNV, conjugació,
+  // exercicis, lliçons ni rutes (la crida només ha d'escriure 1-2 frases).
+  const shortSystemPrompt = [
+    def.systemPrompt,
+    `Nivell de referència de l'aprenent: ${args.level}. Adapta-hi el llenguatge.`,
+    args.levelInstructions ?? '',
+    args.extraInstructions ?? '',
+    `Respon ÚNICAMENT amb JSON vàlid amb les claus: reply_text, mood${withHelp ? ', help_text' : ''}, regla_id.`,
+  ].filter(Boolean).join('\n\n');
+
+  const messages: ChatMessage[] = [
+    { role: 'system', content: systemPrompt(true) },
     {
       role: 'user',
       content: `Context recent de la conversa:\n${context || '(inici)'}\n\nÚltim missatge de l'aprenent a analitzar i respondre:\n"${args.message}"`,
     },
+  ];
+
+  // Segona resposta amb la conjugació (o amb una consulta a la GNV sense regla): només depén del verb o de la consulta ja
+  // reformulada, sense historial ni l'últim missatge literal. Així la petició és idèntica per al mateix verb, nivell i
+  // llengua materna, siga quina siga la conversa, i la cache d'openaiGuard la reutilitza (també entre usuaris).
+  const answerMessages = (question: string, sources: string): ChatMessage[] => [
+    { role: 'system', content: systemPrompt(false) },
+    { role: 'user', content: question },
+    { role: 'system', content: sources },
+    ...(nonValencian ? [{ role: 'system' as const, content: VALENCIAN_RETRY_NOTE }] : []),
   ];
 
   // La consulta a la GNV es fa una sola vegada encara que l'OpenAI falle i es reintente.
@@ -401,40 +524,83 @@ export async function replyFromAgent(args: {
   const guard = createLoopGuard({ label: 'agent', signal: args.signal, maxIterations: 8 });
   const effort = (model: string) => (args.dashboardAgent ? reasoningEffortFor(model, DASHBOARD_AGENT.reasoningEffort) : {});
   let lastError = 'OpenAI no ha retornat una resposta vàlida';
+  // Respostes descartades perquè no eren en valencià: la primera es reintenta amb un avís; la segona ja no.
+  let nonValencian = 0;
   for (const model of args.dashboardAgent ? [DASHBOARD_AGENT.model] : OPENAI_MODELS) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         // La primera crida decidix què fer (respondre, consultar la GNV, proposar exercici): un poc de raonament (low).
-        // La segunda només redacta amb les fonts que ja té: sense raonament (none).
+        // Les següents només redacten amb el que ja tenen (fonts, regla o conjugació): sense raonament (none).
         let content = await complete(guard, key, model!, {
           ...effort(model!),
-          response_format: replySchema(withHelp, false, args.gnvTool, args.exerciseTool, args.lessons, args.conjugationTool),
+          response_format: replySchema(withHelp, args.gnvTool, args.exerciseTool, args.lessons, args.conjugationTool, routes),
           messages,
-        }, attempt > 0, 'low');
+        }, attempt > 0, 'low', 'decidir');
 
         // L'aprenent demana la conjugació d'un verb: es consulta el DNV i es torna a demanar la resposta (té preferència
         // sobre la GNV: la taula ja respon la pregunta).
+        // Rutes: es decidix amb la primera resposta, encara que després se'n demane una altra amb la GNV o la conjugació.
+        const ruta = args.routeTool && content ? routeIntentOf(content, paths, args.pendingRouteOffer) : undefined;
         let conjugation: VerbConjugation | null | undefined;
         // Un text per a corregir no consulta res: la llista d'errors la mostra el client amb l'anàlisi.
         const correcting = content ? correctTextOf(content) : false;
         const verb = args.conjugationTool && content && !correcting ? queryFieldOf(content, 'verb_conjugar', 60).toLowerCase() : '';
         // El model ha decidit que és un dubte de normativa: es consulta la GNV i es torna a demanar la resposta.
-        let gnvResult: GnvResultat | null = null;
+        let rule: GnvRule | undefined;
+        // El resultat del RAG quan la regla s'ha de redactar ara (cap regla de la cache respon el dubte).
+        let newRuleSources: GnvResultat | undefined;
         const consulta = !verb && args.gnvTool && content && !correcting ? queryFieldOf(content, 'consulta_gnv', 500) : '';
         if (verb) {
           conjugation = await lookupConjugation(verb);
           content = await complete(guard, key, model!, {
             ...effort(model!),
-            response_format: replySchema(withHelp, false, false, args.exerciseTool, args.lessons),
-            messages: [...messages, { role: 'system', content: conjugationMessage(verb, conjugation) }],
-          }, attempt > 0);
+            response_format: replySchema(withHelp, false, args.exerciseTool, args.lessons),
+            messages: answerMessages(`L'aprenent demana la conjugació del verb «${verb}».`, conjugationMessage(verb, conjugation)),
+          }, attempt > 0, 'none', 'conjugacio');
         } else if (consulta) {
-          gnvResult = await lookupGnv(consulta);
-          content = await complete(guard, key, model!, {
-            ...effort(model!),
-            response_format: replySchema(withHelp, Boolean(gnvResult?.hay_respaldo), false, args.exerciseTool, args.lessons),
-            messages: [...messages, { role: 'system', content: gnvSourcesMessage(consulta, gnvResult) }],
-          }, attempt > 0);
+          const gnvResult = await lookupGnv(consulta);
+          if (gnvResult?.hay_respaldo && gnvResult.fuentes.length) {
+            // Segona vegada o més: regles de la cache de qualsevol de les seccions trobades (en l'ordre del RAG).
+            const etiquetes = [...new Set(gnvResult.fuentes.map((f) => f.etiqueta))];
+            const cached = (await Promise.all(etiquetes.map((etiqueta) => ruleCache.peek(ruleKeyOf(model!, etiqueta)))))
+              .filter((r): r is GnvRule => Boolean(r));
+            if (cached.length) {
+              // Crida curta: un prompt mínim (personatge, nivell i llengua materna) i només la resposta de 1-2 frases. Sense
+              // raonament, també en el tutor del tauler: només tria una regla de la llista i l'aplica.
+              const picked = await complete(guard, key, model!, {
+                response_format: replySchema(withHelp, false, false, [], false, undefined, false, cached.length),
+                messages: [
+                  { role: 'system', content: shortSystemPrompt },
+                  messages[1],
+                  { role: 'system', content: cachedRulesMessage(cached) },
+                ],
+              }, attempt > 0, 'none', 'regla-cache');
+              const index = picked ? ruleChoiceOf(picked, cached.length) : -1;
+              if (index >= 0) {
+                rule = cached[index];
+                content = picked;
+                console.log(`[agent] regla de la cache: «${rule.regla}»`);
+              } else {
+                console.log(`[agent] cap de les ${cached.length} regles de la cache respon el dubte`);
+              }
+            }
+            if (!rule) {
+              // Primera vegada: com abans, una crida amb les fonts que respon i redacta la regla (es guarda més avall).
+              newRuleSources = gnvResult;
+              content = await complete(guard, key, model!, {
+                ...effort(model!),
+                response_format: replySchema(withHelp, false, args.exerciseTool, args.lessons, false, undefined, true),
+                messages: [...messages, { role: 'system', content: gnvRuleSourcesMessage(consulta, gnvResult) }],
+              }, attempt > 0, 'none', 'regla-nova');
+            }
+          } else {
+            // Sense regla (no hi ha respaldo o el RAG ha fallat): la resposta només depén de la consulta.
+            content = await complete(guard, key, model!, {
+              ...effort(model!),
+              response_format: replySchema(withHelp, false, args.exerciseTool, args.lessons),
+              messages: answerMessages(`Dubte de l'aprenent: «${consulta}».`, gnvSourcesMessage(consulta, gnvResult)),
+            }, attempt > 0, 'none', 'sense-regla');
+          }
         }
 
         if (!content) {
@@ -443,16 +609,41 @@ export async function replyFromAgent(args: {
         }
         console.log(`[agent] resposta vàlida de ${model}`);
 
-        const { help_text, gnv, consulta_gnv: _, verb_conjugar: __, ...parsed } = outputSchema.parse(parseJsonResponse(content));
+        const { help_text, gnv, regla_id: _g, consulta_gnv: _, verb_conjugar: __, ruta_id: _r1, ruta_dificultat: _r2, ruta_acceptada: _r3, ...fields } = outputSchema.parse(parseJsonResponse(content));
+        const parsed = ruta ? { ...fields, ruta } : fields;
+        // Regla redactada ara: si la secció que ha triat el model ja té regla a la cache, es mostra la de la cache tal com
+        // està (cada secció té una sola regla); si no, es mostra la nova i es guarda més avall.
+        let newRule: GnvRule | undefined;
+        if (!rule && gnv && newRuleSources) {
+          const fresh = gnvRuleFrom(newRuleSources, gnv);
+          rule = await ruleCache.peek(ruleKeyOf(model!, fresh.regla));
+          if (!rule) rule = newRule = fresh;
+        }
         // Filtre d'eixida: si la resposta reproduïx el prompt del sistema, no arriba a l'aprenent (ni res del que du
         // associat: exercici, activitat, lliçó o regla de la GNV).
-        const leak = detectPromptLeak([parsed.reply_text, help_text, gnv?.contingut, gnv?.explicacio], [messages[0].content]);
+        const leak = detectPromptLeak([parsed.reply_text, help_text, rule?.contingut, rule?.explicacio], [messages[0].content]);
         if (leak.leaked) {
           console.warn(`[agent] possible fuita del prompt del sistema (motius=${leak.reasons.join(',')}); es substituïx la resposta`);
           return { reply_text: LEAK_REPLY, mood: 'neutral' };
         }
-        const reply: AgentReply = gnv && gnvResult?.hay_respaldo
-          ? { ...parsed, reply_text: plain(parsed.reply_text), gnv: gnvRuleFrom(gnvResult, gnv) }
+        // Filtre de llengua: tots els xatbots responen en valencià, en tots els nivells. Només l'ajuda en la llengua
+        // materna (help_text, en una línia a part) pot anar en una altra llengua.
+        const language = detectNonValencian(parsed.reply_text);
+        if (!language.valencian) {
+          nonValencian += 1;
+          console.warn(`[agent] resposta que no és en valencià (motius=${language.reasons.join(',')}); ${nonValencian > 1 ? 'es substituïx' : 'es reintenta'}`);
+          if (nonValencian > 1) return { reply_text: NON_VALENCIAN_REPLY, mood: 'neutral' };
+          messages.push({ role: 'system', content: VALENCIAN_RETRY_NOTE });
+          lastError = 'La resposta no era en valencià';
+          continue;
+        }
+        // Regla nova i vàlida: es guarda per a la seua secció; els següents dubtes que hi porten ja no la tornen a redactar.
+        if (newRule) {
+          ruleCache.set(ruleKeyOf(model!, newRule.regla), newRule);
+          console.log(`[agent] regla nova guardada: «${newRule.regla}»`);
+        }
+        const reply: AgentReply = rule
+          ? { ...parsed, reply_text: plain(parsed.reply_text), gnv: rule }
           : conjugation
             ? { ...parsed, reply_text: plain(parsed.reply_text), conjugacio: conjugation }
             : parsed;
@@ -467,6 +658,8 @@ ${help_text.trim()}` } : reply;
       }
     }
   }
+  // L'última resposta no era en valencià i ja no queden intents: no s'envia a l'aprenent.
+  if (nonValencian > 0) return { reply_text: NON_VALENCIAN_REPLY, mood: 'neutral' };
   throw new Error(lastError);
 }
 

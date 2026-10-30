@@ -35,8 +35,21 @@ export const levelBand = (level: string | null | undefined): 'A' | 'B' | 'C' | n
 export const PREDEFINED_PATH_LEVELS: readonly string[] = ['A2', 'B1', 'B2'];
 export const hasPredefinedPaths = (level: string | null | undefined) => !!level && PREDEFINED_PATH_LEVELS.includes(level);
 /** Nivells amb ruta personalitzada generada per la IA (learning_paths), a més de les predefinides. */
-export const AI_PATH_LEVELS: readonly string[] = ['B1', 'B2', 'C1'];
+export const AI_PATH_LEVELS: readonly string[] = ['B1', 'B2', 'C1', 'C2'];
 export const hasAiPath = (level: string | null | undefined) => !!level && AI_PATH_LEVELS.includes(level);
+/** Una ruta que el tutor del xat enllaça (la que l'aprenent ha demanat o la que li acaba de preparar). */
+export type StudyPathRef = { id: string; title: string; description: string };
+/** Ruta pròpia que el tutor prepara quan l'aprenent ho accepta (POST /api/study-paths/generate). */
+export type OwnPathResult =
+  | { status: 'ok'; path: StudyPathRef; message: string }
+  | { status: 'insufficient' | 'error'; message: string };
+/** Màxim de caràcters del tema d'una ruta pròpia (el que li costa a l'aprenent, segons el tutor). */
+export const OWN_PATH_TOPIC_MAX = 120;
+/** Nivells en què el tutor del xat pot preparar rutes pròpies de l'alumne (study_paths.student_id). */
+export const OWN_PATH_LEVELS: readonly string[] = ['A1', 'A2', 'B1', 'B2', 'C1'];
+export const hasOwnPaths = (level: string | null | undefined) => !!level && OWN_PATH_LEVELS.includes(level);
+/** La pantalla de rutes (/ruta) mostra les rutes de study_paths: predefinides, de classe i pròpies. */
+export const hasStudyPaths = (level: string | null | undefined) => hasPredefinedPaths(level) || hasOwnPaths(level);
 
 /* ── Límits de l'historial de conversa ────────────────────────────────── */
 /* ── Límits del text que avalua un LLM ────────────────────────────────── */
@@ -162,6 +175,7 @@ export const MOTHER_TONGUES = [
   { value: 'it', label: 'Italià' },
   { value: 'ro', label: 'Romanés' },
   { value: 'uk', label: 'Ucraïnés' },
+  { value: 'ar', label: 'Àrab' },
   { value: 'other', label: 'Una altra llengua' },
 ] as const;
 
@@ -172,10 +186,14 @@ export const MOTHER_TONGUES = [
 
 
 /** Llengües amb traducció (ajuda del tutor i subtítols del Nivell 0): totes menys 'ca' i 'other'. */
-export const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk'] as const;
+export const TRANSLATED_TONGUES = ['es', 'en', 'fr', 'it', 'ro', 'uk', 'ar'] as const;
 export type TranslatedTongue = (typeof TRANSLATED_TONGUES)[number];
 export const isTranslatedTongue = (code: string | null | undefined): code is TranslatedTongue =>
   !!code && (TRANSLATED_TONGUES as readonly string[]).includes(code);
+
+/** Llengües maternes que s'escriuen de dreta a esquerra: les seues traduccions van amb dir="rtl". */
+export const RTL_TONGUES: readonly string[] = ['ar'];
+export const tongueDir = (code: string | null | undefined): 'rtl' | 'ltr' => (code && RTL_TONGUES.includes(code) ? 'rtl' : 'ltr');
 
 /** Nom (en valencià) d'una llengua materna, o undefined si no és una de les triables. */
 export const motherTongueLabel = (code: string | null | undefined) =>

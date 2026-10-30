@@ -209,7 +209,7 @@ export function generateLearningPath(client: any, userId: string): Promise<boole
     const { data: profile, error } = await client.from('profiles').select('level').eq('id', userId).single();
     if (error) throw error;
     const level: string = profile.level;
-    // Només el B1, el B2 i el C1 tenen ruta de la IA (l'A2 té només les predefinides; la resta de
+    // Només el B1, el B2, el C1 i el C2 tenen ruta de la IA (l'A2 té només les predefinides; la resta de
     // nivells encara no tenen continguts de llengua al catàleg).
     if (!hasAiPath(level)) return false;
 

@@ -32,9 +32,8 @@ export async function consultarConjugacio(verb: string): Promise<ConjugacioResul
       },
     });
 
-    if (!response.ok) {
-      return { existeix: false, url: searchUrl };
-    }
+    // Un error de l'AVL no vol dir que el verb no existisca: es propaga (la ferramenta torna isError i no es guarda).
+    if (!response.ok) throw new Error(`El DNV ha respost ${response.status}`);
 
     const html = await response.text();
     const $ = cheerio.load(html);
@@ -75,9 +74,7 @@ export async function consultarConjugacio(verb: string): Promise<ConjugacioResul
       body,
     });
 
-    if (!ajaxResponse.ok) {
-      return { existeix: false, url: searchUrl };
-    }
+    if (!ajaxResponse.ok) throw new Error(`El DNV ha respost ${ajaxResponse.status}`);
 
     const xml = await ajaxResponse.text();
     const contingut = xml.match(
@@ -143,9 +140,6 @@ export async function consultarConjugacio(verb: string): Promise<ConjugacioResul
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error(`[dnvClient] Error consultant la conjugació de "${verb}":`, errorMsg);
-    return {
-      existeix: false,
-      url: searchUrl,
-    };
+    throw new Error(`No s'ha pogut consultar la conjugació al DNV: ${errorMsg}`);
   }
 }

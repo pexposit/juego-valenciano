@@ -307,6 +307,29 @@ export async function findTutorActivity(topic: string, gnvSections: string[] = [
   return best ? { resource_id: best.id, resource_name: label(best), type: best.type, category: best.category } : null;
 }
 
+// Botó «Practica-ho» del tutor: després d'un dubte complex no es busca l'exercici (és lent i sovint no es fa), només
+// es mira en el catàleg en memòria si hi ha pràctica del tema. L'exercici es busca quan l'aprenent prem el botó.
+export type PracticeOffer = { id: string; topic: string; sections: string[] };
+
+export async function hasTutorPractice(topic: string, gnvSections: string[] = []): Promise<boolean> {
+  const catalog = await loadCatalog();
+  return resourcesCitingGnv(catalog, gnvSections).length > 0 || resourcesNamedLike(catalog, topic).length > 0;
+}
+
+/**
+ * L'exercici del botó «Practica-ho», com si l'aprenent l'haguera demanat: el del tema (la secció de la GNV primer), o
+ * l'activitat per a enllaçar si cap no cap en el xat, o l'avís. Es puntua amb el tema i no amb la pregunta de l'aprenent:
+ * per a la mateixa regla, el rànquing del reranker és sempre el mateix i ix de la cache.
+ */
+export async function practiceForTutor(topic: string, gnvSections: string[], level: string | null | undefined, exclude: string[]):
+  Promise<{ exercise: TutorExercise } | { activity: TutorActivity } | { message: string }> {
+  const picked = await pickTutorExercise(topic, level, exclude, gnvSections, topic, 'request');
+  if (picked === NO_AT_LEVEL) return { message: `${NO_AT_LEVEL_MESSAGE}.` };
+  if (picked) return { exercise: picked };
+  const activity = await findTutorActivity(topic, gnvSections);
+  return activity ? { activity } : { message: NO_EXERCISE_MESSAGE };
+}
+
 // Destreses que no es poden practicar dins del xat (redaccions, àudios, textos, conversa): s'enllaça una activitat
 // de l'àrea, de preferència del nivell de l'aprenent (i que parle del que ha dit, si hi ha alguna).
 // Destreses que es practiquen conversant amb un personatge: les activitats són escenaris, sense exercicis.

@@ -6,9 +6,9 @@ import { asset } from '../lib/basePath';
    banda té fons blanc i una vora superior per separar-se del #FAFAF9. */
 
 const INSTITUCIONS = [
-  { name: 'Generalitat Valenciana', src: asset('/logos/generalitat-valenciana.png'), href: 'https://www.gva.es', height: 'h-10', bar: 'h-9 sm:h-12' },
-  { name: 'ValgrAI', src: asset('/logos/valgrai.png'), href: 'https://valgrai.eu', height: 'h-9', bar: 'h-8 sm:h-10' },
-  { name: 'Universitat Jaume I', src: asset('/logos/universitat-jaume-i.png'), href: 'https://www.uji.es', height: 'h-7', bar: 'h-6 sm:h-8' },
+  { name: 'Generalitat Valenciana', src: asset('/logos/generalitat-valenciana.png'), href: 'https://www.gva.es', height: 'h-10', tablet: '[@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!h-10', bar: 'h-9 sm:h-12' },
+  { name: 'ValgrAI', src: asset('/logos/valgrai.png'), href: 'https://valgrai.eu', height: 'h-9', tablet: '[@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!h-9', bar: 'h-8 sm:h-10' },
+  { name: 'Universitat Jaume I', src: asset('/logos/universitat-jaume-i.png'), href: 'https://www.uji.es', height: 'h-7', tablet: '[@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!h-7', bar: 'h-6 sm:h-8' },
 ];
 
 /* ── Barra institucional compacta ────────────────────────────────── */
@@ -37,14 +37,14 @@ export function InstitutionalBar() {
 export function InstitutionalLogos({ className = '' }: { className?: string }) {
   return (
     <footer
-      className={`border-t border-[#E7E5E4] bg-white px-6 py-6 ${className}`}
+      className={`border-t border-[#E7E5E4] bg-white px-6 py-6 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!pb-6 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!pt-3 ${className}`}
       aria-label="Entitats que donen suport"
     >
       <p className="text-center text-[11px] font-extrabold uppercase tracking-wider opacity-45">
         Amb el suport de
       </p>
-      <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-9 gap-y-5">
-        {INSTITUCIONS.map(({ name, src, href, height }) => (
+      <ul className="mt-4 [@media(orientation:landscape)_and_(min-width:768px)_and_(max-height:1024px)]:!mt-2 flex flex-wrap items-center justify-center gap-x-9 gap-y-5">
+        {INSTITUCIONS.map(({ name, src, href, height, tablet }) => (
           <li key={name}>
             <a
               href={href}
@@ -58,7 +58,7 @@ export function InstitutionalLogos({ className = '' }: { className?: string }) {
                 alt={name}
                 loading="lazy"
                 decoding="async"
-                className={`${height} w-auto`}
+                className={`${height} ${tablet} w-auto`}
               />
             </a>
           </li>

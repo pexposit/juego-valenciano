@@ -45,7 +45,7 @@ export function RobotSceneArt({
         talking={talking}
         {...robotAssets(scenario)}
         label="Robot que conversa amb tu"
-        className="robot-avatar-chat absolute left-1/2 top-[22%] aspect-square h-[52%] [@media(max-width:1440px)_and_(orientation:portrait)]:top-[35%] [@media(max-width:1440px)_and_(orientation:portrait)]:h-[33%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:left-[72%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:top-[14%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:h-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:left-[74%] [@media(max-height:500px)_and_(orientation:landscape)]:top-[14%] [@media(max-height:500px)_and_(orientation:landscape)]:h-[56%] max-w-[96vw] -translate-x-1/2"
+        className="robot-avatar-chat absolute left-1/2 top-[22%] aspect-square h-[52%] [@media(max-width:1440px)_and_(orientation:portrait)]:top-[35%] [@media(max-width:1440px)_and_(orientation:portrait)]:h-[33%] [@media(max-width:639px)_and_(orientation:portrait)]:!top-[34%] [@media(max-width:639px)_and_(orientation:portrait)]:!h-[36%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:left-[72%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:top-[14%] [@media(orientation:landscape)_and_(pointer:coarse)_and_(min-height:501px)]:h-[56%] [@media(max-height:500px)_and_(orientation:landscape)]:left-[74%] [@media(max-height:500px)_and_(orientation:landscape)]:top-[12%] [@media(max-height:500px)_and_(orientation:landscape)]:h-[62%] max-w-[96vw] -translate-x-1/2"
       />
     </div>
   );

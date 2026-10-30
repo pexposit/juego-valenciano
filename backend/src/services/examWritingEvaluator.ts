@@ -6,7 +6,7 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { contentsForPrompt, type LevelContent } from './levelContents.js';
 import { z } from 'zod';
 import { countWords, usedRequiredWords } from '@parlaval/shared';
-import { getMcpTools } from './subagentErrorDetector.js';
+import { callMcpTool, getMcpTools } from './subagentErrorDetector.js';
 import { reasoningEffortFor } from './reasoningEffort.js';
 
 // Avaluadors de l'Àrea 3 (Expressió i Interacció Escrites) dels exàmens de la
@@ -179,7 +179,7 @@ async function runEvaluation<T extends z.ZodTypeAny>(args: {
     { role: 'user', content: args.userContent },
   ];
 
-  const { client: mcp, tools } = await getMcpTools();
+  const { tools } = await getMcpTools();
   // Detecció de bucles: la mateixa ferramenta amb els mateixos arguments, massa crides o massa temps talla l'avaluació
   // (LoopDetectedError; la ruta respon amb un error i l'alumne pot tornar-ho a provar).
   const guard = createLoopGuard({ label: `exam-eval:${args.name}` });
@@ -206,10 +206,7 @@ async function runEvaluation<T extends z.ZodTypeAny>(args: {
       guard.toolCall(toolCall.function.name, toolCall.function.arguments);
       let toolOutput: unknown;
       try {
-        const result = await mcp.callTool({
-          name: toolCall.function.name,
-          arguments: JSON.parse(toolCall.function.arguments || '{}'),
-        });
+        const result = await callMcpTool(toolCall.function.name, JSON.parse(toolCall.function.arguments || '{}'));
         toolOutput = result.content;
       } catch (err) {
         toolOutput = { error: `Error executant ferramenta: ${err instanceof Error ? err.message : err}` };

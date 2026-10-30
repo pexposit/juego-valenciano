@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { hasPredefinedPaths } from '@parlaval/shared';
+import { hasOwnPaths, hasPredefinedPaths, OWN_PATH_TOPIC_MAX, type OwnPathResult } from '@parlaval/shared';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 import { db } from '../db.js';
+import { validationError } from '../validation.js';
+import { generateOwnPath } from '../services/ownPaths.js';
+import { detectPromptInjection } from '../services/promptInjection.js';
+import { isLoopError, LOOP_STOPPED_MESSAGE, requestAbortSignal } from '../services/loopGuard.js';
 
 export const studyPathsRouter = Router();
 
@@ -57,9 +62,10 @@ type PathRow = {
   study_path_steps: { position: number; resource_id: string }[];
 };
 
-// Rutes recomanades de l'usuari (A2, B1 i B2): les predefinides del seu nivell. Les que el professorat
-// crea per a les classes són en /api/my-classes. Cada pas diu si ja l'ha fet (si té algun resultat
-// d'eixa activitat): el progrés es calcula ací perquè user_resource_results només el llig el backend.
+// Rutes de l'usuari: les recomanades (predefinides del seu nivell: A2, B1 i B2) i les pròpies (`own_paths`, les que li
+// ha preparat el tutor del xat). Les que el professorat crea per a les classes són en /api/my-classes. Cada pas diu si
+// ja l'ha fet (si té algun resultat d'eixa activitat): el progrés es calcula ací perquè user_resource_results només el
+// llig el backend.
 studyPathsRouter.get('/api/study-paths', requireAuth, async (req: AuthRequest, res) => {
   const client = db(req.userId);
   if (!client || !req.userId) return res.status(401).json({ error: 'Inicia sessió per a vore les rutes' });
@@ -67,23 +73,83 @@ studyPathsRouter.get('/api/study-paths', requireAuth, async (req: AuthRequest, r
   try {
     const { data: profile, error: profileError } = await client.from('profiles').select('level').eq('id', req.userId).single();
     if (profileError) throw profileError;
-    if (!hasPredefinedPaths(profile.level)) return res.json({ level: profile.level, paths: [] });
+    const predefined = hasPredefinedPaths(profile.level);
+    const own = hasOwnPaths(profile.level);
+    if (!predefined && !own) return res.json({ level: profile.level, paths: [], own_paths: [] });
 
-    const [{ data: paths, error: pathsError }, done] = await Promise.all([
-      client
-        .from('study_paths')
-        .select('id, level, title, description, class_id, sort_order, created_at, kids_classes(name), study_path_steps(position, resource_id)')
-        .is('teacher_id', null)
-        .eq('level', profile.level)
-        .order('sort_order'),
+    const columns = 'id, level, title, description, class_id, sort_order, created_at, kids_classes(name), study_path_steps(position, resource_id)';
+    const none = Promise.resolve({ data: [], error: null });
+    const [{ data: paths, error: pathsError }, { data: ownPaths, error: ownError }, done] = await Promise.all([
+      predefined
+        ? client.from('study_paths').select(columns).is('teacher_id', null).is('student_id', null).eq('level', profile.level).order('sort_order')
+        : none,
+      own
+        ? client.from('study_paths').select(columns).eq('student_id', req.userId).order('created_at', { ascending: false })
+        : none,
       doneResources(client, req.userId),
     ]);
     if (pathsError) throw pathsError;
-    res.json({ level: profile.level, paths: (paths as PathRow[]).map(p => toPath(p, done)) });
+    if (ownError) throw ownError;
+    res.json({
+      level: profile.level,
+      paths: (paths as PathRow[]).map(p => toPath(p, done)),
+      own_paths: (ownPaths as PathRow[]).map(p => toPath(p, done)),
+    });
   } catch (error) {
     console.error('[study-paths] Error carregant les rutes:', error);
     res.status(500).json({ error: 'No hem pogut carregar les rutes' });
   }
+});
+
+// Cada ruta pròpia és una crida al model: límit estret, com el de l'agent del professorat.
+const OWN_PATH_RATE_LIMIT = { windowMs: 60_000, max: Number(process.env.RATE_LIMIT_OWN_PATH_PER_MIN) || 5 };
+const ownPathBody = z.object({ topic: z.string().trim().min(2).max(OWN_PATH_TOPIC_MAX) });
+
+/**
+ * Prepara una ruta pròpia sobre el que li costa a l'aprenent (el tema el detecta el tutor del xat i l'aprenent
+ * l'accepta) i la guarda en «Les teues rutes». Si no hi ha prou activitats, torna `status: 'insufficient'` (200).
+ */
+studyPathsRouter.post('/api/study-paths/generate', requireAuth, rateLimit(OWN_PATH_RATE_LIMIT), async (req: AuthRequest, res) => {
+  const parsed = ownPathBody.safeParse(req.body);
+  if (!parsed.success) return validationError(res, parsed.error);
+  const client = db(req.userId);
+  if (!client || !req.userId) return res.status(401).json({ error: 'Inicia sessió per a tindre rutes pròpies' });
+  const abortSignal = requestAbortSignal(req, res);
+
+  // El tema el pot haver manipulat el client: res d'instruccions per al model.
+  if (detectPromptInjection(parsed.data.topic).flagged) {
+    return res.json({ status: 'error', message: 'No puc preparar una ruta sobre això. Digues-me quin contingut de valencià vols treballar.' } satisfies OwnPathResult);
+  }
+  try {
+    const { data: profile, error } = await client.from('profiles').select('level').eq('id', req.userId).single();
+    if (error) throw error;
+    if (!hasOwnPaths(profile.level)) {
+      return res.json({ status: 'error', message: 'El teu nivell encara no té rutes.' } satisfies OwnPathResult);
+    }
+    res.json(await generateOwnPath(client, req.userId, profile.level, parsed.data.topic, abortSignal));
+  } catch (error) {
+    if (isLoopError(error)) {
+      console.warn(error.message);
+      if (error.userCancelled || res.headersSent) return;
+      return res.json({ status: 'error', message: LOOP_STOPPED_MESSAGE } satisfies OwnPathResult);
+    }
+    console.error('[study-paths] Error preparant la ruta pròpia:', error);
+    res.status(500).json({ error: 'No hem pogut preparar la ruta' });
+  }
+});
+
+// L'alumne esborra una ruta pròpia (la RLS només li deixa esborrar les seues).
+studyPathsRouter.delete('/api/study-paths/:id', requireAuth, async (req: AuthRequest, res) => {
+  if (!z.string().uuid().safeParse(req.params.id).success) return res.status(404).json({ error: 'La ruta no existix' });
+  const client = db(req.userId);
+  if (!client || !req.userId) return res.status(401).json({ error: 'Inicia sessió' });
+  const { data, error } = await client.from('study_paths').delete().eq('id', req.params.id).eq('student_id', req.userId).select('id');
+  if (error) {
+    console.error("[study-paths] Error esborrant la ruta:", error);
+    return res.status(500).json({ error: "No hem pogut esborrar la ruta" });
+  }
+  if (!data?.length) return res.status(404).json({ error: 'La ruta no existix' });
+  res.json({ ok: true });
 });
 
 // Les classes de l'alumne, cadascuna amb el que hi ha posat la docent: les activitats soltes

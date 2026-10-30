@@ -5,6 +5,9 @@
  * Exemple: curl -X POST http://localhost:8010/consultar -H 'Content-Type: application/json' \
  *   -d '{"consulta":"accentuació diacrítica de què i que"}'
  */
+import { createHash } from 'node:crypto';
+import { createLookupCache, normalizeQuery } from './lookupCache.js';
+
 export interface GnvFont {
   seccion: string;
   ruta: string;
@@ -57,11 +60,12 @@ export function gnvRagUsesGpu(): Promise<boolean> {
   return busy;
 }
 
+/** La consulta es normalitza (`normalizeQuery`): majúscules, cometes o puntuació diferents fan la mateixa recerca. */
 export async function consultarGnv(consulta: string, k = 4): Promise<GnvResultat> {
   const response = await fetch(`${baseUrl}/consultar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ consulta, k }),
+    body: JSON.stringify({ consulta: normalizeQuery(consulta), k }),
     signal: AbortSignal.timeout(RAG_GNV_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`El RAG de la GNV ha respost ${response.status}`);
@@ -74,7 +78,17 @@ export async function consultarGnv(consulta: string, k = 4): Promise<GnvResultat
  */
 export type Reranker = 'jev' | 'local';
 
-export async function puntuarTextos(consulta: string, textos: string[]): Promise<{ scores: number[]; reranker: Reranker }> {
+// Puntuació de cada text per a cada consulta (normalitzada): el reranker és determinista, així que només se li envien els
+// textos que encara no s'han puntuat per a eixa consulta. Una llista que canvia (exercicis ja mostrats, nous...) reutilitza
+// la resta.
+type Scored = { score: number; reranker: Reranker };
+const scoreCache = createLookupCache<Scored>({
+  ttlMs: (Number(process.env.RERANK_CACHE_TTL_MIN) || 7 * 24 * 60) * 60_000,
+  maxEntries: Number(process.env.RERANK_CACHE_ENTRIES) || 50_000,
+});
+export const clearRerankCache = () => scoreCache.clear();
+
+async function rerank(consulta: string, textos: string[]): Promise<{ scores: number[]; reranker: Reranker }> {
   const response = await fetch(`${baseUrl}/ordenar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -86,6 +100,32 @@ export async function puntuarTextos(consulta: string, textos: string[]): Promise
   const { puntuaciones, reranker } = await response.json() as { puntuaciones: number[]; reranker?: Reranker };
   if (!Array.isArray(puntuaciones) || puntuaciones.length !== textos.length) throw new Error('Resposta invàlida del RAG');
   return { scores: puntuaciones, reranker: reranker ?? 'local' };
+}
+
+export async function puntuarTextos(consulta: string, textos: string[]): Promise<{ scores: number[]; reranker: Reranker }> {
+  const query = normalizeQuery(consulta);
+  const all = textos.map((_, i) => i);
+  const keys = textos.map(text => `${query}\0${createHash('sha256').update(text).digest('hex')}`);
+  const cached: (Scored | undefined)[] = await Promise.all(keys.map(key => scoreCache.peek(key)));
+  const known = new Set(cached.flatMap(x => (x ? [x.reranker] : [])));
+  const missing = all.filter(i => !cached[i]);
+  if (missing.length === 0 && known.size === 1) {
+    console.log(`[rerank] ${textos.length}/${textos.length} puntuacions de la cache`);
+    return { scores: cached.map(x => x!.score), reranker: [...known][0] };
+  }
+  // Cada reranker té la seua escala: si les guardades són d'un altre (o barrejades), es tornen a puntuar totes.
+  let toScore = known.size <= 1 ? missing : all;
+  let fresh = await rerank(query, toScore.map(i => textos[i]));
+  if (toScore.length < textos.length && !known.has(fresh.reranker)) {
+    toScore = all;
+    fresh = await rerank(query, textos);
+  }
+  toScore.forEach((index, j) => {
+    cached[index] = { score: fresh.scores[j], reranker: fresh.reranker };
+    scoreCache.set(keys[index], cached[index]!);
+  });
+  console.log(`[rerank] ${textos.length - toScore.length}/${textos.length} puntuacions de la cache`);
+  return { scores: cached.map(x => x!.score), reranker: fresh.reranker };
 }
 
 // Context numerat per al LLM (com contexto_para_llm de rag_gnv.py): ha de citar l'id de la font.
